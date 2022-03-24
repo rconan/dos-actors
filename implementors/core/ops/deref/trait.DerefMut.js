@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["dos_actors"] = [{"text":"impl&lt;T, U&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.59.0/core/ops/deref/trait.DerefMut.html\" title=\"trait core::ops::deref::DerefMut\">DerefMut</a> for <a class=\"struct\" href=\"dos_actors/io/struct.Data.html\" title=\"struct dos_actors::io::Data\">Data</a>&lt;T, U&gt;","synthetic":false,"types":["dos_actors::io::Data"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

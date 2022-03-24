@@ -1,0 +1,86 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="GMT Dynamic Optics Simulation Actors"><meta name="keywords" content="rust, rustlang, rust-lang, dos_actors"><title>dos_actors - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../dark.css" disabled><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../storage.js"></script><script src="../crates.js"></script><script defer src="../main.js"></script>
+    <noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../favicon.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a class="sidebar-logo" href="../dos_actors/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.png" alt="logo"></div>
+        </a><h2 class="location">Crate dos_actors</h2><div class="block version"><div class="narrow-helper"></div><p>Version 0.1.0</p></div><div class="sidebar-elems"><a id="all-types" href="all.html"><p>See all dos_actors's items</p></a><div class="block items"><ul><li><a href="#modules">Modules</a></li><li><a href="#macros">Macros</a></li><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#traits">Traits</a></li><li><a href="#types">Type Definitions</a></li></ul></div><div id="sidebar-vars" data-name="dos_actors" data-ty="mod" data-relpath=""></div><script defer src="sidebar-items.js"></script></div></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../dos_actors/index.html"><img class="rust-logo" src="../rust-logo.png" alt="logo"></a><nav class="sub"><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="18" height="18" alt="Pick another theme!" src="../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../settings.html" title="settings"><img width="18" height="18" alt="Change settings" src="../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><h1 class="fqn"><span class="in-band">Crate <a class="mod" href="#">dos_actors</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span><span class="out-of-band"><span id="render-detail"><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span><a class="srclink" href="../src/dos_actors/lib.rs.html#1-293" title="goto source code">[src]</a></span></h1><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="gmt-dynamic-optics-simulation-actors" class="section-header"><a href="#gmt-dynamic-optics-simulation-actors">GMT Dynamic Optics Simulation Actors</a></h2>
+<p>The GMT DOS <a href="actor/struct.Actor.html" title="Actor">Actor</a>s are the building blocks of the GMT DOS integrated model.
+Each <a href="actor/struct.Actor.html" title="Actor">Actor</a> has 3 properties:</p>
+<ol>
+<li>input objects</li>
+<li>output objects</li>
+<li>client</li>
+</ol>
+<h3 id="inputoutputs" class="section-header"><a href="#inputoutputs">Input/Outputs</a></h3>
+<p>input objects are a collection of inputs and
+output objects are a collection of outputs.
+An actor must have at least either 1 input or 1 output.
+A pair of input/output is linked with a <a href="flume::bounded">channel</a> where the input is the receiver
+and the output is the sender.
+The same output may be linked to several inputs.
+<a href="flume::bounded">channel</a>s are used to synchronize the <a href="actor/struct.Actor.html" title="Actor">Actor</a>s.</p>
+<p>Each <a href="actor/struct.Actor.html" title="Actor">Actor</a> performs the same <a href="actor/struct.Actor.html#method.run">task</a>, within an infinite loop, consisting of 3 operations:</p>
+<ol>
+<li>receiving the inputs if any</li>
+<li>updating the client state</li>
+<li>sending the outputs if any</li>
+</ol>
+<p>The loop exits when one of the following error happens: <a href="enum.ActorError.html#variant.NoData" title="ActorError::NoData">ActorError::NoData</a>, <a href="enum.ActorError.html#variant.DropSend" title="ActorError::DropSend">ActorError::DropSend</a>, <a href="enum.ActorError.html#variant.DropRecv" title="ActorError::DropRecv">ActorError::DropRecv</a>.</p>
+<h4 id="sampling-rates" class="section-header"><a href="#sampling-rates">Sampling rates</a></h4>
+<p>All the inputs of an <a href="actor/struct.Actor.html" title="Actor">Actor</a> are collected are the same rate <code>NI</code>, and all the outputs are distributed at the same rate <code>NO</code>, however both inputs and outputs rates may be different.
+The inputs rate <code>NI</code> is inherited from the rate <code>NO</code> of outputs that the data is collected from i.e. <code>(next actor)::NI=(current actor)::NO</code>.</p>
+<p>The rates <code>NI</code> or <code>NO</code> are defined as the ratio between the simulation sampling frequency <code>[Hz]</code> and the actor inputs or outputs sampling frequency <code>[Hz]</code>, it must be an integer ≥ 1.
+If <code>NI&gt;NO</code>, outputs are upsampled with a simple sample-and-hold for <code>NI/NO</code> samples.
+If <code>NO&gt;NI</code>, outputs are decimated by a factor <code>NO/NI</code></p>
+<p>For a 1000Hz simulation sampling frequency, the following table gives some examples of inputs/outputs sampling frequencies and rate:</p>
+<div><table><thead><tr><th style="text-align: right">Inputs <code>[Hz]</code></th><th style="text-align: right">Ouputs <code>[Hz]</code></th><th style="text-align: right">NI</th><th style="text-align: right">NO</th><th style="text-align: right">Upsampling</th><th style="text-align: right">Decimation</th></tr></thead><tbody>
+<tr><td style="text-align: right">1000</td><td style="text-align: right">1000</td><td style="text-align: right">1</td><td style="text-align: right">1</td><td style="text-align: right">-</td><td style="text-align: right">1</td></tr>
+<tr><td style="text-align: right">1000</td><td style="text-align: right">100</td><td style="text-align: right">1</td><td style="text-align: right">10</td><td style="text-align: right">-</td><td style="text-align: right">10</td></tr>
+<tr><td style="text-align: right">100</td><td style="text-align: right">1000</td><td style="text-align: right">10</td><td style="text-align: right">1</td><td style="text-align: right">10</td><td style="text-align: right">-</td></tr>
+<tr><td style="text-align: right">500</td><td style="text-align: right">100</td><td style="text-align: right">2</td><td style="text-align: right">10</td><td style="text-align: right">-</td><td style="text-align: right">5</td></tr>
+<tr><td style="text-align: right">100</td><td style="text-align: right">500</td><td style="text-align: right">10</td><td style="text-align: right">2</td><td style="text-align: right">5</td><td style="text-align: right">-</td></tr>
+</tbody></table>
+</div><h3 id="client" class="section-header"><a href="#client">Client</a></h3>
+<p>A client must be assigned to an <a href="actor/struct.Actor.html" title="Actor">Actor</a>
+and the client must implement some of the following traits:</p>
+<ul>
+<li><a href="io/trait.Write.html">write</a> if the actor has some outputs,</li>
+<li><a href="io/trait.Read.html">read</a> if the actor has some inputs,</li>
+<li><a href="trait.Update.html">update</a>, this trait must always be implemented (but the default empty implementation is acceptable)</li>
+</ul>
+<h3 id="model" class="section-header"><a href="#model">Model</a></h3>
+<p>An integrated model is build as follows:</p>
+<ol>
+<li>select and instanciate the <a href="clients/index.html" title="clients">clients</a></li>
+<li>assign <a href="clients/index.html" title="clients">clients</a> to <a href="actor/index.html" title="actor">actor</a>s</li>
+<li>add outputs to the <a href="actor/struct.Actor.html" title="Actor">Actor</a>s and connect them to inputs of other <a href="actor/struct.Actor.html" title="Actor">Actor</a>s</li>
+<li>spawn each <a href="actor/struct.Actor.html" title="Actor">Actor</a></li>
+</ol>
+<p>For more detailed explanations and examples, check the <a href="actor/index.html" title="actor">actor</a> module.</p>
+<h3 id="features" class="section-header"><a href="#features">Features</a></h3>
+<p>The crates provides a minimal set of default functionalities that can be augmented by selecting appropriate features at compile time:</p>
+<ul>
+<li><strong>windloads</strong> : enables the <a href="clients/windloads/struct.CfdLoads.html">CFD loads</a> <a href="actor/struct.Actor.html" title="Actor">Actor</a> client</li>
+<li><strong>fem</strong> : enables the GMT <a href="clients/fem/index.html">FEM</a> <a href="actor/struct.Actor.html" title="Actor">Actor</a> client</li>
+<li><strong>mount-ctrl</strong> : enables the GMT mount <a href="clients/mount/index.html">controller</a> <a href="actor/struct.Actor.html" title="Actor">Actor</a> client</li>
+<li><strong>m1-ctrl</strong> : enables the <a href="actor/struct.Actor.html" title="Actor">Actor</a>]s for the GMT <a href="clients/m1/index.html">M1 control system</a></li>
+<li><strong>apache-arrow</strong> : enables the <a href="clients/arrow_client/struct.Arrow.html">Arrow</a> <a href="actor/struct.Actor.html" title="Actor">Actor</a> for saving data into the <a href="https://docs.rs/parquet">Parquet</a> data file format</li>
+<li><strong>noise</strong> : enables the <a href="https://rust-random.github.io/rand/rand/index.html" title="rand">rand</a> and <a href="https://rust-random.github.io/rand/rand_distr/index.html" title="rand_distr">rand_distr</a> crates</li>
+</ul>
+</div></details><h2 id="modules" class="small-section-header"><a href="#modules">Modules</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="mod" href="actor/index.html" title="dos_actors::actor mod">actor</a></div><div class="item-right docblock-short"><p>Actor model</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="clients/index.html" title="dos_actors::clients mod">clients</a></div><div class="item-right docblock-short"><p><a href="crate::Actor">Actor</a>s clients</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="io/index.html" title="dos_actors::io mod">io</a></div><div class="item-right docblock-short"><p>Actor inputs and outputs implementation module</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="macros/index.html" title="dos_actors::macros mod">macros</a></div><div class="item-right docblock-short"><p>Macros to reduce boilerplate code</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="prelude/index.html" title="dos_actors::prelude mod">prelude</a></div><div class="item-right docblock-short"></div></div></div><h2 id="macros" class="small-section-header"><a href="#macros">Macros</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="macro" href="macro.count.html" title="dos_actors::count macro">count</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="macro" href="macro.impl_read.html" title="dos_actors::impl_read macro">impl_read</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="macro" href="macro.impl_update.html" title="dos_actors::impl_update macro">impl_update</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="macro" href="macro.impl_write.html" title="dos_actors::impl_write macro">impl_write</a></div><div class="item-right docblock-short"></div></div></div><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.Actor.html" title="dos_actors::Actor struct">Actor</a></div><div class="item-right docblock-short"><p>Actor model implementation</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.ActorOutputBuilder.html" title="dos_actors::ActorOutputBuilder struct">ActorOutputBuilder</a></div><div class="item-right docblock-short"><p>Actor outputs builder</p>
+</div></div></div><h2 id="enums" class="small-section-header"><a href="#enums">Enums</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="enum" href="enum.ActorError.html" title="dos_actors::ActorError enum">ActorError</a></div><div class="item-right docblock-short"></div></div></div><h2 id="traits" class="small-section-header"><a href="#traits">Traits</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.AddOuput.html" title="dos_actors::AddOuput trait">AddOuput</a></div><div class="item-right docblock-short"><p>Actor add output interface</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.ArcMutex.html" title="dos_actors::ArcMutex trait">ArcMutex</a></div><div class="item-right docblock-short"><p>Creates a reference counted pointer</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.IntoInputs.html" title="dos_actors::IntoInputs trait">IntoInputs</a></div><div class="item-right docblock-short"><p>Assign inputs to actors</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.Update.html" title="dos_actors::Update trait">Update</a></div><div class="item-right docblock-short"><p>Actor client state update interface</p>
+</div></div></div><h2 id="types" class="small-section-header"><a href="#types">Type Definitions</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="type" href="type.Initiator.html" title="dos_actors::Initiator type">Initiator</a></div><div class="item-right docblock-short"><p>Type alias for an actor without inputs</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="type" href="type.Result.html" title="dos_actors::Result type">Result</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="type" href="type.Terminator.html" title="dos_actors::Terminator type">Terminator</a></div><div class="item-right docblock-short"><p>Type alias for an actor without outputs</p>
+</div></div></div></section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="dos_actors" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.59.0 (9d1b2106e 2022-02-23)" ></div>
+</body></html>
