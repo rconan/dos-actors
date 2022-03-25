@@ -168,6 +168,16 @@
 <span id="166">166</span>
 <span id="167">167</span>
 <span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
 </pre><pre class="rust"><code><span class="doccomment">/*!
 # GMT Finite Element Model client
 
@@ -177,8 +187,9 @@ The client is enabled with the `fem` feature.
 
 # Example
 
-Simulation of the FEM and the mount controller together:
-```ignore
+Simulation of the FEM and the mount controller together (requires the `fem`, `mount-ctrl` and `apache-arrow` features):
+```no_run
+# tokio_test::block_on(async {
 use dos_actors::clients::mount::{Mount, MountEncoders, MountSetPoint, MountTorques};
 use dos_actors::{clients::arrow_client::Arrow, prelude::*};
 use fem::{
@@ -244,7 +255,16 @@ fem.add_output()
     .build::&lt;D, MCM2Lcl6D&gt;()
     .into_input(&amp;mut sink);
 
-let _tasks = tokio::join![source.spawn(), mount.spawn(), fem.spawn(), sink.spawn()]
+Model::new(vec![Box::new(source),
+                Box::new(mount),
+                Box::new(fem),
+                Box::new(sink)])
+       .check()?
+       .run()
+       .wait()
+       .await?;
+# Ok::&lt;(), anyhow::Error&gt;(())
+# });
 ```
 */</span>
 

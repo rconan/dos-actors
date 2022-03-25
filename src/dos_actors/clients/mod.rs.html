@@ -185,18 +185,6 @@
 <span id="183">183</span>
 <span id="184">184</span>
 <span id="185">185</span>
-<span id="186">186</span>
-<span id="187">187</span>
-<span id="188">188</span>
-<span id="189">189</span>
-<span id="190">190</span>
-<span id="191">191</span>
-<span id="192">192</span>
-<span id="193">193</span>
-<span id="194">194</span>
-<span id="195">195</span>
-<span id="196">196</span>
-<span id="197">197</span>
 </pre><pre class="rust"><code><span class="doccomment">/*!
 # [Actor](crate::Actor)s clients
 
@@ -282,18 +270,6 @@ let sampler = Sampler::&lt;Vec&lt;f64&gt;, MyIO&gt;::default();
 <span class="kw">mod</span> <span class="ident">signals</span>;
 <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">inline</span>)]</span>
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">signals</span>::{<span class="ident">Signal</span>, <span class="ident">Signals</span>};
-
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">thiserror::Error</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ClientError</span> {
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;cannot open a parquet file&quot;</span>)]</span>
-    <span class="ident">ArrowToFile</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">std::io::Error</span>),
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;apache-arrow&quot;</span>)]</span>
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;cannot build Arrow data&quot;</span>)]</span>
-    <span class="ident">ArrowError</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">arrow::error::ArrowError</span>),
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;apache-arrow&quot;</span>)]</span>
-    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;cannot save data to Parquet&quot;</span>)]</span>
-    <span class="ident">ParquetError</span>(<span class="attribute">#[<span class="ident">from</span>]</span> <span class="ident">parquet::errors::ParquetError</span>),
-}
 
 <span class="doccomment">/// Simple data logging</span>
 <span class="doccomment">///</span>

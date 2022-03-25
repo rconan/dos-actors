@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Arrow","Apache Arrow client"],["ArrowBuilder","Arrow format logger builder"]]});
+initSidebarItems({"enum":[["ArrowError",""]],"struct":[["Arrow","Apache Arrow client"],["ArrowBuilder","Arrow format logger builder"]]});

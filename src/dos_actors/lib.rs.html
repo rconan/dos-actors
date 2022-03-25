@@ -293,6 +293,19 @@
 <span id="291">291</span>
 <span id="292">292</span>
 <span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
 </pre><pre class="rust"><code><span class="doccomment">/*!
 # GMT Dynamic Optics Simulation Actors
 
@@ -312,7 +325,7 @@ and the output is the sender.
 The same output may be linked to several inputs.
 [channel](flume::bounded)s are used to synchronize the [Actor]s.
 
-Each [Actor] performs the same [task](Actor::run), within an infinite loop, consisting of 3 operations:
+Each [Actor] performs the same [task](Actor::task), within an infinite loop, consisting of 3 operations:
  1. receiving the inputs if any
  2. updating the client state
  3. sending the outputs if any
@@ -352,9 +365,10 @@ An integrated model is build as follows:
  1. select and instanciate the [clients]
  2. assign [clients] to [actor]s
  3. add outputs to the [Actor]s and connect them to inputs of other [Actor]s
- 4. spawn each [Actor]
+ 4. build a [model]
+ 5. Check, run and wait for the [Model](crate::model::Model) completion
 
-For more detailed explanations and examples, check the [actor] module.
+For more detailed explanations and examples, check the [actor] and [model] modules.
 
 ## Features
 
@@ -363,10 +377,12 @@ The crates provides a minimal set of default functionalities that can be augment
  - **windloads** : enables the [CFD loads](crate::clients::windloads::CfdLoads) [Actor] client
  - **fem** : enables the GMT [FEM](crate::clients::fem) [Actor] client
  - **mount-ctrl** : enables the GMT mount [controller](crate::clients::mount) [Actor] client
- - **m1-ctrl** : enables the [Actor]]s for the GMT [M1 control system](crate::clients::m1)
+ - **m1-ctrl** : enables the [Actor]s for the GMT [M1 control system](crate::clients::m1)
+ - **fsm** : enables the [Actor]]s for the GMT [M2 control system](crate::clients::fsm)
  - **apache-arrow** : enables the [Arrow](crate::clients::arrow_client::Arrow) [Actor] for saving data into the [Parquet](https://docs.rs/parquet) data file format
  - **noise** : enables the [rand] and [rand_distr] crates
-
+ - **lom** : enables the Linear Optical Model crate [gmt-lom](https://docs.rs/gmt_lom) [client](crate::clients::lom)
+ - **ceo** : enables the CEO binder/wrapper crate [crseo](https://docs.rs/crseo) [client](crate::clients::ceo)
 */</span>
 
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">any::type_name</span>, <span class="ident">sync::Arc</span>};
@@ -375,8 +391,9 @@ The crates provides a minimal set of default functionalities that can be augment
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">actor</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">clients</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">io</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">model</span>;
 <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">inline</span>)]</span>
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actor</span>::{<span class="ident">Actor</span>, <span class="ident">Initiator</span>, <span class="ident">Terminator</span>, <span class="ident">Update</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actor</span>::{<span class="ident">Actor</span>, <span class="ident">Initiator</span>, <span class="ident">Task</span>, <span class="ident">Terminator</span>, <span class="ident">Update</span>};
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">thiserror::Error</span>, <span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ActorError</span> {
@@ -394,6 +411,14 @@ The crates provides a minimal set of default functionalities that can be augment
     <span class="ident">NoClient</span>,
     <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;output {0} dropped&quot;</span>)]</span>
     <span class="ident">Disconnected</span>(<span class="ident">String</span>),
+    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;{0} has some inputs but inputs rate is zero&quot;</span>)]</span>
+    <span class="ident">SomeInputsZeroRate</span>(<span class="ident">String</span>),
+    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;{0} has no inputs but a positive inputs rate&quot;</span>)]</span>
+    <span class="ident">NoInputsPositiveRate</span>(<span class="ident">String</span>),
+    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;{0} has some outputs but outputs rate is zero&quot;</span>)]</span>
+    <span class="ident">SomeOutputsZeroRate</span>(<span class="ident">String</span>),
+    <span class="attribute">#[<span class="ident">error</span>(<span class="string">&quot;{0} has no outputs but a positive outputs rate&quot;</span>)]</span>
+    <span class="ident">NoOutputsPositiveRate</span>(<span class="ident">String</span>),
 }
 <span class="kw">pub</span> <span class="kw">type</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">std::result::Result</span><span class="op">&lt;</span><span class="ident">R</span>, <span class="ident">ActorError</span><span class="op">&gt;</span>;
 
@@ -583,7 +608,8 @@ The crates provides a minimal set of default functionalities that can be augment
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_imports</span>)]</span>
     <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">super</span>::{
         <span class="ident">clients</span>::{<span class="ident">Logging</span>, <span class="ident">Sampler</span>, <span class="ident">Signal</span>, <span class="ident">Signals</span>},
-        <span class="ident">Actor</span>, <span class="ident">AddOuput</span>, <span class="ident">ArcMutex</span>, <span class="ident">Initiator</span>, <span class="ident">IntoInputs</span>, <span class="ident">Terminator</span>,
+        <span class="ident">model::Model</span>,
+        <span class="ident">Actor</span>, <span class="ident">AddOuput</span>, <span class="ident">ArcMutex</span>, <span class="ident">Initiator</span>, <span class="ident">IntoInputs</span>, <span class="ident">Task</span>, <span class="ident">Terminator</span>,
     };
 }
 </code></pre></div>
