@@ -145,7 +145,8 @@
                         <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
 <p><code>gmt_dos-actors</code> is the Rust crate that is the backbone of the computing framework for the integrated model of the <a href="https://www.gmto.org">Giant Magellan Telescope</a>.
 It is based on the <a href="https://en.wikipedia.org/wiki/Actor_model">actor model</a> but specially adapted for integrated modeling purposes.</p>
-<p>In order to use the crate, you must have <a href="https://www.rust-lang.org">Rust</a> installed on your machine and be <a href="https://www.rust-lang.org/learn">familiar</a> with the Rust language</p>
+<p>In order to use the crate, you must have <a href="https://www.rust-lang.org">Rust</a> installed on your machine and be <a href="https://www.rust-lang.org/learn">familiar</a> with the Rust language
+The minimum Rust version for the <code>gmt_dos-actors</code> is 1.66.0</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="gmt-actors-model"><a class="header" href="#gmt-actors-model">GMT Actors Model</a></h1>
 <p>A GMT integrated model is a collection of actors, each actor executing a specific task or set of tasks and exchanging data at predefined sampling rates.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="actors"><a class="header" href="#actors">Actors</a></h1>
@@ -255,6 +256,14 @@ And because an actor performs many of its own tasks asynchronously, a client mus
 <pre><code class="language-rust no_run noplayground">let actor = Actor::new(thread_safe_client);</code></pre>
 <p>Note that all types that implements the <code>Update</code> trait can be converted into a thread safe type with</p>
 <pre><code class="language-rust no_run noplayground">let thread_safe_client = client.into_arcx();</code></pre>
+<p>A unique name can be given to an actor. 
+The name will be use to identify the actor's client in the model flowchart.
+The actor's name (here &quot;aleph&quot;) can be set either like this:</p>
+<pre><code class="language-rust no_run noplayground">let actor = Actor::&lt;_&gt;::from((client, &quot;aleph&quot;));</code></pre>
+<p>or like this</p>
+<pre><code class="language-rust no_run noplayground">let actor: Actor::&lt;_&gt; = (client, &quot;aleph&quot;).into();</code></pre>
+<p>or even like this</p>
+<pre><code class="language-rust no_run noplayground">let actor = Actor::new(thread_safe_client).name(&quot;aleph&quot;);</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="model"><a class="header" href="#model">Model</a></h1>
 <p>A model is a network of clients connected to each other by pairs of output/input.
 The actor/client interfaces specify the tasks that are going to be executed and the topology of the network defines the order in which the tasks are executed.</p>
@@ -269,19 +278,19 @@ The sender is given to the output and the receiver to the input. </p>
 <p>The default behavior of an actor is to pause the inner loop both until all the inputs have been received and until all the outputs have been received by other actors.</p>
 <p><img src="model.svg" alt="Model" /></p>
 <p>In the model above, the network topology imposes the following sequence of events (from top to bottom):</p>
-<div class="table-wrapper"><table><thead><tr><th>A</th><th>B</th><th>C</th><th>D</th></tr></thead><tbody>
-<tr><td><code>Update</code></td><td>-</td><td>-</td><td>-</td></tr>
-<tr><td><code>Write::&lt;AB,ABC&gt;</code></td><td>-</td><td>-</td><td>-</td></tr>
-<tr><td>-</td><td><code>Read::&lt;AB,ABC&gt;</code></td><td><code>Read::&lt;ABC&gt;</code></td><td>-</td></tr>
-<tr><td><code>Update</code></td><td>-</td><td><code>Update</code></td><td>-</td></tr>
-<tr><td><code>Write::&lt;AB,ABC&gt;</code></td><td>-</td><td><code>Write::&lt;CB,CD&gt;</code></td><td>-</td></tr>
-<tr><td>-</td><td><code>Read::&lt;CB&gt;</code></td><td>-</td><td><code>Read::&lt;CD&gt;</code></td></tr>
-<tr><td>-</td><td><code>Update</code></td><td><code>Read::&lt;ABC&gt;</code></td><td>-</td></tr>
-<tr><td>-</td><td><code>Write::&lt;BD1,BD2&gt;</code></td><td><code>Update</code></td><td>-</td></tr>
-<tr><td>-</td><td>-</td><td><code>Write::&lt;CB,CD&gt;</code></td><td><code>Read::&lt;BD1,BD2&gt;</code></td></tr>
-<tr><td>-</td><td><code>Read::&lt;AB,ABC,CB&gt;</code></td><td>-</td><td><code>Update</code></td></tr>
-<tr><td><code>Update</code></td><td><code>Update</code></td><td>-</td><td><code>Read::&lt;CD&gt;</code></td></tr>
-<tr><td>...</td><td></td><td></td><td></td></tr>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: right"></th><th>A</th><th>B</th><th>C</th><th>D</th></tr></thead><tbody>
+<tr><td style="text-align: right">1</td><td><code>Update</code></td><td>-</td><td>-</td><td>-</td></tr>
+<tr><td style="text-align: right">2</td><td><code>Write::&lt;AB,ABC&gt;</code></td><td>-</td><td>-</td><td>-</td></tr>
+<tr><td style="text-align: right">3</td><td>-</td><td><code>Read::&lt;AB,ABC&gt;</code></td><td><code>Read::&lt;ABC&gt;</code></td><td>-</td></tr>
+<tr><td style="text-align: right">4</td><td><code>Update</code></td><td>-</td><td><code>Update</code></td><td>-</td></tr>
+<tr><td style="text-align: right">5</td><td><code>Write::&lt;AB,ABC&gt;</code></td><td>-</td><td><code>Write::&lt;CB,CD&gt;</code></td><td>-</td></tr>
+<tr><td style="text-align: right">6</td><td>-</td><td><code>Read::&lt;CB&gt;</code></td><td>-</td><td><code>Read::&lt;CD&gt;</code></td></tr>
+<tr><td style="text-align: right">7</td><td>-</td><td><code>Update</code></td><td><code>Read::&lt;ABC&gt;</code></td><td>-</td></tr>
+<tr><td style="text-align: right">8</td><td>-</td><td><code>Write::&lt;BD1,BD2&gt;</code></td><td><code>Update</code></td><td>-</td></tr>
+<tr><td style="text-align: right">9</td><td>-</td><td>-</td><td><code>Write::&lt;CB,CD&gt;</code></td><td><code>Read::&lt;BD1,BD2&gt;</code></td></tr>
+<tr><td style="text-align: right">10</td><td>-</td><td><code>Read::&lt;AB,ABC,CB&gt;</code></td><td>-</td><td><code>Update</code></td></tr>
+<tr><td style="text-align: right">11</td><td><code>Update</code></td><td><code>Update</code></td><td>-</td><td><code>Read::&lt;CD&gt;</code></td></tr>
+<tr><td style="text-align: right">12</td><td>...</td><td></td><td></td><td></td></tr>
 </tbody></table>
 </div>
 <p>Note that events in the same row may occur simultaneously thanks to the asynchronous nature of the actors.</p>
@@ -318,7 +327,9 @@ C.add_output().unbounded().build::&lt;CD&gt;().into_input(&amp;mut D);</code></p
 <p>check the model for errors, run it and wait for it to finish:</p>
 <pre><code class="language-rust no_run noplayground">model.check()?.run().await?;</code></pre>
 <p>Note that the <code>run</code> method cannot be invoked on an unchecked model.</p>
-<p>A flow chart of the model can be obtained with the <code>flowchart</code> method, combining all the <code>Model</code> methods in a single call gives:</p>
+<p>A flow chart of the model can be obtained with the <code>flowchart</code> method.
+Each client is identified by either its type or the actor's name if one was given.
+Combining all the <code>Model</code> methods in a single call gives:</p>
 <pre><code class="language-rust no_run noplayground">Model::new(vec![Box::new(A),
                Box::new(B),
                Box::new(C),
@@ -367,7 +378,7 @@ impl Read&lt;Out&gt; for DataLogger {
     }
 }</code></pre>
 <p>With all the clients defined with an actor/client interface, the actors are instanciated with</p>
-<pre><code class="language-rust no_run noplayground">    let mut source = Initiator::&lt;_&gt;::from(RandGen::new(100_000));
+<pre><code class="language-rust no_run noplayground">    let mut source = Initiator::&lt;_&gt;::from(RandGen::new(1_000_000));
     let mut filter = Actor::&lt;_&gt;::from(Client::default());
     let mut log = Terminator::&lt;_&gt;::from(DataLogger::default());</code></pre>
 <p>Each actor requires 3 generic type parameters: the client type and 2 constants: the inputs and outputs sampling rates.
