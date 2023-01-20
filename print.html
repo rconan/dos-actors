@@ -1,0 +1,434 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>GMT DOS ACTORS</title>
+        <meta name="robots" content="noindex" />
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="gmt-actor-model.html"><strong aria-hidden="true">1.</strong> GMT Actors Model</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="actors.html"><strong aria-hidden="true">1.1.</strong> Actors</a></li><li class="chapter-item expanded "><a href="model.html"><strong aria-hidden="true">1.2.</strong> Model</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">GMT DOS ACTORS</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<p><code>gmt_dos-actors</code> is the Rust crate that is the backbone of the computing framework for the integrated model of the <a href="https://www.gmto.org">Giant Magellan Telescope</a>.
+It is based on the <a href="https://en.wikipedia.org/wiki/Actor_model">actor model</a> but specially adapted for integrated modeling purposes.</p>
+<p>In order to use the crate, you must have <a href="https://www.rust-lang.org">Rust</a> installed on your machine and be <a href="https://www.rust-lang.org/learn">familiar</a> with the Rust language</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="gmt-actors-model"><a class="header" href="#gmt-actors-model">GMT Actors Model</a></h1>
+<p>A GMT integrated model is a collection of actors, each actor executing a specific task or set of tasks and exchanging data at predefined sampling rates.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="actors"><a class="header" href="#actors">Actors</a></h1>
+<p>An actor is composed on 3 elements:</p>
+<ul>
+<li>a set of inputs,</li>
+<li>a set of outputs,</li>
+<li>a client.</li>
+</ul>
+<p>Both outputs and inputs are optional but an actor must have at least either one input or one output.
+Inputs and outputs may be sampled at a different rate, but the rate must be the same for all inputs and for all outputs.</p>
+<p><img src="actor-model.svg" alt="Gmt actors" /></p>
+<p>An actor runs within its own thread independently of other actors and perform 3 functions:</p>
+<ol>
+<li>collect and read inputs into the client,</li>
+<li>update the state of the client,</li>
+<li>write and distribute the outputs from the client to other actors.</li>
+</ol>
+<p>These 3 functions are excuted sequentially within a loop.</p>
+<p>A client must comply with the definition of the actor interface.
+The interface consists in 3 traits: <code>Update</code>, <code>Read</code> and <code>Write</code>.
+A client must:</p>
+<ul>
+<li>implement the <code>Update</code> trait,</li>
+<li>have an implementation of the <code>Read</code> trait for each input,</li>
+<li>have an implementation of the <code>Write</code> trait for each output.</li>
+</ul>
+<p>Actor inputs and outputs are given a unique type, usually an empty Enum.
+Each input and output must implement the <code>UniqueIdentifier</code> trait which associated type <code>DataType</code> is set to the primitive type of the client data.</p>
+<p>As an example, lets write an interface for a client which task is to multiply an integer by e.
+Lets define</p>
+<ul>
+<li>the client:</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">#[derive(Default)]
+struct Client {
+   data: i32,
+}</code></pre>
+<ul>
+<li>the input <code>In</code>:</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">#[derive(UID)]
+#[uid(data = &quot;i32&quot;)]
+enum In {}</code></pre>
+<ul>
+<li>the output <code>Out</code>:</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">#[derive(UID)]
+#[uid(data = &quot;f32&quot;)]
+enum Out {}</code></pre>
+<p>Each input and output is given a unique type (here an empty <code>Enum</code>) that implements the <code>UniqueIdentifier</code> trait with the derive macro <code>UID</code>. 
+The input/ouput primitive types (<code>i32</code> for the input and <code>f32</code> for the ouput) are affected to the associated type <code>DataType</code> of the <code>UniqueIdentifier</code> traits.</p>
+<p>And now lets build the interface:</p>
+<ul>
+<li>update is empty, this simple task can be done at the output</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">impl Update for Client {}</code></pre>
+<ul>
+<li>read input</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">impl Read&lt;In&gt; for Client {
+    fn read(&amp;mut self, data: Arc&lt;Data&lt;In&gt;&gt;) {
+        self.data = **data;
+    }
+}
+</code></pre>
+<ul>
+<li>write output</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">impl Write&lt;Out&gt; for Client {
+    fn write(&amp;mut self) -&gt; Option&lt;Arc&lt;Data&lt;Out&gt;&gt;&gt; {
+        Some(Arc::new(Data::new(self.data as f32 * std::f32::consts::E)))
+    }
+}</code></pre>
+<p>Actors exchange their clients data that is contained inside the structure <code>Data</code>. 
+The type of the client data can be anything as long as the input that receives it or the output that sends it, implements the <code>UniqueIdentifier</code> trait.</p>
+<p>Once the actor to client interface has been written, the client can then be used to build an actor.
+Here is the signature of the <code>Actor</code> type:</p>
+<pre><code class="language-rust no_run noplayground">struct Actor&lt;C, const NI: usize = 1, const NO: usize = 1&gt; where C: Update</code></pre>
+<p>An actor takes 3 generic type parameters: </p>
+<ul>
+<li><code>C</code>: the type of the client,</li>
+<li><code>NI</code>: the sampling rate of the inputs,</li>
+<li><code>NO</code>: the sampling rate of the outputs.</li>
+</ul>
+<p>Sampling rates are given as ratio between the simulation sampling frequency and the actor inputs or outputs sampling frequency.
+The where clause required that the client implements the <code>Update</code> trait, meaning that anything can be an actor's client as long as it implements the <code>Update</code> trait.</p>
+<p>Actors implements the <a href="https://doc.rust-lang.org/std/convert/trait.From.html">From</a> trait for any type that implements the <code>Update</code> trait. 
+As a consequence, a client can be converted into an actor with:</p>
+<pre><code class="language-rust no_run noplayground">let actor = Actor::&lt;Client,1,1&gt;::from(client);</code></pre>
+<p>When using the default value (1) for the inputs and outputs rate, they can be omitted:</p>
+<pre><code class="language-rust no_run noplayground">let actor = Actor::&lt;Client&gt;::from(client);</code></pre>
+<p>In that case, the compiler is also able to infer the client type:</p>
+<pre><code class="language-rust no_run noplayground">let actor = Actor::&lt;_&gt;::from(client);</code></pre>
+<p>or we can use the <a href="https://doc.rust-lang.org/std/convert/trait.Into.html">Into</a> syntax:</p>
+<pre><code class="language-rust no_run noplayground">let actor: Actor::&lt;_&gt; = client.into();</code></pre>
+<p>An actor with no inputs must set <code>NI</code> to 0 or use the type alias <code>Initiator</code> defined as <code>Initiator&lt;C, const NO: usize = 1&gt; = Actor&lt;C, 0, NO&gt;</code>:</p>
+<pre><code class="language-rust no_run noplayground">let no_input_actor = Initiator::&lt;_&gt;::from(client);</code></pre>
+<p>An actor with no outputs must set <code>NO</code> to 0 or use the type alias <code>Terminator</code> defined as <code>Terminator&lt;C, const NI: usize = 1&gt; = Actor&lt;C, NI, 0&gt;</code>:</p>
+<pre><code class="language-rust no_run noplayground">let no_output_actor = Terminator::&lt;_&gt;::from(client);</code></pre>
+<p>The conversion methods <code>from</code> and <code>into</code> consume their arguments meaning that the client is no longer available once the actor has been created.
+This is not always desirable, instead the <code>new</code> method of  <code>Actor</code> can be used to pass a reference to the client into an actor.</p>
+<p>It is worth noting that all the inputs and outputs of an actor will also be given a copy of the reference to the client in order to pass data to it and to get data from it.
+And because an actor performs many of its own tasks asynchronously, a client must first be wrapped into the thread-safe smart pointers <a href="https://doc.rust-lang.org/std/sync/struct.Arc.html">Arc</a> and <a href="https://doc.rust-lang.org/std/sync/struct.Mutex.html">Mutex</a> like so</p>
+<pre><code class="language-rust no_run noplayground">let thread_safe_client = Arc::new(Mutex::new(client));</code></pre>
+<p>followed by the actor declaration</p>
+<pre><code class="language-rust no_run noplayground">let actor = Actor::new(thread_safe_client);</code></pre>
+<p>Note that all types that implements the <code>Update</code> trait can be converted into a thread safe type with</p>
+<pre><code class="language-rust no_run noplayground">let thread_safe_client = client.into_arcx();</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="model"><a class="header" href="#model">Model</a></h1>
+<p>A model is a network of clients connected to each other by pairs of output/input.
+The actor/client interfaces specify the tasks that are going to be executed and the topology of the network defines the order in which the tasks are executed.</p>
+<p>A pair of output/input defines a unique <a href="https://docs.rs/flume/latest/flume/">channel</a>  with a sender and a receiver.
+The sender is given to the output and the receiver to the input. </p>
+<p>Each actor performs the following task sequentially in a never ending inner loop and asynchronously with respect to the other actors :</p>
+<ol>
+<li>if any inputs, receive inputs &amp; invoke client <code>Read</code> trait implementation on each input,</li>
+<li>update client state with the client <code>Update</code> trait implementation,</li>
+<li>if any outputs, invoke the client <code>Write</code> trait implementation on each output &amp; send outputs.</li>
+</ol>
+<p>The default behavior of an actor is to pause the inner loop both until all the inputs have been received and until all the outputs have been received by other actors.</p>
+<p><img src="model.svg" alt="Model" /></p>
+<p>In the model above, the network topology imposes the following sequence of events (from top to bottom):</p>
+<div class="table-wrapper"><table><thead><tr><th>A</th><th>B</th><th>C</th><th>D</th></tr></thead><tbody>
+<tr><td><code>Update</code></td><td>-</td><td>-</td><td>-</td></tr>
+<tr><td><code>Write::&lt;AB,ABC&gt;</code></td><td>-</td><td>-</td><td>-</td></tr>
+<tr><td>-</td><td><code>Read::&lt;AB,ABC&gt;</code></td><td><code>Read::&lt;ABC&gt;</code></td><td>-</td></tr>
+<tr><td><code>Update</code></td><td>-</td><td><code>Update</code></td><td>-</td></tr>
+<tr><td><code>Write::&lt;AB,ABC&gt;</code></td><td>-</td><td><code>Write::&lt;CB,CD&gt;</code></td><td>-</td></tr>
+<tr><td>-</td><td><code>Read::&lt;CB&gt;</code></td><td>-</td><td><code>Read::&lt;CD&gt;</code></td></tr>
+<tr><td>-</td><td><code>Update</code></td><td><code>Read::&lt;ABC&gt;</code></td><td>-</td></tr>
+<tr><td>-</td><td><code>Write::&lt;BD1,BD2&gt;</code></td><td><code>Update</code></td><td>-</td></tr>
+<tr><td>-</td><td>-</td><td><code>Write::&lt;CB,CD&gt;</code></td><td><code>Read::&lt;BD1,BD2&gt;</code></td></tr>
+<tr><td>-</td><td><code>Read::&lt;AB,ABC,CB&gt;</code></td><td>-</td><td><code>Update</code></td></tr>
+<tr><td><code>Update</code></td><td><code>Update</code></td><td>-</td><td><code>Read::&lt;CD&gt;</code></td></tr>
+<tr><td>...</td><td></td><td></td><td></td></tr>
+</tbody></table>
+</div>
+<p>Note that events in the same row may occur simultaneously thanks to the asynchronous nature of the actors.</p>
+<p>Laying out the network consists in building actors outputs and relaying them to other actors inputs.
+A pair of output and input must meet the following requirements:</p>
+<ul>
+<li>the client of the output actor must implement the trait <code>Write&lt;I&gt;</code></li>
+<li>the client of the input actor must implement the trait <code>Read&lt;O&gt;</code></li>
+<li><code>I</code> and <code>O</code> must be of the same type i.e. <code>I=O</code></li>
+<li>the ouput rate <code>NO</code> must be equal to the input rate <code>NI</code> (<code>NO=NI</code>)</li>
+</ul>
+<p>A model will not compile in any of the above requirements is not met.</p>
+<p>For client <code>A</code> that gives:</p>
+<pre><code class="language-rust no_run noplayground">A.add_output().build::&lt;AB&gt;().into_input(&amp;mut B);
+A.add_output().multiplex(2).build::&lt;ABC&gt;()
+   .into_input(&amp;mut B)
+   .into_input(&amp;mut C);</code></pre>
+<p>As illustrated above, an output can be multiplexed and sent to multiple inputs.</p>
+<p>Then for <code>B</code>:</p>
+<pre><code class="language-rust no_run noplayground">B.add_output().build::&lt;BD1&gt;().into_input(&amp;mut D);
+B.add_output().build::&lt;BD2&gt;().into_input(&amp;mut D);</code></pre>
+<p>and <code>C</code> :</p>
+<pre><code class="language-rust no_run noplayground">C.add_output().build::&lt;CB&gt;().into_input(&amp;mut B);
+C.add_output().build::&lt;CD&gt;().into_input(&amp;mut D);</code></pre>
+<p>Per default, an actor inner loop is blocked until all its outputs have been read by the associated inputs as a guarantee that the data has been effectively received.</p>
+<p>This is not always necessary, particulary for a client that acts as a data sink like <code>D</code>.
+The links to <code>D</code> can be rewritten:</p>
+<pre><code class="language-rust no_run noplayground">B.add_output().unbounded().build::&lt;BD1&gt;().into_input(&amp;mut D);
+B.add_output().unbounded().build::&lt;BD2&gt;().into_input(&amp;mut D);
+C.add_output().unbounded().build::&lt;CD&gt;().into_input(&amp;mut D);</code></pre>
+<p>and the outputs <code>BD1</code>, <code>BD2</code> and <code>CD</code> won't block their actors inner loop anymore.</p>
+<p>Once all the connections have been set-up, we can assemble the actors into a model:</p>
+<pre><code class="language-rust no_run noplayground">let mut model = Model::new(vec![Box::new(A),Box::new(B),Box::new(C),Box::new(D)]);</code></pre>
+<p>check the model for errors, run it and wait for it to finish:</p>
+<pre><code class="language-rust no_run noplayground">model.check()?.run().await?;</code></pre>
+<p>Note that the <code>run</code> method cannot be invoked on an unchecked model.</p>
+<p>A flow chart of the model can be obtained with the <code>flowchart</code> method, combining all the <code>Model</code> methods in a single call gives:</p>
+<pre><code class="language-rust no_run noplayground">Model::new(vec![Box::new(A),
+               Box::new(B),
+               Box::new(C),
+               Box::new(D)])
+   .flowchart()
+   .check()?
+   .run()
+   .await?;</code></pre>
+<p>The flowchart is written to the file <code>integrated_model.dot.svg</code>.</p>
+<p>When an output detects that the data the client has written to its buffer is <code>None</code>, it closes the channel it belongs to and return an error to the actor that forces the actor to shut down.</p>
+<p>When an actor shuts down its inputs and outputs close the channels they are part of.
+A closed channel also generates an error that is caught by the actors at both end of the channel and forces these actors to also shut down and so, by a domino effect, all the actors are terminated and the model gracefully comes to an end.</p>
+<h2 id="working-example"><a class="header" href="#working-example">Working example</a></h2>
+<p>Building upon the example in the previous section, lets add 2 more clients:</p>
+<ul>
+<li>a random generator</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">struct RandGen {
+    data: Vec&lt;i32&gt;,
+}
+impl RandGen {
+    pub fn new(n_sample: usize) -&gt; Self {
+        let mut data = vec![0i32; n_sample];
+        let mut rng = WyRand::new();
+        rng.fill(&amp;mut data);
+        Self { data }
+    }
+}
+impl Update for RandGen {}
+impl Write&lt;In&gt; for RandGen {
+    fn write(&amp;mut self) -&gt; Option&lt;Arc&lt;Data&lt;In&gt;&gt;&gt; {
+        self.data.pop().map(|val| Arc::new(Data::new(val)))
+    }
+}</code></pre>
+<ul>
+<li>a data logger</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">#[derive(Default)]
+struct DataLogger {
+    data: Vec&lt;f32&gt;,
+}
+impl Update for DataLogger {}
+impl Read&lt;Out&gt; for DataLogger {
+    fn read(&amp;mut self, data: Arc&lt;Data&lt;Out&gt;&gt;) {
+        self.data.push(**data);
+    }
+}</code></pre>
+<p>With all the clients defined with an actor/client interface, the actors are instanciated with</p>
+<pre><code class="language-rust no_run noplayground">    let mut source = Initiator::&lt;_&gt;::from(RandGen::new(100_000));
+    let mut filter = Actor::&lt;_&gt;::from(Client::default());
+    let mut log = Terminator::&lt;_&gt;::from(DataLogger::default());</code></pre>
+<p>Each actor requires 3 generic type parameters: the client type and 2 constants: the inputs and outputs sampling rates.
+The inputs rate is zero if the actor has no inputs and the outputs rate is zero if the actor has no outputs.
+The default sampling rate for inputs and outputs is 1.</p>
+<p>The next step is to build the network. The links between actors are established by successively creating channels between an actor output and the input of another actor, both the output and the input must have been given the same type and the same sampling rate. </p>
+<pre><code class="language-rust no_run noplayground">    source.add_output().build::&lt;In&gt;().into_input(&amp;mut filter);
+    filter
+        .add_output()
+        .unbounded()
+        .build::&lt;Out&gt;()
+        .into_input(&amp;mut log);</code></pre>
+<p>Now the model can be assembled, charted, checked for errors and run:</p>
+<pre><code class="language-rust no_run noplayground">    Model::new(vec![Box::new(source), Box::new(filter), Box::new(log)])
+        .flowchart()
+        .check()?
+        .run()
+        .await?;</code></pre>
+<p><img src="integrated_model.dot.svg" alt="Integrated Model" /></p>
+<p>The model stop itself when the data from the <code>RandGen</code> client is exhausted.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+    </body>
+</html>

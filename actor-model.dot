@@ -1,0 +1,17 @@
+digraph G {
+    overlap = scale;
+    splines = true;
+    bgcolor = gray24;
+    subgraph {
+        node [shape = box; width = 1.5; style = "rounded,filled"; fillcolor = lightgray;];
+        Client;
+    }
+    node [shape = point; fillcolor = gray24; color = lightgray; labelfloat = true];
+    edge [arrowhead = vee, fontsize = 9, fontcolor = lightgray, labelfloat = true, color = 1, colorscheme = dark28];
+    in1 -> Client [label = "Input1";];
+    in2 -> Client [label = "Input2";];
+    in3 -> Client [label = "Input3";];
+    edge [arrowhead = none, fontcolor = lightgray, colorscheme = dark28];
+    Client -> out1 [label = "Output1";];
+    Client -> out2 [label = "Output2";];
+}

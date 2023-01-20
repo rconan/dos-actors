@@ -1,1 +1,0 @@
-initSidebarItems({"enum":[["CS",""],["M1Loads",""],["M2Loads",""],["MountLoads",""],["WindLoads","List of  all the CFD wind loads"],["WindLoadsError",""]],"struct":[["Builder","[CfdLoads] builder"],["CfdLoads","The CFD loads"],["FOH",""],["ZOH",""]],"type":[["Result",""]]});

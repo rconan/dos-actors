@@ -1,1 +1,0 @@
-initSidebarItems({"enum":[["SegmentPiston","Segment piston in the GMT exit pupil"],["SegmentTipTilt","Segment tip and tilt in the GMT focal plane"],["TipTilt","Tip and tilt in the GMT focal plane"]]});
