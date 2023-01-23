@@ -80,7 +80,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="gmt-actor-model.html"><strong aria-hidden="true">1.</strong> GMT Actors Model</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="actors.html" class="active"><strong aria-hidden="true">1.1.</strong> Actors</a></li><li class="chapter-item expanded "><a href="model.html"><strong aria-hidden="true">1.2.</strong> Model</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="gmt-actor-model.html"><strong aria-hidden="true">1.</strong> GMT Actors Model</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="actors.html" class="active"><strong aria-hidden="true">1.1.</strong> Actors</a></li><li class="chapter-item expanded "><a href="model.html"><strong aria-hidden="true">1.2.</strong> Model</a></li><li class="chapter-item expanded "><a href="client.html"><strong aria-hidden="true">1.3.</strong> Clients</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="clients/sig-log.html"><strong aria-hidden="true">1.3.1.</strong> Signals & Logger</a></li></ol></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -114,6 +114,12 @@
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/rconan/dos-actors/tree/main/book" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/rconan/dos-actors/edit/main/book/src/actors.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
                         </a>
 
                     </div>
@@ -245,7 +251,7 @@ This is not always desirable, instead the <code>new</code> method of  <code>Acto
 And because an actor performs many of its own tasks asynchronously, a client must first be wrapped into the thread-safe smart pointers <a href="https://doc.rust-lang.org/std/sync/struct.Arc.html">Arc</a> and <a href="https://doc.rust-lang.org/std/sync/struct.Mutex.html">Mutex</a> like so</p>
 <pre><code class="language-rust no_run noplayground">let thread_safe_client = Arc::new(Mutex::new(client));</code></pre>
 <p>followed by the actor declaration</p>
-<pre><code class="language-rust no_run noplayground">let actor = Actor::new(thread_safe_client);</code></pre>
+<pre><code class="language-rust no_run noplayground">let actor = Actor::new(thread_safe_client.clone());</code></pre>
 <p>Note that all types that implements the <code>Update</code> trait can be converted into a thread safe type with</p>
 <pre><code class="language-rust no_run noplayground">let thread_safe_client = client.into_arcx();</code></pre>
 <p>A unique name can be given to an actor. 
@@ -255,7 +261,7 @@ The actor's name (here &quot;aleph&quot;) can be set either like this:</p>
 <p>or like this</p>
 <pre><code class="language-rust no_run noplayground">let actor: Actor::&lt;_&gt; = (client, &quot;aleph&quot;).into();</code></pre>
 <p>or even like this</p>
-<pre><code class="language-rust no_run noplayground">let actor = Actor::new(thread_safe_client).name(&quot;aleph&quot;);</code></pre>
+<pre><code class="language-rust no_run noplayground">let actor = Actor::new(thread_safe_client.clone()).name(&quot;aleph&quot;);</code></pre>
 
                     </main>
 

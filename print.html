@@ -81,7 +81,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="gmt-actor-model.html"><strong aria-hidden="true">1.</strong> GMT Actors Model</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="actors.html"><strong aria-hidden="true">1.1.</strong> Actors</a></li><li class="chapter-item expanded "><a href="model.html"><strong aria-hidden="true">1.2.</strong> Model</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="gmt-actor-model.html"><strong aria-hidden="true">1.</strong> GMT Actors Model</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="actors.html"><strong aria-hidden="true">1.1.</strong> Actors</a></li><li class="chapter-item expanded "><a href="model.html"><strong aria-hidden="true">1.2.</strong> Model</a></li><li class="chapter-item expanded "><a href="client.html"><strong aria-hidden="true">1.3.</strong> Clients</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="clients/sig-log.html"><strong aria-hidden="true">1.3.1.</strong> Signals & Logger</a></li></ol></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -115,6 +115,9 @@
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/rconan/dos-actors/tree/main/book" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
                         </a>
 
                     </div>
@@ -253,7 +256,7 @@ This is not always desirable, instead the <code>new</code> method of  <code>Acto
 And because an actor performs many of its own tasks asynchronously, a client must first be wrapped into the thread-safe smart pointers <a href="https://doc.rust-lang.org/std/sync/struct.Arc.html">Arc</a> and <a href="https://doc.rust-lang.org/std/sync/struct.Mutex.html">Mutex</a> like so</p>
 <pre><code class="language-rust no_run noplayground">let thread_safe_client = Arc::new(Mutex::new(client));</code></pre>
 <p>followed by the actor declaration</p>
-<pre><code class="language-rust no_run noplayground">let actor = Actor::new(thread_safe_client);</code></pre>
+<pre><code class="language-rust no_run noplayground">let actor = Actor::new(thread_safe_client.clone());</code></pre>
 <p>Note that all types that implements the <code>Update</code> trait can be converted into a thread safe type with</p>
 <pre><code class="language-rust no_run noplayground">let thread_safe_client = client.into_arcx();</code></pre>
 <p>A unique name can be given to an actor. 
@@ -263,7 +266,7 @@ The actor's name (here &quot;aleph&quot;) can be set either like this:</p>
 <p>or like this</p>
 <pre><code class="language-rust no_run noplayground">let actor: Actor::&lt;_&gt; = (client, &quot;aleph&quot;).into();</code></pre>
 <p>or even like this</p>
-<pre><code class="language-rust no_run noplayground">let actor = Actor::new(thread_safe_client).name(&quot;aleph&quot;);</code></pre>
+<pre><code class="language-rust no_run noplayground">let actor = Actor::new(thread_safe_client.clone()).name(&quot;aleph&quot;);</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="model"><a class="header" href="#model">Model</a></h1>
 <p>A model is a network of clients connected to each other by pairs of output/input.
 The actor/client interfaces specify the tasks that are going to be executed and the topology of the network defines the order in which the tasks are executed.</p>
@@ -399,6 +402,144 @@ The default sampling rate for inputs and outputs is 1.</p>
         .await?;</code></pre>
 <p><img src="integrated_model.dot.svg" alt="Integrated Model" /></p>
 <p>The model stop itself when the data from the <code>RandGen</code> client is exhausted.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="clients"><a class="header" href="#clients">Clients</a></h1>
+<p>The crate <code>gmt_dos-actors</code> includes a library of clients for signals generation and signal processing.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="signals--logger"><a class="header" href="#signals--logger">Signals &amp; Logger</a></h1>
+<p>In the following, we will introduce the <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Signals.html"><code>signals</code></a>, <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Source.html"><code>Source</code></a>, <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Logging.html"><code>Logging</code></a> and <a href="file:///media/rconan/projects/target/doc/gmt_dos_actors/clients/struct.Timer.html"><code>Timer</code></a> clients.</p>
+<p>Both <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Signals.html"><code>Signals</code></a> and <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Source.html"><code>Source</code></a> are signals generators and
+both are multi-channels with a single multiplexed output.</p>
+<p>The signals generated with <code>Signals</code> are either a constant, a sinusoide, a ramp, a sinusoide or white-noise. For example, here is an <code>Actor</code> which client is a 2 channels <code>Signals</code>, each channel with the same sinusoide but out-of-phase:</p>
+<pre><code class="language-rust no_run noplayground">        let n_step = 9;
+        let mut signals: Initiator&lt;_&gt; = Signals::new(2, n_step)
+            .channel(
+                0,
+                Signal::Sinusoid {
+                    amplitude: 1f64,
+                    sampling_frequency_hz: (n_step - 1) as f64,
+                    frequency_hz: 1f64,
+                    phase_s: 0f64,
+                },
+            )
+            .channel(
+                1,
+                Signal::Sinusoid {
+                    amplitude: 1f64,
+                    sampling_frequency_hz: (n_step - 1) as f64,
+                    frequency_hz: 1f64,
+                    phase_s: 0.5f64,
+                },
+            )
+            .into();</code></pre>
+<p><code>Source</code> signals are user provided, the multiplexed channels are given as a single flatten vector argument:</p>
+<pre><code class="language-rust no_run noplayground">        let mut source: Initiator&lt;_&gt; = Source::new(
+            (0..n_step)
+                .flat_map(|x| vec![x as f64, (n_step - x - 1) as f64]) // 2 channels
+                .collect(),
+            2,
+        )
+        .into();</code></pre>
+<p>The <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Logging.html"><code>Logging</code></a> client simply accumulates all its inputs into a single vector. <code>Logging</code> requires all inputs signals to be of the same type. 
+An actor for a <code>Logging</code> client with entries for both the <code>Signals</code> and <code>Source</code> clients is declared with</p>
+<pre><code class="language-rust no_run noplayground">        let logging = Logging::&lt;f64&gt;::new(2).into_arcx();
+        let mut logger = Terminator::&lt;_&gt;::new(logging.clone());</code></pre>
+<p>Building a <code>Model</code> out of the 3 actors:</p>
+<pre><code class="language-rust no_run noplayground">#[derive(UID)]
+enum Sinusoides {}
+#[derive(UID)]
+enum UpDown {}
+
+        signals
+            .add_output()
+            .unbounded()
+            .build::&lt;Sinusoides&gt;()
+            .into_input(&amp;mut logger);
+        source
+            .add_output()
+            .unbounded()
+            .build::&lt;UpDown&gt;()
+            .into_input(&amp;mut logger);
+
+        Model::new(vec_box![signals, source, logger])
+            .name(&quot;signals-logger&quot;)
+            .flowchart()
+            .check()?
+            .run()
+            .await?;</code></pre>
+<p>gives:</p>
+<p><img src="clients/signals-logger.dot.svg" alt="Signals &amp; Loggers Model" /></p>
+<p>and the following data has been logged:</p>
+<pre><code class="language-rust no_run noplayground">        println!(&quot;Logs:&quot;);
+        (*logging.lock().await)
+            .chunks()
+            .enumerate()
+            .for_each(|(i, x)| println!(&quot;{}: {:+.3?}&quot;, i, x));</code></pre>
+<p><img src="clients/sig-log_out1.png" alt="Signals &amp; Loggers Model output" /></p>
+<p>The <a href="file:///media/rconan/projects/target/doc/gmt_dos_actors/clients/struct.Timer.html"><code>Timer</code></a> client does not generate a new signal instead it adds a beat to the model and takes as input argument a number of beat. 
+A <code>Model</code> with a timer will terminate after the last beat.
+Lets update the previous <code>Model</code> with a timer which number of beat is half the number of sample that the signals clients are set to generate:</p>
+<pre><code class="language-rust no_run noplayground">        let mut timer: Initiator&lt;_&gt; = Timer::new(n_step / 2).into();</code></pre>
+<p>The <code>signals</code> and <code>source</code> clients are modified to accept the <code>timer</code> input:</p>
+<pre><code class="language-rust no_run noplayground">        let mut signals: Actor&lt;_&gt; = Signals::new(2, n_step)
+            .channel(
+                0,
+                Signal::Sinusoid {
+                    amplitude: 1f64,
+                    sampling_frequency_hz: (n_step - 1) as f64,
+                    frequency_hz: 1f64,
+                    phase_s: 0f64,
+                },
+            )
+            .channel(
+                1,
+                Signal::Sinusoid {
+                    amplitude: 1f64,
+                    sampling_frequency_hz: (n_step - 1) as f64,
+                    frequency_hz: 1f64,
+                    phase_s: 0.5f64,
+                },
+            )
+            .into();
+
+        let mut source: Actor&lt;_&gt; = Source::new(
+            (0..n_step)
+                .flat_map(|x| vec![x as f64, (n_step - x - 1) as f64])
+                .collect(),
+            2,
+        )
+        .into();</code></pre>
+<p><code>logger</code> remains the same and the timer is connected to both <code>signals</code> and <code>source</code>:</p>
+<pre><code class="language-rust no_run noplayground">        timer
+            .add_output()
+            .multiplex(2)
+            .build::&lt;Tick&gt;()
+            .into_input(&amp;mut signals)
+            .into_input(&amp;mut source);
+        signals
+            .add_output()
+            .unbounded()
+            .build::&lt;Sinusoides&gt;()
+            .into_input(&amp;mut logger);
+        source
+            .add_output()
+            .unbounded()
+            .build::&lt;UpDown&gt;()
+            .into_input(&amp;mut logger);</code></pre>
+<p>Note that for a client to allow <code>Timer</code> as input, it must implement the <code>TimerMarker</code> trait.
+The new model looks like this:</p>
+<pre><code class="language-rust no_run noplayground">        Model::new(vec_box![timer, signals, source, logger])
+            .name(&quot;signals-logger-trunc&quot;)
+            .flowchart()
+            .check()?
+            .run()
+            .await?;</code></pre>
+<p><img src="clients/signals-logger-trunc.dot.svg" alt="Signals &amp; Loggers Model" /></p>
+<p>and the following data has been logged:</p>
+<pre><code class="language-rust no_run noplayground">        println!(&quot;Logs:&quot;);
+        (*logging.lock().await)
+            .chunks()
+            .enumerate()
+            .for_each(|(i, x)| println!(&quot;{}: {:+.3?}&quot;, i, x));</code></pre>
+<p><img src="clients/sig-log_out2.png" alt="Signals &amp; Loggers Model output" /></p>
 
                     </main>
 
