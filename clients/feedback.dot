@@ -1,0 +1,21 @@
+digraph G {
+    overlap = scale;
+    splines = true;
+    bgcolor = gray24;
+    subgraph {
+        node [shape = box; width = 1.5; style = "rounded,filled"; fillcolor = lightgray;];
+        A;
+        B;
+        C;
+    }
+    node [shape = point; fillcolor = gray24; color = lightgray; labelfloat = true;];
+    edge [arrowhead = vee; fontsize = 9; fontcolor = lightgray; labelfloat = true; color = 1; colorscheme = dark28;];
+    U -> B [label = "U";];
+    E -> C [label = "E";];
+    Y -> B [label = "Y";];
+    
+    edge [arrowhead = none; fontcolor = lightgray; colorscheme = dark28;];
+    A -> U;
+    B -> E;
+    C -> Y;
+}
