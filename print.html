@@ -81,7 +81,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="gmt-actor-model.html"><strong aria-hidden="true">1.</strong> GMT Actors Model</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="actors.html"><strong aria-hidden="true">1.1.</strong> Actors</a></li><li class="chapter-item expanded "><a href="model.html"><strong aria-hidden="true">1.2.</strong> Model</a></li><li class="chapter-item expanded "><a href="client.html"><strong aria-hidden="true">1.3.</strong> Clients</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="clients/sig-log.html"><strong aria-hidden="true">1.3.1.</strong> Signals & Logger</a></li><li class="chapter-item expanded "><a href="clients/feedback.html"><strong aria-hidden="true">1.3.2.</strong> Feedback System</a></li></ol></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="gmt-actor-model.html"><strong aria-hidden="true">1.</strong> GMT Actors Model</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="actors.html"><strong aria-hidden="true">1.1.</strong> Actors</a></li><li class="chapter-item expanded "><a href="model.html"><strong aria-hidden="true">1.2.</strong> Model</a></li><li class="chapter-item expanded "><a href="client.html"><strong aria-hidden="true">1.3.</strong> Clients</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="clients/sig-log.html"><strong aria-hidden="true">1.3.1.</strong> Signals & Logger</a></li><li class="chapter-item expanded "><a href="clients/feedback.html"><strong aria-hidden="true">1.3.2.</strong> Feedback System</a></li><li class="chapter-item expanded "><a href="clients/multirate.html"><strong aria-hidden="true">1.3.3.</strong> Multirate System</a></li></ol></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -658,6 +658,215 @@ impl Write&lt;E&gt; for Sum {
                 .map(|(l, r)| l + r)
                 .collect(),
         )))
+    }
+}</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="multirate-system"><a class="header" href="#multirate-system">Multirate System</a></h1>
+<p>A multirate system mixes signals sampled at different frame rates.
+The flowchart below is a depiction of such a system implemented with <code>gmt_dos-actors</code> where the sample rate of the inputs and outputs (IO) is color coded according to the following table of sample rates:</p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: center">green</th><th style="text-align: center">orange</th><th style="text-align: center">purple</th></tr></thead><tbody>
+<tr><td style="text-align: center">1</td><td style="text-align: center">4</td><td style="text-align: center">2</td></tr>
+</tbody></table>
+</div>
+<p><img src="clients/multirate-model.dot.svg" alt="Multirate model" /></p>
+<p>The purple IO and orange IO are, respectively, 1/2 and 1/4 the sampling rate of the green IO as show in the outputs record:</p>
+<p><img src="clients/multirate_out.png" alt="Multirate logs" /></p>
+<p>An actor with an output rate (<code>NO</code>) greater than the input rate (<code>NI</code>) (i.e. <code>NO&gt;NI</code>), downsamples the outputs according to the ratio <code>NI:NO</code>.</p>
+<p>An actor with an input rate (<code>NI</code>) greater than the input rate (<code>NO</code>) (i.e. <code>NI&gt;NO</code>), upsamples the outputs with a zero-order-hold, the zero-order-hold is <code>NI/NO</code> sample long.</p>
+<p>In both cases, downsampling and upsampling,
+the <code>Update</code>method of the actor's client is invoked at the input rate.</p>
+<p>The <code>gmt_dos-actors</code> implementation of the multirate system above starts by setting the downsampling and upsampling rates:</p>
+<pre><code class="language-rust no_run noplayground">const UPRATE: usize = 2;
+const DOWNRATE: usize = 4;</code></pre>
+<p>The input signal is a ramp starting a 0 with unitary step increments:</p>
+<pre><code class="language-rust no_run noplayground">    let mut signal: Initiator&lt;_&gt; = Signals::new(1, 20)
+        .channel(0, Signal::Ramp { a: 1f64, b: 0f64 })
+        .into();</code></pre>
+<p>The <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Sampler.html">Sampler</a> client is used for rate transition:</p>
+<ul>
+<li>downsampling from 1 to 4</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">   let mut downsampler: Actor&lt;_, 1, DOWNRATE&gt; = (
+       Sampler::default(),
+       format!(
+           r&quot;1:{}
+Downsampling&quot;,
+           DOWNRATE
+       ),
+   )
+       .into();</code></pre>
+<ul>
+<li>upsampling from 4 to 2</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">    let mut upsampler: Actor&lt;_, DOWNRATE, UPRATE&gt; = (
+        Sampler::default(),
+        format!(
+            &quot;{}:{}
+Upsampling&quot;,
+            DOWNRATE, UPRATE
+        ),
+    )
+        .into();</code></pre>
+<p>Downsampling is also the results of the <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Average.html">Average</a> client which averages the input over <code>NO/NI</code> samples:</p>
+<pre><code class="language-rust no_run noplayground">    let mut averager: Actor&lt;_, 1, DOWNRATE&gt; = (
+        Average::new(1),
+        format!(
+            &quot;1/{}
+Average&quot;,
+            DOWNRATE
+        ),
+    )
+        .into();</code></pre>
+<p>The downsampled and averaged signals, both with the same sampling rate, are recombined with the <code>SignedDiff</code> client which computes the difference between both signals and alternates the output sign:</p>
+<pre><code class="language-rust no_run noplayground">    let mut diff: Actor&lt;SignedDiff, DOWNRATE, DOWNRATE&gt; =
+        (SignedDiff::new(), &quot;-(Y - A)*sign(x[i-1])&quot;).into();</code></pre>
+<p>In the next step, we define 3 loggers, one for each sampling rate:</p>
+<ul>
+<li>1</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">   let logging = Logging::&lt;f64&gt;::new(1).into_arcx();
+   let mut logger = Terminator::&lt;_&gt;::new(logging.clone());</code></pre>
+<ul>
+<li>4</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">  let down_logging = Logging::&lt;f64&gt;::new(2).into_arcx();
+  let mut down_logger = Terminator::&lt;_, DOWNRATE&gt;::new(down_logging.clone()).name(
+      &quot;Down
+Logging&quot;,
+  );</code></pre>
+<ul>
+<li>2</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">  let up_logging = Logging::&lt;f64&gt;::new(1).into_arcx();
+  let mut up_logger = Terminator::&lt;_, UPRATE&gt;::new(up_logging.clone()).name(
+      &quot;Up
+Logging&quot;,
+  );</code></pre>
+<p>Then it's a matter of defining inputs and outputs:</p>
+<pre><code class="language-rust no_run noplayground">#[derive(UID)]
+enum U {}
+#[derive(UID)]
+enum Y {}
+#[derive(UID)]
+enum DY {}
+#[derive(UID)]
+enum Z {}
+#[derive(UID)]
+enum A {}</code></pre>
+<p>building the network:</p>
+<pre><code class="language-rust no_run noplayground">  signal
+      .add_output()
+      .multiplex(3)
+      .build::&lt;U&gt;()
+      .into_input(&amp;mut logger)
+      .into_input(&amp;mut downsampler)
+      .into_input(&amp;mut averager);
+  downsampler
+      .add_output()
+      .multiplex(2)
+      .build::&lt;Y&gt;()
+      .into_input(&amp;mut diff)
+      .into_input(&amp;mut down_logger);
+  diff.add_output().build::&lt;Z&gt;().into_input(&amp;mut upsampler);
+  upsampler
+      .add_output()
+      .build::&lt;Z&gt;()
+      .into_input(&amp;mut up_logger);
+  averager
+      .add_output()
+      .multiplex(2)
+      .build::&lt;A&gt;()
+      .into_input(&amp;mut diff)
+      .into_input(&amp;mut down_logger);</code></pre>
+<p>and running the model:</p>
+<pre><code class="language-rust no_run noplayground">  Model::new(vec_box![
+      signal,
+      downsampler,
+      upsampler,
+      diff,
+      down_logger,
+      logger,
+      up_logger,
+      averager
+  ])
+  .name(&quot;multirate-model&quot;)
+  .flowchart()
+  .check()?
+  .run()
+  .await?;</code></pre>
+<p>Finally, the logged ouputs are synchronized by post-proccessing the saved data while remembering that if the sampling rate of the ramp signal is 1 and its time step is <code>i</code>, then the time step of the downsampled and upsampled signals are derived from <code>DOWNRATE * (i + 1) - 1</code> and <code>UPRATE * i + DOWNRATE - 1</code>, respectively.</p>
+<pre><code class="language-rust no_run noplayground">  let mut data: HashMap&lt;usize, Vec&lt;f64&gt;&gt; = HashMap::new();
+
+  (*logging.lock().await)
+      .chunks()
+      .enumerate()
+      .for_each(|(i, x)| data.entry(i).or_insert(vec![f64::NAN; 4])[0] = x[0]);
+
+  (*down_logging.lock().await)
+      .chunks()
+      .enumerate()
+      .for_each(|(i, x)| {
+          data.entry(DOWNRATE * (i + 1) - 1)
+              .or_insert(vec![f64::NAN; 4])[1..3]
+              .iter_mut()
+              .zip(x)
+              .for_each(|(v, x)| *v = *x);
+      });
+
+  (*up_logging.lock().await)
+      .chunks()
+      .enumerate()
+      .for_each(|(i, x)| {
+          data.entry(UPRATE * i + DOWNRATE - 1)
+              .or_insert(vec![f64::NAN; 4])[3] = x[0]
+      });
+
+  // Printing the time table
+  let mut sorted_data: Vec&lt;_&gt; = data.iter().collect();
+  sorted_data.sort_by_key(|data| data.0);
+  println!(&quot;Step: [  U ,  Y  ,  A  ,  Z  ]&quot;);
+  sorted_data
+      .iter()
+      .for_each(|(k, v)| println!(&quot;{:4}: {:4.1?}&quot;, k, v));</code></pre>
+<h4 id="implementation-of-the-signeddiff-client"><a class="header" href="#implementation-of-the-signeddiff-client">Implementation of the <code>SignedDiff</code> client:</a></h4>
+<pre><code class="language-rust no_run noplayground">pub struct SignedDiff {
+    left: Arc&lt;Data&lt;Y&gt;&gt;,
+    right: Arc&lt;Data&lt;A&gt;&gt;,
+    delta: Option&lt;Vec&lt;f64&gt;&gt;,
+}
+impl SignedDiff {
+    pub fn new() -&gt; Self {
+        Self {
+            left: Arc::new(Data::new(vec![])),
+            right: Arc::new(Data::new(vec![])),
+            delta: None,
+        }
+    }
+}
+impl Update for SignedDiff {
+    fn update(&amp;mut self) {
+        self.left
+            .iter()
+            .zip(self.right.iter())
+            .map(|(l, r)| l - r)
+            .zip(self.delta.get_or_insert(vec![0f64; (**self.left).len()]))
+            .for_each(|(d, delta)| *delta = -d * delta.signum());
+    }
+}
+impl Read&lt;A&gt; for SignedDiff {
+    fn read(&amp;mut self, data: Arc&lt;Data&lt;A&gt;&gt;) {
+        self.right = data.clone();
+    }
+}
+impl Read&lt;Y&gt; for SignedDiff {
+    fn read(&amp;mut self, data: Arc&lt;Data&lt;Y&gt;&gt;) {
+        self.left = data.clone();
+    }
+}
+impl Write&lt;Z&gt; for SignedDiff {
+    fn write(&amp;mut self) -&gt; Option&lt;Arc&lt;Data&lt;Z&gt;&gt;&gt; {
+        self.delta
+            .as_ref()
+            .map(|delta| Arc::new(Data::new(delta.clone())))
     }
 }</code></pre>
 
