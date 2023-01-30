@@ -171,7 +171,7 @@ const DOWNRATE: usize = 4;</code></pre>
         .channel(0, Signal::Ramp { a: 1f64, b: 0f64 })
         .into();</code></pre>
 <p>A rate transition can be imposed with the <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Sampler.html">Sampler</a> client.
-Here the inout signal (<code>NI=1</code>) is downsampled according to <code>NO=DOWNRATE</code></p>
+Here the input signal (<code>NI=1</code>) is downsampled according to <code>NO=DOWNRATE</code></p>
 <pre><code class="language-rust no_run noplayground">   let mut downsampler: Actor&lt;_, 1, DOWNRATE&gt; = (
        Sampler::default(),
        format!(
