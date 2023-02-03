@@ -1,0 +1,29 @@
+
+digraph  G {
+  overlap = scale;
+  splines = true;
+  bgcolor = gray24;
+  {node [shape=box, width=1.5, style="rounded,filled", fillcolor=lightgray]; 11342817199025411071 [label="Signals"]; 6171641422625605830 [label="Average"]; 37516449950242697 [label="+"]; 8144285536227623429 [label="Integrator"]; 11066402299780161168 [label="Sampler"]; 11529587822733532187 [label="Logging"];}
+  node [shape=point, fillcolor=gray24, color=lightgray];
+
+  /* Outputs */
+{
+  edge [arrowhead=none,colorscheme=dark28];
+  11342817199025411071 -> 13617421333920241101 [color=1];
+6171641422625605830 -> 13583400200963484111 [color=2];
+37516449950242697 -> 12808559226776856679 [color=2];
+8144285536227623429 -> 4106161941533858576 [color=2, style=bold];
+11066402299780161168 -> 12484735345195816301 [color=1, style=bold];
+}
+  /* Inputs */
+{
+  edge [arrowhead=vee,fontsize=9, fontcolor=lightgray, labelfloat=true,colorscheme=dark28]
+  13617421333920241101 -> 6171641422625605830 [label="U", color=1];
+13583400200963484111 -> 37516449950242697 [label="U", color=2];
+4106161941533858576 -> 37516449950242697 [label="Y", color=2];
+12808559226776856679 -> 8144285536227623429 [label="E", color=2];
+12808559226776856679 -> 11066402299780161168 [label="E", color=2];
+13617421333920241101 -> 11529587822733532187 [label="U", color=1];
+12484735345195816301 -> 11529587822733532187 [label="E", color=1];
+}
+}

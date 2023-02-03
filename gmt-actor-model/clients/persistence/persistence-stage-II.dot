@@ -1,0 +1,27 @@
+
+digraph  G {
+  overlap = scale;
+  splines = true;
+  bgcolor = gray24;
+  {node [shape=box, width=1.5, style="rounded,filled", fillcolor=lightgray]; 15508195544299657810 [label="Timer"]; 5502339216061849736 [label="Signals"]; 2035493763424378550 [label="+"]; 12015025960535244509 [label="Integrator"]; 2201317215049037460 [label="Logging"];}
+  node [shape=point, fillcolor=gray24, color=lightgray];
+
+  /* Outputs */
+{
+  edge [arrowhead=none,colorscheme=dark28];
+  15508195544299657810 -> 15164962824015256459 [color=1];
+5502339216061849736 -> 13617421333920241101 [color=1];
+2035493763424378550 -> 12808559226776856679 [color=1];
+12015025960535244509 -> 4106161941533858576 [color=1, style=bold];
+}
+  /* Inputs */
+{
+  edge [arrowhead=vee,fontsize=9, fontcolor=lightgray, labelfloat=true,colorscheme=dark28]
+  15164962824015256459 -> 5502339216061849736 [label="Tick", color=1];
+13617421333920241101 -> 2035493763424378550 [label="U", color=1];
+4106161941533858576 -> 2035493763424378550 [label="Y", color=1];
+12808559226776856679 -> 12015025960535244509 [label="E", color=1];
+13617421333920241101 -> 2201317215049037460 [label="U", color=1];
+12808559226776856679 -> 2201317215049037460 [label="E", color=1];
+}
+}

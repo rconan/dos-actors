@@ -1,0 +1,21 @@
+
+digraph  G {
+  overlap = scale;
+  splines = true;
+  bgcolor = gray24;
+  {node [shape=box, width=1.5, style="rounded,filled", fillcolor=lightgray]; 2388591219605785467 [label="Signals"]; 10736817341189027654 [label="Source"]; 3411816009909470045 [label="Logging"];}
+  node [shape=point, fillcolor=gray24, color=lightgray];
+
+  /* Outputs */
+{
+  edge [arrowhead=none,colorscheme=dark28];
+  2388591219605785467 -> 14100923778443610677 [color=1];
+10736817341189027654 -> 378431486652388248 [color=1];
+}
+  /* Inputs */
+{
+  edge [arrowhead=vee,fontsize=9, fontcolor=lightgray, labelfloat=true,colorscheme=dark28]
+  14100923778443610677 -> 3411816009909470045 [label="Sinusoides", color=1, style=dashed];
+378431486652388248 -> 3411816009909470045 [label="UpDown", color=1, style=dashed];
+}
+}

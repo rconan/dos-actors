@@ -81,7 +81,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="gmt-actor-model/gmt-actor-model.html"><strong aria-hidden="true">1.</strong> GMT Actors Model</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="gmt-actor-model/actors/actors.html"><strong aria-hidden="true">1.1.</strong> Actors</a></li><li class="chapter-item expanded "><a href="gmt-actor-model/model/model.html"><strong aria-hidden="true">1.2.</strong> Model</a></li><li class="chapter-item expanded "><a href="gmt-actor-model/clients/client.html"><strong aria-hidden="true">1.3.</strong> Clients</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="gmt-actor-model/clients/sig-log/sig-log.html"><strong aria-hidden="true">1.3.1.</strong> Signals & Logger</a></li><li class="chapter-item expanded "><a href="gmt-actor-model/clients/feedback/feedback.html"><strong aria-hidden="true">1.3.2.</strong> Feedback System</a></li><li class="chapter-item expanded "><a href="gmt-actor-model/clients/multirate/multirate.html"><strong aria-hidden="true">1.3.3.</strong> Multirate System</a></li></ol></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="gmt-actor-model/gmt-actor-model.html"><strong aria-hidden="true">1.</strong> GMT Actors Model</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="gmt-actor-model/actors/actors.html"><strong aria-hidden="true">1.1.</strong> Actors</a></li><li class="chapter-item expanded "><a href="gmt-actor-model/model/model.html"><strong aria-hidden="true">1.2.</strong> Model</a></li><li class="chapter-item expanded "><a href="gmt-actor-model/clients/client.html"><strong aria-hidden="true">1.3.</strong> Clients</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="gmt-actor-model/clients/sig-log/sig-log.html"><strong aria-hidden="true">1.3.1.</strong> Signals & Logger</a></li><li class="chapter-item expanded "><a href="gmt-actor-model/clients/feedback/feedback.html"><strong aria-hidden="true">1.3.2.</strong> Feedback System</a></li><li class="chapter-item expanded "><a href="gmt-actor-model/clients/multirate/multirate.html"><strong aria-hidden="true">1.3.3.</strong> Multirate System</a></li><li class="chapter-item expanded "><a href="gmt-actor-model/clients/persistence/persistence.html"><strong aria-hidden="true">1.3.4.</strong> Persistence</a></li></ol></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -342,6 +342,14 @@ Combining all the <code>Model</code> methods in a single call gives:</p>
    .run()
    .await?;</code></pre>
 <p>The flowchart is written to the file <code>integrated_model.dot.svg</code>.</p>
+<p>The boilerplate code used for model declaration: </p>
+<pre><code class="language-rust no_run noplayground">Model::new(vec![Box::new(...),vec![Box::new(...),...])</code></pre>
+<p>can be advantageously replaced with the Rust macro <code>model!</code>, e.g.</p>
+<pre><code class="language-rust no_run noplayground">model!(A,B,C,D)
+   .flowchart()
+   .check()?
+   .run()
+   .await?;</code></pre>
 <p>When an output detects that the data the client has written to its buffer is <code>None</code>, it closes the channel it belongs to and return an error to the actor that forces the actor to shut down.</p>
 <p>When an actor shuts down its inputs and outputs close the channels they are part of.
 A closed channel also generates an error that is caught by the actors at both end of the channel and forces these actors to also shut down and so, by a domino effect, all the actors are terminated and the model gracefully comes to an end.</p>
@@ -459,13 +467,13 @@ enum UpDown {}
             .build::&lt;UpDown&gt;()
             .into_input(&amp;mut logger);
 
-        Model::new(vec_box![signals, source, logger])
+        model!(signals, source, logger)
             .name(&quot;signals-logger&quot;)
             .flowchart()
             .check()?
             .run()
             .await?;</code></pre>
-<p>gives:</p>
+<p>gives (the dashed lines representing the &quot;unbounded&quot; inputs):</p>
 <p><img src="gmt-actor-model/clients/sig-log/signals-logger.dot.svg" alt="Signals &amp; Loggers Model" /></p>
 <p>and the following data has been logged:</p>
 <pre><code class="language-rust no_run noplayground">        println!(&quot;Logs:&quot;);
@@ -526,7 +534,7 @@ Lets update the previous <code>Model</code> with a timer which number of beat is
             .into_input(&amp;mut logger);</code></pre>
 <p>Note that for a client to allow <code>Timer</code> as input, it must implement the <code>TimerMarker</code> trait.
 The new model looks like this:</p>
-<pre><code class="language-rust no_run noplayground">        Model::new(vec_box![timer, signals, source, logger])
+<pre><code class="language-rust no_run noplayground">        model!(timer, signals, source, logger)
             .name(&quot;signals-logger-trunc&quot;)
             .flowchart()
             .check()?
@@ -608,7 +616,7 @@ enum E {}</code></pre>
         .into_input(&amp;mut sum)
         .into_input(&amp;mut logger);</code></pre>
 <p>The model is:</p>
-<pre><code class="language-rust no_run noplayground">    Model::new(vec_box![signal, sum, integrator, logger])
+<pre><code class="language-rust no_run noplayground">    model!(signal, sum, integrator, logger)
         .name(&quot;feedback-model&quot;)
         .flowchart()
         .check()?
@@ -763,7 +771,7 @@ enum Z {}
   diff.add_output().build::&lt;Z&gt;().into_input(&amp;mut up_logger);
 </code></pre>
 <p>and running the model:</p>
-<pre><code class="language-rust no_run noplayground">  Model::new(vec_box![
+<pre><code class="language-rust no_run noplayground">  model!(
       signal,
       downsampler,
       diff,
@@ -771,7 +779,7 @@ enum Z {}
       logger,
       up_logger,
       averager
-  ])
+  )
   .name(&quot;multirate-model&quot;)
   .flowchart()
   .check()?
@@ -854,6 +862,190 @@ impl Write&lt;Z&gt; for SignedDiff {
             .map(|delta| Arc::new(Data::new(delta.clone())))
     }
 }</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="persistence"><a class="header" href="#persistence">Persistence</a></h1>
+<p>Persistence refers to the notion that the state of a client is <em>reachable</em> after a model execution.
+Once a model has ended, the actors within the model have been consumed but some clients are still available.
+They are the clients from actors that have been given the client pointer and not the client itself. 
+We have already witnessed the persistence of the clients in the previous section with the <code>Logging</code> clients from which data is processed after the models have been terminated.</p>
+<p>In the following, we are going to make use of this property of the clients to update a model at different stage of its execution.</p>
+<p>The model is a feedback loop system which is bootstrapped with a low gain (0.2) for 1s, then the gain is increased to 0.5 for another 3s and finally the sampling rate of the feedback loop is reduced to 1/100th for the rest of the simulation. </p>
+<p>Lets first define the simulation sampling frequency (1kHz) and the durations of the 3 stages of the simulation:</p>
+<pre><code class="language-rust no_run noplayground">    let sim_sampling_frequency = 1000; //Hz
+    let sampling_frequency_hz = sim_sampling_frequency as f64;
+    let bootstrap_duration = 1; // s
+    let fast_high_gain_duration = 3; // s
+    let slow_high_gain_duration = 4; // s</code></pre>
+<p>The parameters above are used to defined the number of samples for each stage:</p>
+<pre><code class="language-rust no_run noplayground">    let n_bootstrap = bootstrap_duration * sim_sampling_frequency;
+    let n_fast_high_gain = fast_high_gain_duration * sim_sampling_frequency;
+    let n_slow_high_gain = slow_high_gain_duration * sim_sampling_frequency;
+    let n_step = n_bootstrap + n_fast_high_gain + n_slow_high_gain;</code></pre>
+<p>The input signal is the sum of 3 signals: 2 sinusoides and some white noise:</p>
+<pre><code class="language-rust no_run noplayground">    let signal = Signals::new(1, n_step)
+        .channel(
+            0,
+            Signal::Sinusoid {
+                amplitude: 0.5f64,
+                sampling_frequency_hz,
+                frequency_hz: 1_f64,
+                phase_s: 0f64,
+            } + Signal::Sinusoid {
+                amplitude: 0.1f64,
+                sampling_frequency_hz,
+                frequency_hz: 10_f64,
+                phase_s: 0.1f64,
+            } + Signal::WhiteNoise(Normal::new(-1f64, 0.005)?),
+        )
+        .into_arcx();</code></pre>
+<p>Next we set the other 2 persistent clients for:</p>
+<ul>
+<li>the feedback integral control with the gain set to default (0)</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">    let integrator = Integrator::new(1).into_arcx();</code></pre>
+<ul>
+<li>and data logging </li>
+</ul>
+<pre><code class="language-rust no_run noplayground">    let logging = Logging::&lt;f64&gt;::new(2).into_arcx();</code></pre>
+<p>For stage I and II, the models are the same, only the gain of the integral controller is updated to 0.2 for stage I and to 0.5 for stage II.
+So we define a <a href="https://doc.rust-lang.org/rust-by-example/fn/closures.html">closure</a> that represents the model template for stage I and II:</p>
+<pre><code class="language-rust no_run noplayground">    let model = |n| {
+        let mut timer: Initiator&lt;_&gt; = Timer::new(n).into();
+        let mut source: Actor&lt;_&gt; = Actor::new(signal.clone());
+        let mut sum: Actor&lt;_&gt; = (Sum::default(), &quot;+&quot;).into();
+        let mut feedback: Actor&lt;_&gt; = Actor::new(integrator.clone());
+        let mut logger: Terminator&lt;_&gt; = Actor::new(logging.clone());
+
+        timer.add_output().build::&lt;Tick&gt;().into_input(&amp;mut source);
+        source
+            .add_output()
+            .multiplex(2)
+            .build::&lt;U&gt;()
+            .into_input(&amp;mut sum)
+            .into_input(&amp;mut logger);
+        sum.add_output()
+            .multiplex(2)
+            .build::&lt;E&gt;()
+            .into_input(&amp;mut feedback)
+            .into_input(&amp;mut logger);
+        feedback
+            .add_output()
+            .bootstrap()
+            .build::&lt;Y&gt;()
+            .into_input(&amp;mut sum);
+
+        model!(timer, source, sum, feedback, logger)
+    };</code></pre>
+<p>The only argument to the closure is the duration <code>n</code> of each stage.
+In addition to the actors of the <code>signal</code>, <code>integrator</code> and <code>logging</code> clients, actors for the <code>Timer</code> and the <code>Sum</code> clients were added.
+The <code>Sum</code> client is the same that the one introduces in the <a href="gmt-actor-model/clients/persistence/../feedback/feedback.html">FeedBack System</a> section.</p>
+<p>The model for stage I and II looks like this:</p>
+<p><img src="gmt-actor-model/clients/persistence/persistence-stage-I.dot.svg" alt="stage I &amp; II model" /></p>
+<h2 id="stage-i"><a class="header" href="#stage-i">Stage I</a></h2>
+<p>For stage I, we create the model with the appropriate duration, set the integrator gain and run the model:</p>
+<pre><code class="language-rust no_run noplayground">    let stage_i = model(n_bootstrap)
+        .name(&quot;persistence-stage-I&quot;)
+        .flowchart()
+        .check()?;
+    (*integrator.lock().await).set_gain(0.2);
+    let stage_i = stage_i.run();</code></pre>
+<h2 id="stage-ii"><a class="header" href="#stage-ii">Stage II</a></h2>
+<p>For stage II, we also start by creating the model with the appropriate duration, then we wait for stage I to finish before setting the integrator gain for stage II and running the model with the updated gain:</p>
+<pre><code class="language-rust no_run noplayground">    let stage_ii = model(n_fast_high_gain)
+        .name(&quot;persistence-stage-II&quot;)
+        .flowchart()
+        .check()?;
+    stage_i.await?;
+    (*integrator.lock().await).set_gain(0.5);
+    let stage_ii = stage_ii.run();</code></pre>
+<h2 id="stage-iii"><a class="header" href="#stage-iii">Stage III</a></h2>
+<p>For stage III, the feedback loop sampling rate is reduced by a factor 100:</p>
+<pre><code class="language-rust no_run noplayground">const C: usize = 100;</code></pre>
+<p>The input signal is average over 100 samples and the output signal is upsampled by a factor 100 as well.
+Considering the above, the stage III actors are:</p>
+<pre><code class="language-rust no_run noplayground">    let mut source: Initiator&lt;_&gt; = Actor::new(signal.clone());
+    let mut avrg: Actor&lt;_, 1, C&gt; = Average::new(1).into();
+    let mut sum: Actor&lt;_, C, C&gt; = (Sum::default(), &quot;+&quot;).into();
+    let mut feedback: Actor&lt;_, C, C&gt; = Actor::new(integrator.clone());
+    let mut upsampler: Actor&lt;_, C, 1&gt; = Sampler::new(vec![0f64]).into();
+    let mut logger: Terminator&lt;_&gt; = Actor::new(logging.clone());</code></pre>
+<p>We removed the <code>Timer</code> client and added actors for the <code>Average</code> and <code>Sampler</code> clients and we are still using the same <code>Signals</code>, <code>Integrator</code> and <code>Logging</code> clients but in the state they will be at the end of stage II.</p>
+<p>The stage III network is build next:</p>
+<pre><code class="language-rust no_run noplayground">    source
+        .add_output()
+        .multiplex(2)
+        .build::&lt;U&gt;()
+        .into_input(&amp;mut avrg)
+        .into_input(&amp;mut logger);
+    avrg.add_output().build::&lt;U&gt;().into_input(&amp;mut sum);
+    sum.add_output()
+        .multiplex(2)
+        .build::&lt;E&gt;()
+        .into_input(&amp;mut feedback)
+        .into_input(&amp;mut upsampler);
+    upsampler
+        .add_output()
+        .bootstrap()
+        .build::&lt;E&gt;()
+        .into_input(&amp;mut logger);
+    feedback
+        .add_output()
+        .bootstrap()
+        .build::&lt;Y&gt;()
+        .into_input(&amp;mut sum);</code></pre>
+<p><img src="gmt-actor-model/clients/persistence/persistence-stage-III.dot.svg" alt="stage III model" /></p>
+<p>The <code>Sampler</code> output had to be bootstrapped as the input is delayed by 100 samples.
+That is the reason why the <code>Sampler</code> has been creating with a default input value:</p>
+<pre><code class="language-rust no_run noplayground">    let mut upsampler: Actor&lt;_, C, 1&gt; = Sampler::new(vec![0f64]).into();</code></pre>
+<p>Finally, we create the new model, waiting for stage II to finish before running it:</p>
+<pre><code class="language-rust no_run noplayground">    let stage_iii = model!(source, avrg, sum, feedback, upsampler, logger)
+        .name(&quot;persistence-stage-III&quot;)
+        .flowchart()
+        .check()?;
+    stage_ii.await?;
+    stage_iii.run().await?;</code></pre>
+<p>The logged data is plotted with:</p>
+<pre><code class="language-rust no_run noplayground">    let _: complot::Plot = (
+        (*logging.lock().await)
+            .chunks()
+            .enumerate()
+            .map(|(i, data)| (i as f64 / sampling_frequency_hz, data.to_vec())),
+        complot::complot!(&quot;persistence.png&quot;, xlabel = &quot;Time [s]&quot;),
+    )
+        .into();</code></pre>
+<p>The blue curve is the input signal (U) and the orange curve is the residual signal (E) at the output of the sum.</p>
+<p><img src="gmt-actor-model/clients/persistence/persistence.png" alt="3 stages model" /></p>
+<p>The data corresponding to the transition for one stage to the next is displayed with:</p>
+<ul>
+<li>stage I to stage II transition:</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">   println!(&quot;Stage I to Stage II transition:&quot;);
+   (*logging.lock().await)
+       .chunks()
+       .enumerate()
+       .skip(n_bootstrap - 5)
+       .take(10)
+       .for_each(|(i, x)| println!(&quot;{:4}: {:+.3?}&quot;, i, x));</code></pre>
+<p><img src="gmt-actor-model/clients/persistence/persistence_out1.png" alt="stage I to stage II transition" /></p>
+<ul>
+<li>stage II to stage III transition:</li>
+</ul>
+<pre><code class="language-rust no_run noplayground">   println!(&quot;Stage II to Stage III transition:&quot;);
+   (*logging.lock().await)
+       .chunks()
+       .enumerate()
+       .skip(n_bootstrap + n_fast_high_gain - 5)
+       .take(10)
+       .for_each(|(i, x)| println!(&quot;{:4}: {:+.3?}&quot;, i, x));</code></pre>
+<p><img src="gmt-actor-model/clients/persistence/persistence_out2.png" alt="stage II to stage III transition" /></p>
+<p>and the data accross the end of the 1st integration of stage III</p>
+<pre><code class="language-rust no_run noplayground">   println!(&quot;Stage III (1st integration):&quot;);
+   (*logging.lock().await)
+       .chunks()
+       .enumerate()
+       .skip(C + n_bootstrap + n_fast_high_gain - 5)
+       .take(10)
+       .for_each(|(i, x)| println!(&quot;{:4}: {:+.3?}&quot;, i, x));</code></pre>
+<p><img src="gmt-actor-model/clients/persistence/persistence_out3.png" alt="stage III 1st integration" /></p>
 
                     </main>
 
