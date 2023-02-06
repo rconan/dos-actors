@@ -329,7 +329,21 @@ C.add_output().unbounded().build::&lt;CD&gt;().into_input(&amp;mut D);</code></p
 <pre><code class="language-rust no_run noplayground">let mut model = Model::new(vec![Box::new(A),Box::new(B),Box::new(C),Box::new(D)]);</code></pre>
 <p>check the model for errors, run it and wait for it to finish:</p>
 <pre><code class="language-rust no_run noplayground">model.check()?.run().await?;</code></pre>
-<p>Note that the <code>run</code> method cannot be invoked on an unchecked model.</p>
+<p>Note that the <code>run</code> method cannot be invoked on an unchecked model.
+The methods that can be called upon <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/model/struct.Model.html"><code>Model</code></a> depend on the value of the <code>Model</code> <code>State</code> generic type parameter.
+Some method performs a state transition giving access to other methods.</p>
+<p>The model <code>State</code> table shows from which state a <code>Model</code> method is called and in which state the model is transitioned to:</p>
+<div class="table-wrapper"><table><thead><tr><th>Method</th><th>From</th><th>To</th></tr></thead><tbody>
+<tr><td><code>Model::new</code></td><td><code>Unknown</code></td><td><code>Unknown</code></td></tr>
+<tr><td><code>Model::check</code></td><td><code>Unknown</code></td><td><code>Ready</code></td></tr>
+<tr><td><code>Model::run</code></td><td><code>Ready</code></td><td><code>Running</code></td></tr>
+<tr><td><code>Model::await</code></td><td><code>Running</code></td><td><code>Completed</code></td></tr>
+<tr><td><code>Model::name</code></td><td><code>Unknown</code></td><td><code>Unknown</code></td></tr>
+<tr><td><code>Model::add</code></td><td><code>Unknown</code></td><td><code>Unknown</code></td></tr>
+<tr><td><code>Model::flowchart</code></td><td><code>Unknown</code></td><td><code>Unknown</code></td></tr>
+<tr><td><code>Model::flowchart</code></td><td><code>Ready</code></td><td><code>Ready</code></td></tr>
+</tbody></table>
+</div>
 <p>A flow chart of the model can be obtained with the <code>flowchart</code> method.
 Each client is identified by either its type or the actor's name if one was given.
 Combining all the <code>Model</code> methods in a single call gives:</p>
@@ -403,13 +417,33 @@ The default sampling rate for inputs and outputs is 1.</p>
         .build::&lt;Out&gt;()
         .into_input(&amp;mut log);</code></pre>
 <p>Now the model can be assembled, charted, checked for errors and run:</p>
-<pre><code class="language-rust no_run noplayground">    Model::new(vec![Box::new(source), Box::new(filter), Box::new(log)])
+<pre><code class="language-rust no_run noplayground">    model!(source, filter, log)
         .flowchart()
         .check()?
         .run()
         .await?;</code></pre>
 <p><img src="gmt-actor-model/model/integrated_model.dot.svg" alt="Integrated Model" /></p>
 <p>The model stop itself when the data from the <code>RandGen</code> client is exhausted.</p>
+<p>By setting a <a href="https://docs.rs/log/">logger</a> at the begining of the main application, insight into the behavior of the model can be gathered.
+For example, setting the <a href="https://docs.rs/env_logger/">env_logger</a> crate with </p>
+<pre><code class="language-rust no_run noplayground">    env_logger::builder()
+        .format_timestamp(None)
+        .format_target(false)
+        .init();</code></pre>
+<p>and running the application with the <code>RUST_LOG</code> environment variable:</p>
+<pre><code>RUST_LOG=warn cargo run ... 
+</code></pre>
+<p>outputs the following:</p>
+<p><img src="gmt-actor-model/model/model_warn.png" alt="Warning" /></p>
+<p>Setting  <code>RUST_LOG</code> to <code>info</code> instead gives</p>
+<pre><code>RUST_LOG=info cargo run ... 
+</code></pre>
+<p><img src="gmt-actor-model/model/model_info.png" alt="Warning" /></p>
+<p>and with </p>
+<pre><code>RUST_LOG=debug cargo run ... 
+</code></pre>
+<p><img src="gmt-actor-model/model/model_debug.png" alt="Warning" /></p>
+<p>Debug information is displayed only for application run in debug mode.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="clients"><a class="header" href="#clients">Clients</a></h1>
 <p>The crate <code>gmt_dos-actors</code> includes a library of clients for signals generation and signal processing.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="signals--logger"><a class="header" href="#signals--logger">Signals &amp; Logger</a></h1>
