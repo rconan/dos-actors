@@ -1,0 +1,26 @@
+
+digraph  G {
+  overlap = scale;
+  splines = true;
+  bgcolor = gray24;
+  {node [shape=box, width=1.5, style="rounded,filled", fillcolor=lightgray]; 16305516920121994968 [label="1:4
+Downsampling"]; 5439729985067977712 [label="1/4
+Average"]; 5969335906752424919 [label="Down
+Logging"];}
+  node [shape=point, fillcolor=gray24, color=lightgray];
+
+  /* Outputs */
+{
+  edge [arrowhead=none,colorscheme=dark28];
+  16305516920121994968 -> 14090999327100098430 [color=1];
+5439729985067977712 -> 9724242860893494469 [color=1];
+}
+  /* Inputs */
+{
+  edge [arrowhead=vee,fontsize=9, fontcolor=lightgray, labelfloat=true,colorscheme=dark28]
+  13617421333920241101 -> 16305516920121994968 [label="U", color=2];
+13617421333920241101 -> 5439729985067977712 [label="U", color=2];
+14090999327100098430 -> 5969335906752424919 [label="Y", color=1];
+9724242860893494469 -> 5969335906752424919 [label="A", color=1];
+}
+}

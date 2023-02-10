@@ -80,7 +80,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/gmt-actor-model.html"><strong aria-hidden="true">1.</strong> GMT Actors Model</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../gmt-actor-model/actors/actors.html"><strong aria-hidden="true">1.1.</strong> Actors</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/model/model.html"><strong aria-hidden="true">1.2.</strong> Model</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/client.html"><strong aria-hidden="true">1.3.</strong> Clients</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/sig-log/sig-log.html"><strong aria-hidden="true">1.3.1.</strong> Signals & Logger</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/feedback/feedback.html"><strong aria-hidden="true">1.3.2.</strong> Feedback System</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/multirate/multirate.html"><strong aria-hidden="true">1.3.3.</strong> Multirate System</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/persistence/persistence.html" class="active"><strong aria-hidden="true">1.3.4.</strong> Persistence</a></li></ol></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/gmt-actor-model.html"><strong aria-hidden="true">1.</strong> GMT Actors Model</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../gmt-actor-model/actors/actors.html"><strong aria-hidden="true">1.1.</strong> Actors</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/model/model.html"><strong aria-hidden="true">1.2.</strong> Model</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/client.html"><strong aria-hidden="true">1.3.</strong> Clients</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/sig-log/sig-log.html"><strong aria-hidden="true">1.3.1.</strong> Signals & Logger</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/feedback/feedback.html"><strong aria-hidden="true">1.3.2.</strong> Feedback System</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/multirate/multirate.html"><strong aria-hidden="true">1.3.3.</strong> Multirate System</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/persistence/persistence.html" class="active"><strong aria-hidden="true">1.3.4.</strong> Persistence</a></li></ol></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/aggregation/aggregation.html"><strong aria-hidden="true">1.4.</strong> Aggregation</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -193,32 +193,32 @@ We have already witnessed the persistence of the clients in the previous section
 <pre><code class="language-rust no_run noplayground">    let logging = Logging::&lt;f64&gt;::new(2).into_arcx();</code></pre>
 <p>For stage I and II, the models are the same, only the gain of the integral controller is updated to 0.2 for stage I and to 0.5 for stage II.
 So we define a <a href="https://doc.rust-lang.org/rust-by-example/fn/closures.html">closure</a> that represents the model template for stage I and II:</p>
-<pre><code class="language-rust no_run noplayground">    let model = |n| {
+<pre><code class="language-rust no_run noplayground">    let model = |n| -&gt; anyhow::Result&lt;Model&lt;Unknown&gt;&gt; {
         let mut timer: Initiator&lt;_&gt; = Timer::new(n).into();
         let mut source: Actor&lt;_&gt; = Actor::new(signal.clone());
         let mut sum: Actor&lt;_&gt; = (Sum::default(), &quot;+&quot;).into();
         let mut feedback: Actor&lt;_&gt; = Actor::new(integrator.clone());
         let mut logger: Terminator&lt;_&gt; = Actor::new(logging.clone());
 
-        timer.add_output().build::&lt;Tick&gt;().into_input(&amp;mut source);
+        timer.add_output().build::&lt;Tick&gt;().into_input(&amp;mut source)?;
         source
             .add_output()
             .multiplex(2)
             .build::&lt;U&gt;()
             .into_input(&amp;mut sum)
-            .into_input(&amp;mut logger);
+            .into_input(&amp;mut logger)?;
         sum.add_output()
             .multiplex(2)
             .build::&lt;E&gt;()
             .into_input(&amp;mut feedback)
-            .into_input(&amp;mut logger);
+            .into_input(&amp;mut logger)?;
         feedback
             .add_output()
             .bootstrap()
             .build::&lt;Y&gt;()
-            .into_input(&amp;mut sum);
+            .into_input(&amp;mut sum)?;
 
-        model!(timer, source, sum, feedback, logger)
+        Ok(model!(timer, source, sum, feedback, logger))
     };</code></pre>
 <p>The only argument to the closure is the duration <code>n</code> of each stage.
 In addition to the actors of the <code>signal</code>, <code>integrator</code> and <code>logging</code> clients, actors for the <code>Timer</code> and the <code>Sum</code> clients were added.
@@ -227,7 +227,7 @@ The <code>Sum</code> client is the same that the one introduces in the <a href="
 <p><img src="persistence-stage-I.dot.svg" alt="stage I &amp; II model" /></p>
 <h2 id="stage-i"><a class="header" href="#stage-i">Stage I</a></h2>
 <p>For stage I, we create the model with the appropriate duration, set the integrator gain and run the model:</p>
-<pre><code class="language-rust no_run noplayground">    let stage_i = model(n_bootstrap)
+<pre><code class="language-rust no_run noplayground">    let stage_i = model(n_bootstrap)?
         .name(&quot;persistence-stage-I&quot;)
         .flowchart()
         .check()?;
@@ -235,7 +235,7 @@ The <code>Sum</code> client is the same that the one introduces in the <a href="
     let stage_i = stage_i.run();</code></pre>
 <h2 id="stage-ii"><a class="header" href="#stage-ii">Stage II</a></h2>
 <p>For stage II, we also start by creating the model with the appropriate duration, then we wait for stage I to finish before setting the integrator gain for stage II and running the model with the updated gain:</p>
-<pre><code class="language-rust no_run noplayground">    let stage_ii = model(n_fast_high_gain)
+<pre><code class="language-rust no_run noplayground">    let stage_ii = model(n_fast_high_gain)?
         .name(&quot;persistence-stage-II&quot;)
         .flowchart()
         .check()?;
@@ -260,23 +260,23 @@ Considering the above, the stage III actors are:</p>
         .multiplex(2)
         .build::&lt;U&gt;()
         .into_input(&amp;mut avrg)
-        .into_input(&amp;mut logger);
-    avrg.add_output().build::&lt;U&gt;().into_input(&amp;mut sum);
+        .into_input(&amp;mut logger)?;
+    avrg.add_output().build::&lt;U&gt;().into_input(&amp;mut sum)?;
     sum.add_output()
         .multiplex(2)
         .build::&lt;E&gt;()
         .into_input(&amp;mut feedback)
-        .into_input(&amp;mut upsampler);
+        .into_input(&amp;mut upsampler)?;
     upsampler
         .add_output()
         .bootstrap()
         .build::&lt;E&gt;()
-        .into_input(&amp;mut logger);
+        .into_input(&amp;mut logger)?;
     feedback
         .add_output()
         .bootstrap()
         .build::&lt;Y&gt;()
-        .into_input(&amp;mut sum);</code></pre>
+        .into_input(&amp;mut sum)?;</code></pre>
 <p><img src="persistence-stage-III.dot.svg" alt="stage III model" /></p>
 <p>The <code>Sampler</code> output had to be bootstrapped as the input is delayed by 100 samples.
 That is the reason why the <code>Sampler</code> has been creating with a default input value:</p>
@@ -340,6 +340,9 @@ That is the reason why the <code>Sampler</code> has been creating with a default
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
+                            <a rel="next" href="../../../gmt-actor-model/aggregation/aggregation.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -351,6 +354,9 @@ That is the reason why the <code>Sampler</code> has been creating with a default
                         <i class="fa fa-angle-left"></i>
                     </a>
 
+                    <a rel="next" href="../../../gmt-actor-model/aggregation/aggregation.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>

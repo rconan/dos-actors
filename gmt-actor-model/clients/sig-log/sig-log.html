@@ -80,7 +80,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/gmt-actor-model.html"><strong aria-hidden="true">1.</strong> GMT Actors Model</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../gmt-actor-model/actors/actors.html"><strong aria-hidden="true">1.1.</strong> Actors</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/model/model.html"><strong aria-hidden="true">1.2.</strong> Model</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/client.html"><strong aria-hidden="true">1.3.</strong> Clients</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/sig-log/sig-log.html" class="active"><strong aria-hidden="true">1.3.1.</strong> Signals & Logger</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/feedback/feedback.html"><strong aria-hidden="true">1.3.2.</strong> Feedback System</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/multirate/multirate.html"><strong aria-hidden="true">1.3.3.</strong> Multirate System</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/persistence/persistence.html"><strong aria-hidden="true">1.3.4.</strong> Persistence</a></li></ol></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/gmt-actor-model.html"><strong aria-hidden="true">1.</strong> GMT Actors Model</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../gmt-actor-model/actors/actors.html"><strong aria-hidden="true">1.1.</strong> Actors</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/model/model.html"><strong aria-hidden="true">1.2.</strong> Model</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/client.html"><strong aria-hidden="true">1.3.</strong> Clients</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/sig-log/sig-log.html" class="active"><strong aria-hidden="true">1.3.1.</strong> Signals & Logger</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/feedback/feedback.html"><strong aria-hidden="true">1.3.2.</strong> Feedback System</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/multirate/multirate.html"><strong aria-hidden="true">1.3.3.</strong> Multirate System</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/persistence/persistence.html"><strong aria-hidden="true">1.3.4.</strong> Persistence</a></li></ol></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/aggregation/aggregation.html"><strong aria-hidden="true">1.4.</strong> Aggregation</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -195,12 +195,12 @@ enum UpDown {}
             .add_output()
             .unbounded()
             .build::&lt;Sinusoides&gt;()
-            .into_input(&amp;mut logger);
+            .into_input(&amp;mut logger)?;
         source
             .add_output()
             .unbounded()
             .build::&lt;UpDown&gt;()
-            .into_input(&amp;mut logger);
+            .into_input(&amp;mut logger)?;
 
         model!(signals, source, logger)
             .name(&quot;signals-logger&quot;)
@@ -256,17 +256,17 @@ Lets update the previous <code>Model</code> with a timer which number of beat is
             .multiplex(2)
             .build::&lt;Tick&gt;()
             .into_input(&amp;mut signals)
-            .into_input(&amp;mut source);
+            .into_input(&amp;mut source)?;
         signals
             .add_output()
             .unbounded()
             .build::&lt;Sinusoides&gt;()
-            .into_input(&amp;mut logger);
+            .into_input(&amp;mut logger)?;
         source
             .add_output()
             .unbounded()
             .build::&lt;UpDown&gt;()
-            .into_input(&amp;mut logger);</code></pre>
+            .into_input(&amp;mut logger)?;</code></pre>
 <p>Note that for a client to allow <code>Timer</code> as input, it must implement the <code>TimerMarker</code> trait.
 The new model looks like this:</p>
 <pre><code class="language-rust no_run noplayground">        model!(timer, signals, source, logger)
