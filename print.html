@@ -1179,10 +1179,10 @@ Below is the table of the types that can be aggregated into a model:</p>
 <tr><td style="text-align: center"><code>Actor</code></td><td style="text-align: center">+</td><td style="text-align: center"><code>Actor</code></td><td style="text-align: center">=</td><td style="text-align: center"><code>Model</code></td></tr>
 </tbody></table>
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="correctness"><a class="header" href="#correctness">Correctness</a></h1>
-<p>Correctness, in the context of the GMT Actors Model, refers to the verification process that checks for error in the code written by the user of the <code>gmt-dos-actor</code> API.
+<p>Correctness, in the context of the GMT Actors Model, refers to the verification process that checks for error in the code written by users of the <code>gmt-dos-actor</code> API.
 The code is checked for mistakes both at compiled-time and at runtime. 
 This formal process makes developping an integrated model with <code>gmt-dos-actor</code> very safe as it ensures that the likehood of having written a &quot;correct&quot; model is very high.</p>
-<p>A &quot;correct' model is a model build with Rust code that complies the following:</p>
+<p>A &quot;correct' model is a model build with Rust code that complies with the following:</p>
 <ul>
 <li>a pair of input and output must have the same <code>UID</code>,</li>
 <li>a pair of input and output must have the same sampling rate: <code>NI=NO</code>,</li>
@@ -1195,7 +1195,7 @@ This formal process makes developping an integrated model with <code>gmt-dos-act
 </ul>
 <p>If the code doesn't comply with any of the aboves, either it won't compile sucessfully or it will panic before the model is run.</p>
 <p>For rapid troubleshooting it is important to be able to associate error messages with the corresponding compliance clause.
-In the following, we give examples of a faulty code, with the generated error messsage, for some of the compliance clauses:</p>
+In the following, we give examples of faulty code, with the generated error messsage, for some of the compliance clauses:</p>
 <ul>
 <li>a pair of input and output must have the same <code>UID</code></li>
 </ul>
