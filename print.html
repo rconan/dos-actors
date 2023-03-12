@@ -152,7 +152,26 @@ It is based on the <a href="https://en.wikipedia.org/wiki/Actor_model">actor mod
 The minimum Rust version for the <code>gmt_dos-actors</code> is 1.66.0</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="gmt-actors-model"><a class="header" href="#gmt-actors-model">GMT Actors Model</a></h1>
 <p>A GMT integrated model is a collection of actors, each actor executing a specific task or set of tasks and exchanging data at predefined sampling rates.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="actors"><a class="header" href="#actors">Actors</a></h1>
+<p>The GMT Actors Model is distributed among 2 crates: <code>gmt_dos-actors</code> and <code>gmt_dos-clients</code>.</p>
+<p><code>gmt_dos-actors</code> implements the actor model including the methods to send and receive data to and from actors and the higher level abstraction of a model.</p>
+<p>The interface between a client and the inputs and outputs of an actor is defined in the <code>gmt_dos-clients</code> crate.
+The crate also provides a set of clients with the <code>gmt_dos-actors</code> interface already setup.</p>
+<p>To use <code>gmt_dos-actors</code>, add it to your list of dependencies with </p>
+<pre><code>cargo add gmt_dos-actors
+</code></pre>
+<p>and import the contents of the prelude module:</p>
+<pre><code class="language-rust  no_run noplayground">use gmt_dos_actors::prelude::*;</code></pre>
+<p>To use some of the clients in <code>gmt_dos-clients</code>, add the crate to your list of dependencies with </p>
+<pre><code>cargo add gmt_dos-clients
+</code></pre>
+<p>If you are only looking for the <code>gmt_dos-actors</code> interface, you can instead do</p>
+<pre><code>cargo add gmt_dos-clients --no-default-features --features interface
+</code></pre>
+<div class="table-wrapper"><table><thead><tr><th></th><th></th><th></th><th></th></tr></thead><tbody>
+<tr><td><code>gmt_dos-actors</code></td><td><a href="https://crates.io/crates/gmt_dos-actors">crates.io</a></td><td><a href="https://docs.rs/gmt_dos-actors/6.0.0">docs.rs</a></td><td><a href="https://github.com/rconan/dos-actors">github</a></td></tr>
+<tr><td><code>gmt_dos-clients</code></td><td><a href="https://crates.io/crates/gmt_dos-clients">crates.io</a></td><td><a href="https://docs.rs/gmt_dos-clients/1.0.0">docs.rs</a></td><td><a href="https://github.com/rconan/dos-actors/tree/main/clients">github</a></td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="actors"><a class="header" href="#actors">Actors</a></h1>
 <p>An actor is composed on 3 elements:</p>
 <ul>
 <li>a set of inputs,</li>
@@ -502,7 +521,13 @@ For example, setting the <a href="https://docs.rs/env_logger/">env_logger</a> cr
 <p><img src="gmt-actor-model/model/model_debug.png" alt="Warning" /></p>
 <p>Debug information is displayed only for application run in debug mode.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="clients"><a class="header" href="#clients">Clients</a></h1>
-<p>The crate <code>gmt_dos-actors</code> includes a library of clients for signals generation and signal processing.</p>
+<p>The crate <code>gmt_dos-clients</code> includes a library of clients for signals generation and signal processing.</p>
+<p>To use some of the clients in <code>gmt_dos-clients</code>, add the crate to your list of dependencies with </p>
+<pre><code>cargo add gmt_dos-clients
+</code></pre>
+<p>If you are only looking for the <code>gmt_dos-actors</code> interface, you can instead do</p>
+<pre><code>cargo add gmt_dos-clients --no-default-features --features interface
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="signals--logger"><a class="header" href="#signals--logger">Signals &amp; Logger</a></h1>
 <p>In the following, we will introduce the <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Signals.html"><code>signals</code></a>, <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Source.html"><code>Source</code></a>, <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Logging.html"><code>Logging</code></a> and <a href="file:///media/rconan/projects/target/doc/gmt_dos_actors/clients/struct.Timer.html"><code>Timer</code></a> clients.</p>
 <p>Both <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Signals.html"><code>Signals</code></a> and <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Source.html"><code>Source</code></a> are signals generators and

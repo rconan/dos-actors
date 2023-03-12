@@ -148,7 +148,13 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="clients"><a class="header" href="#clients">Clients</a></h1>
-<p>The crate <code>gmt_dos-actors</code> includes a library of clients for signals generation and signal processing.</p>
+<p>The crate <code>gmt_dos-clients</code> includes a library of clients for signals generation and signal processing.</p>
+<p>To use some of the clients in <code>gmt_dos-clients</code>, add the crate to your list of dependencies with </p>
+<pre><code>cargo add gmt_dos-clients
+</code></pre>
+<p>If you are only looking for the <code>gmt_dos-actors</code> interface, you can instead do</p>
+<pre><code>cargo add gmt_dos-clients --no-default-features --features interface
+</code></pre>
 
                     </main>
 
