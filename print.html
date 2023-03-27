@@ -1305,6 +1305,9 @@ The table below lists the clients for the GMT Rust Integrated Model:</p>
 </tbody></table>
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="io"><a class="header" href="#io">IO</a></h1>
 <p>The <code>IO</code> crate provides the types for the inputs and outputs of the clients associated with the GMT integrated model.</p>
+<ul>
+<li>DOS Client</li>
+</ul>
 <div class="table-wrapper"><table><thead><tr><th></th><th></th><th></th><th></th></tr></thead><tbody>
 <tr><td><code>gmt_dos-clients_io</code></td><td><a href="https://crates.io/crates/gmt_dos-clients_io">crates.io</a></td><td><a href="https://docs.rs/gmt_dos-clients_io">docs.rs</a></td><td><a href="https://github.com/rconan/dos-actors/tree/main/clients/io">github</a></td></tr>
 </tbody></table>
@@ -1313,8 +1316,17 @@ The table below lists the clients for the GMT Rust Integrated Model:</p>
 The path to the zip file must be affected to the environment variable: <code>FEM_REPO</code>.
 The zip file is created with the Matlab script <a href="https://github.com/rconan/fem/blob/main/tools/unwrapFEM.m">unwrapFEM</a> using data produced by the GMT Integrated Modeling team.</p>
 <p>The FEM model is stored into the <code>gmt-fem</code> crate as a continuous second order ODE and the <code>gmt_dos-clients_fem</code> crate transforms the FEM into discrete 2x2 state space models with as many model as the number of eigen modes of the FEM.</p>
+<ul>
+<li>DOS Client</li>
+</ul>
 <div class="table-wrapper"><table><thead><tr><th></th><th></th><th></th><th></th></tr></thead><tbody>
 <tr><td><code>gmt_dos-clients_fem</code></td><td><a href="https://crates.io/crates/gmt_dos-clients_fem">crates.io</a></td><td><a href="https://docs.rs/gmt_dos-clients_fem">docs.rs</a></td><td><a href="https://github.com/rconan/dos-actors/tree/main/clients/fem">github</a></td></tr>
+</tbody></table>
+</div>
+<ul>
+<li>GMT FEM Crate</li>
+</ul>
+<div class="table-wrapper"><table><thead><tr><th></th><th></th><th></th><th></th></tr></thead><tbody>
 <tr><td><code>gmt-fem</code></td><td><a href="https://crates.io/crates/gmt-fem">crates.io</a></td><td><a href="https://docs.rs/gmt-fem">docs.rs</a></td><td><a href="https://github.com/rconan/fem">github</a></td></tr>
 </tbody></table>
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="control-systems"><a class="header" href="#control-systems">Control Systems</a></h1>
@@ -1327,32 +1339,59 @@ The C implementations are themselves generated from Simulink control models. </p
 <tr><td>M2 Control</td><td><code>gmt_dos-clients_m2-ctrl</code></td><td><a href="https://crates.io/crates/gmt_dos-clients_m2-ctrl">crates.io</a></td><td><a href="https://docs.rs/gmt_dos-clients_m2-ctrl">docs.rs</a></td><td><a href="https://github.com/rconan/dos-actors/tree/main/clients/m2-ctrl">github</a></td></tr>
 </tbody></table>
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="mount-control-system"><a class="header" href="#mount-control-system">Mount Control System</a></h1>
+<ul>
+<li>Dos Client</li>
+</ul>
 <div class="table-wrapper"><table><thead><tr><th></th><th></th><th></th><th></th></tr></thead><tbody>
 <tr><td><code>gmt_dos-clients_mount</code></td><td><a href="https://crates.io/crates/gmt_dos-clients_mount">crates.io</a></td><td><a href="https://docs.rs/gmt_dos-clients_mount">docs.rs</a></td><td><a href="https://github.com/rconan/dos-actors/tree/main/clients/mount">github</a></td></tr>
+</tbody></table>
+</div>
+<ul>
+<li>Controller</li>
+</ul>
+<div class="table-wrapper"><table><thead><tr><th></th><th></th><th></th><th></th></tr></thead><tbody>
 <tr><td><code>gmt_mount-ctrl</code></td><td><a href="https://crates.io/crates/mount-ctrl">crates.io</a></td><td><a href="https://docs.rs/mount-ctrl">docs.rs</a></td><td><a href="https://github.com/rconan/mount-ctrl">github</a></td></tr>
 </tbody></table>
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="m1-control-system"><a class="header" href="#m1-control-system">M1 Control System</a></h1>
 <p>The M1 control system is made of 3 controllers for the hardpoints, for the actuators of the center segment and for the actuators of the outer segment.</p>
-<p><img src="grim/control/m1/force-loop.png" alt="" /></p>
-<p><img src="grim/control/m1/hardpoints.png" alt="" /></p>
+<ul>
+<li>DOS Client</li>
+</ul>
 <div class="table-wrapper"><table><thead><tr><th></th><th></th><th></th><th></th></tr></thead><tbody>
 <tr><td><code>gmt_dos-clients_m1-ctrl</code></td><td><a href="https://crates.io/crates/gmt_dos-clients_m1-ctrl">crates.io</a></td><td><a href="https://docs.rs/gmt_dos-clients_m1-ctrl">docs.rs</a></td><td><a href="https://github.com/rconan/dos-actors/tree/main/clients/m1-ctrl">github</a></td></tr>
+</tbody></table>
+</div>
+<ul>
+<li>Controllers</li>
+</ul>
+<div class="table-wrapper"><table><thead><tr><th></th><th></th><th></th><th></th></tr></thead><tbody>
 <tr><td><code>gmt_m1-ctrl_hardpoints-dynamics</code></td><td><a href="https://crates.io/crates/gmt_m1-ctrl_hardpoints-dynamics">crates.io</a></td><td><a href="https://docs.rs/gmt_m1-ctrl_hardpoints-dynamics">docs.rs</a></td><td><a href="https://github.com/rconan/m1-ctrl/tree/main/hardpoints">github</a></td></tr>
+<tr><td><img src="grim/control/m1/hardpoints.png" alt="" /></td><td></td><td></td><td></td></tr>
 <tr><td><code>gmt_m1-ctrl_center-actuators</code></td><td><a href="https://crates.io/crates/gmt_m1-ctrl_center-actuators">crates.io</a></td><td><a href="https://docs.rs/gmt_m1-ctrl_center-actuators">docs.rs</a></td><td><a href="https://github.com/rconan/m1-ctrl/tree/main/actuators/center">github</a></td></tr>
 <tr><td><code>gmt_m1-ctrl_outer-actuators</code></td><td><a href="https://crates.io/crates/gmt_m1-ctrl_outer-actuators">crates.io</a></td><td><a href="https://docs.rs/gmt_m1-ctrl_outer-actuators">docs.rs</a></td><td><a href="https://github.com/rconan/m1-ctrl/tree/main/actuators/outer">github</a></td></tr>
+<tr><td><img src="grim/control/m1/force-loop.png" alt="" /></td><td></td><td></td><td></td></tr>
 </tbody></table>
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="m2-control-systems"><a class="header" href="#m2-control-systems">M2 Control Systems</a></h1>
-<p>There are 2 separate control system for the <a href="grim/control/m2/fsm/fsm.html">FSM</a> and the <a href="grim/control/m2/asm/asm.html">ASM</a>.</p>
+<p>There are 2 separate control systems for the <a href="grim/control/m2/fsm/fsm.html">FSM</a> and the <a href="grim/control/m2/asm/asm.html">ASM</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="fsm"><a class="header" href="#fsm">FSM</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="asm-control-system"><a class="header" href="#asm-control-system">ASM Control System</a></h1>
 <p>The M2 control system is made of 3 controllers for the ASM preshape filter, for the ASM fluid damping model and for the ASM positionners.</p>
-<p><img src="grim/control/m2/asm/inner-loop.png" alt="" /></p>
-<p><img src="grim/control/m2/asm/positioner.png" alt="" /></p>
+<ul>
+<li>DOS Client</li>
+</ul>
 <div class="table-wrapper"><table><thead><tr><th></th><th></th><th></th><th></th></tr></thead><tbody>
 <tr><td><code>gmt_dos-clients_m2-ctrl</code></td><td><a href="https://crates.io/crates/gmt_dos-clients_m2-ctrl">crates.io</a></td><td><a href="https://docs.rs/gmt_dos-clients_m2-ctrl">docs.rs</a></td><td><a href="https://github.com/rconan/dos-actors/tree/main/clients/m2-ctrl">github</a></td></tr>
+</tbody></table>
+</div>
+<ul>
+<li>Controllers</li>
+</ul>
+<div class="table-wrapper"><table><thead><tr><th></th><th></th><th></th><th></th></tr></thead><tbody>
 <tr><td><code>gmt_m2-ctrl_asm_preshape-filter</code></td><td><a href="https://crates.io/crates/gmt_m2-ctrl_asm_preshape-filter">crates.io</a></td><td><a href="https://docs.rs/gmt_m2-ctrl_asm_preshape-filter">docs.rs</a></td><td><a href="https://github.com/rconan/gmt-m2-ctrl/tree/master/asm/preshape-filter">github</a></td></tr>
 <tr><td><code>gmt_m2-ctrl_asm_pid-damping</code></td><td><a href="https://crates.io/crates/gmt_m2-ctrl_asm_pid-damping">crates.io</a></td><td><a href="https://docs.rs/gmt_m2-ctrl_asm_pid-damping">docs.rs</a></td><td><a href="https://github.com/rconan/gmt-m2-ctrl/tree/master/asm/pid-damping">github</a></td></tr>
+<tr><td><img src="grim/control/m2/asm/inner-loop.png" alt="" /></td><td></td><td></td><td></td></tr>
 <tr><td><code>gmt_m2-ctrl_asm_positionner</code></td><td><a href="https://crates.io/crates/gmt_m2-ctrl_asm_positionner">crates.io</a></td><td><a href="https://docs.rs/gmt_m2-ctrl_asm_positionner">docs.rs</a></td><td><a href="https://github.com/rconan/gmt-m2-ctrl/tree/master/asm/positionner">github</a></td></tr>
+<tr><td><img src="grim/control/m2/asm/positioner.png" alt="" /></td><td></td><td></td><td></td></tr>
 </tbody></table>
 </div>
                     </main>
