@@ -32,6 +32,7 @@
 
     </head>
     <body>
+    <div id="body-container">
         <!-- Provide site root to javascript -->
         <script>
             var path_to_root = "../../";
@@ -69,10 +70,12 @@
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
             var html = document.querySelector('html');
-            var sidebar = 'hidden';
+            var sidebar = null;
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
             }
             html.classList.remove('sidebar-visible');
             html.classList.add("sidebar-" + sidebar);
@@ -80,7 +83,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/gmt-actor-model.html"><strong aria-hidden="true">1.</strong> GMT Actors Model</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../gmt-actor-model/actors/actors.html" class="active"><strong aria-hidden="true">1.1.</strong> Actors</a></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/data/data.html"><strong aria-hidden="true">1.2.</strong> Data</a></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/model/model.html"><strong aria-hidden="true">1.3.</strong> Model</a></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/clients/client.html"><strong aria-hidden="true">1.4.</strong> Clients</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../gmt-actor-model/clients/sig-log/sig-log.html"><strong aria-hidden="true">1.4.1.</strong> Signals & Logger</a></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/clients/feedback/feedback.html"><strong aria-hidden="true">1.4.2.</strong> Feedback System</a></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/clients/multirate/multirate.html"><strong aria-hidden="true">1.4.3.</strong> Multirate System</a></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/clients/persistence/persistence.html"><strong aria-hidden="true">1.4.4.</strong> Persistence</a></li></ol></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/aggregation/aggregation.html"><strong aria-hidden="true">1.5.</strong> Aggregation</a></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/correctness/correctness.html"><strong aria-hidden="true">1.6.</strong> Correctness</a></li></ol></li><li class="chapter-item expanded "><a href="../../grim/grim.html"><strong aria-hidden="true">2.</strong> GRISM</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../grim/io/io.html"><strong aria-hidden="true">2.1.</strong> IO</a></li><li class="chapter-item expanded "><a href="../../grim/fem/fem.html"><strong aria-hidden="true">2.2.</strong> FEM</a></li><li class="chapter-item expanded "><a href="../../grim/control/control.html"><strong aria-hidden="true">2.3.</strong> Control</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../grim/control/mount/mount.html"><strong aria-hidden="true">2.3.1.</strong> Mount</a></li><li class="chapter-item expanded "><a href="../../grim/control/m1/m1.html"><strong aria-hidden="true">2.3.2.</strong> M1</a></li><li class="chapter-item expanded "><a href="../../grim/control/m2/m2.html"><strong aria-hidden="true">2.3.3.</strong> M2</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../grim/control/m2/fsm/fsm.html"><strong aria-hidden="true">2.3.3.1.</strong> FSM</a></li><li class="chapter-item expanded "><a href="../../grim/control/m2/asm/asm.html"><strong aria-hidden="true">2.3.3.2.</strong> ASM</a></li></ol></li></ol></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/gmt-actor-model.html"><strong aria-hidden="true">1.</strong> GMT Actors Model</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../gmt-actor-model/actors/actors.html" class="active"><strong aria-hidden="true">1.1.</strong> Actors</a></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/data/data.html"><strong aria-hidden="true">1.2.</strong> Data</a></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/model/model.html"><strong aria-hidden="true">1.3.</strong> Model</a></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/clients/client.html"><strong aria-hidden="true">1.4.</strong> Clients</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../gmt-actor-model/clients/sig-log/sig-log.html"><strong aria-hidden="true">1.4.1.</strong> Signals & Logger</a></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/clients/feedback/feedback.html"><strong aria-hidden="true">1.4.2.</strong> Feedback System</a></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/clients/multirate/multirate.html"><strong aria-hidden="true">1.4.3.</strong> Multirate System</a></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/clients/persistence/persistence.html"><strong aria-hidden="true">1.4.4.</strong> Persistence</a></li></ol></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/aggregation/aggregation.html"><strong aria-hidden="true">1.5.</strong> Aggregation</a></li><li class="chapter-item expanded "><a href="../../gmt-actor-model/correctness/correctness.html"><strong aria-hidden="true">1.6.</strong> Correctness</a></li></ol></li><li class="chapter-item expanded "><a href="../../grim/grim.html"><strong aria-hidden="true">2.</strong> GRISM</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../grim/io/io.html"><strong aria-hidden="true">2.1.</strong> IO</a></li><li class="chapter-item expanded "><a href="../../grim/arrow/arrow.html"><strong aria-hidden="true">2.2.</strong> ARROW</a></li><li class="chapter-item expanded "><a href="../../grim/fem/fem.html"><strong aria-hidden="true">2.3.</strong> FEM</a></li><li class="chapter-item expanded "><a href="../../grim/control/control.html"><strong aria-hidden="true">2.4.</strong> Control</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../grim/control/mount/mount.html"><strong aria-hidden="true">2.4.1.</strong> Mount</a></li><li class="chapter-item expanded "><a href="../../grim/control/m1/m1.html"><strong aria-hidden="true">2.4.2.</strong> M1</a></li><li class="chapter-item expanded "><a href="../../grim/control/m2/m2.html"><strong aria-hidden="true">2.4.3.</strong> M2</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../grim/control/m2/fsm/fsm.html"><strong aria-hidden="true">2.4.3.1.</strong> FSM</a></li><li class="chapter-item expanded "><a href="../../grim/control/m2/asm/asm.html"><strong aria-hidden="true">2.4.3.2.</strong> ASM</a></li></ol></li></ol></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -206,8 +209,8 @@ The input/ouput primitive types (<code>i32</code> for the input and <code>f32</c
 <li>read input</li>
 </ul>
 <pre><code class="language-rust no_run noplayground">impl Read&lt;In&gt; for Client {
-    fn read(&amp;mut self, data: Arc&lt;Data&lt;In&gt;&gt;) {
-        self.data = **data;
+    fn read(&amp;mut self, data: Data&lt;In&gt;) {
+        self.data = *data;
     }
 }
 </code></pre>
@@ -215,8 +218,8 @@ The input/ouput primitive types (<code>i32</code> for the input and <code>f32</c
 <li>write output</li>
 </ul>
 <pre><code class="language-rust no_run noplayground">impl Write&lt;Out&gt; for Client {
-    fn write(&amp;mut self) -&gt; Option&lt;Arc&lt;Data&lt;Out&gt;&gt;&gt; {
-        Some(Arc::new(Data::new(self.data as f32 * std::f32::consts::E)))
+    fn write(&amp;mut self) -&gt; Option&lt;Data&lt;Out&gt;&gt; {
+        Some(Data::new(self.data as f32 * std::f32::consts::E))
     }
 }</code></pre>
 <p>Actors exchange their clients data that is contained inside the structure <code>Data</code>. 
@@ -311,5 +314,6 @@ The actor's name (here &quot;aleph&quot;) can be set either like this:</p>
         <!-- Custom JS scripts -->
 
 
+    </div>
     </body>
 </html>

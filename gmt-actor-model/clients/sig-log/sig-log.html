@@ -32,6 +32,7 @@
 
     </head>
     <body>
+    <div id="body-container">
         <!-- Provide site root to javascript -->
         <script>
             var path_to_root = "../../../";
@@ -69,10 +70,12 @@
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
             var html = document.querySelector('html');
-            var sidebar = 'hidden';
+            var sidebar = null;
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
             }
             html.classList.remove('sidebar-visible');
             html.classList.add("sidebar-" + sidebar);
@@ -80,7 +83,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/gmt-actor-model.html"><strong aria-hidden="true">1.</strong> GMT Actors Model</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../gmt-actor-model/actors/actors.html"><strong aria-hidden="true">1.1.</strong> Actors</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/data/data.html"><strong aria-hidden="true">1.2.</strong> Data</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/model/model.html"><strong aria-hidden="true">1.3.</strong> Model</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/client.html"><strong aria-hidden="true">1.4.</strong> Clients</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/sig-log/sig-log.html" class="active"><strong aria-hidden="true">1.4.1.</strong> Signals & Logger</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/feedback/feedback.html"><strong aria-hidden="true">1.4.2.</strong> Feedback System</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/multirate/multirate.html"><strong aria-hidden="true">1.4.3.</strong> Multirate System</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/persistence/persistence.html"><strong aria-hidden="true">1.4.4.</strong> Persistence</a></li></ol></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/aggregation/aggregation.html"><strong aria-hidden="true">1.5.</strong> Aggregation</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/correctness/correctness.html"><strong aria-hidden="true">1.6.</strong> Correctness</a></li></ol></li><li class="chapter-item expanded "><a href="../../../grim/grim.html"><strong aria-hidden="true">2.</strong> GRISM</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../grim/io/io.html"><strong aria-hidden="true">2.1.</strong> IO</a></li><li class="chapter-item expanded "><a href="../../../grim/fem/fem.html"><strong aria-hidden="true">2.2.</strong> FEM</a></li><li class="chapter-item expanded "><a href="../../../grim/control/control.html"><strong aria-hidden="true">2.3.</strong> Control</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../grim/control/mount/mount.html"><strong aria-hidden="true">2.3.1.</strong> Mount</a></li><li class="chapter-item expanded "><a href="../../../grim/control/m1/m1.html"><strong aria-hidden="true">2.3.2.</strong> M1</a></li><li class="chapter-item expanded "><a href="../../../grim/control/m2/m2.html"><strong aria-hidden="true">2.3.3.</strong> M2</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../grim/control/m2/fsm/fsm.html"><strong aria-hidden="true">2.3.3.1.</strong> FSM</a></li><li class="chapter-item expanded "><a href="../../../grim/control/m2/asm/asm.html"><strong aria-hidden="true">2.3.3.2.</strong> ASM</a></li></ol></li></ol></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/gmt-actor-model.html"><strong aria-hidden="true">1.</strong> GMT Actors Model</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../gmt-actor-model/actors/actors.html"><strong aria-hidden="true">1.1.</strong> Actors</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/data/data.html"><strong aria-hidden="true">1.2.</strong> Data</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/model/model.html"><strong aria-hidden="true">1.3.</strong> Model</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/client.html"><strong aria-hidden="true">1.4.</strong> Clients</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/sig-log/sig-log.html" class="active"><strong aria-hidden="true">1.4.1.</strong> Signals & Logger</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/feedback/feedback.html"><strong aria-hidden="true">1.4.2.</strong> Feedback System</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/multirate/multirate.html"><strong aria-hidden="true">1.4.3.</strong> Multirate System</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/clients/persistence/persistence.html"><strong aria-hidden="true">1.4.4.</strong> Persistence</a></li></ol></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/aggregation/aggregation.html"><strong aria-hidden="true">1.5.</strong> Aggregation</a></li><li class="chapter-item expanded "><a href="../../../gmt-actor-model/correctness/correctness.html"><strong aria-hidden="true">1.6.</strong> Correctness</a></li></ol></li><li class="chapter-item expanded "><a href="../../../grim/grim.html"><strong aria-hidden="true">2.</strong> GRISM</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../grim/io/io.html"><strong aria-hidden="true">2.1.</strong> IO</a></li><li class="chapter-item expanded "><a href="../../../grim/arrow/arrow.html"><strong aria-hidden="true">2.2.</strong> ARROW</a></li><li class="chapter-item expanded "><a href="../../../grim/fem/fem.html"><strong aria-hidden="true">2.3.</strong> FEM</a></li><li class="chapter-item expanded "><a href="../../../grim/control/control.html"><strong aria-hidden="true">2.4.</strong> Control</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../grim/control/mount/mount.html"><strong aria-hidden="true">2.4.1.</strong> Mount</a></li><li class="chapter-item expanded "><a href="../../../grim/control/m1/m1.html"><strong aria-hidden="true">2.4.2.</strong> M1</a></li><li class="chapter-item expanded "><a href="../../../grim/control/m2/m2.html"><strong aria-hidden="true">2.4.3.</strong> M2</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../grim/control/m2/fsm/fsm.html"><strong aria-hidden="true">2.4.3.1.</strong> FSM</a></li><li class="chapter-item expanded "><a href="../../../grim/control/m2/asm/asm.html"><strong aria-hidden="true">2.4.3.2.</strong> ASM</a></li></ol></li></ol></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -148,8 +151,8 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="signals--logger"><a class="header" href="#signals--logger">Signals &amp; Logger</a></h1>
-<p>In the following, we will introduce the <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Signals.html"><code>signals</code></a>, <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Source.html"><code>Source</code></a>, <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Logging.html"><code>Logging</code></a> and <a href="file:///media/rconan/projects/target/doc/gmt_dos_actors/clients/struct.Timer.html"><code>Timer</code></a> clients.</p>
-<p>Both <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Signals.html"><code>Signals</code></a> and <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Source.html"><code>Source</code></a> are signals generators and
+<p>In the following, we will introduce the <a href="https://docs.rs/gmt_dos-clients/latest/gmt_dos_clients/struct.Signals.html"><code>signals</code></a>, <a href="https://docs.rs/gmt_dos-clients/latest/gmt_dos_clients/struct.Source.html"><code>Source</code></a>, <a href="https://docs.rs/gmt_dos-clients/latest/gmt_dos_clients/struct.Logging.html"><code>Logging</code></a> and <a href="https://docs.rs/gmt_dos-clients/latest/gmt_dos_clients/struct.Timer.html"><code>Timer</code></a> clients.</p>
+<p>Both <a href="https://docs.rs/gmt_dos-clients/latest/gmt_dos_clients/struct.Signals.html"><code>Signals</code></a> and <a href="https://docs.rs/gmt_dos-clients/latest/gmt_dos_clients/struct.Source.html"><code>Source</code></a> are signals generators and
 both are multi-channels with a single multiplexed output.</p>
 <p>The signals generated with <code>Signals</code> are either a constant, a sinusoide, a ramp, a sinusoide or white-noise. For example, here is an <code>Actor</code> which client is a 2 channels <code>Signals</code>, each channel with the same sinusoide but out-of-phase:</p>
 <pre><code class="language-rust no_run noplayground">        let n_step = 9;
@@ -181,7 +184,7 @@ both are multi-channels with a single multiplexed output.</p>
             2,
         )
         .into();</code></pre>
-<p>The <a href="https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/clients/struct.Logging.html"><code>Logging</code></a> client simply accumulates all its inputs into a single vector. <code>Logging</code> requires all inputs signals to be of the same type. 
+<p>The <a href="https://docs.rs/gmt_dos-clients/latest/gmt_dos_clients/struct.Logging.html"><code>Logging</code></a> client simply accumulates all its inputs into a single vector. <code>Logging</code> requires all inputs signals to be of the same type. 
 An actor for a <code>Logging</code> client with entries for both the <code>Signals</code> and <code>Source</code> clients is declared with</p>
 <pre><code class="language-rust no_run noplayground">        let logging = Logging::&lt;f64&gt;::new(2).into_arcx();
         let mut logger = Terminator::&lt;_&gt;::new(logging.clone());</code></pre>
@@ -217,10 +220,10 @@ enum UpDown {}
             .enumerate()
             .for_each(|(i, x)| println!(&quot;{}: {:+.3?}&quot;, i, x));</code></pre>
 <p><img src="sig-log_out1.png" alt="Signals &amp; Loggers Model output" /></p>
-<p>The <a href="file:///media/rconan/projects/target/doc/gmt_dos_actors/clients/struct.Timer.html"><code>Timer</code></a> client does not generate a new signal instead it adds a beat to the model and takes as input argument a number of beat. 
+<p>The <a href="https://docs.rs/gmt_dos-clients/latest/gmt_dos_clients/struct.Timer.html"><code>Timer</code></a> client does not generate a new signal instead it adds a beat to the model and takes as input argument a number of beat. 
 A <code>Model</code> with a timer will terminate after the last beat.
 Lets update the previous <code>Model</code> with a timer which number of beat is half the number of sample that the signals clients are set to generate:</p>
-<pre><code class="language-rust no_run noplayground">        let mut timer: Initiator&lt;_&gt; = Timer::new(n_step / 2).into();</code></pre>
+<pre><code class="language-rust no_run noplayground">        let mut timer: Initiator&lt;Timer, 1&gt; = Timer::new(n_step / 2).into();</code></pre>
 <p>The <code>signals</code> and <code>source</code> clients are modified to accept the <code>timer</code> input:</p>
 <pre><code class="language-rust no_run noplayground">        let mut signals: Actor&lt;_&gt; = Signals::new(2, n_step)
             .channel(
@@ -332,5 +335,6 @@ The new model looks like this:</p>
         <!-- Custom JS scripts -->
 
 
+    </div>
     </body>
 </html>
