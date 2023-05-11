@@ -4,7 +4,8 @@ use gmt_dos_clients_arrow::Arrow;
 use gmt_dos_clients_fem::{DiscreteModalSolver, ExponentialMatrix};
 use gmt_dos_clients_io::{gmt_m1::M1RigidBodyMotions, gmt_m2::M2RigidBodyMotions};
 use gmt_dos_clients_mount::Mount;
-use gmt_fem::{fem_io::*, FEM};
+use gmt_fem::fem_io::actors_outputs::{MCM2Lcl6D, OSSM1Lcl};
+use gmt_fem::FEM;
 use lom::{OpticalMetrics, LOM};
 use skyangle::Conversion;
 
