@@ -3,16 +3,13 @@ use std::fmt::Display;
 use proc_macro2::Span;
 use quote::quote;
 use syn::{
-    braced,
-    parse::{Parse, ParseStream},
-    token::Brace,
-    Ident,
+    braced, parse::{Parse, ParseStream}, token::Brace, Ident, LitStr, Token
 };
 
 use crate::{client::{ClientKind, SharedClient, System}, Expanded, TryExpand};
 
 mod output;
-pub use output::{MaybeOutput, Output};
+pub use output::{MaybeOutput, Output, Suffix};
 
 /// A pair of a client and one ouput
 #[derive(Debug, Clone)]
@@ -52,19 +49,32 @@ impl From<SharedClient> for ClientOutputPair {
 
 impl Parse for ClientOutputPair {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let client = if input.peek(Brace) {
+         if input.peek(Brace) {
             let content;
             let _ = braced!(content in input);
             let sys: System = content.parse()?;
-            SharedClient::subsystem(sys)
+            let client = SharedClient::subsystem(sys);
+            let output = input.parse::<MaybeOutput>()?.into_inner();
+            Ok(Self{ client, output })
+        } else if input.peek(Token![>>]) {
+            input.parse::<Token![>>]>().map(|_| {
+                let address = if input.peek(Brace) {
+                    let content;
+                    let _ = braced!(content in input);
+                    Some(content.parse::<LitStr>()?)
+                } else {
+                    None
+                };
+                let output = input.parse::<MaybeOutput>()?.into_inner().unwrap();
+                let client = SharedClient::receiver(output.ty.clone(), output.name.as_str(), 0, address);
+                Ok(Self{ client, output: Some(output) })
+            })?
         } else {
             let name: Ident = input.parse()?;
-            SharedClient::new(name)
-        };
-        Ok(Self {
-            client,
-            output: input.parse::<MaybeOutput>()?.into_inner(),
-        })
+            let client = SharedClient::new(name);
+            let output = input.parse::<MaybeOutput>()?.into_inner();
+            Ok(Self{ client, output })   
+        } 
     }
 }
 

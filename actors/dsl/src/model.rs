@@ -268,8 +268,26 @@ impl TryExpand for Model {
                 }
             }
         };
-        Ok(
-            if let Some(_) = self.clients.iter().find(|client| client.is_scope()) {
+        let some_scope = self.clients.iter().find(|client| client.is_scope());
+        let some_transceiver = self.clients.iter().find(|client| client.is_transceiver());
+        Ok(match (some_scope, some_transceiver) {
+            (None, None) => quote! {
+                #code
+                // MODEL
+                #[allow(unused_variables)]
+                let #model = ::gmt_dos_actors::prelude::model!(#(#actors),*).name(#name);
+                let model = ::gmt_dos_actors::prelude::FlowChart::flowchart(#model).#state;
+            },
+            (None, Some(_)) => quote! {
+                let mut transceiver_monitor = ::gmt_dos_clients_transceiver::Monitor::new();
+                #code
+                // MODEL
+                #[allow(unused_variables)]
+                let #model = ::gmt_dos_actors::prelude::model!(#(#actors),*).name(#name);
+                let model = ::gmt_dos_actors::prelude::FlowChart::flowchart(#model).#state;
+                transceiver_monitor.await?;
+            },
+            (Some(_), None) => {
                 let scope_client = self.scope.try_expand()?;
                 quote! {
                     let mut monitor = ::gmt_dos_clients_scope::server::Monitor::new();
@@ -283,17 +301,24 @@ impl TryExpand for Model {
                     #model.await?;
                     monitor.await?;
                 }
-            } else {
+            }
+            (Some(_), Some(_)) => {
+                let scope_client = self.scope.try_expand()?;
                 quote! {
+                    let mut monitor = ::gmt_dos_clients_scope::server::Monitor::new();
+                    let mut transceiver_monitor = ::gmt_dos_clients_transceiver::Monitor::new();
                     #code
                     // MODEL
                     #[allow(unused_variables)]
                     let #model = ::gmt_dos_actors::prelude::model!(#(#actors),*).name(#name);
                     // .flowchart()
-                    // let #model = ::gmt_dos_actors::ramework::model::FlowChart(#model);
-                    let model = ::gmt_dos_actors::prelude::FlowChart::flowchart(#model).#state;
+                    let #model = ::gmt_dos_actors::prelude::FlowChart::flowchart(#model).check()?.run();
+                    #scope_client
+                    #model.await?;
+                    transceiver_monitor.await?;
+                    monitor.await?;
                 }
-            },
-        )
+            }
+        })
     }
 }

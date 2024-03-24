@@ -1,8 +1,8 @@
-use std::{cell::RefCell, fmt::Display, hash::Hash, ops::Deref, rc::Rc};
+use std::{cell::RefCell, env, fmt::Display, hash::Hash, ops::Deref, rc::Rc};
 
 use proc_macro2::Span;
 use quote::format_ident;
-use syn::{Expr, Ident, Type};
+use syn::{Expr, Ident, LitStr, Type};
 
 use crate::{
     model::{Scope, ScopeSignal},
@@ -90,14 +90,68 @@ impl SharedClient {
             },
         })))
     }
-    // pub fn name(&self) -> Ident {
-    //     self.0.borrow().name.clone()
-    // }
+    /// Creates a transmitter from [gmt_dos-clients_transceiver](https://docs.rs/gmt_dos-clients_transceiver)
+    pub fn transmitter(
+        output_type: Type,
+        output_name: &str,
+        input_rate: usize,
+        address: Option<LitStr>,
+    ) -> Self {
+        let actor = format_ident!("transmitter_{}", output_name);
+        Self(Rc::new(RefCell::new(Client {
+            name: actor.clone(),
+            actor,
+            input_rate,
+            output_rate: 0,
+            kind: ClientKind::Transmitter {
+                output_type,
+                address: address.unwrap_or_else(|| {
+                    LitStr::new(
+                        env::var("TX_ADDRESS")
+                            .unwrap_or("127.0.0.1".to_string())
+                            .as_str(),
+                        Span::call_site(),
+                    )
+                }),
+            },
+        })))
+    }
+    /// Creates a receiver from [gmt_dos-clients_transceiver](https://docs.rs/gmt_dos-clients_transceiver)
+    pub fn receiver(
+        input_type: Type,
+        output_name: &str,
+        output_rate: usize,
+        address: Option<LitStr>,
+    ) -> Self {
+        let actor = format_ident!("receiver_{}", output_name);
+        Self(Rc::new(RefCell::new(Client {
+            name: actor.clone(),
+            actor,
+            input_rate: 0,
+            output_rate,
+            kind: ClientKind::Receiver {
+                input_type,
+                address: address.unwrap_or_else(|| {
+                    LitStr::new(
+                        env::var("RX_SERVER_ADDRESS")
+                            .unwrap_or("127.0.0.1".to_string())
+                            .as_str(),
+                        Span::call_site(),
+                    )
+                }),
+            },
+        })))
+    } // pub fn name(&self) -> Ident {
+      //     self.0.borrow().name.clone()
+      // }
     pub fn actor(&self) -> Ident {
         self.borrow().actor.clone()
     }
     pub fn is_scope(&self) -> bool {
         self.borrow().is_scope()
+    }
+    pub fn is_transceiver(&self) -> bool {
+        self.borrow().is_transceiver()
     }
 }
 impl Display for SharedClient {

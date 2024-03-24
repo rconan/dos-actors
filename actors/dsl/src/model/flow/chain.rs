@@ -17,7 +17,7 @@ use crate::{client::SharedClient, model::Scope, Expand, Expanded, TryExpand};
 pub mod clientoutput;
 use clientoutput::ClientOutputPair;
 
-use self::clientoutput::Output;
+use self::clientoutput::{Output, Suffix};
 
 /// Chain of actors
 ///
@@ -148,11 +148,10 @@ impl Chain {
                             ty,
                             name,
                             options: output_options,
-                            scope,
-                            logging,
+                            suffixes: Some(suffix),
                             ..
                         }),
-                } if *scope == true || logging.is_some() => {
+                } => {
                     let mut options = output_options.clone();
                     options
                         .get_or_insert(vec![])
@@ -164,33 +163,49 @@ impl Chain {
                         name: name.clone(),
                         options,
                         rate_transition: None,
-                        scope: false,
-                        logging: None,
-                    };
-
-                    let left = ClientOutputPair {
-                        client: client.clone(),
-                        output: Some(output),
+                        suffixes: None,
                     };
 
                     let mut chains = Option::<Vec<Chain>>::None;
-                    if *scope {
-                        chains.get_or_insert(vec![]).push(
-                            vec![
-                                left.clone(),
-                                SharedClient::scope(&ty, &name, rate, model_scope).into(),
-                            ]
-                            .into(),
-                        )
-                    }
-                    if let Some(size) = logging {
-                        chains.get_or_insert(vec![]).push(
-                            vec![
-                                left.clone(),
-                                SharedClient::logger(&model_name, rate, size.clone()).into(),
-                            ]
-                            .into(),
-                        )
+                    for suffix in suffix {
+                        match suffix {
+                            Suffix::Scope => chains.get_or_insert(vec![]).push(
+                                vec![
+                                    ClientOutputPair {
+                                        client: client.clone(),
+                                        output: Some(output.clone()),
+                                    },
+                                    SharedClient::scope(&ty, &name, rate, model_scope).into(),
+                                ]
+                                .into(),
+                            ),
+                            Suffix::Logging(size) => chains.get_or_insert(vec![]).push(
+                                vec![
+                                    ClientOutputPair {
+                                        client: client.clone(),
+                                        output: Some(output.clone()),
+                                    },
+                                    SharedClient::logger(&model_name, rate, size.clone()).into(),
+                                ]
+                                .into(),
+                            ),
+                            Suffix::Transmitter(address) => chains.get_or_insert(vec![]).push(
+                                vec![
+                                    ClientOutputPair {
+                                        client: client.clone(),
+                                        output: Some(output.clone()),
+                                    },
+                                    SharedClient::transmitter(
+                                        ty.clone(),
+                                        &name,
+                                        rate,
+                                        address.clone(),
+                                    )
+                                    .into(),
+                                ]
+                                .into(),
+                            ),
+                        }
                     }
                     chains
                 }

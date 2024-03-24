@@ -10,10 +10,18 @@ use syn::{
     braced, bracketed,
     parse::{Parse, ParseBuffer, ParseStream},
     token::{Brace, Bracket},
-    Expr, Ident, Token, Type, TypePath,
+    Expr, Ident, LitStr, Token, Type, TypePath,
 };
 
 use crate::client::SharedClient;
+
+#[non_exhaustive]
+#[derive(Debug, Clone)]
+pub enum Suffix {
+    Scope,
+    Logging(Option<Expr>),
+    Transmitter(Option<LitStr>),
+}
 
 /// Actor ouput
 #[derive(Debug, Clone)]
@@ -25,9 +33,9 @@ pub struct Output {
     pub options: Option<Vec<Ident>>,
     // need a rate transition
     pub rate_transition: Option<SharedClient>,
-    // need a scope
-    pub scope: bool,
-    pub logging: Option<Option<Expr>>,
+    pub suffixes: Option<Vec<Suffix>>, // need a scope
+                                       //pub scope: bool,
+                                       // pub logging: Option<Option<Expr>>,
 }
 
 impl Display for Output {
@@ -69,8 +77,7 @@ impl Output {
             // generics,
             options: None,
             rate_transition: None,
-            scope: false,
-            logging: None,
+            suffixes: None,
         })
     }
     pub fn expand_name(&self) -> TokenStream {
@@ -95,12 +102,6 @@ impl Output {
         self.options
             .get_or_insert(vec![])
             .push(Ident::new(option, Span::call_site()));
-    }
-    pub fn add_logging(&mut self, size: Option<Expr>) {
-        self.logging = Some(size);
-    }
-    pub fn add_scope(&mut self) {
-        self.scope = true;
     }
 }
 impl<'a> TryFrom<ParseBuffer<'a>> for Output {
@@ -137,13 +138,16 @@ impl Parse for MaybeOutput {
                     input.peek(Token![$]),
                     input.peek(Token![..]),
                     input.peek(Token![~]),
+                    input.peek(Token![>>]),
                 ) {
-                    (true, false, false, false) => {
+                    // bootstrapped
+                    (true, false, false, false, false) => {
                         input
                             .parse::<Token![!]>()
                             .map(|_| output.add_option("bootstrap"))?;
                     }
-                    (false, true, false, false) => {
+                    // logging
+                    (false, true, false, false, false) => {
                         input.parse::<Token![$]>().map(|_| {
                             let size = if input.peek(Brace) {
                                 let content;
@@ -152,21 +156,36 @@ impl Parse for MaybeOutput {
                             } else {
                                 None
                             };
-                            output.add_logging(size);
+                            output.suffixes.get_or_insert(vec![]).push(Suffix::Logging(size));
                             Ok(())
                         })??;
                     }
-                    (false, false, true, false) => {
+                    // unbounded
+                    (false, false, true, false, false) => {
                         input
                             .parse::<Token![..]>()
                             .map(|_| output.add_option("unbounded"))?;
                     }
-                    (false, false, false, true) => {
-                        input.parse::<Token![~]>().map(|_| output.add_scope())?;
+                    // scope
+                    (false, false, false, true, false) => {
+                        input.parse::<Token![~]>().map(|_| output.suffixes.get_or_insert(vec![]).push(Suffix::Scope))?;
                     }
-                    (false, false, false, false) => break,
+                    // transmitter
+                    (false, false, false, false, true) => {
+                        input.parse::<Token![>>]>().map(|_| {
+                            let address = if input.peek(Brace) {
+                                let content;
+                                let _ = braced!(content in input);
+                                Some(content.parse::<LitStr>()?)
+                            } else {
+                                None
+                            };
+                            output.suffixes.get_or_insert(vec![]).push(Suffix::Transmitter(address));
+                            Ok(())
+                        })??;                    }
+                    (false, false, false, false, false) => break,
                     _ => panic!(
-                        "only the following combination of tokens is allowed: !, $, .. and ~"
+                        "only the following combination of tokens is allowed: !, $, .., ~, >> and <<"
                     ),
                 }
             }

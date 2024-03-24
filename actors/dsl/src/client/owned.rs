@@ -2,7 +2,7 @@ use std::{fmt::Display, hash::Hash};
 
 use proc_macro2::{Literal, Span};
 use quote::quote;
-use syn::{parse::Parse, Expr, Ident, LitInt, LitStr, Token};
+use syn::{parse::Parse, Expr, Ident, LitInt, LitStr, Token, Type};
 
 use crate::{model::ScopeSignal, Expand, Expanded};
 
@@ -23,6 +23,7 @@ impl Parse for System {
     }
 }
 
+#[non_exhaustive]
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum ClientKind {
     MainScope,
@@ -30,11 +31,19 @@ pub enum ClientKind {
     Logger(Ident, Option<Expr>),
     Scope { signal: ScopeSignal },
     SubSystem(System),
+    Transmitter { output_type: Type, address: LitStr },
+    Receiver { input_type: Type, address: LitStr },
 }
 impl ClientKind {
     pub fn is_scope(&self) -> bool {
         match self {
             Self::Scope { .. } => true,
+            _ => false,
+        }
+    }
+    pub fn is_transceiver(&self) -> bool {
+        match self {
+            Self::Transmitter { .. } | Self::Receiver { .. } => true,
             _ => false,
         }
     }
@@ -85,9 +94,19 @@ impl Client {
     pub fn is_scope(&self) -> bool {
         self.kind.is_scope()
     }
+    pub fn is_transceiver(&self) -> bool {
+        self.kind.is_transceiver()
+    }
     pub fn actor_declaration(&self) -> Expanded {
         match self.kind {
             ClientKind::SubSystem(_) => quote!(),
+            ClientKind::Transmitter { .. } | ClientKind::Receiver { .. } => {
+                let Self { name, actor, .. } = self;
+                let (i, o) = (self.lit_input_rate(), self.lit_output_rate());
+                quote!(
+                    let mut #actor: ::gmt_dos_actors::prelude::Actor<_,#i,#o> = #name.into();
+                )
+            }
             _ => {
                 let Self { name, actor, .. } = self;
                 let (i, o) = (self.lit_input_rate(), self.lit_output_rate());
@@ -120,6 +139,16 @@ impl Display for Client {
             ClientKind::Scope { .. } => write!(
                 f,
                 "Scope client: {} into actor: {} with rates: {} input & {} output",
+                self.name, self.actor, self.input_rate, self.output_rate
+            ),
+            ClientKind::Transmitter { .. } => write!(
+                f,
+                "Transmitter client: {} into actor: {} with rates: {} input & {} output",
+                self.name, self.actor, self.input_rate, self.output_rate
+            ),
+            ClientKind::Receiver { .. } => write!(
+                f,
+                "Receiver client: {} into actor: {} with rates: {} input & {} output",
                 self.name, self.actor, self.input_rate, self.output_rate
             ),
         }
@@ -176,6 +205,18 @@ impl Expand for Client {
                             .build()?);
                 }
             }
+            ClientKind::Transmitter {
+                output_type,
+                address,
+            } => quote! {
+                let mut #name = gmt_dos_clients_transceiver::Transceiver::<#output_type>::transmitter(#address)?.run(&mut transceiver_monitor);
+            },
+            ClientKind::Receiver {
+                input_type,
+                address,
+            } => quote! {
+                let mut #name = gmt_dos_clients_transceiver::Transceiver::<#input_type>::receiver(#address,"0.0.0.0:0")?.run(&mut transceiver_monitor);
+            },
         }
     }
 }
