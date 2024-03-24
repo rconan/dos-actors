@@ -262,6 +262,12 @@ if it preceded by another client-output pair it must also implement the `Read<Pr
   * `${n}`: same as above but also specifies the data size,
   * `..`: unbounded output
   * `~`: stream the output to a [gmt_dos-clients_scope] client
+  * `>>`: stream the output using a transmitter from [gmt_dos-clients_transceiver]
+
+A receiver from [gmt_dos-clients_transceiver] is represented with the token `>>` followed by the output type:
+```rust
+>>[OUtput]
+```
 
 ### Attributes
 
@@ -298,6 +304,7 @@ If a label is also given for the same key, it will written over the image.
 [gmt_dos-actors]: https://docs.rs/gmt_dos-actors
 [system]: https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/system
 [gmt_dos-clients_scope]: https://docs.rs/gmt_dos-clients_scope
+[gmt_dos-clients_transceiver]: https://docs.rs/gmt_dos-clients_transceiver
 */
 #[proc_macro]
 pub fn actorscript(input: TokenStream) -> TokenStream {
