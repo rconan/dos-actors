@@ -80,6 +80,7 @@ impl<U: UniqueIdentifier + 'static> Transceiver<U, Transmitter> {
         let endpoint = endpoint.take().unwrap();
         let rx = rx.take().unwrap();
         let name = crate::trim(type_name::<U>());
+        let interupt = monitor.interupt.clone();
         let handle: JoinHandle<Result<(), TransceiverError>> = tokio::spawn(async move {
             // info!("<{name}>: waiting for receiver to connect");
             let stream = endpoint
@@ -113,6 +114,10 @@ impl<U: UniqueIdentifier + 'static> Transceiver<U, Transmitter> {
                                 Ok(bytes) => {
                                     send.write_all(&bytes).await?;
                                     send.finish().await?;
+                                    if interupt.load(std::sync::atomic::Ordering::Relaxed) {
+                                        connection.close(101u32.into(), b"interupted by monitor");
+                                        break Ok(());
+                                    }
                                 }
                                 Err(e) => {
                                     error!("<{name}>: serializing failed");
@@ -120,36 +125,6 @@ impl<U: UniqueIdentifier + 'static> Transceiver<U, Transmitter> {
                                 }
                             };
                         }
-                        /*                         match rx.recv() {
-                            // received some data from client, encoding and sending some to receiver
-                            Ok(data) => {
-                                match encode_to_vec(
-                                    (name.to_string(), Some(data)),
-                                    config::standard(),
-                                ) {
-                                    Ok(bytes) => {
-                                        send.write_all(&bytes).await?;
-                                        send.finish().await?;
-                                    }
-                                    Err(e) => {
-                                        error!("<{name}>: serializing failed");
-                                        break Err(TransceiverError::Encode(e.to_string()));
-                                    }
-                                };
-                            }
-                            // received none, sending none to receiver and closing transmitter
-                            Err(flume::RecvError::Disconnected) => {
-                                debug!("<{name}>: rx disconnected");
-                                let bytes: Vec<u8> = encode_to_vec(
-                                    (name.to_string(), Option::<Data<U>>::None),
-                                    config::standard(),
-                                )
-                                .map_err(|e| TransceiverError::Encode(e.to_string()))?;
-                                send.write_all(&bytes).await?;
-                                send.finish().await?;
-                                break Ok(());
-                            }
-                        } */
                     }
                     Err(e) => {
                         error!("<{name}>: connection with receiver lost");

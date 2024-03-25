@@ -1,7 +1,7 @@
 use std::{any::type_name, marker::PhantomData, net::SocketAddr, time::Instant};
 
 use interface::{Data, UniqueIdentifier};
-use quinn::Endpoint;
+use quinn::{ApplicationClose, ConnectionError, Endpoint};
 use tracing::{debug, error, info};
 
 use crate::{Crypto, Monitor, On, Receiver, Transceiver, TransceiverError};
@@ -114,7 +114,7 @@ impl<U: UniqueIdentifier + 'static> Transceiver<U, Receiver> {
         } = self;
         let endpoint = endpoint.take().unwrap();
         let tx = tx.take().unwrap();
-        let address = SocketAddr::new(server_address.parse().unwrap(),U::PORT as u16);
+        let address = SocketAddr::new(server_address.parse().unwrap(), U::PORT as u16);
         let server_name: String = crypto.name.clone();
         let name = crate::trim(type_name::<U>());
         let handle = tokio::spawn(async move {
@@ -136,12 +136,12 @@ impl<U: UniqueIdentifier + 'static> Transceiver<U, Receiver> {
                         // receiving data from transmitter
                         let bytes = recv.read_to_end(1_000_000_000).await?;
                         n_byte += bytes.len();
-                        debug!("{} bytes received", bytes.len());
+                        //debug!("{} bytes received", bytes.len());
                         // decoding data
                         match decode(bytes.as_slice()) {
                             // received some data from transmitter and sending to client
                             Ok(((tag, Some(data_packet)), _n)) if tag.as_str() == name => {
-                                debug!(" forwarding data");
+                                // debug!(" forwarding data");
                                 for data in data_packet {
                                     let _ = tx.send(data);
                                 }
@@ -170,19 +170,19 @@ impl<U: UniqueIdentifier + 'static> Transceiver<U, Receiver> {
                         }
                     }
                     Err(e) => {
-                        error!("<{name}>: connection with {address} lost");
+                        info!("<{name}>: connection with {address} lost");
                         break Err(TransceiverError::ConnectionError(e));
                     }
                 }
             }
             .or_else(|e| {
-                info!("<{}>: disconnected ({})", &name, e);
+                info!("<{}>: disconnected ({:?})", &name, e);
                 drop(tx);
                 match e {
-                    TransceiverError::StreamEnd(..) => {
-                        info!("{e}");
-                        Ok(())
-                    }
+                    TransceiverError::StreamEnd(..) => Ok(()),
+                    TransceiverError::ConnectionError(ConnectionError::ApplicationClosed(
+                        ApplicationClose { error_code, .. },
+                    )) if error_code == 101u32.into() => Ok(()),
                     _ => Err(e),
                 }
             })
