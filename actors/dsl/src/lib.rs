@@ -262,12 +262,15 @@ if it preceded by another client-output pair it must also implement the `Read<Pr
   * `${n}`: same as above but also specifies the data size,
   * `..`: unbounded output
   * `~`: stream the output to a [gmt_dos-clients_scope] client
-  * `>>`: stream the output using a transmitter from [gmt_dos-clients_transceiver]
+  * `>>`: stream the output using a transmitter from [gmt_dos-clients_transceiver],
+the transmitter IP address is set with the environment variable `TX_ADDRESS` and defaults to `127.0.0.1`
 
 A receiver from [gmt_dos-clients_transceiver] is represented with the token `>>` followed by the output type:
 ```rust
 >>[OUtput]
 ```
+the IP address of the server that the receiver connects to is set with the environment variable `RX_SERVER_ADDRESS` and defaults to `127.0.0.1`
+
 
 ### Attributes
 

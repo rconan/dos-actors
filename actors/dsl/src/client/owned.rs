@@ -99,14 +99,6 @@ impl Client {
     }
     pub fn actor_declaration(&self) -> Expanded {
         match self.kind {
-            ClientKind::SubSystem(_) => quote!(),
-            ClientKind::Transmitter { .. } | ClientKind::Receiver { .. } => {
-                let Self { name, actor, .. } = self;
-                let (i, o) = (self.lit_input_rate(), self.lit_output_rate());
-                quote!(
-                    let mut #actor: ::gmt_dos_actors::prelude::Actor<_,#i,#o> = #name.into();
-                )
-            }
             _ => {
                 let Self { name, actor, .. } = self;
                 let (i, o) = (self.lit_input_rate(), self.lit_output_rate());
@@ -209,13 +201,17 @@ impl Expand for Client {
                 output_type,
                 address,
             } => quote! {
-                let mut #name = gmt_dos_clients_transceiver::Transceiver::<#output_type>::transmitter(#address)?.run(&mut transceiver_monitor);
+                let mut #name = ::gmt_dos_actors::client::Client::from(
+                    gmt_dos_clients_transceiver::Transceiver::<#output_type>::transmitter(#address)?
+                        .run(&mut transceiver_monitor));
             },
             ClientKind::Receiver {
                 input_type,
                 address,
             } => quote! {
-                let mut #name = gmt_dos_clients_transceiver::Transceiver::<#input_type>::receiver(#address,"0.0.0.0:0")?.run(&mut transceiver_monitor);
+                let mut #name = ::gmt_dos_actors::client::Client::from(
+                    gmt_dos_clients_transceiver::Transceiver::<#input_type>::receiver(#address,"0.0.0.0:0")?
+                        .run(&mut transceiver_monitor));
             },
         }
     }
