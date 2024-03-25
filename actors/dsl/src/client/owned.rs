@@ -99,6 +99,7 @@ impl Client {
     }
     pub fn actor_declaration(&self) -> Expanded {
         match self.kind {
+            ClientKind::SubSystem(_) => quote!(),
             _ => {
                 let Self { name, actor, .. } = self;
                 let (i, o) = (self.lit_input_rate(), self.lit_output_rate());
