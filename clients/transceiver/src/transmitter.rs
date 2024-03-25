@@ -115,6 +115,7 @@ impl<U: UniqueIdentifier + 'static> Transceiver<U, Transmitter> {
                                     send.write_all(&bytes).await?;
                                     send.finish().await?;
                                     if interupt.load(std::sync::atomic::Ordering::Relaxed) {
+                                        info!("<{name}>: interupting connection");
                                         connection.close(101u32.into(), b"interupted by monitor");
                                         break Ok(());
                                     }

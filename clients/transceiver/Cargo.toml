@@ -33,6 +33,7 @@ quinn-proto = "0.10.6"
 env_logger.workspace = true
 gmt_dos-actors.workspace = true
 gmt_dos-clients.workspace = true
+log.workspace = true
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 
 [features]

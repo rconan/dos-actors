@@ -1,5 +1,5 @@
 use interface::{Data, Read, UniqueIdentifier, Update, UID};
-use tracing::info;
+use log::info;
 
 #[derive(UID)]
 #[uid(port = 5001)]
