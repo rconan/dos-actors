@@ -48,6 +48,7 @@ serde = [
 
 [dev-dependencies]
 criterion = { version = "0.4", features = ["html_reports"] }
+matio-rs = { workspace = true, features = ["nalgebra"] }
 serde_json = "1.0.96"
 
 [[bench]]

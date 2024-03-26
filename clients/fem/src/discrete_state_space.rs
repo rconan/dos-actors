@@ -491,6 +491,17 @@ impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
             None
         }
     }
+    /// Returns the FEM static gain
+    pub fn static_gain(&self) -> Option<na::DMatrix<f64>> {
+        let Some(fem) = self.fem.as_ref() else {
+            return None;
+        };
+        let n_io = fem.n_io;
+        fem.static_gain.as_ref().and_then(|x| {
+            let g = DMatrix::from_row_slice(n_io.1, n_io.0, x);
+            self.reduce2io(&g)
+        })
+    }
     #[allow(dead_code)]
     fn reduce2io(&self, matrix: &DMatrix<f64>) -> Option<DMatrix<f64>> {
         if let Some(fem) = &self.fem {
@@ -853,5 +864,13 @@ are set to zero."
                 "Failed to build both modal transformation matrices".to_string(),
             )),
         }
+    }
+}
+
+impl<'a, S: Solver + Default> TryFrom<DiscreteStateSpace<'a, S>> for DiscreteModalSolver<S> {
+    type Error = StateSpaceError;
+
+    fn try_from(dss: DiscreteStateSpace<'a, S>) -> std::result::Result<Self, Self::Error> {
+        dss.build()
     }
 }
