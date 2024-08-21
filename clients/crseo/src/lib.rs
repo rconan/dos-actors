@@ -32,19 +32,24 @@ use interface::{Data, Read, UniqueIdentifier, Update, Write};
 mod error;
 pub use error::{CeoError, Result};
 
-mod ngao;
-pub use ngao::{
-    DetectorFrame, GuideStar, OpticalModel, OpticalModelBuilder, ResidualM2modes,
-    ResidualPistonMode, WavefrontSensor,
-};
+// mod ngao;
+// pub use ngao::{
+//     DetectorFrame, GuideStar, OpticalModel, OpticalModelBuilder, ResidualM2modes,
+//     ResidualPistonMode, WavefrontSensor,
+// };
 
-mod wavefront_stats;
-pub use wavefront_stats::WavefrontStats;
+// mod wavefront_stats;
+// pub use wavefront_stats::WavefrontStats;
 
-mod pyramid;
-pub use pyramid::{PyramidCalibrator, PyramidCommand, PyramidMeasurements, PyramidProcessor};
+// mod pyramid;
+// pub use pyramid::{PyramidCalibrator, PyramidCommand, PyramidMeasurements, PyramidProcessor};
 
 mod calibration;
+mod ltao;
+pub use ltao::{
+    Calibrate, CalibrateSegment, CalibrationMode, Centroids, OpticalModel, OpticalModelBuilder,
+};
+
 pub use calibration::{Calibrating, CalibratingError, Calibration};
 
 pub trait Processing {
@@ -82,22 +87,22 @@ impl<P: Processing + Send + Sync> Update for Processor<P> {
     // }
 }
 
-impl Read<DetectorFrame> for Processor<PyramidProcessor> {
-    fn read(&mut self, data: Data<DetectorFrame>) {
-        self.frame = data.as_arc();
-    }
-}
-
-impl<P, T> Write<T> for Processor<P>
-where
-    P: Processing + Send + Sync,
-    T: UniqueIdentifier<DataType = P::ProcessorData>,
-{
-    fn write(&mut self) -> Option<Data<T>> {
-        let data: <P as Processing>::ProcessorData = self.processing();
-        Some(Data::new(data))
-    }
-}
+// impl Read<DetectorFrame> for Processor<PyramidProcessor> {
+//     fn read(&mut self, data: Data<DetectorFrame>) {
+//         self.frame = data.as_arc();
+//     }
+// }
+//
+// impl<P, T> Write<T> for Processor<P>
+// where
+//     P: Processing + Send + Sync,
+//     T: UniqueIdentifier<DataType = P::ProcessorData>,
+// {
+//     fn write(&mut self) -> Option<Data<T>> {
+//         let data: <P as Processing>::ProcessorData = self.processing();
+//         Some(Data::new(data))
+//     }
+// }
 
 /*
 

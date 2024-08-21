@@ -14,6 +14,7 @@ keywords.workspace = true
 [dependencies]
 gmt_dos-actors.workspace = true
 interface.workspace = true
+crseo = { workspace = true, optional = true }
 
 [build-dependencies]
 anyhow.workspace = true
