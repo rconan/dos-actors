@@ -1,4 +1,5 @@
 use interface::{UniqueIdentifier, UID};
+use std::marker::PhantomData;
 
 /// Source wavefront error RMS `[m]`
 #[derive(UID)]
@@ -71,3 +72,23 @@ pub enum M2modes {}
 #[derive(UID)]
 #[uid(port = 55_010)]
 pub enum M2rxy {}
+
+pub trait Cuda {}
+pub enum Host {}
+pub enum Dev {}
+impl Cuda for Host {}
+impl Cuda for Dev {}
+
+/// [crseo::Imaging] frame
+///
+/// The frame is allocated either on the host [Host] or on the device [Dev].
+pub struct Frame<T: Cuda>(PhantomData<T>);
+#[cfg(feature = "crseo")]
+impl UniqueIdentifier for Frame<Dev> {
+    const PORT: u16 = 55_011;
+    type DataType = crseo::imaging::Frame;
+}
+impl UniqueIdentifier for Frame<Host> {
+    const PORT: u16 = 55_011;
+    type DataType = Vec<f32>;
+}

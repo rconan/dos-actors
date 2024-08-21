@@ -13,7 +13,7 @@ keywords.workspace = true
 
 [dependencies]
 interface.workspace = true
-gmt_dos-clients_io.workspace = true
+gmt_dos-clients_io = { workspace = true, features = ["crseo"] }
 gmt_dos-clients_domeseeing.workspace = true
 log.workspace = true
 nalgebra.workspace = true
@@ -24,7 +24,7 @@ anyhow.workspace = true
 toml = "0.8.8"
 indicatif = { workspace = true, features = ["rayon"] }
 rayon.workspace = true
-faer = { version = "0.16.0", optional = true, features = ["nalgebra"] }
+faer = { version = "0.19.1" }
 bincode = { workspace = true, features = ["serde"] }
 
 [dev-dependencies]
