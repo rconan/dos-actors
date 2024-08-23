@@ -47,7 +47,8 @@ pub use error::{CeoError, Result};
 mod calibration;
 mod ltao;
 pub use ltao::{
-    Calibrate, CalibrateSegment, CalibrationMode, Centroids, OpticalModel, OpticalModelBuilder,
+    Calibrate, CalibrateSegment, CalibrationMode, Centroids, NoSensor, OpticalModel,
+    OpticalModelBuilder, Reconstructor, Wave, WavefrontBuilder, WavefrontSensor,
 };
 
 pub use calibration::{Calibrating, CalibratingError, Calibration};

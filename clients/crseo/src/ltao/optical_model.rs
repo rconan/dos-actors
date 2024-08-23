@@ -1,12 +1,16 @@
 use crate::ltao::SensorProperty;
-use crate::OpticalModelBuilder;
+use crate::{NoSensor, OpticalModelBuilder, Processing};
 use crseo::{FromBuilder, Gmt, Imaging, Propagation, Source};
 use gmt_dos_clients_io::gmt_m1::segment::RBM;
 use gmt_dos_clients_io::gmt_m2::asm::segment::AsmCommand;
+use gmt_dos_clients_io::gmt_m2::asm::M2ASMAsmCommand;
 use gmt_dos_clients_io::optics::{Dev, Frame, Host};
 use interface::{Data, Read, Update, Write};
 
 pub mod builder;
+pub mod no_sensor;
+mod stats;
+pub mod wavefront;
 
 #[derive(Debug, thiserror::Error)]
 pub enum OpticalModelError {
@@ -16,7 +20,7 @@ pub enum OpticalModelError {
 
 pub type Result<T> = std::result::Result<T, OpticalModelError>;
 
-pub struct OpticalModel<T> {
+pub struct OpticalModel<T = NoSensor> {
     pub(crate) gmt: Gmt,
     pub src: Source,
     pub(crate) sensor: Option<T>,
@@ -38,7 +42,7 @@ where
         Default::default()
     }
 }
-impl<T: Propagation + SensorProperty> Update for OpticalModel<T> {
+impl<T: Propagation> Update for OpticalModel<T> {
     fn update(&mut self) {
         self.src.through(&mut self.gmt).xpupil();
         if let Some(sensor) = &mut self.sensor {
@@ -70,15 +74,21 @@ impl Write<Frame<Host>> for OpticalModel<Imaging> {
     }
 }
 
-impl<T: Propagation + SensorProperty, const SID: u8> Read<RBM<SID>> for OpticalModel<T> {
+impl<T: SensorProperty, const SID: u8> Read<RBM<SID>> for OpticalModel<T> {
     fn read(&mut self, data: Data<RBM<SID>>) {
         self.gmt
             .m1_segment_state(SID as i32, &data[..3], &data[3..]);
     }
 }
 
-impl<T: Propagation + SensorProperty, const SID: u8> Read<AsmCommand<SID>> for OpticalModel<T> {
+impl<T: SensorProperty, const SID: u8> Read<AsmCommand<SID>> for OpticalModel<T> {
     fn read(&mut self, data: Data<AsmCommand<SID>>) {
         self.gmt.m2_segment_modes(SID, &data);
+    }
+}
+
+impl<T: SensorProperty> Read<M2ASMAsmCommand> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M2ASMAsmCommand>) {
+        self.gmt.m2_modes(&data);
     }
 }
