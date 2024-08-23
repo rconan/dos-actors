@@ -113,7 +113,8 @@ where
                 start_idx,
             } => {
                 log::info!("Calibrating segment modes ...");
-                let mut optical_model = builder.gmt(Gmt::builder().n_mode::<M>(n_mode)).build()?;
+                let gmt = builder.clone().gmt.n_mode::<M>(n_mode);
+                let mut optical_model = builder.gmt(gmt).build()?;
                 optical_model.gmt.keep(&[SID as i32]);
                 centroids.setup(&mut optical_model);
 
