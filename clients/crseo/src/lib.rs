@@ -48,7 +48,7 @@ mod calibration;
 mod ltao;
 pub use ltao::{
     Calibrate, CalibrateSegment, CalibrationMode, Centroids, NoSensor, OpticalModel,
-    OpticalModelBuilder, Reconstructor, Wave, WavefrontBuilder, WavefrontSensor,
+    OpticalModelBuilder, Reconstructor, WaveSensor, WaveSensorBuilder,
 };
 
 pub use calibration::{Calibrating, CalibratingError, Calibration};
