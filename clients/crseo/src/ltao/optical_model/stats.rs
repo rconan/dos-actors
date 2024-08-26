@@ -1,6 +1,6 @@
 use crate::ltao::SensorProperty;
-use crate::OpticalModel;
-use crseo::Propagation;
+use crate::{NoSensor, OpticalModel};
+use crseo::{Imaging, Propagation};
 use gmt_dos_clients_io::optics::{
     SegmentPiston, SegmentTipTilt, SegmentWfe, SegmentWfeRms, Wavefront, WfeRms,
 };
@@ -19,7 +19,7 @@ impl<T: Propagation, const E: i32> Write<WfeRms<E>> for OpticalModel<T> {
                 0 => self.src.wfe_rms(),
                 exp => self.src.wfe_rms_10e(exp),
             }
-            .into(),
+                .into(),
         )
     }
 }
@@ -36,7 +36,7 @@ impl<T: Propagation, const E: i32> Write<SegmentWfeRms<E>> for OpticalModel<T> {
                 0 => self.src.segment_wfe_rms(),
                 exp => self.src.segment_wfe_rms_10e(exp),
             }
-            .into(),
+                .into(),
         )
     }
 }
@@ -53,7 +53,7 @@ impl<T: SensorProperty, const E: i32> Write<SegmentPiston<E>> for OpticalModel<T
                 0 => self.src.segment_piston(),
                 exp => self.src.segment_piston_10e(exp),
             }
-            .into(),
+                .into(),
         )
     }
 }
@@ -85,12 +85,16 @@ impl<T: SensorProperty> Write<SegmentTipTilt> for OpticalModel<T> {
     }
 }
 
-impl<T: SensorProperty> Size<Wavefront> for OpticalModel<T> {
+pub trait SourceWavefront {}
+impl SourceWavefront for NoSensor {}
+impl SourceWavefront for Imaging {}
+
+impl<T: SensorProperty + SourceWavefront> Size<Wavefront> for OpticalModel<T> {
     fn len(&self) -> usize {
         self.src.pupil_sampling().pow(2) * self.src.size as usize
     }
 }
-impl<T: SensorProperty> Write<Wavefront> for OpticalModel<T> {
+impl<T: SensorProperty + SourceWavefront> Write<Wavefront> for OpticalModel<T> {
     fn write(&mut self) -> Option<Data<Wavefront>> {
         Some(Data::new(
             self.src.phase().into_iter().map(|x| *x as f64).collect(),

@@ -2,7 +2,7 @@ use super::{Calib, Calibrate, PushPull, Reconstructor};
 use crate::{CalibrateSegment, CalibrationMode, Centroids, OpticalModel, OpticalModelBuilder};
 use crseo::gmt::{GmtBuilder, GmtMirror, GmtMirrorBuilder, GmtMx, MirrorGetSet};
 use crseo::imaging::ImagingBuilder;
-use crseo::{FromBuilder, Gmt, Imaging};
+use crseo::{Gmt, Imaging};
 use interface::Update;
 use std::time::Instant;
 

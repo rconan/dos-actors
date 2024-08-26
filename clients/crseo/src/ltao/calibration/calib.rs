@@ -1,11 +1,14 @@
+use super::CalibPinv;
 use crate::CalibrationMode;
-use faer::mat::from_column_major_slice;
-use faer::{Mat, MatRef};
-use std::fmt::Display;
-use std::ops::Mul;
-use std::time::Duration;
+use faer::{mat::from_column_major_slice, Mat, MatRef};
+use serde::{Deserialize, Serialize};
+use std::{
+    fmt::Display,
+    ops::{Mul, SubAssign},
+    time::Duration,
+};
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Calib {
     pub(crate) sid: u8,
     pub(crate) n_mode: usize,
@@ -56,6 +59,50 @@ impl Calib {
             .filter_map(|(x, b)| if *b { Some(*x) } else { None })
             .collect()
     }
+    pub fn match_areas(&mut self, other: &mut Calib) {
+        assert_eq!(self.mask.len(), other.mask.len());
+        let area_a = self.area();
+        let area_b = other.area();
+        let mask: Vec<_> = self
+            .mask
+            .iter()
+            .zip(other.mask.iter())
+            .map(|(&a, &b)| a && b)
+            .collect();
+
+        let c_to_area: Vec<_> = self
+            .c
+            .chunks(area_a)
+            .flat_map(|c| {
+                self.mask
+                    .iter()
+                    .zip(&mask)
+                    .filter(|&(&ma, _)| ma)
+                    .zip(c)
+                    .filter(|&((_, &mb), _)| mb)
+                    .map(|(_, c)| *c)
+            })
+            .collect();
+        self.c = c_to_area;
+        let c_to_area: Vec<_> = other
+            .c
+            .chunks(area_b)
+            .flat_map(|c| {
+                other
+                    .mask
+                    .iter()
+                    .zip(&mask)
+                    .filter(|&(&ma, _)| ma)
+                    .zip(c)
+                    .filter(|&((_, &mb), _)| mb)
+                    .map(|(_, c)| *c)
+            })
+            .collect();
+        other.c = c_to_area;
+
+        self.mask = mask.clone();
+        other.mask = mask;
+    }
 }
 impl Display for Calib {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -72,44 +119,19 @@ impl Display for Calib {
     }
 }
 
-#[derive(Debug)]
-pub struct CalibPinv<T: faer::Entity> {
-    mat: Mat<T>,
-    pub(crate) cond: T,
-    mode: CalibrationMode,
+impl Mul<Mat<f64>> for &Calib {
+    type Output = Mat<f64>;
+    fn mul(self, rhs: Mat<f64>) -> Self::Output {
+        self.mat_ref() * rhs
+    }
 }
 
-impl Mul<Vec<f64>> for &CalibPinv<f64> {
-    type Output = Vec<f64>;
-    fn mul(self, rhs: Vec<f64>) -> Self::Output {
-        let e = self.mat.as_ref() * from_column_major_slice::<f64>(rhs.as_slice(), rhs.len(), 1);
-        let n = e.nrows();
-        let iter = e
-            .row_iter()
-            .flat_map(|r| r.iter().cloned().collect::<Vec<_>>());
-        match self.mode {
-            CalibrationMode::RBM(tr_xyz) => {
-                if n < 6 {
-                    let mut out = vec![0.; 6];
-                    out.iter_mut()
-                        .zip(&tr_xyz)
-                        .filter_map(|(out, v)| v.and_then(|_| Some(out)))
-                        .zip(iter)
-                        .for_each(|(out, e)| *out = e);
-                    out
-                } else {
-                    iter.collect()
-                }
-            }
-            CalibrationMode::Modes {
-                n_mode, start_idx, ..
-            } => {
-                if n < n_mode {
-                    vec![0.; start_idx].into_iter().chain(iter).collect()
-                } else {
-                    iter.collect()
-                }
-            }
-        }
+impl SubAssign<Mat<f64>> for &mut Calib {
+    fn sub_assign(&mut self, rhs: Mat<f64>) {
+        let s = self.mat_ref() - rhs;
+        self.c = s
+            .col_iter()
+            .flat_map(|c| c.iter().cloned().collect::<Vec<_>>())
+            .collect();
     }
 }

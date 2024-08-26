@@ -10,7 +10,7 @@ use interface::TimerMarker;
 pub use optical_model::builder::OpticalModelBuilder;
 pub use optical_model::{
     no_sensor::NoSensor,
-    wavefront::{Wave, WavefrontBuilder, WavefrontSensor},
+    wave_sensor::{WaveSensor, WaveSensorBuilder},
     OpticalModel,
 };
 

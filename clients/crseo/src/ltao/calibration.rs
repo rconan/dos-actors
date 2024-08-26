@@ -1,16 +1,20 @@
 mod calib;
+mod calib_pinv;
 mod centroids;
 mod reconstructor;
+mod wave_sensor;
 
 use crate::ltao::centroiding::CentroidsError;
 use crate::ltao::optical_model::OpticalModelError;
 use crate::{OpticalModel, OpticalModelBuilder};
 pub use calib::Calib;
+pub use calib_pinv::CalibPinv;
 use crseo::gmt::GmtMx;
 pub use reconstructor::Reconstructor;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
-#[derive(Debug, Clone, PartialEq, Copy)]
+#[derive(Debug, Clone, PartialEq, Copy, Serialize, Deserialize)]
 pub enum CalibrationMode {
     RBM([Option<f64>; 6]),
     Modes {
@@ -24,7 +28,7 @@ impl CalibrationMode {
         Self::Modes {
             n_mode,
             stroke,
-            start_idx: 1,
+            start_idx: 0,
         }
     }
     pub fn start_from(self, id: usize) -> Self {

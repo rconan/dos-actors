@@ -1,19 +1,29 @@
 use crate::ltao::{SensorBuilderProperty, SensorProperty};
 use crate::{NoSensor, OpticalModel, OpticalModelBuilder};
 use crseo::{Builder, CrseoError, FromBuilder, Propagation, Source};
-use interface::{Data, Size, Update, Write, UID};
+use gmt_dos_clients_io::optics::Wavefront;
+use interface::{Data, Size, Update, Write};
+
+#[derive(Debug, Default, Clone)]
+pub struct WaveSensorBuilder(pub OpticalModelBuilder<NoSensor>);
 
 #[derive(Debug, Default)]
-pub struct WavefrontBuilder(pub OpticalModelBuilder<NoSensor>);
-
-#[derive(Debug, Default)]
-pub struct Wave {
-    reference: Option<Box<Wave>>,
+pub struct WaveSensor {
+    reference: Option<Box<WaveSensor>>,
     amplitude: Vec<f64>,
     phase: Vec<f64>,
 }
 
-impl From<OpticalModel<NoSensor>> for Wave {
+impl WaveSensor {
+    pub fn phase(&self) -> &[f64] {
+        self.phase.as_slice()
+    }
+    pub fn amplitude(&self) -> &[f64] {
+        self.amplitude.as_slice()
+    }
+}
+
+impl From<OpticalModel<NoSensor>> for WaveSensor {
     fn from(mut optical_model: OpticalModel<NoSensor>) -> Self {
         optical_model.update();
         let amplitude: Vec<_> = optical_model
@@ -29,7 +39,7 @@ impl From<OpticalModel<NoSensor>> for Wave {
             .map(|x| *x as f64)
             .collect();
         let n = phase.len();
-        let reference = Wave {
+        let reference = WaveSensor {
             amplitude,
             phase,
             reference: None,
@@ -42,31 +52,29 @@ impl From<OpticalModel<NoSensor>> for Wave {
     }
 }
 
-#[derive(UID)]
-pub enum WavefrontSensor {}
-impl Write<WavefrontSensor> for OpticalModel<Wave> {
-    fn write(&mut self) -> Option<Data<WavefrontSensor>> {
+impl Write<Wavefront> for OpticalModel<WaveSensor> {
+    fn write(&mut self) -> Option<Data<Wavefront>> {
         Some(self.sensor.as_ref()?.phase.clone().into())
     }
 }
-impl Size<WavefrontSensor> for OpticalModel<Wave> {
+impl Size<Wavefront> for OpticalModel<WaveSensor> {
     fn len(&self) -> usize {
         self.sensor.as_ref().unwrap().phase.len()
     }
 }
 
-impl SensorBuilderProperty for WavefrontBuilder {
+impl SensorBuilderProperty for WaveSensorBuilder {
     fn pupil_sampling(&self) -> usize {
         self.0.src.pupil_sampling.side()
     }
 }
-impl SensorProperty for Wave {
+impl SensorProperty for WaveSensor {
     fn reset(&mut self) {
         unimplemented!()
     }
 }
 
-impl Propagation for Wave {
+impl Propagation for WaveSensor {
     fn propagate(&mut self, src: &mut Source) {
         let iter = self.amplitude.iter_mut().zip(&mut self.phase);
         let src_iter = src.amplitude().into_iter().zip(src.phase().iter());
@@ -92,8 +100,8 @@ impl Propagation for Wave {
     }
 }
 
-impl Builder for WavefrontBuilder {
-    type Component = Wave;
+impl Builder for WaveSensorBuilder {
+    type Component = WaveSensor;
     fn build(self) -> std::result::Result<Self::Component, CrseoError> {
         let Self(omb) = self;
         let om: OpticalModel<NoSensor> = omb.build().unwrap();
@@ -101,6 +109,6 @@ impl Builder for WavefrontBuilder {
     }
 }
 
-impl FromBuilder for Wave {
-    type ComponentBuilder = WavefrontBuilder;
+impl FromBuilder for WaveSensor {
+    type ComponentBuilder = WaveSensorBuilder;
 }

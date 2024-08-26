@@ -1,16 +1,17 @@
 use crate::ltao::SensorProperty;
-use crate::{NoSensor, OpticalModelBuilder, Processing};
+use crate::{NoSensor, OpticalModelBuilder};
 use crseo::{FromBuilder, Gmt, Imaging, Propagation, Source};
-use gmt_dos_clients_io::gmt_m1::segment::RBM;
-use gmt_dos_clients_io::gmt_m2::asm::segment::AsmCommand;
-use gmt_dos_clients_io::gmt_m2::asm::M2ASMAsmCommand;
-use gmt_dos_clients_io::optics::{Dev, Frame, Host};
+use gmt_dos_clients_io::{
+    gmt_m1::{segment::RBM, M1RigidBodyMotions},
+    gmt_m2::asm::{segment::AsmCommand, M2ASMAsmCommand},
+    optics::{Dev, Frame, Host},
+};
 use interface::{Data, Read, Update, Write};
 
 pub mod builder;
 pub mod no_sensor;
 mod stats;
-pub mod wavefront;
+pub mod wave_sensor;
 
 #[derive(Debug, thiserror::Error)]
 pub enum OpticalModelError {
@@ -69,7 +70,7 @@ impl Write<Frame<Host>> for OpticalModel<Imaging> {
                 imgr.reset();
                 frame
             }
-                .into()
+            .into()
         })
     }
 }
@@ -81,6 +82,14 @@ impl<T: SensorProperty, const SID: u8> Read<RBM<SID>> for OpticalModel<T> {
     }
 }
 
+impl<T: SensorProperty> Read<M1RigidBodyMotions> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M1RigidBodyMotions>) {
+        data.chunks(6).enumerate().for_each(|(sid, data)| {
+            self.gmt
+                .m1_segment_state(1 + sid as i32, &data[..3], &data[3..]);
+        });
+    }
+}
 impl<T: SensorProperty, const SID: u8> Read<AsmCommand<SID>> for OpticalModel<T> {
     fn read(&mut self, data: Data<AsmCommand<SID>>) {
         self.gmt.m2_segment_modes(SID, &data);
