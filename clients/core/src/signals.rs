@@ -33,6 +33,12 @@ pub enum Signal {
     Composite(Vec<Signal>),
 }
 
+impl From<f64> for Signal {
+    fn from(val: f64) -> Self {
+        Signal::Constant(val)
+    }
+}
+
 #[cfg(feature = "noise")]
 impl Signal {
     /// Create a white noise signal with a standard deviation equal to one
@@ -131,14 +137,14 @@ impl Signals {
         Self { signals, ..self }
     }
     /// Sets the same [Signal] for all outputs
-    pub fn channels(self, signal: Signal) -> Self {
-        let signals = vec![signal.clone(); self.size];
+    pub fn channels<S: Into<Signal>>(self, signal: S) -> Self {
+        let signals = vec![signal.into().clone(); self.size];
         Self { signals, ..self }
     }
     /// Sets the [Signal] of output #`k`
-    pub fn channel(self, k: usize, output_signal: Signal) -> Self {
+    pub fn channel<S: Into<Signal>>(self, k: usize, output_signal: S) -> Self {
         let mut signals = self.signals;
-        signals[k] = output_signal;
+        signals[k] = output_signal.into();
         Self { signals, ..self }
     }
 }
