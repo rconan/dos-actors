@@ -100,3 +100,34 @@ impl<const C: usize, const F: usize> Size<DfsFftFrame<Host>>
             .map_or_else(|| 0, |dfs| dfs.fft_size().pow(2))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::error::Error;
+
+    use crseo::{FromBuilder, Source};
+    use interface::Update;
+
+    use crate::OpticalModel;
+
+    use super::*;
+
+    #[test]
+    fn dfs() -> std::result::Result<(), Box<dyn Error>> {
+        let mut om = OpticalModel::<DispersedFringeSensor<1, 1>>::builder()
+            .source(Source::builder().size(2))
+            .sensor(DispersedFringeSensor::<1, 1>::builder())
+            .build()?;
+        om.update();
+
+        let frame: Vec<_> = om.sensor().unwrap().frame().into();
+
+        serde_pickle::to_writer(
+            &mut std::fs::File::create("dfs.pkl")?,
+            &frame,
+            Default::default(),
+        )?;
+
+        Ok(())
+    }
+}

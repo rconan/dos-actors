@@ -31,5 +31,6 @@ bincode = { workspace = true, features = ["serde"] }
 complot = "0.3.4"
 gmt_dos-clients_arrow.workspace = true
 linya = "0.3.0"
+serde-pickle = "1.1.1"
 skyangle = "0.2.2"
 tokio = "1.21.1"
