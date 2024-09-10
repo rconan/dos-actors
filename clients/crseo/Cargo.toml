@@ -19,7 +19,7 @@ log.workspace = true
 nalgebra.workspace = true
 thiserror.workspace = true
 crseo.workspace = true
-serde = { version = "1.0.152", features = ["derive"] }
+serde = { version = "1.0.152", features = ["derive", "rc"] }
 anyhow.workspace = true
 toml = "0.8.8"
 indicatif = { workspace = true, features = ["rayon"] }

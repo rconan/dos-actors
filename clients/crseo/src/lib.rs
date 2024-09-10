@@ -27,7 +27,7 @@ pub use sensor::SensorBuilder;
 use std::ops::{Deref, DerefMut};
 
 pub use crseo::{self, CrseoError};
-use interface::{Data, Read, UniqueIdentifier, Update, Write};
+use interface::Update;
 
 mod error;
 pub use error::{CeoError, Result};
@@ -47,7 +47,8 @@ pub use error::{CeoError, Result};
 mod calibration;
 mod ltao;
 pub use ltao::{
-    Calibrate, CalibrateSegment, CalibrationMode, Centroids, NoSensor, OpticalModel,
+    Calibrate, CalibrateSegment, CalibrationMode, Centroids, DispersedFringeSensor,
+    DispersedFringeSensorBuidler, DispersedFringeSensorProcessing, NoSensor, OpticalModel,
     OpticalModelBuilder, Reconstructor, WaveSensor, WaveSensorBuilder,
 };
 

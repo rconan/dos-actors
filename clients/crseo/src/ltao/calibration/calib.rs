@@ -8,7 +8,7 @@ use std::{
     time::Duration,
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Calib {
     pub(crate) sid: u8,
     pub(crate) n_mode: usize,
@@ -16,6 +16,7 @@ pub struct Calib {
     pub(crate) mask: Vec<bool>,
     pub(crate) mode: CalibrationMode,
     pub(crate) runtime: Duration,
+    pub(crate) n_cols: Option<usize>,
 }
 
 impl Calib {
@@ -25,6 +26,9 @@ impl Calib {
     }
     #[inline]
     pub fn n_cols(&self) -> usize {
+        if let Some(n_cols) = self.n_cols {
+            return n_cols;
+        }
         match self.mode {
             CalibrationMode::RBM(tr_xyz) => tr_xyz.iter().filter_map(|&x| x).count(),
             CalibrationMode::Modes {
@@ -106,16 +110,28 @@ impl Calib {
 }
 impl Display for Calib {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Calib S{} ({}, {}) in {:.0?}; non-zeros: {}/{}",
-            self.sid,
-            self.n_rows(),
-            self.n_cols(),
-            self.runtime,
-            self.area(),
-            self.mask.len()
-        )
+        if self.sid > 0 {
+            write!(
+                f,
+                "Calib S{} ({}, {}) in {:.0?}; non-zeros: {}/{}",
+                self.sid,
+                self.n_rows(),
+                self.n_cols(),
+                self.runtime,
+                self.area(),
+                self.mask.len()
+            )
+        } else {
+            write!(
+                f,
+                "Calib ({}, {}) in {:.0?}; non-zeros: {}/{}",
+                self.n_rows(),
+                self.n_cols(),
+                self.runtime,
+                self.area(),
+                self.mask.len()
+            )
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::ltao::{SensorBuilderProperty, SensorProperty};
+use crate::ltao::SensorBuilderProperty;
 use crate::{NoSensor, OpticalModel, OpticalModelBuilder};
 use crseo::{Builder, CrseoError, FromBuilder, Propagation, Source};
 use gmt_dos_clients_io::optics::Wavefront;
@@ -64,13 +64,8 @@ impl Size<Wavefront> for OpticalModel<WaveSensor> {
 }
 
 impl SensorBuilderProperty for WaveSensorBuilder {
-    fn pupil_sampling(&self) -> usize {
-        self.0.src.pupil_sampling.side()
-    }
-}
-impl SensorProperty for WaveSensor {
-    fn reset(&mut self) {
-        unimplemented!()
+    fn pupil_sampling(&self) -> Option<usize> {
+        Some(self.0.src.pupil_sampling.side())
     }
 }
 

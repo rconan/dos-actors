@@ -36,8 +36,12 @@ where
     pub fn build(self) -> super::Result<OpticalModel<T>> {
         Ok(OpticalModel {
             gmt: self.gmt.build()?,
-            src: if let Some(sensor) = &self.sensor {
-                self.src.pupil_sampling(sensor.pupil_sampling()).build()?
+            src: if let &Some(n) = &self
+                .sensor
+                .as_ref()
+                .and_then(|sensor| sensor.pupil_sampling())
+            {
+                self.src.pupil_sampling(n).build()?
             } else {
                 self.src.build()?
             },
@@ -49,3 +53,5 @@ where
         })
     }
 }
+
+

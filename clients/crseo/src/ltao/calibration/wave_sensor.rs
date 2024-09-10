@@ -142,6 +142,7 @@ where
             mask,
             mode: calib_mode,
             runtime: now.elapsed(),
+            n_cols: None,
         })
     }
 }

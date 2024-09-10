@@ -3,6 +3,7 @@ mod calib_pinv;
 mod centroids;
 mod reconstructor;
 mod wave_sensor;
+mod dispersed_fringe_sensor;
 
 use crate::ltao::centroiding::CentroidsError;
 use crate::ltao::optical_model::OpticalModelError;

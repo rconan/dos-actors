@@ -1,15 +1,10 @@
-use crate::ltao::{SensorBuilderProperty, SensorProperty};
+use crate::ltao::SensorBuilderProperty;
 use crseo::{Builder, CrseoError, FromBuilder, Propagation, Source};
 
 #[derive(Debug, Default, Clone)]
 pub struct NoSensor;
 impl SensorBuilderProperty for NoSensor {
-    fn pupil_sampling(&self) -> usize {
-        unimplemented!()
-    }
-}
-impl SensorProperty for NoSensor {
-    fn reset(&mut self) {
+    fn pupil_sampling(&self) -> Option<usize> {
         unimplemented!()
     }
 }

@@ -105,6 +105,7 @@ where
                     mask: vec![],
                     mode: calib_mode,
                     runtime: now.elapsed(),
+                    n_cols: None,
                 })
             }
             CalibrationMode::Modes {
@@ -144,6 +145,7 @@ where
                     mask: iter.clone().chain(iter).collect(),
                     mode: calib_mode,
                     runtime: now.elapsed(),
+                    n_cols: None,
                 })
             }
         }

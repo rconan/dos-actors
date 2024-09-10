@@ -1,14 +1,19 @@
-use crate::ltao::SensorProperty;
 use crate::{NoSensor, OpticalModelBuilder};
-use crseo::{FromBuilder, Gmt, Imaging, Propagation, Source};
+use crseo::{FromBuilder, Gmt, Source};
 use gmt_dos_clients_io::{
     gmt_m1::{segment::RBM, M1RigidBodyMotions},
-    gmt_m2::asm::{segment::AsmCommand, M2ASMAsmCommand},
-    optics::{Dev, Frame, Host},
+    gmt_m2::{
+        asm::{segment::AsmCommand, M2ASMAsmCommand},
+        M2RigidBodyMotions,
+    },
 };
-use interface::{Data, Read, Update, Write};
+use interface::{Data, Read, Update};
+
+use super::SensorPropagation;
 
 pub mod builder;
+pub mod dispersed_fringe_sensor;
+mod imaging;
 pub mod no_sensor;
 mod stats;
 pub mod wave_sensor;
@@ -43,46 +48,24 @@ where
         Default::default()
     }
 }
-impl<T: Propagation> Update for OpticalModel<T> {
+
+impl<T: SensorPropagation> Update for OpticalModel<T> {
     fn update(&mut self) {
         self.src.through(&mut self.gmt).xpupil();
         if let Some(sensor) = &mut self.sensor {
-            self.src.through(sensor);
+            sensor.propagate(&mut self.src);
         }
     }
 }
 
-impl Write<Frame<Dev>> for OpticalModel<Imaging> {
-    fn write(&mut self) -> Option<Data<Frame<Dev>>> {
-        self.sensor.as_mut().map(|imgr| {
-            let frame = imgr.frame().clone();
-            imgr.reset();
-            Data::new(frame)
-        })
-    }
-}
-
-impl Write<Frame<Host>> for OpticalModel<Imaging> {
-    fn write(&mut self) -> Option<Data<Frame<Host>>> {
-        self.sensor.as_mut().map(|imgr| {
-            {
-                let frame = Vec::<f32>::from(&mut imgr.frame());
-                imgr.reset();
-                frame
-            }
-            .into()
-        })
-    }
-}
-
-impl<T: SensorProperty, const SID: u8> Read<RBM<SID>> for OpticalModel<T> {
+impl<T: SensorPropagation, const SID: u8> Read<RBM<SID>> for OpticalModel<T> {
     fn read(&mut self, data: Data<RBM<SID>>) {
         self.gmt
             .m1_segment_state(SID as i32, &data[..3], &data[3..]);
     }
 }
 
-impl<T: SensorProperty> Read<M1RigidBodyMotions> for OpticalModel<T> {
+impl<T: SensorPropagation> Read<M1RigidBodyMotions> for OpticalModel<T> {
     fn read(&mut self, data: Data<M1RigidBodyMotions>) {
         data.chunks(6).enumerate().for_each(|(sid, data)| {
             self.gmt
@@ -90,13 +73,21 @@ impl<T: SensorProperty> Read<M1RigidBodyMotions> for OpticalModel<T> {
         });
     }
 }
-impl<T: SensorProperty, const SID: u8> Read<AsmCommand<SID>> for OpticalModel<T> {
+impl<T: SensorPropagation> Read<M2RigidBodyMotions> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M2RigidBodyMotions>) {
+        data.chunks(6).enumerate().for_each(|(sid, data)| {
+            self.gmt
+                .m2_segment_state(1 + sid as i32, &data[..3], &data[3..]);
+        });
+    }
+}
+impl<T: SensorPropagation, const SID: u8> Read<AsmCommand<SID>> for OpticalModel<T> {
     fn read(&mut self, data: Data<AsmCommand<SID>>) {
         self.gmt.m2_segment_modes(SID, &data);
     }
 }
 
-impl<T: SensorProperty> Read<M2ASMAsmCommand> for OpticalModel<T> {
+impl<T: SensorPropagation> Read<M2ASMAsmCommand> for OpticalModel<T> {
     fn read(&mut self, data: Data<M2ASMAsmCommand>) {
         self.gmt.m2_modes(&data);
     }
