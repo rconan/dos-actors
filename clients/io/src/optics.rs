@@ -92,3 +92,30 @@ impl UniqueIdentifier for Frame<Host> {
     const PORT: u16 = 55_011;
     type DataType = Vec<f32>;
 }
+
+pub mod dispersed_fringe_sensor {
+    use interface::{UniqueIdentifier, UID};
+
+    use super::{Cuda, Dev, Frame, Host};
+
+    /// Dispersed Fringe Sensor FFT frame
+    ///
+    /// The frame is allocated either on the host [Host] or on the device [Dev].
+    pub struct DfsFftFrame<T: Cuda>(Frame<T>);
+    #[cfg(feature = "crseo")]
+    impl UniqueIdentifier for DfsFftFrame<Dev> {
+        const PORT: u16 = 55_021;
+        type DataType = crseo::imaging::Frame;
+    }
+    impl UniqueIdentifier for DfsFftFrame<Host> {
+        const PORT: u16 = 55_021;
+        type DataType = Vec<f32>;
+    }
+
+    /// DFS intercepts
+    ///
+    /// The intercepts are the y-axis coordinates of the side lobes of Fourier transform of the lenslet images
+    #[derive(UID)]
+    #[uid(port = 55_022)]
+    pub enum Intercepts {}
+}
