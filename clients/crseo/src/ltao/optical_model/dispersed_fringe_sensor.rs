@@ -37,7 +37,9 @@ impl<const C: usize, const F: usize> SensorPropagation for DispersedFringeSensor
             self.fft_reset();
         }
         src.through(&mut self.0);
-        self.fft();
+        if self.n_camera_frame() == C {
+            self.fft();
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 use super::OpticalModel;
 use crate::ltao::SensorBuilderProperty;
 use crate::NoSensor;
+use crseo::atmosphere::AtmosphereBuilder;
 use crseo::gmt::GmtBuilder;
 use crseo::source::SourceBuilder;
 use crseo::Builder;
@@ -9,7 +10,9 @@ use crseo::Builder;
 pub struct OpticalModelBuilder<S = NoSensor> {
     pub(crate) gmt: GmtBuilder,
     pub(crate) src: SourceBuilder,
+    pub(crate) atm_builder: Option<AtmosphereBuilder>,
     pub(crate) sensor: Option<S>,
+    pub(crate) sampling_frequency: Option<f64>,
 }
 
 impl<T, S> OpticalModelBuilder<S>
@@ -24,9 +27,21 @@ where
         self.src = builder;
         self
     }
+    pub fn atmosphere(self, atm_builder: AtmosphereBuilder) -> Self {
+        Self {
+            atm_builder: Some(atm_builder),
+            ..self
+        }
+    }
     pub fn sensor(mut self, builder: S) -> Self {
         self.sensor = Some(builder);
         self
+    }
+    pub fn sampling_frequency(self, sampling_frequency: f64) -> Self {
+        Self {
+            sampling_frequency: Some(sampling_frequency),
+            ..self
+        }
     }
 }
 impl<T, S> OpticalModelBuilder<S>
@@ -45,13 +60,9 @@ where
             } else {
                 self.src.build()?
             },
-            sensor: if let Some(sensor) = self.sensor {
-                Some(sensor.build()?)
-            } else {
-                None
-            },
+            atm: self.atm_builder.map(|atm| atm.build()).transpose()?,
+            sensor: self.sensor.map(|sensor| sensor.build()).transpose()?,
+            tau: self.sampling_frequency.map_or_else(|| 0f64, |x| x.recip()),
         })
     }
 }
-
-

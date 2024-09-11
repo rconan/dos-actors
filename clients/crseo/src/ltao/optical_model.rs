@@ -1,5 +1,5 @@
 use crate::{NoSensor, OpticalModelBuilder};
-use crseo::{FromBuilder, Gmt, Source};
+use crseo::{Atmosphere, FromBuilder, Gmt, Source};
 use gmt_dos_clients_io::{
     gmt_m1::{segment::RBM, M1RigidBodyMotions},
     gmt_m2::{
@@ -29,7 +29,9 @@ pub type Result<T> = std::result::Result<T, OpticalModelError>;
 pub struct OpticalModel<T = NoSensor> {
     pub(crate) gmt: Gmt,
     pub src: Source,
+    pub atm: Option<Atmosphere>,
     pub(crate) sensor: Option<T>,
+    pub(crate) tau: f64,
 }
 
 impl<T> OpticalModel<T> {
@@ -52,6 +54,10 @@ where
 impl<T: SensorPropagation> Update for OpticalModel<T> {
     fn update(&mut self) {
         self.src.through(&mut self.gmt).xpupil();
+        if let Some(atm) = &mut self.atm {
+            atm.secs += self.tau;
+            self.src.through(atm);
+        }
         if let Some(sensor) = &mut self.sensor {
             sensor.propagate(&mut self.src);
         }

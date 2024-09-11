@@ -32,6 +32,8 @@ impl<const C: usize, const F: usize> OpticalModelBuilder<DispersedFringeSensorBu
             gmt: self.gmt.build()?,
             src: self.src.build()?,
             sensor: Some(DispersedFringeSensor(dfs)),
+            atm: self.atm_builder.map(|atm| atm.build()).transpose()?,
+            tau: self.sampling_frequency.map_or_else(|| 0f64, |x| x.recip()),
         })
     }
 }
