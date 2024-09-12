@@ -41,19 +41,22 @@ where
     /// Starts the actor infinite loop
     async fn async_run(&mut self) -> Result<()> {
         log::debug!("ACTOR LOOP ({NI}/{NO}): {}", type_name::<C>());
-        let _bootstrap = self.bootstrap().await?;
+        let bootstrap = self.bootstrap().await?;
         match (self.inputs.as_ref(), self.outputs.as_ref()) {
             (Some(_), Some(_)) => {
                 if NO >= NI {
                     // Decimation
-                    // if !bootstrap {
-                    self.collect().await?.client.lock().await.update();
-                    self.distribute().await?;
-                    // } else {
-                    //     log::debug!("BOOTSTRAPPING ACTOR LOOP ({NI}/{NO}): {}", type_name::<C>());
-                    //     self.collect().await?.client.lock().await.update();
-                    //     self.distribute().await?;
-                    // }
+                    if !bootstrap {
+                        // bootstrap is applied when decimation is used
+                        // in conjunction with averaging
+                        // When averaging there is a delay of `NO` samples
+                        // to account for the time to iterate and a default
+                        // values is used for the 1st output
+                        // For decimation of the input signal there is no delay
+                        // and the 1st sample goes through unimpeded
+                        self.collect().await?.client.lock().await.update();
+                        self.distribute().await?;
+                    }
                     loop {
                         for _ in 0..NO / NI {
                             self.collect().await?.client.lock().await.update();

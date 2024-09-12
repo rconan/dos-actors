@@ -123,7 +123,7 @@ pub(crate) trait OutputObject: Any + Display + Send + Sync {
     fn highlight(&self) -> String;
     fn set_hash(&mut self, hash: u64);
     fn get_hash(&self) -> u64;
-    fn as_any(&self) -> &dyn Any;
+    // fn as_any(&self) -> &dyn Any;
     fn as_mut_any(&mut self) -> &mut dyn Any;
 }
 
@@ -201,9 +201,9 @@ where
     fn get_hash(&self) -> u64 {
         self.hash
     }
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
+    // fn as_any(&self) -> &dyn Any {
+    //     self
+    // }
     fn as_mut_any(&mut self) -> &mut dyn Any {
         self
     }
