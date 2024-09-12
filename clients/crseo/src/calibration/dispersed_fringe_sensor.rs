@@ -6,7 +6,9 @@ use crseo::{
 };
 use interface::Update;
 
-use crate::{DispersedFringeSensor, DispersedFringeSensorBuidler, DispersedFringeSensorProcessing};
+use crate::sensors::{
+    DispersedFringeSensor, DispersedFringeSensorBuidler, DispersedFringeSensorProcessing,
+};
 
 use super::{Calib, Calibrate, CalibrateSegment, PushPull, Reconstructor};
 
@@ -71,7 +73,7 @@ where
             dfs_processor.set_reference(dfsp11.intercept());
         }
         match calib_mode {
-            crate::CalibrationMode::RBM(stroke) => {
+            super::CalibrationMode::RBM(stroke) => {
                 let mut optical_model = builder.build()?;
                 let mut tr_xyz = [0f64; 6];
                 let mut calib = vec![];
@@ -104,7 +106,7 @@ where
                     n_cols: None,
                 })
             }
-            crate::CalibrationMode::Modes {
+            super::CalibrationMode::Modes {
                 n_mode,
                 stroke,
                 start_idx,

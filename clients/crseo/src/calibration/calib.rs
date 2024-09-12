@@ -1,5 +1,4 @@
-use super::CalibPinv;
-use crate::CalibrationMode;
+use super::{CalibPinv, CalibrationMode};
 use faer::{mat::from_column_major_slice, Mat, MatRef};
 use serde::{Deserialize, Serialize};
 use std::{

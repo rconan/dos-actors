@@ -13,8 +13,8 @@ mod dispersed_fringe_sensor;
 mod reconstructor;
 mod wave_sensor;
 
-pub use calib::Calib;
-pub use calib_pinv::CalibPinv;
+pub(crate) use calib::Calib;
+pub(crate) use calib_pinv::CalibPinv;
 pub use reconstructor::Reconstructor;
 
 #[derive(Debug, Clone, PartialEq, Copy, Serialize, Deserialize)]

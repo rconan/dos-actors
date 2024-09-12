@@ -1,8 +1,10 @@
 use crate::SensorBuilderProperty;
-use crate::{NoSensor, OpticalModel, OpticalModelBuilder};
+use crate::{OpticalModel, OpticalModelBuilder};
 use crseo::{Builder, CrseoError, FromBuilder, Propagation, Source};
 use gmt_dos_clients_io::optics::Wavefront;
 use interface::{Data, Size, Update, Write};
+
+use super::NoSensor;
 
 #[derive(Debug, Default, Clone)]
 pub struct WaveSensorBuilder(pub OpticalModelBuilder<NoSensor>);

@@ -51,18 +51,12 @@ pub use pyramid::{PyramidCalibrator, PyramidCommand, PyramidMeasurements, Pyrami
 //     OpticalModelBuilder, Reconstructor, WaveSensor, WaveSensorBuilder,
 // };
 
-pub(crate) mod calibration;
+pub mod calibration;
 mod centroiding;
 mod optical_model;
-mod sensors;
+pub mod sensors;
 
-pub use calibration::{Calibrate, CalibrateSegment, CalibrationMode, Reconstructor};
-pub use centroiding::Centroids;
 pub use optical_model::{builder::OpticalModelBuilder, OpticalModel};
-pub use sensors::{
-    DispersedFringeSensor, DispersedFringeSensorBuidler, DispersedFringeSensorProcessing, NoSensor,
-    WaveSensor, WaveSensorBuilder,
-};
 
 impl<T> TimerMarker for OpticalModel<T> {}
 

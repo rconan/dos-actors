@@ -1,4 +1,4 @@
-use crate::{ngao::DetectorFrame, NoSensor, OpticalModelBuilder};
+use crate::{ngao::DetectorFrame, sensors::NoSensor, OpticalModelBuilder};
 use crseo::{Atmosphere, FromBuilder, Gmt, SegmentWiseSensor, Source};
 use gmt_dos_clients_io::{
     gmt_m1::{segment::RBM, M1RigidBodyMotions},

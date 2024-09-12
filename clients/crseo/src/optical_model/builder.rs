@@ -1,5 +1,5 @@
 use super::OpticalModel;
-use crate::NoSensor;
+use crate::sensors::NoSensor;
 use crate::SensorBuilderProperty;
 use crseo::atmosphere::AtmosphereBuilder;
 use crseo::gmt::GmtBuilder;

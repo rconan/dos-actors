@@ -1,5 +1,6 @@
-use super::{Calib, Calibrate, PushPull, Reconstructor};
-use crate::{CalibrateSegment, CalibrationMode, Centroids, OpticalModel, OpticalModelBuilder};
+use super::{Calib, Calibrate, CalibrateSegment, CalibrationMode, PushPull, Reconstructor};
+use crate::centroiding::Centroids;
+use crate::{OpticalModel, OpticalModelBuilder};
 use crseo::gmt::{GmtBuilder, GmtMirror, GmtMirrorBuilder, GmtMx, MirrorGetSet};
 use crseo::imaging::ImagingBuilder;
 use crseo::{Gmt, Imaging};
