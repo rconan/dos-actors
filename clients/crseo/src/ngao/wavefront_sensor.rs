@@ -6,19 +6,19 @@ use std::{
 };
 
 use crseo::{Frame, Propagation, SegmentWiseSensor, Source};
-use interface::{Data, Read, UniqueIdentifier, Update, Write, UID};
+use interface::{Data, Read, UniqueIdentifier, Update, Write};
 
 pub enum GuideStar {}
 impl UniqueIdentifier for GuideStar {
     type DataType = Arc<Mutex<Source>>;
 }
 
-#[derive(UID)]
-pub enum PistonMode {}
+// #[derive(UID)]
+// pub enum PistonMode {}
 
-#[derive(UID)]
-#[uid(data = Vec<f32>)]
-pub enum SensorData {}
+// #[derive(UID)]
+// #[uid(data = Vec<f32>)]
+// pub enum SensorData {}
 
 pub struct WavefrontSensor<T, const NO: usize = 1> {
     sensor: T,

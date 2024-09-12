@@ -26,33 +26,72 @@ pub use sensor::SensorBuilder;
 
 use std::ops::{Deref, DerefMut};
 
-pub use crseo::{self, CrseoError};
-use interface::Update;
+use crseo::{imaging::ImagingBuilder, Propagation, Source};
+use interface::{Data, TimerMarker, UniqueIdentifier, Update, Write};
 
 mod error;
 pub use error::{CeoError, Result};
 
-// mod ngao;
-// pub use ngao::{
-//     DetectorFrame, GuideStar, OpticalModel, OpticalModelBuilder, ResidualM2modes,
-//     ResidualPistonMode, WavefrontSensor,
+pub mod ngao;
+// pub use ngao::{DetectorFrame, GuideStar, ResidualM2modes, ResidualPistonMode, WavefrontSensor};
+//     , , OpticalModel, OpticalModelBuilder, ,
+//     , WavefrontSensor,
 // };
 
-// mod wavefront_stats;
-// pub use wavefront_stats::WavefrontStats;
+mod wavefront_stats;
+pub use wavefront_stats::WavefrontStats;
 
-// mod pyramid;
-// pub use pyramid::{PyramidCalibrator, PyramidCommand, PyramidMeasurements, PyramidProcessor};
+mod pyramid;
+pub use pyramid::{PyramidCalibrator, PyramidCommand, PyramidMeasurements, PyramidProcessor};
 
-mod calibration;
-mod ltao;
-pub use ltao::{
-    Calibrate, CalibrateSegment, CalibrationMode, Centroids, DispersedFringeSensor,
-    DispersedFringeSensorBuidler, DispersedFringeSensorProcessing, NoSensor, OpticalModel,
-    OpticalModelBuilder, Reconstructor, WaveSensor, WaveSensorBuilder,
+// mod ltao;
+// pub use ltao::{
+//     Calibrate, CalibrateSegment, CalibrationMode, Centroids, DispersedFringeSensor,
+//     DispersedFringeSensorBuidler, DispersedFringeSensorProcessing, NoSensor, OpticalModel,
+//     OpticalModelBuilder, Reconstructor, WaveSensor, WaveSensorBuilder,
+// };
+
+pub(crate) mod calibration;
+mod centroiding;
+mod optical_model;
+mod sensors;
+
+pub use calibration::{Calibrate, CalibrateSegment, CalibrationMode, Reconstructor};
+pub use centroiding::Centroids;
+pub use optical_model::{builder::OpticalModelBuilder, OpticalModel};
+pub use sensors::{
+    DispersedFringeSensor, DispersedFringeSensorBuidler, DispersedFringeSensorProcessing, NoSensor,
+    WaveSensor, WaveSensorBuilder,
 };
 
-pub use calibration::{Calibrating, CalibratingError, Calibration};
+impl<T> TimerMarker for OpticalModel<T> {}
+
+pub trait SensorBuilderProperty {
+    fn pupil_sampling(&self) -> Option<usize> {
+        None
+    }
+}
+
+impl SensorBuilderProperty for ImagingBuilder {
+    fn pupil_sampling(&self) -> Option<usize> {
+        Some(
+            self.lenslet_array.n_side_lenslet
+                * self.lenslet_array.n_px_lenslet
+                * self.n_sensor as usize
+                + 1,
+        )
+    }
+}
+
+pub trait SensorPropagation {
+    fn propagate(&mut self, src: &mut Source);
+}
+
+impl<T: Propagation> SensorPropagation for T {
+    fn propagate(&mut self, src: &mut Source) {
+        self.propagate(src);
+    }
+}
 
 pub trait Processing {
     type ProcessorData;
@@ -89,22 +128,16 @@ impl<P: Processing + Send + Sync> Update for Processor<P> {
     // }
 }
 
-// impl Read<DetectorFrame> for Processor<PyramidProcessor> {
-//     fn read(&mut self, data: Data<DetectorFrame>) {
-//         self.frame = data.as_arc();
-//     }
-// }
-//
-// impl<P, T> Write<T> for Processor<P>
-// where
-//     P: Processing + Send + Sync,
-//     T: UniqueIdentifier<DataType = P::ProcessorData>,
-// {
-//     fn write(&mut self) -> Option<Data<T>> {
-//         let data: <P as Processing>::ProcessorData = self.processing();
-//         Some(Data::new(data))
-//     }
-// }
+impl<P, T> Write<T> for Processor<P>
+where
+    P: Processing + Send + Sync,
+    T: UniqueIdentifier<DataType = P::ProcessorData>,
+{
+    fn write(&mut self) -> Option<Data<T>> {
+        let data: <P as Processing>::ProcessorData = self.processing();
+        Some(Data::new(data))
+    }
+}
 
 /*
 

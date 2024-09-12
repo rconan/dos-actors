@@ -33,7 +33,7 @@ pub struct Fftlet {
 }
 
 impl Fftlet {
-    pub fn intercept(&self) -> f64 {
+    pub fn intercept(&self) -> Option<f64> {
         let (s, sy) = self
             .x
             .iter()
@@ -44,7 +44,11 @@ impl Fftlet {
                 sy += i * y * x.signum();
                 (s, sy)
             });
-        sy as f64 / s as f64
+        if s > 0. {
+            Some(sy as f64 / s as f64)
+        } else {
+            None
+        }
     }
 }
 
@@ -205,7 +209,7 @@ impl<const C: usize, const F: usize> DispersedFringeSensorProcessing<C, F> {
         }
     }
     pub fn intercept(&mut self) -> &mut Self {
-        self.intercept = self
+        let intercept: Option<Vec<f64>> = self
             .data
             .iter()
             .zip(O.iter().cycle())
@@ -214,11 +218,17 @@ impl<const C: usize, const F: usize> DispersedFringeSensorProcessing<C, F> {
                 fftlet.intercept()
             })
             .collect();
-        if let Some(r) = &self.reference {
-            self.intercept
-                .iter_mut()
-                .zip(r.iter())
-                .for_each(|(i, r)| *i -= r);
+        if let Some(intercept) = intercept {
+            self.intercept = intercept;
+            // Subtract reference intercept
+            if let Some(r) = &self.reference {
+                self.intercept
+                    .iter_mut()
+                    .zip(r.iter())
+                    .for_each(|(i, r)| *i -= r);
+            }
+        } else {
+            self.intercept = vec![0f64; self.data.len()];
         }
         self
     }

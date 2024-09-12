@@ -11,8 +11,8 @@ use interface::UniqueIdentifier;
 use nalgebra as na;
 use serde::{Deserialize, Serialize};
 
+use crate::ngao::{Calibrating, CalibratingError, Calibration};
 use crate::pyramid::PyramidData;
-use crate::{Calibrating, CalibratingError, Calibration};
 
 mod builder;
 pub use builder::PyramidCalibratorBuilder;
@@ -247,22 +247,24 @@ impl PyramidCalibrator {
     #[cfg(feature = "faer")]
     /// Returns the condition number of the `P` matrix
     pub fn p_matrix_cond(&self) -> f32 {
-        use faer::{solvers::Svd, IntoFaer};
+        use faer::solvers::Svd;
+        use faer_ext::IntoFaer;
         let mat = self.p_matrix.view_range(.., ..).into_faer();
         let svd = Svd::new(mat);
         let s_diag = svd.s_diagonal();
         let k = s_diag.nrows() - 1;
-        s_diag[(0, 0)] / s_diag[(k, 0)]
+        s_diag[0] / s_diag[k]
     }
     #[cfg(feature = "faer")]
     /// Returns the condition number of the `H` matrix
     pub fn h_matrix_cond(&self) -> f32 {
-        use faer::{solvers::Svd, IntoFaer};
+        use faer::solvers::Svd;
+        use faer_ext::IntoFaer;
         let mat = self.h_matrix.view_range(.., ..).into_faer();
         let svd = Svd::new(mat);
         let s_diag = svd.s_diagonal();
         let k = s_diag.nrows() - 1;
-        s_diag[(0, 0)] / s_diag[(k, 0)]
+        s_diag[0] / s_diag[k]
     }
     #[cfg(not(feature = "faer"))]
     /// Computes the pyramid LSQ reconstructor excluding piston
@@ -292,7 +294,8 @@ impl PyramidCalibrator {
     #[cfg(feature = "faer")]
     /// Computes the pyramid LSQ reconstructor excluding piston
     pub fn h0_estimator(&mut self) -> Result<&mut Self, PyramidCalibratorError> {
-        use faer::{solvers::Svd, IntoFaer, IntoNalgebra, Mat};
+        use faer::{solvers::Svd, Mat};
+        use faer_ext::{IntoFaer, IntoNalgebra};
 
         println!("computing the H0 estimator (with faer) ...");
         let now = Instant::now();
@@ -307,7 +310,7 @@ impl PyramidCalibrator {
         let s_diag = svd.s_diagonal();
         let mut s_inv = Mat::zeros(n, m);
         for i in 0..Ord::min(m, n) {
-            s_inv[(i, i)] = 1.0 / s_diag[(i, 0)];
+            s_inv[(i, i)] = 1.0 / s_diag[i];
         }
 
         let mat = svd.v() * &s_inv * svd.u().adjoint();
@@ -374,7 +377,8 @@ impl PyramidCalibrator {
     }
     #[cfg(feature = "faer")]
     pub fn hp_estimator(&mut self) -> Result<&mut Self, PyramidCalibratorError> {
-        use faer::{solvers::Svd, IntoFaer, IntoNalgebra, Mat};
+        use faer::{solvers::Svd, Mat};
+        use faer_ext::{IntoFaer, IntoNalgebra};
 
         println!("computing the pyramid LSQ reconstructor (truncating the last eigen value) with faer ...");
         let now = Instant::now();
@@ -403,7 +407,7 @@ impl PyramidCalibrator {
         let s_diag = svd.s_diagonal();
         let mut s_inv = Mat::zeros(n, m);
         for i in 0..Ord::min(m, n) - 1 {
-            s_inv[(i, i)] = 1.0 / s_diag[(i, 0)];
+            s_inv[(i, i)] = 1.0 / s_diag[i];
         }
 
         let mat = svd.v() * &s_inv * svd.u().adjoint();

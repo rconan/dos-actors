@@ -6,12 +6,9 @@ use crseo::{
 };
 use interface::Update;
 
-use crate::{
-    ltao::calibration::Calib, DispersedFringeSensor, DispersedFringeSensorBuidler,
-    DispersedFringeSensorProcessing,
-};
+use crate::{DispersedFringeSensor, DispersedFringeSensorBuidler, DispersedFringeSensorProcessing};
 
-use super::{Calibrate, CalibrateSegment, PushPull, Reconstructor};
+use super::{Calib, Calibrate, CalibrateSegment, PushPull, Reconstructor};
 
 impl<const SID: u8, const SC: usize, const SF: usize> PushPull<SID>
     for DispersedFringeSensorProcessing<SC, SF>
@@ -65,7 +62,7 @@ where
     fn calibrate(
         builder: crate::OpticalModelBuilder<Self::SegmentSensorBuilder>,
         calib_mode: super::CalibrationMode,
-    ) -> super::Result<super::Calib> {
+    ) -> super::Result<Calib> {
         let mut dfs_processor = DispersedFringeSensorProcessing::<SC, SF>::new();
         {
             let mut om_dfs11 = builder.clone().build()?;

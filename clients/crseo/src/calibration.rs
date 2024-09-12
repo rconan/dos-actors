@@ -1,76 +1,99 @@
-use std::{
-    ops::{Deref, DerefMut, Mul},
-    sync::Arc,
+use crate::{
+    centroiding::CentroidsError, optical_model::OpticalModelError, CeoError, OpticalModel,
+    OpticalModelBuilder,
 };
+use crseo::gmt::GmtMx;
+use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 
-use crseo::CrseoError;
-use interface::{Data, Read, UniqueIdentifier, Update, Write};
+mod calib;
+mod calib_pinv;
+mod centroids;
+mod dispersed_fringe_sensor;
+mod reconstructor;
+mod wave_sensor;
+
+pub use calib::Calib;
+pub use calib_pinv::CalibPinv;
+pub use reconstructor::Reconstructor;
+
+#[derive(Debug, Clone, PartialEq, Copy, Serialize, Deserialize)]
+pub enum CalibrationMode {
+    RBM([Option<f64>; 6]),
+    Modes {
+        n_mode: usize,
+        stroke: f64,
+        start_idx: usize,
+    },
+}
+impl CalibrationMode {
+    pub fn modes(n_mode: usize, stroke: f64) -> Self {
+        Self::Modes {
+            n_mode,
+            stroke,
+            start_idx: 0,
+        }
+    }
+    pub fn start_from(self, id: usize) -> Self {
+        if let Self::Modes { n_mode, stroke, .. } = self {
+            Self::Modes {
+                n_mode,
+                stroke,
+                start_idx: id - 1,
+            }
+        } else {
+            self
+        }
+    }
+}
 
 #[derive(Debug, thiserror::Error)]
-pub enum CalibratingError {
-    #[error("crseo error")]
-    Crseo(#[from] CrseoError),
+pub enum CalibrationError {
+    #[error("failed to build optical model")]
+    OpticalModel(#[from] OpticalModelError),
+    #[error("failed to build centroids")]
+    Centroids(#[from] CentroidsError),
+    #[error("failed to build optical model")]
+    CEO(#[from] CeoError),
 }
 
-/// Sensor calibration interface
-pub trait Calibrating {
-    type ProcessorData: Default;
-    type Output;
-    // type Calibrator;
-    // fn calibrating(&self) -> Result<Self::Calibrator, CalibratingError>;
+pub type Result<T> = std::result::Result<T, CalibrationError>;
+
+pub trait PushPull<const SID: u8> {
+    type Sensor;
+    fn push_pull<F>(
+        &mut self,
+        optical_model: &mut OpticalModel<Self::Sensor>,
+        i: usize,
+        s: f64,
+        cmd: &mut [f64],
+        cmd_fn: F,
+    ) -> Vec<f64>
+    where
+        F: Fn(&mut crseo::Gmt, u8, &[f64]);
 }
 
-/// Sensor calibration
-pub struct Calibration<C: Calibrating> {
-    pub(crate) calibrator: C,
-    pub(crate) output: Arc<C::Output>,
+pub trait CalibrateSegment<M: GmtMx, const SID: u8> {
+    type SegmentSensorBuilder;
+    fn calibrate(
+        optical_model: OpticalModelBuilder<Self::SegmentSensorBuilder>,
+        calib_mode: CalibrationMode,
+    ) -> Result<Calib>;
 }
 
-impl<C: Calibrating> Deref for Calibration<C> {
-    type Target = C;
-
-    fn deref(&self) -> &Self::Target {
-        &self.calibrator
-    }
-}
-
-impl<C: Calibrating> DerefMut for Calibration<C> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.calibrator
-    }
-}
-
-impl<C: Calibrating + Send + Sync> Update for Calibration<C>
+pub trait Calibrate<M: GmtMx>
 where
-    <C as Calibrating>::ProcessorData: Sync + Send,
-    <C as Calibrating>::Output: Send + Sync,
-    // for<'a> &'a C: Mul<&'a C::ProcessorData, Output = ()>,
+    Self: CalibrateSegment<M, 1, SegmentSensorBuilder = Self::SensorBuilder>,
+    Self: CalibrateSegment<M, 2, SegmentSensorBuilder = Self::SensorBuilder>,
+    Self: CalibrateSegment<M, 3, SegmentSensorBuilder = Self::SensorBuilder>,
+    Self: CalibrateSegment<M, 4, SegmentSensorBuilder = Self::SensorBuilder>,
+    Self: CalibrateSegment<M, 5, SegmentSensorBuilder = Self::SensorBuilder>,
+    Self: CalibrateSegment<M, 6, SegmentSensorBuilder = Self::SensorBuilder>,
+    Self: CalibrateSegment<M, 7, SegmentSensorBuilder = Self::SensorBuilder>,
 {
-    // fn update(&mut self) {
-    //     &self.calibrator * &self.data
-    // }
-}
-
-impl<C: Calibrating + Send + Sync, T: UniqueIdentifier<DataType = C::ProcessorData>> Read<T>
-    for Calibration<C>
-where
-    <C as Calibrating>::ProcessorData: Send + Sync,
-    <C as Calibrating>::Output: Send + Sync,
-    for<'a> &'a C: Mul<&'a C::ProcessorData, Output = <C as Calibrating>::Output>,
-{
-    fn read(&mut self, data: Data<T>) {
-        let value = data.as_arc();
-        self.output = Arc::new(&self.calibrator * &value);
-    }
-}
-
-impl<C: Calibrating + Send + Sync, T: UniqueIdentifier<DataType = C::Output>> Write<T>
-    for Calibration<C>
-where
-    <C as Calibrating>::ProcessorData: Send + Sync,
-    <C as Calibrating>::Output: Send + Sync,
-{
-    fn write(&mut self) -> Option<Data<T>> {
-        Some(Data::from(&self.output))
-    }
+    type SensorBuilder;
+    fn calibrate(
+        optical_model: OpticalModelBuilder<Self::SensorBuilder>,
+        calib_mode: CalibrationMode,
+    ) -> Result<Reconstructor>;
 }

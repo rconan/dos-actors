@@ -16,7 +16,7 @@ interface.workspace = true
 gmt_dos-clients_io = { workspace = true, features = ["crseo"] }
 gmt_dos-clients_domeseeing.workspace = true
 log.workspace = true
-nalgebra.workspace = true
+nalgebra = { workspace = true, features = ["serde-serialize"] }
 thiserror.workspace = true
 crseo.workspace = true
 serde = { version = "1.0.152", features = ["derive", "rc"] }
@@ -24,8 +24,9 @@ anyhow.workspace = true
 toml = "0.8.8"
 indicatif = { workspace = true, features = ["rayon"] }
 rayon.workspace = true
-faer = { version = "0.19.1" }
+faer = { version = "0.19.1", optional = true }
 bincode = { workspace = true, features = ["serde"] }
+faer-ext = { version = "0.2.0", features = ["nalgebra"] }
 
 [dev-dependencies]
 complot = "0.3.4"
@@ -34,3 +35,6 @@ linya = "0.3.0"
 serde-pickle = "1.1.1"
 skyangle = "0.2.2"
 tokio = "1.21.1"
+
+[features]
+default = ["faer"]

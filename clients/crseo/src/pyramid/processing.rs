@@ -1,5 +1,7 @@
 use std::ops::{Add, DivAssign, Mul, Sub};
 
+use crseo::imaging::LensletArray;
+
 use crate::Processing;
 
 use super::{PyramidData, PyramidProcessor};
@@ -24,7 +26,7 @@ where
         let (n, m) = self.frame.resolution;
         assert!(n > 0 && m > 0, "the detector frame resolution is null");
 
-        let crseo::wavefrontsensor::LensletArray { n_side_lenslet, .. } = self.lenslet_array;
+        let LensletArray { n_side_lenslet, .. } = self.lenslet_array;
         let n0 = n_side_lenslet / 2;
         let n1 = n0 + n / 2;
 

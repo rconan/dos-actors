@@ -1,4 +1,4 @@
-use crate::ltao::SensorBuilderProperty;
+use crate::SensorBuilderProperty;
 use crseo::{Builder, CrseoError, FromBuilder, Propagation, Source};
 
 #[derive(Debug, Default, Clone)]

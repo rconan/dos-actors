@@ -1,4 +1,4 @@
-use crate::ltao::SensorBuilderProperty;
+use crate::SensorBuilderProperty;
 use crate::{NoSensor, OpticalModel, OpticalModelBuilder};
 use crseo::{Builder, CrseoError, FromBuilder, Propagation, Source};
 use gmt_dos_clients_io::optics::Wavefront;

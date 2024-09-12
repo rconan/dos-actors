@@ -1,4 +1,3 @@
-use crate::ltao::calibration::{Calib, CalibPinv};
 use faer::Mat;
 use interface::{Data, Read, UniqueIdentifier, Update, Write};
 use serde::{Deserialize, Serialize};
@@ -7,6 +6,8 @@ use std::{
     ops::{Mul, SubAssign},
     sync::Arc,
 };
+
+use super::{Calib, CalibPinv};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Reconstructor {

@@ -1,4 +1,4 @@
-use crate::ltao::calibration::{Calib, PushPull};
+use crate::calibration::{Calib, PushPull};
 use crate::{
     Calibrate, CalibrateSegment, CalibrationMode, OpticalModel, OpticalModelBuilder, Reconstructor,
     WaveSensor, WaveSensorBuilder,

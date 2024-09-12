@@ -4,9 +4,9 @@ use crseo::SegmentPistonSensor;
 use gmt_dos_clients_io::optics::{dispersed_fringe_sensor::DfsFftFrame, Dev, Frame, Host};
 use interface::{Data, Size, Write};
 
-use crate::ltao::SensorPropagation;
+use crate::SensorPropagation;
 
-use super::{OpticalModel, Result};
+use crate::{OpticalModel, Result};
 
 mod builder;
 pub use builder::DispersedFringeSensorBuidler;
