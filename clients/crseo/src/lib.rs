@@ -56,6 +56,7 @@ mod centroiding;
 mod optical_model;
 pub mod sensors;
 
+pub use centroiding::Centroids;
 pub use optical_model::{builder::OpticalModelBuilder, OpticalModel};
 
 impl<T> TimerMarker for OpticalModel<T> {}
