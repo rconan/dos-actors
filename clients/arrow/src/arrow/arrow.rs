@@ -82,12 +82,7 @@ impl Arrow {
                 .iter()
                 .map(|(buffer, data_type)| {
                     Field::new(
-                        &buffer
-                            .who()
-                            .split("::")
-                            .last()
-                            .unwrap_or("no name")
-                            .replace(">", ""),
+                        &buffer.who(),
                         DataType::List(Box::new(Field::new("values", data_type.clone(), false))),
                         false,
                     )

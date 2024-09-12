@@ -179,18 +179,11 @@ where
     U: 'static + Send + Sync + UniqueIdentifier<DataType = Vec<T>>,
 {
     fn who(&self) -> String {
-        let expression = type_name::<U>().to_string();
-        let re = Regex::new(r"(\w+)(?:<(\d+)>)?$").unwrap();
-        if let Some(captures) = re.captures(&expression) {
-            let last_word = captures.get(1).unwrap().as_str();
-            if let Some(number) = captures.get(2).map(|m| m.as_str()) {
-                format!("{}#{}", last_word, number)
-            } else {
-                last_word.to_string()
-            }
-        } else {
-            expression
-        }
+        type_name::<U>()
+            .split("<")
+            .map(|x| format!("{}", x.split("::").last().unwrap()))
+            .collect::<Vec<_>>()
+            .join("<")
     }
     fn as_any(&self) -> &dyn Any {
         self
@@ -291,6 +284,17 @@ mod tests {
     use interface::{Data, Entry, UID};
 
     use super::*;
+
+    #[test]
+    fn who() {
+        let exp = "gmt_dos_clients_io::optics::dispersed_fringe_sensor::DfsFftFrame<gmt_dos_clients_io::optics::Host<a::b::c>>";
+        let q = exp
+            .split("<")
+            .map(|x| format!("{}", x.split("::").last().unwrap()))
+            .collect::<Vec<_>>()
+            .join("<");
+        dbg!(q);
+    }
 
     #[test]
     fn arrow() {
