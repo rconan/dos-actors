@@ -1,7 +1,9 @@
+mod camera;
 mod dispersed_fringe_sensor;
 mod no_sensor;
 mod wave_sensor;
 
+pub use camera::{Camera, CameraBuilder};
 pub use dispersed_fringe_sensor::{
     DispersedFringeSensor, DispersedFringeSensorBuidler, DispersedFringeSensorProcessing,
 };

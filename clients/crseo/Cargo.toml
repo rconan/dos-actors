@@ -27,6 +27,7 @@ rayon.workspace = true
 faer = { version = "0.19.1", optional = true }
 bincode = { workspace = true, features = ["serde"] }
 faer-ext = { version = "0.2.0", features = ["nalgebra"] }
+skyangle = "0.2.2"
 
 [dev-dependencies]
 complot = "0.3.4"

@@ -1,4 +1,5 @@
-use crate::OpticalModel;
+use crate::sensors::{Camera, CameraBuilder};
+use crate::{DeviceInitialize, OpticalModel, OpticalModelBuilder};
 use crseo::centroiding::CentroidingBuilder;
 use crseo::imaging::ImagingBuilder;
 use crseo::{Builder, Centroiding, Imaging};
@@ -26,12 +27,63 @@ unsafe impl Sync for Centroids {}
 impl TryFrom<&ImagingBuilder> for Centroids {
     type Error = CentroidsError;
 
-    fn try_from(value: &ImagingBuilder) -> Result<Self> {
+    fn try_from(imgr: &ImagingBuilder) -> Result<Self> {
         Ok(Self {
-            reference: CentroidingBuilder::from(value).build()?,
-            centroids: CentroidingBuilder::from(value).build()?,
+            reference: CentroidingBuilder::from(imgr).build()?,
+            centroids: CentroidingBuilder::from(imgr).build()?,
             frame: None,
         })
+    }
+}
+
+impl<const I: usize> TryFrom<&CameraBuilder<I>> for Centroids {
+    type Error = CentroidsError;
+
+    fn try_from(camera: &CameraBuilder<I>) -> Result<Self> {
+        Self::try_from(&camera.0)
+    }
+}
+
+impl DeviceInitialize for OpticalModel<Imaging> {
+    type Device = Centroids;
+
+    fn initialize(&mut self, device: &mut Self::Device) {
+        self.update();
+        let imgr = self.sensor.as_mut().unwrap();
+        device.reference.process(&mut imgr.frame(), None);
+        device
+            .reference
+            .valid_lenslets(Some(imgr.fluxlet_threshold), None);
+        imgr.reset();
+    }
+}
+
+impl<const I: usize> DeviceInitialize for OpticalModel<Camera<I>> {
+    type Device = Centroids;
+
+    fn initialize(&mut self, device: &mut Self::Device) {
+        self.update();
+        let imgr = self.sensor.as_mut().unwrap();
+        device.reference.process(&mut imgr.frame(), None);
+        device
+            .reference
+            .valid_lenslets(Some(imgr.fluxlet_threshold), None);
+        imgr.reset();
+    }
+}
+
+impl<const I: usize> DeviceInitialize for OpticalModelBuilder<CameraBuilder<I>> {
+    type Device = Centroids;
+
+    fn initialize(&mut self, device: &mut Self::Device) {
+        let mut om = self.clone().build().unwrap();
+        om.update();
+        let imgr = om.sensor.as_mut().unwrap();
+        device.reference.process(&mut imgr.frame(), None);
+        device
+            .reference
+            .valid_lenslets(Some(imgr.fluxlet_threshold), None);
+        imgr.reset();
     }
 }
 

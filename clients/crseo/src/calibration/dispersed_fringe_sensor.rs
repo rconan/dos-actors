@@ -155,7 +155,7 @@ where
     type SensorBuilder = DispersedFringeSensorBuidler<SC, SF>;
 
     fn calibrate(
-        optical_model: crate::OpticalModelBuilder<Self::SensorBuilder>,
+        optical_model: &crate::OpticalModelBuilder<Self::SensorBuilder>,
         calib_mode: super::CalibrationMode,
     ) -> super::Result<super::Reconstructor> {
         let c1 = <DispersedFringeSensorProcessing<SC, SF> as CalibrateSegment<M, 1>>::calibrate(

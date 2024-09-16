@@ -17,7 +17,7 @@ pub(crate) use calib::Calib;
 pub(crate) use calib_pinv::CalibPinv;
 pub use reconstructor::Reconstructor;
 
-#[derive(Debug, Clone, PartialEq, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum CalibrationMode {
     RBM([Option<f64>; 6]),
     Modes {
@@ -93,7 +93,7 @@ where
 {
     type SensorBuilder;
     fn calibrate(
-        optical_model: OpticalModelBuilder<Self::SensorBuilder>,
+        optical_model: &OpticalModelBuilder<Self::SensorBuilder>,
         calib_mode: CalibrationMode,
     ) -> Result<Reconstructor>;
 }

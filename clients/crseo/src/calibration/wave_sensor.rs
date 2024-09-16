@@ -155,7 +155,7 @@ where
     type SensorBuilder = WaveSensorBuilder;
 
     fn calibrate(
-        optical_model: OpticalModelBuilder<Self::SensorBuilder>,
+        optical_model: &OpticalModelBuilder<Self::SensorBuilder>,
         calib_mode: CalibrationMode,
     ) -> super::Result<Reconstructor> {
         let c1 =

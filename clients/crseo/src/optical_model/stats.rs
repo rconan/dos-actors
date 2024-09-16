@@ -1,4 +1,7 @@
-use crate::{sensors::NoSensor, OpticalModel, SensorPropagation};
+use crate::{
+    sensors::{Camera, NoSensor},
+    OpticalModel, SensorPropagation,
+};
 use crseo::{Imaging, Pyramid};
 use gmt_dos_clients_io::optics::{
     SegmentPiston, SegmentTipTilt, SegmentWfe, SegmentWfeRms, Wavefront, WfeRms,
@@ -87,6 +90,7 @@ impl<T: SensorPropagation> Write<SegmentTipTilt> for OpticalModel<T> {
 pub trait SourceWavefront {}
 impl SourceWavefront for NoSensor {}
 impl SourceWavefront for Imaging {}
+impl<const I: usize> SourceWavefront for Camera<I> {}
 impl SourceWavefront for Pyramid {}
 
 impl<T: SensorPropagation + SourceWavefront> Size<Wavefront> for OpticalModel<T> {

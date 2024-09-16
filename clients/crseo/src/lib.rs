@@ -88,6 +88,11 @@ impl<T: Propagation> SensorPropagation for T {
     }
 }
 
+pub trait DeviceInitialize {
+    type Device;
+    fn initialize(&mut self, device: &mut Self::Device);
+}
+
 pub trait Processing {
     type ProcessorData;
     fn processing(&self) -> Self::ProcessorData;
