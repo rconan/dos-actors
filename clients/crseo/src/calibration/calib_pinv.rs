@@ -35,10 +35,21 @@ impl Mul<Vec<f64>> for &CalibPinv<f64> {
                 }
             }
             CalibrationMode::Modes {
-                n_mode, start_idx, ..
+                n_mode,
+                start_idx,
+                end_id,
+                ..
             } => {
                 if n < n_mode {
-                    vec![0.; start_idx].into_iter().chain(iter).collect()
+                    if let Some(end) = end_id {
+                        vec![0.; start_idx]
+                            .into_iter()
+                            .chain(iter)
+                            .chain(vec![0.; n_mode - end])
+                            .collect()
+                    } else {
+                        vec![0.; start_idx].into_iter().chain(iter).collect()
+                    }
                 } else {
                     iter.collect()
                 }

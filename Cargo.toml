@@ -49,10 +49,10 @@ gmt_dos-clients_scope-client = { path = "clients/scope/client" }
 log = "0.4.17"
 thiserror = "1.0"
 tokio-test = "0.4"
-nalgebra = "0.32.1"
+nalgebra = "0.32.6"
 tokio = { version = "1.25.0" }
 anyhow = "1.0.68"
-crseo = { version = "0.9" }
+crseo = { version = "1.0" }
 rayon = "1.6.1"
 env_logger = "0.11.1"
 matio-rs = "1.3"
@@ -73,3 +73,6 @@ proc-macro2 = "1.0"
 
 [profile.release]
 lto = "thin"
+
+[patch.crates-io]
+crseo = { path = "/home/ubuntu/data/home/ubuntu/projects/crseo" }

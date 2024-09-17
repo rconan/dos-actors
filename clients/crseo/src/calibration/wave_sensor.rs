@@ -77,7 +77,7 @@ where
                 // let cmd_fn = |gmt, sid, cmd| {
                 //     <Gmt as GmtMirror<M>>::as_mut(gmt).set_rigid_body_motions(sid, cmd);
                 // };
-                for i in 0..6 {
+                for i in calib_mode.range() {
                     let Some(s) = stroke[i] else {
                         continue;
                     };
@@ -94,11 +94,7 @@ where
                 }
                 (calib, 6)
             }
-            CalibrationMode::Modes {
-                n_mode,
-                stroke,
-                start_idx,
-            } => {
+            CalibrationMode::Modes { n_mode, stroke, .. } => {
                 log::info!("Calibrating segment modes ...");
                 let gmt = builder.clone().gmt.n_mode::<M>(n_mode);
                 let mut optical_model = builder.gmt(gmt).build()?;
@@ -109,7 +105,7 @@ where
                 // let cmd_fn = |gmt, sid, cmd| {
                 //     <Gmt as GmtMirror<M>>::as_mut(gmt).set_segment_modes(sid, cmd);
                 // };
-                for i in start_idx..n_mode {
+                for i in calib_mode.range() {
                     calib.push(<WaveSensor as PushPull<SID>>::push_pull(
                         &mut wave,
                         &mut optical_model,

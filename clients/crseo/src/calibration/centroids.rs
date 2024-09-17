@@ -1,5 +1,5 @@
 use super::{Calib, Calibrate, CalibrateSegment, CalibrationMode, PushPull, Reconstructor};
-use crate::centroiding::Centroids;
+use crate::centroiding::{CentroidKind, Centroids, Full, ZeroMean};
 use crate::{OpticalModel, OpticalModelBuilder};
 use crseo::gmt::{GmtBuilder, GmtMirror, GmtMirrorBuilder, GmtMx, MirrorGetSet};
 use crseo::imaging::ImagingBuilder;
@@ -8,7 +8,29 @@ use interface::Update;
 use std::thread;
 use std::time::Instant;
 
-impl<const SID: u8> PushPull<SID> for Centroids {
+trait ValidCentroids {
+    fn get(&mut self) -> Vec<Vec<f32>>;
+}
+impl ValidCentroids for Centroids<Full> {
+    fn get(&mut self) -> Vec<Vec<f32>> {
+        self.centroids
+            .grab()
+            .valids(Some(&self.reference.valid_lenslets))
+    }
+}
+impl ValidCentroids for Centroids<ZeroMean> {
+    fn get(&mut self) -> Vec<Vec<f32>> {
+        self.centroids
+            .grab()
+            .remove_mean(Some(&self.reference.valid_lenslets))
+            .valids(Some(&self.reference.valid_lenslets))
+    }
+}
+
+impl<K: CentroidKind, const SID: u8> PushPull<SID> for Centroids<K>
+where
+    Centroids<K>: ValidCentroids,
+{
     type Sensor = Imaging;
     fn push_pull<F>(
         &mut self,
@@ -31,10 +53,11 @@ impl<const SID: u8> PushPull<SID> for Centroids {
         );
         optical_model.sensor().unwrap().reset();
 
-        let push = self
-            .centroids
-            .grab()
-            .valids(Some(&self.reference.valid_lenslets));
+        // let push = self
+        //     .centroids
+        //     .grab()
+        //     .valids(Some(&self.reference.valid_lenslets));
+        let push = <Self as ValidCentroids>::get(self);
 
         cmd[i] *= -1.;
         cmd_fn(&mut optical_model.gmt, SID, cmd);
@@ -48,21 +71,20 @@ impl<const SID: u8> PushPull<SID> for Centroids {
         );
         optical_model.sensor().unwrap().reset();
 
-        let pull = self
-            .centroids
-            .grab()
-            .valids(Some(&self.reference.valid_lenslets));
+        let pull = <Self as ValidCentroids>::get(self);
         push.into_iter()
-            .zip(pull.into_iter())
+            .flatten()
+            .zip(pull.into_iter().flatten())
             .map(|(x, y)| 0.5 * (x - y) as f64 / s)
             .collect()
     }
 }
 
-impl<M: GmtMx, const SID: u8> CalibrateSegment<M, SID> for Centroids
+impl<K: CentroidKind, M: GmtMx, const SID: u8> CalibrateSegment<M, SID> for Centroids<K>
 where
     Gmt: GmtMirror<M>,
     GmtBuilder: GmtMirrorBuilder<M>,
+    Centroids<K>: ValidCentroids,
 {
     type SegmentSensorBuilder = ImagingBuilder;
 
@@ -83,11 +105,11 @@ where
                 //     <Gmt as GmtMirror<M>>::as_mut(gmt).set_rigid_body_motions(sid, cmd);
                 // };
                 let now = Instant::now();
-                for i in 0..6 {
+                for i in calib_mode.range() {
                     let Some(s) = stroke[i] else {
                         continue;
                     };
-                    calib.push(<Centroids as PushPull<SID>>::push_pull(
+                    calib.push(<Centroids<K> as PushPull<SID>>::push_pull(
                         &mut centroids,
                         &mut optical_model,
                         i,
@@ -110,18 +132,16 @@ where
                     n_cols: None,
                 })
             }
-            CalibrationMode::Modes {
-                n_mode,
-                stroke,
-                start_idx,
-            } => {
+            CalibrationMode::Modes { n_mode, stroke, .. } => {
                 let gmt = builder.clone().gmt.n_mode::<M>(n_mode);
                 let mut optical_model = builder.gmt(gmt).build()?;
                 optical_model.gmt.keep(&[SID as i32]);
                 centroids.setup(&mut optical_model);
 
                 println!(
-                    "Calibrating {} modes {start_idx} to {n_mode} with centroids for segment {SID}...",<Gmt as GmtMirror<M>>::to_string(&optical_model.gmt)
+                    "Calibrating {:} modes {:?} with centroids for segment {SID}...",
+                    <Gmt as GmtMirror<M>>::to_string(&optical_model.gmt),
+                    calib_mode.mode_range()
                 );
 
                 let mut a = vec![0f64; n_mode];
@@ -130,8 +150,8 @@ where
                 //     <Gmt as GmtMirror<M>>::as_mut(gmt).set_segment_modes(sid, cmd);
                 // };
                 let now = Instant::now();
-                for i in start_idx..n_mode {
-                    calib.push(<Centroids as PushPull<SID>>::push_pull(
+                for i in calib_mode.range() {
+                    calib.push(<Centroids<K> as PushPull<SID>>::push_pull(
                         &mut centroids,
                         &mut optical_model,
                         i,
@@ -157,10 +177,11 @@ where
     }
 }
 
-impl<M: GmtMx> Calibrate<M> for Centroids
+impl<K: CentroidKind, M: GmtMx> Calibrate<M> for Centroids<K>
 where
     Gmt: GmtMirror<M>,
     GmtBuilder: GmtMirrorBuilder<M>,
+    Centroids<K>: ValidCentroids,
 {
     type SensorBuilder = ImagingBuilder;
 
@@ -170,25 +191,25 @@ where
     ) -> super::Result<Reconstructor> {
         let om = optical_model.clone();
         let cm = calib_mode.clone();
-        let c1 = thread::spawn(move || <Centroids as CalibrateSegment<M, 1>>::calibrate(om, cm));
+        let c1 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 1>>::calibrate(om, cm));
         let om = optical_model.clone();
         let cm = calib_mode.clone();
-        let c2 = thread::spawn(move || <Centroids as CalibrateSegment<M, 2>>::calibrate(om, cm));
+        let c2 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 2>>::calibrate(om, cm));
         let om = optical_model.clone();
         let cm = calib_mode.clone();
-        let c3 = thread::spawn(move || <Centroids as CalibrateSegment<M, 3>>::calibrate(om, cm));
+        let c3 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 3>>::calibrate(om, cm));
         let om = optical_model.clone();
         let cm = calib_mode.clone();
-        let c4 = thread::spawn(move || <Centroids as CalibrateSegment<M, 4>>::calibrate(om, cm));
+        let c4 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 4>>::calibrate(om, cm));
         let om = optical_model.clone();
         let cm = calib_mode.clone();
-        let c5 = thread::spawn(move || <Centroids as CalibrateSegment<M, 5>>::calibrate(om, cm));
+        let c5 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 5>>::calibrate(om, cm));
         let om = optical_model.clone();
         let cm = calib_mode.clone();
-        let c6 = thread::spawn(move || <Centroids as CalibrateSegment<M, 6>>::calibrate(om, cm));
+        let c6 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 6>>::calibrate(om, cm));
         let om = optical_model.clone();
         let cm = calib_mode.clone();
-        let c7 = thread::spawn(move || <Centroids as CalibrateSegment<M, 7>>::calibrate(om, cm));
+        let c7 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 7>>::calibrate(om, cm));
         // let c2 =
         //     <Centroids as CalibrateSegment<M, 2>>::calibrate(optical_model.clone(), calib_mode)?;
         // let c3 =

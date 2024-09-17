@@ -79,7 +79,7 @@ where
                 let mut calib = vec![];
 
                 let now = Instant::now();
-                for i in 0..6 {
+                for i in calib_mode.range() {
                     let Some(s) = stroke[i] else {
                         continue;
                     };
@@ -106,11 +106,7 @@ where
                     n_cols: None,
                 })
             }
-            super::CalibrationMode::Modes {
-                n_mode,
-                stroke,
-                start_idx,
-            } => {
+            super::CalibrationMode::Modes { n_mode, stroke, .. } => {
                 let gmt = builder.clone().gmt.n_mode::<M>(n_mode);
                 let mut optical_model = builder.gmt(gmt).build()?;
 
@@ -118,7 +114,7 @@ where
                 let mut calib = vec![];
 
                 let now = Instant::now();
-                for i in start_idx..n_mode {
+                for i in calib_mode.range() {
                     calib.push(
                         <DispersedFringeSensorProcessing<SC, SF> as PushPull<SID>>::push_pull(
                             &mut dfs_processor,

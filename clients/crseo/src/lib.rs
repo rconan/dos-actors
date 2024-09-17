@@ -52,7 +52,7 @@ pub use pyramid::{PyramidCalibrator, PyramidCommand, PyramidMeasurements, Pyrami
 // };
 
 pub mod calibration;
-mod centroiding;
+pub mod centroiding;
 mod optical_model;
 pub mod sensors;
 
@@ -88,9 +88,8 @@ impl<T: Propagation> SensorPropagation for T {
     }
 }
 
-pub trait DeviceInitialize {
-    type Device;
-    fn initialize(&mut self, device: &mut Self::Device);
+pub trait DeviceInitialize<D> {
+    fn initialize(&mut self, device: &mut D);
 }
 
 pub trait Processing {

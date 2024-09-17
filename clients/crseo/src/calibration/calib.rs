@@ -31,8 +31,11 @@ impl Calib {
         match self.mode {
             CalibrationMode::RBM(tr_xyz) => tr_xyz.iter().filter_map(|&x| x).count(),
             CalibrationMode::Modes {
-                n_mode, start_idx, ..
-            } => n_mode - start_idx,
+                n_mode,
+                start_idx,
+                end_id,
+                ..
+            } => end_id.unwrap_or(n_mode) - start_idx,
         }
     }
     #[inline]

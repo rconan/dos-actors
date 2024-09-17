@@ -4,7 +4,10 @@ use crate::{
 };
 use crseo::gmt::GmtMx;
 use serde::{Deserialize, Serialize};
-use std::fmt::Debug;
+use std::{
+    fmt::Debug,
+    ops::{Range, RangeInclusive},
+};
 
 mod calib;
 mod calib_pinv;
@@ -24,6 +27,7 @@ pub enum CalibrationMode {
         n_mode: usize,
         stroke: f64,
         start_idx: usize,
+        end_id: Option<usize>,
     },
 }
 impl CalibrationMode {
@@ -32,17 +36,72 @@ impl CalibrationMode {
             n_mode,
             stroke,
             start_idx: 0,
+            end_id: None,
         }
     }
     pub fn start_from(self, id: usize) -> Self {
-        if let Self::Modes { n_mode, stroke, .. } = self {
+        if let Self::Modes {
+            n_mode,
+            stroke,
+            end_id,
+            ..
+        } = self
+        {
             Self::Modes {
                 n_mode,
                 stroke,
                 start_idx: id - 1,
+                end_id,
             }
         } else {
             self
+        }
+    }
+    pub fn ends_at(self, id: usize) -> Self {
+        if let Self::Modes {
+            n_mode,
+            stroke,
+            start_idx,
+            ..
+        } = self
+        {
+            Self::Modes {
+                n_mode,
+                stroke,
+                start_idx,
+                end_id: Some(id),
+            }
+        } else {
+            self
+        }
+    }
+    pub fn range(&self) -> Range<usize> {
+        match self {
+            Self::RBM(_) => 0..6,
+            Self::Modes {
+                n_mode,
+                start_idx,
+                end_id,
+                ..
+            } => {
+                let end = end_id.unwrap_or(*n_mode);
+                *start_idx..end
+            }
+        }
+    }
+    pub fn mode_range(&self) -> RangeInclusive<usize> {
+        match self {
+            Self::RBM(_) => 1..=6,
+            Self::Modes {
+                n_mode,
+                start_idx,
+                end_id,
+                ..
+            } => {
+                let start = *start_idx + 1;
+                let end = end_id.unwrap_or(*n_mode);
+                start..=end
+            }
         }
     }
 }
