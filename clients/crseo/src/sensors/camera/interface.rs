@@ -9,7 +9,6 @@ impl<const I: usize> Write<Frame<Dev>> for OpticalModel<Camera<I>> {
     fn write(&mut self) -> Option<Data<Frame<Dev>>> {
         self.sensor.as_mut().map(|imgr| {
             let frame = imgr.frame().clone();
-            imgr.reset();
             Data::new(frame)
         })
     }
@@ -20,7 +19,6 @@ impl<const I: usize> Write<Frame<Host>> for OpticalModel<Camera<I>> {
         self.sensor.as_mut().map(|imgr| {
             {
                 let frame = Vec::<f32>::from(&mut imgr.frame());
-                imgr.reset();
                 frame
             }
             .into()

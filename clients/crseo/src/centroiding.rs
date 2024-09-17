@@ -4,7 +4,7 @@ use crseo::centroiding::CentroidingBuilder;
 use crseo::imaging::ImagingBuilder;
 use crseo::{Builder, Centroiding, Imaging};
 use gmt_dos_clients_io::optics::{Dev, Frame, SensorData};
-use interface::{Data, Read, Update, Write};
+use interface::{Data, Read, UniqueIdentifier, Update, Write};
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -126,8 +126,11 @@ impl<K: CentroidKind> Read<Frame<Dev>> for Centroids<K> {
     }
 }
 
-impl Write<SensorData> for Centroids<Full> {
-    fn write(&mut self) -> Option<Data<SensorData>> {
+impl<U> Write<U> for Centroids<Full>
+where
+    U: UniqueIdentifier<DataType = Vec<f64>>,
+{
+    fn write(&mut self) -> Option<Data<U>> {
         Some(
             self.centroids
                 .grab()
@@ -140,8 +143,11 @@ impl Write<SensorData> for Centroids<Full> {
     }
 }
 
-impl Write<SensorData> for Centroids<ZeroMean> {
-    fn write(&mut self) -> Option<Data<SensorData>> {
+impl<U> Write<U> for Centroids<ZeroMean>
+where
+    U: UniqueIdentifier<DataType = Vec<f64>>,
+{
+    fn write(&mut self) -> Option<Data<U>> {
         Some(
             self.centroids
                 .grab()

@@ -22,7 +22,7 @@ impl ValidCentroids for Centroids<ZeroMean> {
     fn get(&mut self) -> Vec<Vec<f32>> {
         self.centroids
             .grab()
-            .remove_mean(Some(&self.reference.valid_lenslets))
+            // .remove_mean(Some(&self.reference.valid_lenslets))
             .valids(Some(&self.reference.valid_lenslets))
     }
 }
