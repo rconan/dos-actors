@@ -23,6 +23,8 @@ serde = { workspace = true, optional = true }
 nalgebra = { workspace = true, optional = true }
 num-traits = { version = "0.2.15", optional = true }
 bincode = { workspace = true, optional = true }
+gif = "0.13.1"
+colorous = "1.0.14"
 
 [features]
 noise = ["rand", "rand_distr"]

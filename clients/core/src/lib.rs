@@ -128,6 +128,8 @@ mod gain;
 #[cfg(feature = "nalgebra")]
 pub use gain::Gain;
 pub mod foh;
+pub mod fun;
+pub mod gif;
 pub mod leftright;
 pub mod once;
 pub mod operator;
