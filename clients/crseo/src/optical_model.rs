@@ -8,7 +8,7 @@ use gmt_dos_clients_io::{
     },
     optics::{M2modes, SegmentD7Piston},
 };
-use interface::{Data, Read, UniqueIdentifier, Update, Write};
+use interface::{Data, Read, Size, UniqueIdentifier, Update, Write};
 
 use super::SensorPropagation;
 
@@ -78,6 +78,7 @@ impl<T: SensorPropagation> Read<M1RigidBodyMotions> for OpticalModel<T> {
         });
     }
 }
+
 impl<T: SensorPropagation> Read<M2RigidBodyMotions> for OpticalModel<T> {
     fn read(&mut self, data: Data<M2RigidBodyMotions>) {
         data.chunks(6).enumerate().for_each(|(sid, data)| {
@@ -86,6 +87,7 @@ impl<T: SensorPropagation> Read<M2RigidBodyMotions> for OpticalModel<T> {
         });
     }
 }
+
 impl<T: SensorPropagation, const SID: u8> Read<AsmCommand<SID>> for OpticalModel<T> {
     fn read(&mut self, data: Data<AsmCommand<SID>>) {
         self.gmt.m2_segment_modes(SID, &data);

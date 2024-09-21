@@ -1,5 +1,5 @@
 use gmt_dos_clients_io::optics::{Dev, Frame, Host};
-use interface::{Data, Write};
+use interface::{Data, Size, Write};
 
 use crate::OpticalModel;
 
@@ -23,5 +23,14 @@ impl<const I: usize> Write<Frame<Host>> for OpticalModel<Camera<I>> {
             }
             .into()
         })
+    }
+}
+
+impl<const I: usize> Size<Frame<Host>> for OpticalModel<Camera<I>> {
+    fn len(&self) -> usize {
+        self.sensor
+            .as_ref()
+            .map(|imgr| (imgr.resolution().pow(2) * imgr.n_guide_star()) as usize)
+            .unwrap_or_default()
     }
 }

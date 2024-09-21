@@ -1,6 +1,6 @@
 use std::ops::Mul;
 
-use faer::{mat::from_column_major_slice, Mat};
+use faer::{mat::from_column_major_slice, Mat, MatRef};
 use serde::{Deserialize, Serialize};
 
 use super::{Calib, CalibrationMode};
@@ -55,6 +55,13 @@ impl Mul<Vec<f64>> for &CalibPinv<f64> {
                 }
             }
         }
+    }
+}
+
+impl Mul<MatRef<'_,f64>> for &CalibPinv<f64> {
+    type Output = Mat<f64>;
+    fn mul(self, rhs: MatRef<'_,f64>) -> Self::Output {
+        self.mat.as_ref() * rhs
     }
 }
 

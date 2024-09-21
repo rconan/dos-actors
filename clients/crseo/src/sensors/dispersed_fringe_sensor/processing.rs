@@ -53,7 +53,7 @@ impl Fftlet {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DispersedFringeSensorProcessing<const C: usize, const F: usize> {
+pub struct DispersedFringeSensorProcessing {
     data: Vec<Vec<f32>>,
     n: usize,
     threshold: Option<f32>,
@@ -62,7 +62,7 @@ pub struct DispersedFringeSensorProcessing<const C: usize, const F: usize> {
     reference: Option<Vec<f64>>,
 }
 
-impl<const C: usize, const F: usize> DispersedFringeSensorProcessing<C, F> {
+impl DispersedFringeSensorProcessing {
     pub fn new() -> Self {
         Self {
             data: vec![],
@@ -75,8 +75,8 @@ impl<const C: usize, const F: usize> DispersedFringeSensorProcessing<C, F> {
     }
 }
 
-impl<const C: usize, const F: usize> DispersedFringeSensorProcessing<C, F> {
-    pub fn set_reference(&mut self, dfs: &DispersedFringeSensorProcessing<C, F>) -> &mut Self {
+impl DispersedFringeSensorProcessing {
+    pub fn set_reference(&mut self, dfs: &DispersedFringeSensorProcessing) -> &mut Self {
         self.reference = Some(dfs.intercept.clone());
         self
     }
@@ -95,7 +95,7 @@ impl<const C: usize, const F: usize> DispersedFringeSensorProcessing<C, F> {
 }
 
 impl<const C: usize, const F: usize> From<&mut DispersedFringeSensor<C, F>>
-    for DispersedFringeSensorProcessing<C, F>
+    for DispersedFringeSensorProcessing
 {
     fn from(sps: &mut DispersedFringeSensor<C, F>) -> Self {
         let frame = sps.fft_frame();
@@ -106,14 +106,14 @@ impl<const C: usize, const F: usize> From<&mut DispersedFringeSensor<C, F>>
 }
 
 impl<const C: usize, const F: usize> From<&mut crate::OpticalModel<DispersedFringeSensor<C, F>>>
-    for DispersedFringeSensorProcessing<C, F>
+    for DispersedFringeSensorProcessing
 {
     fn from(om: &mut crate::OpticalModel<DispersedFringeSensor<C, F>>) -> Self {
         Self::from(om.sensor().unwrap())
     }
 }
 
-impl<const C: usize, const F: usize> DispersedFringeSensorProcessing<C, F> {
+impl DispersedFringeSensorProcessing {
     pub fn process(&mut self, frame: &imaging::Frame) -> &mut Self {
         let n = frame.resolution;
         let q = frame.n_px_camera;
@@ -241,21 +241,19 @@ impl<const C: usize, const F: usize> DispersedFringeSensorProcessing<C, F> {
     }
 }
 
-impl<const C: usize, const F: usize> Update for DispersedFringeSensorProcessing<C, F> {
+impl Update for DispersedFringeSensorProcessing {
     fn update(&mut self) {
         self.intercept();
     }
 }
 
-impl<const C: usize, const F: usize> Read<DfsFftFrame<Dev>>
-    for DispersedFringeSensorProcessing<C, F>
-{
+impl Read<DfsFftFrame<Dev>> for DispersedFringeSensorProcessing {
     fn read(&mut self, data: Data<DfsFftFrame<Dev>>) {
         self.process(data.into_arc().as_ref());
     }
 }
 
-impl<const C: usize, const F: usize> Write<Intercepts> for DispersedFringeSensorProcessing<C, F> {
+impl Write<Intercepts> for DispersedFringeSensorProcessing {
     fn write(&mut self) -> Option<Data<Intercepts>> {
         Some(self.intercept.clone().into())
     }
@@ -279,7 +277,7 @@ mod tests {
             .build()?;
         om.update();
 
-        let mut processing = DispersedFringeSensorProcessing::<1, 1>::from(&mut om);
+        let mut processing = DispersedFringeSensorProcessing::from(&mut om);
 
         processing.intercept();
         dbg!(processing.intercept.len());
@@ -301,7 +299,7 @@ mod tests {
             .build()?;
         om.update();
 
-        let processing = DispersedFringeSensorProcessing::<1, 1>::from(&mut om);
+        let processing = DispersedFringeSensorProcessing::from(&mut om);
 
         serde_pickle::to_writer(
             &mut std::fs::File::create("fftlets.pkl")?,

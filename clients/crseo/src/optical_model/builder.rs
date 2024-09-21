@@ -1,5 +1,5 @@
 use super::OpticalModel;
-use crate::sensors::NoSensor;
+use crate::sensors::{NoSensor, WaveSensor, WaveSensorBuilder};
 use crate::SensorBuilderProperty;
 use crseo::atmosphere::AtmosphereBuilder;
 use crseo::gmt::GmtBuilder;
@@ -43,6 +43,22 @@ where
             ..self
         }
     }
+    pub fn clone_with_sensor<W>(&self, sensor: W) -> OpticalModelBuilder<W> {
+        let Self {
+            gmt,
+            src,
+            atm_builder,
+            sampling_frequency,
+            ..
+        } = self;
+        OpticalModelBuilder {
+            gmt: gmt.clone(),
+            src: src.clone(),
+            atm_builder: atm_builder.clone(),
+            sensor: Some(sensor),
+            sampling_frequency: sampling_frequency.clone(),
+        }
+    }
 }
 impl<T, S> OpticalModelBuilder<S>
 where
@@ -64,5 +80,14 @@ where
             sensor: self.sensor.map(|sensor| sensor.build()).transpose()?,
             tau: self.sampling_frequency.map_or_else(|| 0f64, |x| x.recip()),
         })
+    }
+}
+
+impl<T, S> From<&OpticalModelBuilder<S>> for OpticalModelBuilder<WaveSensorBuilder>
+where
+    S: Builder<Component = T> + SensorBuilderProperty,
+{
+    fn from(builder: &OpticalModelBuilder<S>) -> Self {
+        builder.clone_with_sensor(WaveSensorBuilder(builder.clone_with_sensor(NoSensor)))
     }
 }

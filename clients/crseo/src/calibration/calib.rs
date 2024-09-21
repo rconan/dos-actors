@@ -7,7 +7,9 @@ use std::{
     time::Duration,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+mod builder;
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Calib {
     pub(crate) sid: u8,
     pub(crate) n_mode: usize,
@@ -19,6 +21,9 @@ pub struct Calib {
 }
 
 impl Calib {
+    pub fn builder() -> builder::CalibBuilder {
+        builder::CalibBuilder::default()
+    }
     #[inline]
     pub fn n_mode(&self) -> usize {
         self.n_mode
@@ -140,6 +145,13 @@ impl Display for Calib {
 impl Mul<Mat<f64>> for &Calib {
     type Output = Mat<f64>;
     fn mul(self, rhs: Mat<f64>) -> Self::Output {
+        self.mat_ref() * rhs
+    }
+}
+
+impl Mul<MatRef<'_, f64>> for &Calib {
+    type Output = Mat<f64>;
+    fn mul(self, rhs: MatRef<'_, f64>) -> Self::Output {
         self.mat_ref() * rhs
     }
 }

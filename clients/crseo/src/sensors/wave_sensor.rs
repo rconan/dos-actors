@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::SensorBuilderProperty;
 use crate::{OpticalModel, OpticalModelBuilder};
 use crseo::{Builder, CrseoError, FromBuilder, Propagation, Source};
@@ -14,6 +16,27 @@ pub struct WaveSensor {
     reference: Option<Box<WaveSensor>>,
     amplitude: Vec<f64>,
     phase: Vec<f64>,
+}
+
+impl Display for WaveSensor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "wave sensor ({})", self.amplitude.len())
+    }
+}
+
+impl Display for OpticalModel<WaveSensor> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "- OPTICAL MODEL -")?;
+        self.gmt.fmt(f)?;
+        self.src.fmt(f)?;
+        if let Some(atm) = &self.atm {
+            atm.fmt(f)?;
+        }
+        self.sensor.as_ref().unwrap().fmt(f)?;
+
+        writeln!(f, "-----------------")?;
+        Ok(())
+    }
 }
 
 impl WaveSensor {

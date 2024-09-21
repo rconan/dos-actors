@@ -16,8 +16,8 @@ mod dispersed_fringe_sensor;
 mod reconstructor;
 mod wave_sensor;
 
-pub(crate) use calib::Calib;
-pub(crate) use calib_pinv::CalibPinv;
+pub use calib::Calib;
+pub use calib_pinv::CalibPinv;
 pub use reconstructor::Reconstructor;
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -29,6 +29,11 @@ pub enum CalibrationMode {
         start_idx: usize,
         end_id: Option<usize>,
     },
+}
+impl Default for CalibrationMode {
+    fn default() -> Self {
+        Self::RBM([None; 6])
+    }
 }
 impl CalibrationMode {
     pub fn modes(n_mode: usize, stroke: f64) -> Self {

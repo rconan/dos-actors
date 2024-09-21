@@ -1,21 +1,14 @@
-use crate::SensorBuilderProperty;
+use std::fmt::Display;
+
+use crate::{OpticalModel, SensorBuilderProperty, SensorPropagation};
 use crseo::{Builder, CrseoError, FromBuilder, Propagation, Source};
 
 #[derive(Debug, Default, Clone)]
 pub struct NoSensor;
-impl SensorBuilderProperty for NoSensor {
-    fn pupil_sampling(&self) -> Option<usize> {
-        unimplemented!()
-    }
-}
+impl SensorBuilderProperty for NoSensor {}
 
-impl Propagation for NoSensor {
-    fn propagate(&mut self, _src: &mut Source) {
-        unimplemented!()
-    }
-    fn time_propagate(&mut self, _secs: f64, _src: &mut Source) {
-        unimplemented!()
-    }
+impl SensorPropagation for NoSensor {
+    fn propagate(&mut self, src: &mut crseo::Source) {}
 }
 
 impl Builder for NoSensor {
@@ -27,4 +20,14 @@ impl Builder for NoSensor {
 
 impl FromBuilder for NoSensor {
     type ComponentBuilder = NoSensor;
+}
+
+impl Display for OpticalModel<NoSensor> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "- OPTICAL MODEL -")?;
+        self.gmt.fmt(f)?;
+        self.src.fmt(f)?;
+        writeln!(f, "-----------------")?;
+        Ok(())
+    }
 }

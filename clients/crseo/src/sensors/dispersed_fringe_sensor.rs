@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::ops::{Deref, DerefMut};
 
 use crseo::SegmentPistonSensor;
@@ -14,7 +15,7 @@ pub use builder::DispersedFringeSensorBuidler;
 mod processing;
 pub use processing::DispersedFringeSensorProcessing;
 
-pub struct DispersedFringeSensor<const C: usize, const F: usize>(SegmentPistonSensor);
+pub struct DispersedFringeSensor<const C: usize = 1, const F: usize = 1>(SegmentPistonSensor);
 impl<const C: usize, const F: usize> Deref for DispersedFringeSensor<C, F> {
     type Target = SegmentPistonSensor;
 
@@ -27,6 +28,11 @@ impl<const C: usize, const F: usize> DerefMut for DispersedFringeSensor<C, F> {
         &mut self.0
     }
 }
+impl<const C: usize, const F: usize> Display for DispersedFringeSensor<C, F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 impl<const C: usize, const F: usize> SensorPropagation for DispersedFringeSensor<C, F> {
     fn propagate(&mut self, src: &mut crseo::Source) {
@@ -37,6 +43,8 @@ impl<const C: usize, const F: usize> SensorPropagation for DispersedFringeSensor
             self.fft_reset();
         }
         src.through(&mut self.0);
+        // let q: Vec<f32> = self.frame().into();
+        // dbg!(q.len());
         if self.n_camera_frame() == C {
             self.fft();
         }
@@ -100,6 +108,21 @@ impl<const C: usize, const F: usize> Size<DfsFftFrame<Host>>
         self.sensor
             .as_ref()
             .map_or_else(|| 0, |dfs| dfs.fft_size().pow(2))
+    }
+}
+
+impl<const C: usize, const F: usize> Display for OpticalModel<DispersedFringeSensor<F, C>> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "- OPTICAL MODEL -")?;
+        self.gmt.fmt(f)?;
+        self.src.fmt(f)?;
+        if let Some(atm) = &self.atm {
+            atm.fmt(f)?;
+        }
+        self.sensor.as_ref().unwrap().fmt(f)?;
+        writeln!(f, "DFS camera reset @{C} & FFT reset @{F} in sample #")?;
+        writeln!(f, "-----------------")?;
+        Ok(())
     }
 }
 

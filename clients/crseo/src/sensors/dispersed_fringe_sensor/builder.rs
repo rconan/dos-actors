@@ -1,8 +1,8 @@
 use crseo::{segment_piston_sensor::SegmentPistonSensorBuilder, Builder, FromBuilder};
 
-use crate::{OpticalModel, OpticalModelBuilder};
+use crate::{DeviceInitialize, OpticalModel, OpticalModelBuilder, SensorBuilderProperty};
 
-use super::{DispersedFringeSensor, Result};
+use super::{DispersedFringeSensor, DispersedFringeSensorProcessing, Result};
 
 #[derive(Default, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct DispersedFringeSensorBuidler<const C: usize, const F: usize>(SegmentPistonSensorBuilder);
@@ -19,22 +19,39 @@ impl<const C: usize, const F: usize> FromBuilder for DispersedFringeSensor<C, F>
     type ComponentBuilder = DispersedFringeSensorBuidler<C, F>;
 }
 
-impl<const C: usize, const F: usize> OpticalModelBuilder<DispersedFringeSensorBuidler<C, F>> {
-    pub fn build(self) -> Result<OpticalModel<DispersedFringeSensor<C, F>>> {
-        let dfs = self
-            .sensor
-            .unwrap()
-            .0
-            .gmt(self.gmt.clone())
-            .src(self.src.clone())
-            .build()?;
-        Ok(OpticalModel {
-            gmt: self.gmt.build()?,
-            src: self.src.build()?,
-            sensor: Some(DispersedFringeSensor(dfs)),
-            atm: self.atm_builder.map(|atm| atm.build()).transpose()?,
-            tau: self.sampling_frequency.map_or_else(|| 0f64, |x| x.recip()),
-        })
+// impl<const C: usize, const F: usize> OpticalModelBuilder<DispersedFringeSensorBuidler<C, F>> {
+//     pub fn build(self) -> Result<OpticalModel<DispersedFringeSensor<C, F>>> {
+//         let dfs = self
+//             .sensor
+//             .unwrap()
+//             .0
+//             .gmt(self.gmt.clone())
+//             .src(self.src.clone())
+//             .build()?;
+//         Ok(OpticalModel {
+//             gmt: self.gmt.build()?,
+//             src: self.src.build()?,
+//             sensor: Some(DispersedFringeSensor(dfs)),
+//             atm: self.atm_builder.map(|atm| atm.build()).transpose()?,
+//             tau: self.sampling_frequency.map_or_else(|| 0f64, |x| x.recip()),
+//         })
+//     }
+// }
+
+impl<const C: usize, const F: usize> SensorBuilderProperty for DispersedFringeSensorBuidler<C, F> {}
+
+impl<const C: usize, const F: usize> DeviceInitialize<DispersedFringeSensorProcessing>
+    for OpticalModelBuilder<DispersedFringeSensorBuidler<C, F>>
+{
+    fn initialize(&mut self, device: &mut DispersedFringeSensorProcessing) {
+        let mut om = self
+            .clone_with_sensor(self.sensor.as_ref().unwrap().clone_into::<1, 1>())
+            .build()
+            .unwrap();
+        println!("{om}");
+        <OpticalModel<DispersedFringeSensor<1, 1>> as interface::Update>::update(&mut om);
+        let mut dfsp0 = DispersedFringeSensorProcessing::from(om.sensor().unwrap());
+        device.set_reference(dfsp0.intercept());
     }
 }
 
@@ -43,7 +60,7 @@ impl<const C: usize, const F: usize> DispersedFringeSensorBuidler<C, F> {
         self.0 = self.0.gmt(gmt);
         self
     }
-    pub fn src(mut self, src: crseo::source::SourceBuilder) -> Self {
+    pub fn source(mut self, src: crseo::source::SourceBuilder) -> Self {
         self.0 = self.0.src(src);
         self
     }
@@ -74,5 +91,10 @@ impl<const C: usize, const F: usize> DispersedFringeSensorBuidler<C, F> {
     pub fn middle_mask_width(mut self, middle_mask_width: f64) -> Self {
         self.0 = self.0.middle_mask_width(middle_mask_width);
         self
+    }
+    pub fn clone_into<const CO: usize, const FO: usize>(
+        &self,
+    ) -> DispersedFringeSensorBuidler<CO, FO> {
+        DispersedFringeSensorBuidler(self.0.clone())
     }
 }

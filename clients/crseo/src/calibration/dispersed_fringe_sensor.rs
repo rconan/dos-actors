@@ -12,10 +12,8 @@ use crate::sensors::{
 
 use super::{Calib, Calibrate, CalibrateSegment, PushPull, Reconstructor};
 
-impl<const SID: u8, const SC: usize, const SF: usize> PushPull<SID>
-    for DispersedFringeSensorProcessing<SC, SF>
-{
-    type Sensor = DispersedFringeSensor<SC, SF>;
+impl<const SID: u8> PushPull<SID> for DispersedFringeSensorProcessing {
+    type Sensor = DispersedFringeSensor<1, 1>;
 
     fn push_pull<F>(
         &mut self,
@@ -53,19 +51,18 @@ impl<const SID: u8, const SC: usize, const SF: usize> PushPull<SID>
     }
 }
 
-impl<M: GmtMx, const SID: u8, const SC: usize, const SF: usize> CalibrateSegment<M, SID>
-    for DispersedFringeSensorProcessing<SC, SF>
+impl<M: GmtMx, const SID: u8> CalibrateSegment<M, SID> for DispersedFringeSensorProcessing
 where
     Gmt: GmtMirror<M>,
     GmtBuilder: GmtMirrorBuilder<M>,
 {
-    type SegmentSensorBuilder = DispersedFringeSensorBuidler<SC, SF>;
+    type SegmentSensorBuilder = DispersedFringeSensorBuidler<1, 1>;
 
     fn calibrate(
         builder: crate::OpticalModelBuilder<Self::SegmentSensorBuilder>,
         calib_mode: super::CalibrationMode,
     ) -> super::Result<Calib> {
-        let mut dfs_processor = DispersedFringeSensorProcessing::<SC, SF>::new();
+        let mut dfs_processor = DispersedFringeSensorProcessing::new();
         {
             let mut om_dfs11 = builder.clone().build()?;
             om_dfs11.update();
@@ -84,7 +81,7 @@ where
                         continue;
                     };
                     calib.push(
-                        <DispersedFringeSensorProcessing<SC, SF> as PushPull<SID>>::push_pull(
+                        <DispersedFringeSensorProcessing as PushPull<SID>>::push_pull(
                             &mut dfs_processor,
                             &mut optical_model,
                             i,
@@ -116,7 +113,7 @@ where
                 let now = Instant::now();
                 for i in calib_mode.range() {
                     calib.push(
-                        <DispersedFringeSensorProcessing<SC, SF> as PushPull<SID>>::push_pull(
+                        <DispersedFringeSensorProcessing as PushPull<SID>>::push_pull(
                             &mut dfs_processor,
                             &mut optical_model,
                             i,
@@ -142,39 +139,38 @@ where
     }
 }
 
-impl<M: GmtMx, const SC: usize, const SF: usize> Calibrate<M>
-    for DispersedFringeSensorProcessing<SC, SF>
+impl<M: GmtMx> Calibrate<M> for DispersedFringeSensorProcessing
 where
     Gmt: GmtMirror<M>,
     GmtBuilder: GmtMirrorBuilder<M>,
 {
-    type SensorBuilder = DispersedFringeSensorBuidler<SC, SF>;
+    type SensorBuilder = DispersedFringeSensorBuidler<1, 1>;
 
     fn calibrate(
         optical_model: &crate::OpticalModelBuilder<Self::SensorBuilder>,
         calib_mode: super::CalibrationMode,
     ) -> super::Result<super::Reconstructor> {
-        let c1 = <DispersedFringeSensorProcessing<SC, SF> as CalibrateSegment<M, 1>>::calibrate(
+        let c1 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 1>>::calibrate(
             optical_model.clone(),
             calib_mode,
         )?;
-        let c2 = <DispersedFringeSensorProcessing<SC, SF> as CalibrateSegment<M, 2>>::calibrate(
+        let c2 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 2>>::calibrate(
             optical_model.clone(),
             calib_mode,
         )?;
-        let c3 = <DispersedFringeSensorProcessing<SC, SF> as CalibrateSegment<M, 3>>::calibrate(
+        let c3 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 3>>::calibrate(
             optical_model.clone(),
             calib_mode,
         )?;
-        let c4 = <DispersedFringeSensorProcessing<SC, SF> as CalibrateSegment<M, 4>>::calibrate(
+        let c4 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 4>>::calibrate(
             optical_model.clone(),
             calib_mode,
         )?;
-        let c5 = <DispersedFringeSensorProcessing<SC, SF> as CalibrateSegment<M, 5>>::calibrate(
+        let c5 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 5>>::calibrate(
             optical_model.clone(),
             calib_mode,
         )?;
-        let c6 = <DispersedFringeSensorProcessing<SC, SF> as CalibrateSegment<M, 6>>::calibrate(
+        let c6 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 6>>::calibrate(
             optical_model.clone(),
             calib_mode,
         )?;

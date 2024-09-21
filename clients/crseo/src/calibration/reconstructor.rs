@@ -1,9 +1,9 @@
-use faer::Mat;
+use faer::{Mat, MatRef};
 use interface::{Data, Read, UniqueIdentifier, Update, Write};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Display, Formatter},
-    ops::{Mul, SubAssign},
+    ops::{Div, Mul, SubAssign},
     sync::Arc,
 };
 
@@ -15,6 +15,12 @@ pub struct Reconstructor {
     pinv: Vec<Option<CalibPinv<f64>>>,
     data: Arc<Vec<f64>>,
     estimate: Arc<Vec<f64>>,
+}
+
+impl From<Calib> for Reconstructor {
+    fn from(calib: Calib) -> Self {
+        Self::new(vec![calib])
+    }
 }
 
 impl Reconstructor {
@@ -64,6 +70,20 @@ impl Reconstructor {
             .map(|(p, c)| (c, p.get_or_insert_with(|| c.pseudoinverse())))
             .map(|(c, p)| (c, &*p))
     }
+    pub fn cross_talks(&self) -> Vec<usize> {
+        let n = self.calib[0].mask.len();
+        (0..n)
+            .map(|i| {
+                let m0 = self.calib[0].mask[i];
+                self.calib
+                    .iter()
+                    .fold(0usize, |m, c| m + if c.mask[i] { 1 } else { 0 })
+            })
+            .collect()
+    }
+    pub fn n_cross_talks(&self) -> usize {
+        self.cross_talks().iter().filter(|&&c| c > 1).count()
+    }
 }
 
 impl Display for Reconstructor {
@@ -108,6 +128,25 @@ impl Mul<Vec<Mat<f64>>> for &Reconstructor {
 
     fn mul(self, rhs: Vec<Mat<f64>>) -> Self::Output {
         self.calib.iter().zip(rhs).map(|(c, m)| c * m).collect()
+    }
+}
+
+impl Mul<MatRef<'_, f64>> for &Reconstructor {
+    type Output = Vec<Mat<f64>>;
+
+    fn mul(self, rhs: MatRef<'_, f64>) -> Self::Output {
+        self.calib.iter().map(|c| c * rhs).collect()
+    }
+}
+
+impl Div<&Reconstructor> for MatRef<'_, f64> {
+    type Output = Vec<Mat<f64>>;
+
+    fn div(self, rhs: &Reconstructor) -> Self::Output {
+        rhs.pinv
+            .iter()
+            .filter_map(|ic| ic.as_ref().map(|ic| ic * self))
+            .collect()
     }
 }
 

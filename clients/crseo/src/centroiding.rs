@@ -3,7 +3,7 @@ use crate::{DeviceInitialize, OpticalModel, OpticalModelBuilder};
 use crseo::centroiding::CentroidingBuilder;
 use crseo::imaging::ImagingBuilder;
 use crseo::{Builder, Centroiding, Imaging};
-use gmt_dos_clients_io::optics::{Dev, Frame, SensorData};
+use gmt_dos_clients_io::optics::{Dev, Frame};
 use interface::{Data, Read, UniqueIdentifier, Update, Write};
 use std::marker::PhantomData;
 use std::sync::Arc;
