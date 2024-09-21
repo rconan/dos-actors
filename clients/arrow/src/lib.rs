@@ -81,7 +81,6 @@ use apache_arrow::{
     datatypes::{DataType, Field, ToByteSlice},
 };
 use interface::{Data, Read, UniqueIdentifier, Update};
-use regex::Regex;
 use std::{
     any::{type_name, Any},
     marker::PhantomData,
@@ -143,6 +142,7 @@ impl Default for MatFormat {
 /// Buffers generic interface
 trait BufferObject: Send + Sync {
     fn who(&self) -> String;
+    #[allow(dead_code)]
     fn as_any(&self) -> &dyn Any;
     fn as_mut_any(&mut self) -> &mut dyn Any;
     fn into_list(&mut self, n_step: usize, n: usize, data_type: DataType) -> Result<ListArray>;
