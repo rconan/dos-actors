@@ -74,7 +74,6 @@ impl Reconstructor {
         let n = self.calib[0].mask.len();
         (0..n)
             .map(|i| {
-                let m0 = self.calib[0].mask[i];
                 self.calib
                     .iter()
                     .fold(0usize, |m, c| m + if c.mask[i] { 1 } else { 0 })

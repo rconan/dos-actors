@@ -1,8 +1,8 @@
 use crate::{
-    centroiding::CentroidsError, optical_model::OpticalModelError, CeoError, OpticalModel,
+    centroiding::CentroidsError, optical_model::OpticalModelError, OpticalModel,
     OpticalModelBuilder,
 };
-use crseo::gmt::GmtMx;
+use crseo::{gmt::GmtMx, CrseoError};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Debug,
@@ -118,7 +118,7 @@ pub enum CalibrationError {
     #[error("failed to build centroids")]
     Centroids(#[from] CentroidsError),
     #[error("failed to build optical model")]
-    CEO(#[from] CeoError),
+    Crseo(#[from] CrseoError),
 }
 
 pub type Result<T> = std::result::Result<T, CalibrationError>;

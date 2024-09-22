@@ -8,7 +8,7 @@ use gmt_dos_clients_io::{
     },
     optics::{M2modes, SegmentD7Piston},
 };
-use interface::{Data, Read, Size, UniqueIdentifier, Update, Write};
+use interface::{Data, Read, UniqueIdentifier, Update, Write};
 
 use super::SensorPropagation;
 
@@ -21,21 +21,37 @@ mod stats;
 pub enum OpticalModelError {
     #[error("failed to build optical model")]
     Crseo(#[from] crseo::error::CrseoError),
+    #[error("atmosphere is set but not the sampling frequency")]
+    AtmosphereWithoutSamplingFrequency,
 }
 
-pub type Result<T> = std::result::Result<T, OpticalModelError>;
-
+/// GMT optical model
+///
+/// # Examples:
+///
+/// Build a optical model with the default [OpticalModelBuilder]
+/// ```
+/// use gmt_dos_clients_crseo::{OpticalModel, sensors::NoSensor};
+///
+/// let om = OpticalModel::<NoSensor>::builder().build()?;
+/// # Ok::<(),Box<dyn std::error::Error>>(())
+/// ```
 pub struct OpticalModel<T = NoSensor> {
     pub(crate) gmt: Gmt,
-    pub src: Source,
-    pub atm: Option<Atmosphere>,
+    pub(crate) src: Source,
+    pub(crate) atm: Option<Atmosphere>,
     pub(crate) sensor: Option<T>,
     pub(crate) tau: f64,
 }
 
 impl<T> OpticalModel<T> {
-    pub fn sensor(&mut self) -> Option<&mut T> {
+    /// Returns a mutable reference to the sensor
+    pub fn sensor_mut(&mut self) -> Option<&mut T> {
         self.sensor.as_mut()
+    }
+    /// Returns an immutable reference to the sensor
+    pub fn sensor(&self) -> Option<&T> {
+        self.sensor.as_ref()
     }
 }
 unsafe impl<T> Send for OpticalModel<T> {}
@@ -43,7 +59,7 @@ unsafe impl<T> Sync for OpticalModel<T> {}
 
 impl<T> OpticalModel<T>
 where
-    T: FromBuilder,
+    T: FromBuilder + Default,
 {
     pub fn builder() -> OpticalModelBuilder<<T as FromBuilder>::ComponentBuilder> {
         Default::default()

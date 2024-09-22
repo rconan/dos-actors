@@ -1,16 +1,13 @@
-use std::time::Instant;
-
+use super::{Calib, Calibrate, CalibrateSegment, PushPull, Reconstructor};
+use crate::sensors::{
+    DispersedFringeSensor, DispersedFringeSensorBuidler, DispersedFringeSensorProcessing,
+};
 use crseo::{
     gmt::{GmtBuilder, GmtMirror, GmtMirrorBuilder, GmtMx, MirrorGetSet},
     Gmt,
 };
 use interface::Update;
-
-use crate::sensors::{
-    DispersedFringeSensor, DispersedFringeSensorBuidler, DispersedFringeSensorProcessing,
-};
-
-use super::{Calib, Calibrate, CalibrateSegment, PushPull, Reconstructor};
+use std::time::Instant;
 
 impl<const SID: u8> PushPull<SID> for DispersedFringeSensorProcessing {
     type Sensor = DispersedFringeSensor<1, 1>;
@@ -30,7 +27,7 @@ impl<const SID: u8> PushPull<SID> for DispersedFringeSensorProcessing {
         cmd_fn(&mut optical_model.gmt, SID, cmd);
         optical_model.update();
 
-        self.process(&optical_model.sensor().unwrap().fft_frame())
+        self.process(&optical_model.sensor_mut().unwrap().fft_frame())
             .intercept();
         let push = self.intercept.clone();
 
@@ -40,7 +37,7 @@ impl<const SID: u8> PushPull<SID> for DispersedFringeSensorProcessing {
 
         cmd[i] = 0.0;
 
-        self.process(&optical_model.sensor().unwrap().fft_frame())
+        self.process(&optical_model.sensor_mut().unwrap().fft_frame())
             .intercept();
         let pull = self.intercept.clone();
 
@@ -66,7 +63,7 @@ where
         {
             let mut om_dfs11 = builder.clone().build()?;
             om_dfs11.update();
-            let mut dfsp11 = DispersedFringeSensorProcessing::from(om_dfs11.sensor().unwrap());
+            let mut dfsp11 = DispersedFringeSensorProcessing::from(om_dfs11.sensor_mut().unwrap());
             dfs_processor.set_reference(dfsp11.intercept());
         }
         match calib_mode {

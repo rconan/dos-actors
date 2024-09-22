@@ -8,7 +8,7 @@ use interface::{Data, Read, UID};
 use crate::{OpticalModel, Processor, PyramidProcessor};
 
 mod wavefront_sensor;
-pub use wavefront_sensor::{DetectorFrame, GuideStar, WavefrontSensor};
+pub use wavefront_sensor::{DetectorFrame, GuideStar}; //, WavefrontSensor};
 
 mod calibration;
 pub use calibration::{Calibrating, CalibratingError, Calibration};

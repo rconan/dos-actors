@@ -1,12 +1,15 @@
 use super::{Calib, Calibrate, CalibrateSegment, CalibrationMode, PushPull, Reconstructor};
-use crate::centroiding::{CentroidKind, Centroids, Full, ZeroMean};
-use crate::{OpticalModel, OpticalModelBuilder};
-use crseo::gmt::{GmtBuilder, GmtMirror, GmtMirrorBuilder, GmtMx, MirrorGetSet};
-use crseo::imaging::ImagingBuilder;
-use crseo::{Gmt, Imaging};
+use crate::{
+    centroiding::{CentroidKind, Centroids, Full, ZeroMean},
+    OpticalModel, OpticalModelBuilder,
+};
+use crseo::{
+    gmt::{GmtBuilder, GmtMirror, GmtMirrorBuilder, GmtMx, MirrorGetSet},
+    imaging::ImagingBuilder,
+    Gmt, Imaging,
+};
 use interface::Update;
-use std::thread;
-use std::time::Instant;
+use std::{thread, time::Instant};
 
 trait ValidCentroids {
     fn get(&mut self) -> Vec<Vec<f32>>;
@@ -51,7 +54,7 @@ where
             &optical_model.sensor().unwrap().frame(),
             Some(&self.reference),
         );
-        optical_model.sensor().unwrap().reset();
+        optical_model.sensor_mut().unwrap().reset();
 
         // let push = self
         //     .centroids
@@ -69,7 +72,7 @@ where
             &optical_model.sensor().unwrap().frame(),
             Some(&self.reference),
         );
-        optical_model.sensor().unwrap().reset();
+        optical_model.sensor_mut().unwrap().reset();
 
         let pull = <Self as ValidCentroids>::get(self);
         push.into_iter()

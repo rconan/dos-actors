@@ -1,14 +1,14 @@
 use std::fmt::Display;
 
 use crate::{OpticalModel, SensorBuilderProperty, SensorPropagation};
-use crseo::{Builder, CrseoError, FromBuilder, Propagation, Source};
+use crseo::{Builder, CrseoError, FromBuilder};
 
 #[derive(Debug, Default, Clone)]
 pub struct NoSensor;
 impl SensorBuilderProperty for NoSensor {}
 
 impl SensorPropagation for NoSensor {
-    fn propagate(&mut self, src: &mut crseo::Source) {}
+    fn propagate(&mut self, _src: &mut crseo::Source) {}
 }
 
 impl Builder for NoSensor {

@@ -1,13 +1,11 @@
-use std::fmt::Display;
-use std::ops::{Deref, DerefMut};
-
+use crate::{OpticalModel, SensorPropagation};
 use crseo::SegmentPistonSensor;
 use gmt_dos_clients_io::optics::{dispersed_fringe_sensor::DfsFftFrame, Dev, Frame, Host};
 use interface::{Data, Size, Write};
-
-use crate::SensorPropagation;
-
-use crate::{OpticalModel, Result};
+use std::{
+    fmt::Display,
+    ops::{Deref, DerefMut},
+};
 
 mod builder;
 pub use builder::DispersedFringeSensorBuidler;
@@ -55,8 +53,7 @@ impl<const C: usize, const F: usize> Write<Frame<Dev>>
     for OpticalModel<DispersedFringeSensor<C, F>>
 {
     fn write(&mut self) -> Option<Data<Frame<Dev>>> {
-        self.sensor
-            .as_mut()
+        self.sensor_mut()
             .map(|sensor| Data::new(sensor.frame().clone()))
     }
 }
@@ -65,8 +62,7 @@ impl<const C: usize, const F: usize> Write<Frame<Host>>
     for OpticalModel<DispersedFringeSensor<C, F>>
 {
     fn write(&mut self) -> Option<Data<Frame<Host>>> {
-        self.sensor
-            .as_mut()
+        self.sensor_mut()
             .map(|sensor| { Vec::<f32>::from(&mut sensor.frame()) }.into())
     }
 }
@@ -130,7 +126,7 @@ impl<const C: usize, const F: usize> Display for OpticalModel<DispersedFringeSen
 mod tests {
     use std::error::Error;
 
-    use crseo::{FromBuilder, Source};
+    use crseo::{Builder, FromBuilder, Source};
     use interface::Update;
 
     use crate::OpticalModel;

@@ -1,9 +1,9 @@
 use crseo::{wavefrontsensor::PyramidBuilder, Builder, Pyramid, WavefrontSensorBuilder};
 
-use crate::{OpticalModel, OpticalModelBuilder};
+use crate::{optical_model::OpticalModelError, OpticalModel, OpticalModelBuilder};
 
 impl OpticalModelBuilder<PyramidBuilder> {
-    pub fn build(self) -> super::Result<OpticalModel<Pyramid>> {
+    pub fn build(self) -> Result<OpticalModel<Pyramid>, OpticalModelError> {
         let src = self.sensor.as_ref().unwrap().guide_stars(Some(self.src));
         Ok(OpticalModel {
             gmt: self.gmt.build()?,

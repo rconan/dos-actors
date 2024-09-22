@@ -1,8 +1,7 @@
 use std::fmt::Display;
 
-use crate::SensorBuilderProperty;
-use crate::{OpticalModel, OpticalModelBuilder};
-use crseo::{Builder, CrseoError, FromBuilder, Propagation, Source};
+use crate::{OpticalModel, OpticalModelBuilder, SensorBuilderProperty, SensorPropagation};
+use crseo::{Builder, CrseoError, FromBuilder, Source};
 use gmt_dos_clients_io::optics::Wavefront;
 use interface::{Data, Size, Update, Write};
 
@@ -94,7 +93,7 @@ impl SensorBuilderProperty for WaveSensorBuilder {
     }
 }
 
-impl Propagation for WaveSensor {
+impl SensorPropagation for WaveSensor {
     fn propagate(&mut self, src: &mut Source) {
         let iter = self.amplitude.iter_mut().zip(&mut self.phase);
         let src_iter = src.amplitude().into_iter().zip(src.phase().iter());
@@ -115,9 +114,9 @@ impl Propagation for WaveSensor {
             });
         }
     }
-    fn time_propagate(&mut self, _secs: f64, _src: &mut Source) {
-        unimplemented!()
-    }
+    // fn time_propagate(&mut self, _secs: f64, _src: &mut Source) {
+    //     unimplemented!()
+    // }
 }
 
 impl Builder for WaveSensorBuilder {

@@ -1,8 +1,12 @@
-use crate::calibration::{Calib, PushPull};
-use crate::sensors::{WaveSensor, WaveSensorBuilder};
-use crate::{OpticalModel, OpticalModelBuilder};
-use crseo::gmt::{GmtBuilder, GmtMirror, GmtMirrorBuilder, GmtMx, MirrorGetSet};
-use crseo::Gmt;
+use crate::{
+    calibration::{Calib, PushPull},
+    sensors::{WaveSensor, WaveSensorBuilder},
+    OpticalModel, OpticalModelBuilder,
+};
+use crseo::{
+    gmt::{GmtBuilder, GmtMirror, GmtMirrorBuilder, GmtMx, MirrorGetSet},
+    Gmt,
+};
 use interface::Update;
 use std::time::Instant;
 

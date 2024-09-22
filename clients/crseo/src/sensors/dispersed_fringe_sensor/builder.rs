@@ -2,7 +2,7 @@ use crseo::{segment_piston_sensor::SegmentPistonSensorBuilder, Builder, FromBuil
 
 use crate::{DeviceInitialize, OpticalModel, OpticalModelBuilder, SensorBuilderProperty};
 
-use super::{DispersedFringeSensor, DispersedFringeSensorProcessing, Result};
+use super::{DispersedFringeSensor, DispersedFringeSensorProcessing};
 
 #[derive(Default, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct DispersedFringeSensorBuidler<const C: usize, const F: usize>(SegmentPistonSensorBuilder);
@@ -50,7 +50,7 @@ impl<const C: usize, const F: usize> DeviceInitialize<DispersedFringeSensorProce
             .unwrap();
         println!("{om}");
         <OpticalModel<DispersedFringeSensor<1, 1>> as interface::Update>::update(&mut om);
-        let mut dfsp0 = DispersedFringeSensorProcessing::from(om.sensor().unwrap());
+        let mut dfsp0 = DispersedFringeSensorProcessing::from(om.sensor_mut().unwrap());
         device.set_reference(dfsp0.intercept());
     }
 }

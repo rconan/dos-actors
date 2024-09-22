@@ -1,17 +1,13 @@
 /*!
-#  CEO Optical Model
+#  GMT Optical Model
 
-This module is a high-level interface to [crseo] and [crseo] is a Rust wrapper around CEO.
-CEO is a CUDA-based optical propagation model for the GMT.
+A [gmt_dos-actors] client for optical propagation through the GMT based on [crseo].
 
-Follow the instructions [here](https://github.com/rconan/crseo) to install and to setup CEO.
+The GMT optical model is represented with the [OpticalModel] and it is configured with [OpticalModelBuilder].
 
-A default optical model consists in the GMT and an on-axis source
-```no_run
-use gmt_dos_clients_crseo::OpticalModel;
-use crseo::wavefrontsensor::PhaseSensor;
-let optical_model = OpticalModel::<PhaseSensor>::builder().build().expect("Failed to build CEO optical model");
-```
+
+
+[gmt_dos-actors]: https://docs.rs/gmt_dos-actors
  */
 
 /* pub(crate) mod optical_model;

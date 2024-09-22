@@ -1,11 +1,23 @@
-use super::OpticalModel;
-use crate::sensors::{NoSensor, WaveSensor, WaveSensorBuilder};
-use crate::SensorBuilderProperty;
-use crseo::atmosphere::AtmosphereBuilder;
-use crseo::gmt::GmtBuilder;
-use crseo::source::SourceBuilder;
-use crseo::Builder;
+use super::{OpticalModel, OpticalModelError};
+use crate::{
+    sensors::{NoSensor, WaveSensorBuilder},
+    SensorBuilderProperty,
+};
+use crseo::{atmosphere::AtmosphereBuilder, gmt::GmtBuilder, source::SourceBuilder, Builder};
 
+/// GMT optical model builder
+///
+/// # Examples:
+///
+/// Build a optical model with the default values for [GmtBuilder](crseo::gmt::GmtBuilder)
+/// and for [SourceBuilder](crseo::source::SourceBuilder) and without sensor
+///
+/// ```
+/// use gmt_dos_clients_crseo::{OpticalModel, sensors::NoSensor};
+///
+/// let om = OpticalModel::<NoSensor>::builder().build()?;
+/// # Ok::<(),Box<dyn std::error::Error>>(())
+/// ```
 #[derive(Debug, Default, Clone)]
 pub struct OpticalModelBuilder<S = NoSensor> {
     pub(crate) gmt: GmtBuilder,
@@ -19,30 +31,88 @@ impl<T, S> OpticalModelBuilder<S>
 where
     S: Builder<Component = T>,
 {
+    /// Sets the GMT builder
+    ///
+    /// ```
+    /// use gmt_dos_clients_crseo::{OpticalModel, sensors::NoSensor};
+    /// use crseo::{Gmt, FromBuilder};
+    ///
+    /// let om = OpticalModel::<NoSensor>::builder().gmt(Gmt::builder().m1_n_mode(21)).build()?;
+    /// # Ok::<(),Box<dyn std::error::Error>>(())
+    /// ```
     pub fn gmt(mut self, builder: GmtBuilder) -> Self {
         self.gmt = builder;
         self
     }
+    ///  Sets the source builder
+    ///
+    /// ```
+    /// use gmt_dos_clients_crseo::{OpticalModel, sensors::NoSensor};
+    /// use crseo::{Source, FromBuilder};
+    ///
+    /// let om = OpticalModel::<NoSensor>::builder().source(Source::builder().band("K")).build()?;
+    /// # Ok::<(),Box<dyn std::error::Error>>(())
+    /// ```
     pub fn source(mut self, builder: SourceBuilder) -> Self {
         self.src = builder;
         self
     }
+    ///  Sets the atmosphere builder
+    ///
+    /// ```
+    /// use gmt_dos_clients_crseo::{OpticalModel, sensors::NoSensor};
+    /// use crseo::{Atmosphere, FromBuilder};
+    ///
+    /// let om = OpticalModel::<NoSensor>::builder()
+    ///     .sampling_frequency(1_000_f64) // 1kHz
+    ///     .atmosphere(Atmosphere::builder()).build()?;
+    /// # Ok::<(),Box<dyn std::error::Error>>(())
+    /// ```
     pub fn atmosphere(self, atm_builder: AtmosphereBuilder) -> Self {
         Self {
             atm_builder: Some(atm_builder),
             ..self
         }
     }
+    /// Sets the optical sensor
+    ///
+    /// ```
+    /// use gmt_dos_clients_crseo::{OpticalModel, sensors::WaveSensor};
+    /// use crseo::FromBuilder;
+    ///
+    /// let om = OpticalModel::<WaveSensor>::builder().sensor(WaveSensor::builder());
+    /// # Ok::<(),Box<dyn std::error::Error>>(())
+    /// ```
     pub fn sensor(mut self, builder: S) -> Self {
         self.sensor = Some(builder);
         self
     }
+    /// Sets the sampling frequency in Hz
+    ///
+    /// ```
+    /// use gmt_dos_clients_crseo::{OpticalModel, sensors::NoSensor};
+    /// use crseo::{Atmosphere, FromBuilder};
+    ///
+    /// let om = OpticalModel::<NoSensor>::builder()
+    ///     .sampling_frequency(1_000_f64) // 1kHz
+    ///     .atmosphere(Atmosphere::builder()).build()?;
+    /// # Ok::<(),Box<dyn std::error::Error>>(())
     pub fn sampling_frequency(self, sampling_frequency: f64) -> Self {
         Self {
             sampling_frequency: Some(sampling_frequency),
             ..self
         }
     }
+    /// Clones the builder with a new [sensor](crate::sensors) builder
+    /// ```
+    /// use gmt_dos_clients_crseo::{OpticalModel, sensors::{NoSensor, Camera}};
+    /// use crseo::FromBuilder;
+    ///
+    /// let omb = OpticalModel::<NoSensor>::builder();
+    /// let om_cam: OpticalModel<Camera> = omb.clone_with_sensor(Camera::builder()).build()?;
+    /// let om = omb.build()?;
+    /// # Ok::<(),Box<dyn std::error::Error>>(())
+    /// ```
     pub fn clone_with_sensor<W>(&self, sensor: W) -> OpticalModelBuilder<W> {
         let Self {
             gmt,
@@ -60,11 +130,12 @@ where
         }
     }
 }
+
 impl<T, S> OpticalModelBuilder<S>
 where
     S: Builder<Component = T> + SensorBuilderProperty,
 {
-    pub fn build(self) -> super::Result<OpticalModel<T>> {
+    pub fn build(self) -> Result<OpticalModel<T>, OpticalModelError> {
         Ok(OpticalModel {
             gmt: self.gmt.build()?,
             src: if let &Some(n) = &self
@@ -76,7 +147,16 @@ where
             } else {
                 self.src.build()?
             },
-            atm: self.atm_builder.map(|atm| atm.build()).transpose()?,
+            atm: match self.atm_builder {
+                Some(atm) => {
+                    if self.sampling_frequency.is_some() {
+                        Some(atm.build()?)
+                    } else {
+                        return Err(OpticalModelError::AtmosphereWithoutSamplingFrequency);
+                    }
+                }
+                None => None,
+            },
             sensor: self.sensor.map(|sensor| sensor.build()).transpose()?,
             tau: self.sampling_frequency.map_or_else(|| 0f64, |x| x.recip()),
         })

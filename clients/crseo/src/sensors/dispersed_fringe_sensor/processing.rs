@@ -109,7 +109,7 @@ impl<const C: usize, const F: usize> From<&mut crate::OpticalModel<DispersedFrin
     for DispersedFringeSensorProcessing
 {
     fn from(om: &mut crate::OpticalModel<DispersedFringeSensor<C, F>>) -> Self {
-        Self::from(om.sensor().unwrap())
+        Self::from(om.sensor_mut().unwrap())
     }
 }
 

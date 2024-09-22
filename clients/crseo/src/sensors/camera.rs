@@ -48,9 +48,11 @@ impl<const I: usize> Display for Camera<I> {
 }
 
 impl<const I: usize> OpticalModel<Camera<I>> {
+    /// Returns the camera pixel scale in radians
     pub fn pixel_scale(&self) -> f64 {
         self.sensor.as_ref().unwrap().pixel_scale(&self.src) as f64
     }
+    /// Returns the camera field-of-view in radians
     pub fn field_of_view(&self) -> f64 {
         self.sensor.as_ref().unwrap().field_of_view(&self.src) as f64
     }
