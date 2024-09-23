@@ -8,7 +8,28 @@ use std::{
 };
 
 mod builder;
+pub use builder::CalibBuilder;
 
+/// Calibration matrix
+///
+/// # Examples
+///
+/// A fictitious identity calibration matrix that takes RBM Rx and Ry as inputs
+/// a returns the same RBM Rx and Ry as outputs.
+/// ```
+/// use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+/// use skyangle::Conversion;
+///
+/// let calib = Calib::builder()
+///     .c(vec![1f64,0.,0.,1.])
+///     .n_mode(6)
+///     .mode(CalibrationMode::RBM([
+///         None, None, None,
+///         Some(1f64.from_arcsec()), Some(1f64.from_arcsec()), None
+///     ]))
+///     .mask(vec![false, false, false, true, true, false])
+///     .build();
+/// ```
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Calib {
     pub(crate) sid: u8,
@@ -21,13 +42,64 @@ pub struct Calib {
 }
 
 impl Calib {
-    pub fn builder() -> builder::CalibBuilder {
-        builder::CalibBuilder::default()
+    /// Returns the calibration matrix builder
+    /// ```
+    /// use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// use skyangle::Conversion;
+    ///
+    /// let calib = Calib::builder()
+    ///     .c(vec![1f64,0.,0.,1.])
+    ///     .n_mode(6)
+    ///     .mode(CalibrationMode::RBM([
+    ///         None, None, None,
+    ///         Some(1f64.from_arcsec()), Some(1f64.from_arcsec()), None
+    ///     ]))
+    ///     .mask(vec![false, false, false, true, true, false])
+    ///     .build();
+    /// ```
+    pub fn builder() -> CalibBuilder {
+        CalibBuilder::default()
     }
+    /// Return the number of modes
+    ///
+    /// The number of modes corresponds to the number of degree of freedoms
+    /// associated with the probed property, e.g. calibrating Rx and Ry
+    /// of M1 RBMS gives `n_mode=6` and `n_cols=2`
+    /// ```
+    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// # use skyangle::Conversion;
+    /// #
+    /// # let calib = Calib::builder()
+    /// #    .c(vec![1f64,0.,0.,1.])
+    /// #    .n_mode(6)
+    /// #    .mode(CalibrationMode::RBM([
+    /// #        None, None, None,
+    /// #        Some(1f64.from_arcsec()), Some(1f64.from_arcsec()), None
+    /// #    ]))
+    /// #    .mask(vec![false, false, false, true, true, false])
+    /// #    .build();
+    /// assert_eq!(calib.n_mode(), 6);
+    /// ```
     #[inline]
     pub fn n_mode(&self) -> usize {
         self.n_mode
     }
+    /// Return the number of columns
+    /// ```
+    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// # use skyangle::Conversion;
+    /// #
+    /// # let calib = Calib::builder()
+    /// #    .c(vec![1f64,0.,0.,1.])
+    /// #    .n_mode(6)
+    /// #    .mode(CalibrationMode::RBM([
+    /// #        None, None, None,
+    /// #        Some(1f64.from_arcsec()), Some(1f64.from_arcsec()), None
+    /// #    ]))
+    /// #    .mask(vec![false, false, false, true, true, false])
+    /// #    .build();
+    /// assert_eq!(calib.n_cols(), 2);
+    /// ```
     #[inline]
     pub fn n_cols(&self) -> usize {
         if let Some(n_cols) = self.n_cols {
@@ -43,13 +115,71 @@ impl Calib {
             } => end_id.unwrap_or(n_mode) - start_idx,
         }
     }
+    /// Return the number of rows
+    /// ```
+    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// # use skyangle::Conversion;
+    /// #
+    /// # let calib = Calib::builder()
+    /// #    .c(vec![1f64,0.,0.,1.])
+    /// #    .n_mode(6)
+    /// #    .mode(CalibrationMode::RBM([
+    /// #        None, None, None,
+    /// #        Some(1f64.from_arcsec()), Some(1f64.from_arcsec()), None
+    /// #    ]))
+    /// #    .mask(vec![false, false, false, true, true, false])
+    /// #    .build();
+    /// assert_eq!(calib.n_rows(), 2);
+    /// ```
     #[inline]
     pub fn n_rows(&self) -> usize {
         self.c.len() / self.n_cols()
     }
+    /// Returns a reference to the calibration matrix
+    /// Return the number of rows
+    /// ```
+    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// # use skyangle::Conversion;
+    /// #
+    /// # let calib = Calib::builder()
+    /// #    .c(vec![1f64,0.,0.,1.])
+    /// #    .n_mode(6)
+    /// #    .mode(CalibrationMode::RBM([
+    /// #        None, None, None,
+    /// #        Some(1f64.from_arcsec()), Some(1f64.from_arcsec()), None
+    /// #    ]))
+    /// #    .mask(vec![false, false, false, true, true, false])
+    /// #    .build();
+    /// let mat = calib.mat_ref();
+    /// assert_eq!(mat.nrows(), 2);
+    /// assert_eq!(mat.ncols(), 2);
+    /// ```
+    #[inline]
     pub fn mat_ref(&self) -> MatRef<'_, f64> {
         from_column_major_slice::<f64>(&self.c, self.n_rows(), self.n_cols())
     }
+    /// Returns the pseudo-inverse of the calibration matrix
+    ///
+    /// The pseudo-inverse is computed using the SVD decomposition of the matrix
+    /// and the condition number of the matrix is also returned within [CalibPinv].
+    /// Returns a reference to the calibration matrix
+    /// Return the number of rows
+    /// ```
+    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// # use skyangle::Conversion;
+    /// #
+    /// # let calib = Calib::builder()
+    /// #    .c(vec![1f64,0.,0.,1.])
+    /// #    .n_mode(6)
+    /// #    .mode(CalibrationMode::RBM([
+    /// #        None, None, None,
+    /// #        Some(1f64.from_arcsec()), Some(1f64.from_arcsec()), None
+    /// #    ]))
+    /// #    .mask(vec![false, false, false, true, true, false])
+    /// #    .build();
+    /// let pinv = calib.pseudoinverse();
+    /// assert_eq!(pinv.cond(),1f64);
+    /// ```
     pub fn pseudoinverse(&self) -> CalibPinv<f64> {
         let svd = self.mat_ref().svd();
         let s = svd.s_diagonal();
@@ -60,9 +190,45 @@ impl Calib {
             mode: self.mode,
         }
     }
+    /// Returns the number of non-zero elements in the inputs mask
+    /// ```
+    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// # use skyangle::Conversion;
+    /// #
+    /// # let calib = Calib::builder()
+    /// #    .c(vec![1f64,0.,0.,1.])
+    /// #    .n_mode(6)
+    /// #    .mode(CalibrationMode::RBM([
+    /// #        None, None, None,
+    /// #        Some(1f64.from_arcsec()), Some(1f64.from_arcsec()), None
+    /// #    ]))
+    /// #    .mask(vec![false, false, false, true, true, false])
+    /// #    .build();
+    /// assert_eq!(calib.area(), 2);
+    /// ```
     pub fn area(&self) -> usize {
         self.mask.iter().filter(|x| **x).count()
     }
+    /// Applies the mask to the input data
+    ///
+    /// The mask is applied element-wise to the input data, returning a new
+    /// vector with only the elements for which the mask is `true`.
+    /// ```
+    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// # use skyangle::Conversion;
+    /// #
+    /// # let calib = Calib::builder()
+    /// #    .c(vec![1f64,0.,0.,1.])
+    /// #    .n_mode(6)
+    /// #    .mode(CalibrationMode::RBM([
+    /// #        None, None, None,
+    /// #        Some(1f64.from_arcsec()), Some(1f64.from_arcsec()), None
+    /// #    ]))
+    /// #    .mask(vec![false, false, false, true, true, false])
+    /// #    .build();
+    /// let r_xy = calib.mask(vec![1.,2.,3.,4.,5.,6.].as_slice());
+    /// assert_eq!(r_xy,vec![4.,5.]);
+    /// ```
     pub fn mask(&self, data: &[f64]) -> Vec<f64> {
         assert_eq!(data.len(), self.mask.len());
         data.iter()
@@ -70,6 +236,10 @@ impl Calib {
             .filter_map(|(x, b)| if *b { Some(*x) } else { None })
             .collect()
     }
+    /// Computes the intersection of the mask with the mask on another [Calib]
+    ///
+    /// Both matrices are filtered according to the mask resulting from the
+    /// intersection of their masks.
     pub fn match_areas(&mut self, other: &mut Calib) {
         assert_eq!(self.mask.len(), other.mask.len());
         let area_a = self.area();

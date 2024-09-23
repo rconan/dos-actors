@@ -5,11 +5,20 @@ use serde::{Deserialize, Serialize};
 
 use super::{Calib, CalibrationMode};
 
+/// Calibration matrix pseudo-inverse
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CalibPinv<T: faer::Entity> {
     pub(crate) mat: Mat<T>,
     pub(crate) cond: T,
     pub(crate) mode: CalibrationMode,
+}
+
+impl<T: faer::Entity> CalibPinv<T> {
+    /// Returns the condition number of the calibration matrix
+    #[inline]
+    pub fn cond(&self) -> T {
+        self.cond
+    }
 }
 
 impl Mul<Vec<f64>> for &CalibPinv<f64> {
@@ -58,9 +67,9 @@ impl Mul<Vec<f64>> for &CalibPinv<f64> {
     }
 }
 
-impl Mul<MatRef<'_,f64>> for &CalibPinv<f64> {
+impl Mul<MatRef<'_, f64>> for &CalibPinv<f64> {
     type Output = Mat<f64>;
-    fn mul(self, rhs: MatRef<'_,f64>) -> Self::Output {
+    fn mul(self, rhs: MatRef<'_, f64>) -> Self::Output {
         self.mat.as_ref() * rhs
     }
 }

@@ -24,9 +24,9 @@ use super::SensorBuilderProperty;
 /// # Ok::<(),Box<dyn std::error::Error>>(())
 /// ```
 #[derive(Default, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct DispersedFringeSensorBuidler<const C: usize, const F: usize>(SegmentPistonSensorBuilder);
+pub struct DispersedFringeSensorBuilder<const C: usize, const F: usize>(SegmentPistonSensorBuilder);
 
-impl<const C: usize, const F: usize> Builder for DispersedFringeSensorBuidler<C, F> {
+impl<const C: usize, const F: usize> Builder for DispersedFringeSensorBuilder<C, F> {
     type Component = DispersedFringeSensor<C, F>;
 
     fn build(self) -> crseo::Result<Self::Component> {
@@ -53,10 +53,10 @@ impl<const C: usize, const F: usize> Builder for DispersedFringeSensorBuidler<C,
 //     }
 // }
 
-impl<const C: usize, const F: usize> SensorBuilderProperty for DispersedFringeSensorBuidler<C, F> {}
+impl<const C: usize, const F: usize> SensorBuilderProperty for DispersedFringeSensorBuilder<C, F> {}
 
 impl<const C: usize, const F: usize> DeviceInitialize<DispersedFringeSensorProcessing>
-    for OpticalModelBuilder<DispersedFringeSensorBuidler<C, F>>
+    for OpticalModelBuilder<DispersedFringeSensorBuilder<C, F>>
 {
     fn initialize(&mut self, device: &mut DispersedFringeSensorProcessing) {
         let mut om = self
@@ -70,7 +70,7 @@ impl<const C: usize, const F: usize> DeviceInitialize<DispersedFringeSensorProce
     }
 }
 
-impl<const C: usize, const F: usize> DispersedFringeSensorBuidler<C, F> {
+impl<const C: usize, const F: usize> DispersedFringeSensorBuilder<C, F> {
     /// Sets the GMT builder
     pub fn gmt(mut self, gmt: crseo::gmt::GmtBuilder) -> Self {
         self.0 = self.0.gmt(gmt);
@@ -119,7 +119,7 @@ impl<const C: usize, const F: usize> DispersedFringeSensorBuidler<C, F> {
     /// Clones the builder into another one with different constants `C` and `F`
     pub fn clone_into<const CO: usize, const FO: usize>(
         &self,
-    ) -> DispersedFringeSensorBuidler<CO, FO> {
-        DispersedFringeSensorBuidler(self.0.clone())
+    ) -> DispersedFringeSensorBuilder<CO, FO> {
+        DispersedFringeSensorBuilder(self.0.clone())
     }
 }

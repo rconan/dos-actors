@@ -1,7 +1,8 @@
-use super::{Calib, Calibrate, CalibrateSegment, PushPull, Reconstructor};
-use crate::sensors::{
-    builders::DispersedFringeSensorBuidler, DispersedFringeSensor, DispersedFringeSensorProcessing,
+use super::{
+    Calib, Calibrate, CalibrateSegment, PushPull, Reconstructor, SegmentSensorBuilder,
+    SensorBuilder,
 };
+use crate::sensors::{DispersedFringeSensor, DispersedFringeSensorProcessing};
 use crseo::{
     gmt::{GmtBuilder, GmtMirror, GmtMirrorBuilder, GmtMx, MirrorGetSet},
     Gmt,
@@ -10,11 +11,11 @@ use interface::Update;
 use std::time::Instant;
 
 impl<const SID: u8> PushPull<SID> for DispersedFringeSensorProcessing {
-    type Sensor = DispersedFringeSensor<1, 1>;
+    type PushPullSensor = DispersedFringeSensor<1, 1>;
 
     fn push_pull<F>(
         &mut self,
-        optical_model: &mut crate::OpticalModel<Self::Sensor>,
+        optical_model: &mut crate::OpticalModel<Self::PushPullSensor>,
         i: usize,
         s: f64,
         cmd: &mut [f64],
@@ -53,10 +54,10 @@ where
     Gmt: GmtMirror<M>,
     GmtBuilder: GmtMirrorBuilder<M>,
 {
-    type SegmentSensorBuilder = DispersedFringeSensorBuidler<1, 1>;
+    type SegmentSensor = DispersedFringeSensor<1, 1>;
 
     fn calibrate(
-        builder: crate::OpticalModelBuilder<Self::SegmentSensorBuilder>,
+        builder: crate::OpticalModelBuilder<SegmentSensorBuilder<M, Self, SID>>,
         calib_mode: super::CalibrationMode,
     ) -> super::Result<Calib> {
         let mut dfs_processor = DispersedFringeSensorProcessing::new();
@@ -141,10 +142,10 @@ where
     Gmt: GmtMirror<M>,
     GmtBuilder: GmtMirrorBuilder<M>,
 {
-    type SensorBuilder = DispersedFringeSensorBuidler<1, 1>;
+    type Sensor = DispersedFringeSensor<1, 1>;
 
     fn calibrate(
-        optical_model: &crate::OpticalModelBuilder<Self::SensorBuilder>,
+        optical_model: &crate::OpticalModelBuilder<SensorBuilder<M, Self>>,
         calib_mode: super::CalibrationMode,
     ) -> super::Result<super::Reconstructor> {
         let c1 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 1>>::calibrate(

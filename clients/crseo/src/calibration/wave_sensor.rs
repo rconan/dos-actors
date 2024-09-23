@@ -1,6 +1,6 @@
 use crate::{
     calibration::{Calib, PushPull},
-    sensors::{builders::WaveSensorBuilder, WaveSensor},
+    sensors::WaveSensor,
     OpticalModel, OpticalModelBuilder,
 };
 use crseo::{
@@ -10,14 +10,14 @@ use crseo::{
 use interface::Update;
 use std::time::Instant;
 
-use super::{Calibrate, CalibrateSegment, CalibrationMode, Reconstructor};
+use super::{Calibrate, CalibrateSegment, CalibrationMode, SegmentSensorBuilder};
 
 impl<const SID: u8> PushPull<SID> for WaveSensor {
-    type Sensor = WaveSensor;
+    type PushPullSensor = WaveSensor;
 
     fn push_pull<F>(
         &mut self,
-        optical_model: &mut OpticalModel<Self::Sensor>,
+        optical_model: &mut OpticalModel<Self::PushPullSensor>,
         i: usize,
         s: f64,
         cmd: &mut [f64],
@@ -62,10 +62,10 @@ where
     Gmt: GmtMirror<M>,
     GmtBuilder: GmtMirrorBuilder<M>,
 {
-    type SegmentSensorBuilder = WaveSensorBuilder;
+    type SegmentSensor = WaveSensor;
 
     fn calibrate(
-        builder: OpticalModelBuilder<Self::SegmentSensorBuilder>,
+        builder: OpticalModelBuilder<SegmentSensorBuilder<M, Self, SID>>,
         calib_mode: CalibrationMode,
     ) -> super::Result<Calib> {
         // let mut centroids = Centroids::try_from(builder.sensor.as_ref().unwrap())?;
@@ -152,10 +152,10 @@ where
     Gmt: GmtMirror<M>,
     GmtBuilder: GmtMirrorBuilder<M>,
 {
-    type SensorBuilder = WaveSensorBuilder;
+    type Sensor = WaveSensor;
 
-    fn calibrate(
-        optical_model: &OpticalModelBuilder<Self::SensorBuilder>,
+    /*     fn calibrate(
+        optical_model: OpticalModelBuilder<SensorBuilder<M, Self>>,
         calib_mode: CalibrationMode,
     ) -> super::Result<Reconstructor> {
         let c1 =
@@ -173,5 +173,5 @@ where
         let c7 =
             <WaveSensor as CalibrateSegment<M, 7>>::calibrate(optical_model.clone(), calib_mode)?;
         Ok(Reconstructor::new(vec![c1, c2, c3, c4, c5, c6, c7]))
-    }
+    } */
 }

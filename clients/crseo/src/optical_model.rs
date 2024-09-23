@@ -61,10 +61,23 @@ unsafe impl<T> Sync for OpticalModel<T> {}
 
 impl<T> OpticalModel<T>
 where
-    T: FromBuilder + Default,
+    T: FromBuilder,
 {
     pub fn builder() -> OpticalModelBuilder<<T as FromBuilder>::ComponentBuilder> {
-        Default::default()
+        let OpticalModelBuilder {
+            gmt,
+            src,
+            atm_builder,
+            sampling_frequency,
+            ..
+        } = OpticalModelBuilder::<NoSensor>::default();
+        OpticalModelBuilder {
+            gmt,
+            src,
+            atm_builder,
+            sensor: Some(T::builder()),
+            sampling_frequency,
+        }
     }
 }
 

@@ -11,7 +11,7 @@ use super::{NoSensor, WaveSensor};
 mod camera;
 pub use camera::CameraBuilder;
 mod disperse_fringe_sensor;
-pub use disperse_fringe_sensor::DispersedFringeSensorBuidler;
+pub use disperse_fringe_sensor::DispersedFringeSensorBuilder;
 
 /// Common properties for all sensor builders
 pub trait SensorBuilderProperty {

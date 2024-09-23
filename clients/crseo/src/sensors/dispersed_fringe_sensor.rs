@@ -10,7 +10,7 @@ use std::{
 mod processing;
 pub use processing::DispersedFringeSensorProcessing;
 
-use super::{builders::DispersedFringeSensorBuidler, SensorPropagation};
+use super::{builders::DispersedFringeSensorBuilder, SensorPropagation};
 
 /// GMT AGWS dispersed fringe sensor model
 ///
@@ -33,7 +33,7 @@ pub struct DispersedFringeSensor<const C: usize = 1, const F: usize = 1>(
 );
 
 impl<const C: usize, const F: usize> FromBuilder for DispersedFringeSensor<C, F> {
-    type ComponentBuilder = DispersedFringeSensorBuidler<C, F>;
+    type ComponentBuilder = DispersedFringeSensorBuilder<C, F>;
 }
 
 impl<const C: usize, const F: usize> Deref for DispersedFringeSensor<C, F> {

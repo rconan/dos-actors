@@ -9,6 +9,9 @@ use std::{
 
 use super::{Calib, CalibPinv};
 
+/// Reconstructor from calibration matrices
+///
+/// A reconstructor is a collection of segment wise calibration matrices.
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Reconstructor {
     calib: Vec<Calib>,
@@ -24,6 +27,7 @@ impl From<Calib> for Reconstructor {
 }
 
 impl Reconstructor {
+    /// Creates a new reconstructor
     pub fn new(calib: Vec<Calib>) -> Self {
         Self {
             pinv: vec![None; calib.len()],
@@ -31,19 +35,27 @@ impl Reconstructor {
             ..Default::default()
         }
     }
+    /// Computes the pseudo-inverse of the calibration matrices
     pub fn pseudoinverse(&mut self) -> &mut Self {
         self.pinv = self.calib.iter().map(|c| Some(c.pseudoinverse())).collect();
         self
     }
+    /// Returns the total number of non-zero inputs
     pub fn area(&self) -> usize {
         self.calib.iter().map(|c| c.area()).sum()
     }
+    /// Computes the intersection of the calibration matrices of two reconstructors
+    ///
+    /// The calibration matrices are filtered according to the mask resulting from the intersection of their masks.
     pub fn match_areas(&mut self, other: &mut Self) {
         self.calib
             .iter_mut()
             .zip(&mut other.calib)
             .for_each(|(c, oc)| c.match_areas(oc));
     }
+    /// Solves `AX=B` for each pair of calibration matrices in two reconstructors
+    ///
+    /// [Self] is A and `B` is another reconstructor
     pub fn least_square_solve(&mut self, b: &Reconstructor) -> Vec<Mat<f64>> {
         self.pinv()
             .zip(&b.calib)
@@ -53,9 +65,11 @@ impl Reconstructor {
     // pub fn iter(&self) -> impl Iterator<Item = MatRef<'_, f64>> {
     //     self.calib.iter().map(|c| c.mat_ref())
     // }
+    /// Returns an iterator over the calibration matrices
     pub fn calib(&self) -> impl Iterator<Item = &Calib> {
         self.calib.iter()
     }
+    /// Returns an iterator over the pseudo-inverse of the calibration matrices
     pub fn pinv(&mut self) -> impl Iterator<Item = &CalibPinv<f64>> {
         self.pinv
             .iter_mut()
@@ -63,6 +77,7 @@ impl Reconstructor {
             .map(|(p, c)| p.get_or_insert_with(|| c.pseudoinverse()))
             .map(|p| &*p)
     }
+    /// Returns an iterator over the calibration matrices and their pseudo-inverse
     pub fn calib_pinv(&mut self) -> impl Iterator<Item = (&Calib, &CalibPinv<f64>)> {
         self.pinv
             .iter_mut()
@@ -70,6 +85,7 @@ impl Reconstructor {
             .map(|(p, c)| (c, p.get_or_insert_with(|| c.pseudoinverse())))
             .map(|(c, p)| (c, &*p))
     }
+    /// Returns the calibration matrices cross-talk vector
     pub fn cross_talks(&self) -> Vec<usize> {
         let n = self.calib[0].mask.len();
         (0..n)
@@ -80,6 +96,7 @@ impl Reconstructor {
             })
             .collect()
     }
+    /// Returns the number of calibration matrices cross-talks
     pub fn n_cross_talks(&self) -> usize {
         self.cross_talks().iter().filter(|&&c| c > 1).count()
     }
