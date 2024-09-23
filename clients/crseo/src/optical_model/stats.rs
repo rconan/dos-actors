@@ -1,6 +1,6 @@
 use crate::{
-    sensors::{Camera, DispersedFringeSensor, NoSensor},
-    OpticalModel, SensorPropagation,
+    sensors::{Camera, DispersedFringeSensor, NoSensor, SensorPropagation},
+    OpticalModel,
 };
 use crseo::{Imaging, Pyramid};
 use gmt_dos_clients_io::optics::{

@@ -1,8 +1,13 @@
 use std::fmt::Display;
 
-use crate::{OpticalModel, SensorBuilderProperty, SensorPropagation};
+use crate::OpticalModel;
 use crseo::{Builder, CrseoError, FromBuilder};
 
+use super::{builders::SensorBuilderProperty, SensorPropagation};
+
+/// A sensor that is not
+///
+/// The sensor type that is used for an [OpticalModel] without a sensor
 #[derive(Debug, Default, Clone)]
 pub struct NoSensor;
 impl SensorBuilderProperty for NoSensor {}

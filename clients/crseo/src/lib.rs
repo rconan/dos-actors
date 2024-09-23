@@ -22,7 +22,6 @@ pub use sensor::SensorBuilder;
 
 use std::ops::{Deref, DerefMut};
 
-use crseo::{imaging::ImagingBuilder, Propagation, Source};
 use interface::{Data, TimerMarker, UniqueIdentifier, Update, Write};
 
 mod error;
@@ -56,33 +55,6 @@ pub use centroiding::Centroids;
 pub use optical_model::{builder::OpticalModelBuilder, OpticalModel};
 
 impl<T> TimerMarker for OpticalModel<T> {}
-
-pub trait SensorBuilderProperty {
-    fn pupil_sampling(&self) -> Option<usize> {
-        None
-    }
-}
-
-impl SensorBuilderProperty for ImagingBuilder {
-    fn pupil_sampling(&self) -> Option<usize> {
-        Some(
-            self.lenslet_array.n_side_lenslet
-                * self.lenslet_array.n_px_lenslet
-                * self.n_sensor as usize
-                + 1,
-        )
-    }
-}
-
-pub trait SensorPropagation {
-    fn propagate(&mut self, src: &mut Source);
-}
-
-impl<T: Propagation> SensorPropagation for T {
-    fn propagate(&mut self, src: &mut Source) {
-        self.propagate(src);
-    }
-}
 
 pub trait DeviceInitialize<D> {
     fn initialize(&mut self, device: &mut D);

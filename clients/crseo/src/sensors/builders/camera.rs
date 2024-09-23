@@ -3,10 +3,27 @@ use crseo::{
     Builder,
 };
 
-use crate::{OpticalModelBuilder, SensorBuilderProperty};
+use crate::{sensors::Camera, OpticalModelBuilder};
 
-use super::Camera;
+use super::SensorBuilderProperty;
 
+/// [Camera] builder
+///
+/// [CameraBuilder] is a newtype around [ImagingBuilder].
+///
+/// The number of frames that are co-added before resetting the camera is given by `I`.
+///
+/// # Examples:
+///
+/// Build a camera with the default values for [ImagingBuilder]
+///
+/// ```
+/// use gmt_dos_clients_crseo::sensors::Camera;
+/// use crseo::{Builder, FromBuilder};
+///
+/// let cam = Camera::<1>::builder().build()?;
+/// # Ok::<(),Box<dyn std::error::Error>>(())
+/// ```
 #[derive(Default, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct CameraBuilder<const I: usize = 1>(pub(crate) ImagingBuilder);
 
@@ -72,12 +89,12 @@ impl<const I: usize> CameraBuilder<I> {
         self.0 = ImagingBuilder::n_sensor(self.0, n_sensor);
         self
     }
-    /// Sets the lenslet array property
+    /// Sets the [lenslet array][LensletArray] property
     pub fn lenslet_array(mut self, lenslet_array: LensletArray) -> Self {
         self.0 = ImagingBuilder::lenslet_array(self.0, lenslet_array);
         self
     }
-    /// Sets the detector property
+    /// Sets the [detector](Detector) property
     pub fn detector(mut self, detector: Detector) -> Self {
         self.0 = ImagingBuilder::detector(self.0, detector);
         self

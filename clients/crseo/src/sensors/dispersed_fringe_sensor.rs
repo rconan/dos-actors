@@ -1,5 +1,5 @@
-use crate::{OpticalModel, SensorPropagation};
-use crseo::SegmentPistonSensor;
+use crate::OpticalModel;
+use crseo::{FromBuilder, SegmentPistonSensor};
 use gmt_dos_clients_io::optics::{dispersed_fringe_sensor::DfsFftFrame, Dev, Frame, Host};
 use interface::{Data, Size, Write};
 use std::{
@@ -7,13 +7,35 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-mod builder;
-pub use builder::DispersedFringeSensorBuidler;
-
 mod processing;
 pub use processing::DispersedFringeSensorProcessing;
 
-pub struct DispersedFringeSensor<const C: usize = 1, const F: usize = 1>(SegmentPistonSensor);
+use super::{builders::DispersedFringeSensorBuidler, SensorPropagation};
+
+/// GMT AGWS dispersed fringe sensor model
+///
+/// The number of frames that are co-added before resetting the camera is given by `C`
+/// and the number of frame FFTs that are co-added is given by `F`.
+///
+/// # Examples:
+///
+/// Build a dispersed fringe sensor with the default [DispersedFringeSensorBuilder]
+/// coadding 10 of the frame FFTs.
+/// ```no_run
+/// use gmt_dos_clients_crseo::sensors::DispersedFringeSensor;
+/// use crseo::{Builder, FromBuilder};
+///
+/// let dfs = DispersedFringeSensor::<1,10>::builder().build()?;
+/// # Ok::<(),Box<dyn std::error::Error>>(())
+/// ```
+pub struct DispersedFringeSensor<const C: usize = 1, const F: usize = 1>(
+    pub(super) SegmentPistonSensor,
+);
+
+impl<const C: usize, const F: usize> FromBuilder for DispersedFringeSensor<C, F> {
+    type ComponentBuilder = DispersedFringeSensorBuidler<C, F>;
+}
+
 impl<const C: usize, const F: usize> Deref for DispersedFringeSensor<C, F> {
     type Target = SegmentPistonSensor;
 

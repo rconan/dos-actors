@@ -1,4 +1,8 @@
-use crate::{ngao::DetectorFrame, sensors::NoSensor, OpticalModelBuilder};
+use crate::{
+    ngao::DetectorFrame,
+    sensors::{NoSensor, SensorPropagation},
+    OpticalModelBuilder,
+};
 use crseo::{Atmosphere, FromBuilder, Gmt, SegmentWiseSensor, Source};
 use gmt_dos_clients_io::{
     gmt_m1::{segment::RBM, M1RigidBodyMotions},
@@ -9,8 +13,6 @@ use gmt_dos_clients_io::{
     optics::{M2modes, SegmentD7Piston},
 };
 use interface::{Data, Read, UniqueIdentifier, Update, Write};
-
-use super::SensorPropagation;
 
 pub mod builder;
 mod imaging;

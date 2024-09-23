@@ -1,6 +1,6 @@
 use crate::{
     calibration::{Calib, PushPull},
-    sensors::{WaveSensor, WaveSensorBuilder},
+    sensors::{builders::WaveSensorBuilder, WaveSensor},
     OpticalModel, OpticalModelBuilder,
 };
 use crseo::{

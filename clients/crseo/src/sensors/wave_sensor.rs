@@ -1,15 +1,28 @@
 use std::fmt::Display;
 
-use crate::{OpticalModel, OpticalModelBuilder, SensorBuilderProperty, SensorPropagation};
-use crseo::{Builder, CrseoError, FromBuilder, Source};
+use crate::OpticalModel;
+use crseo::{FromBuilder, Source};
 use gmt_dos_clients_io::optics::Wavefront;
 use interface::{Data, Size, Update, Write};
 
-use super::NoSensor;
+use super::{builders::WaveSensorBuilder, NoSensor, SensorPropagation};
 
-#[derive(Debug, Default, Clone)]
-pub struct WaveSensorBuilder(pub OpticalModelBuilder<NoSensor>);
-
+/// Complex amplitude sensor
+///
+/// A sensor that records the amplitude and phase of a [Source] wavefront.
+///
+/// The phase of the wavefront is referenced with respect to the phase that
+/// corresponds to an ideally collimated GMT.
+///
+/// # Examples:
+///
+/// Build a [WaveSensor] with the default [WaveSensorBuilder]
+/// ```
+/// use gmt_dos_clients_crseo::sensors::WaveSensor;
+/// use crseo::{Builder, FromBuilder};
+///
+/// let wave = WaveSensor::builder().build()?;
+/// # Ok::<(),Box<dyn std::error::Error>>(())
 #[derive(Debug, Default)]
 pub struct WaveSensor {
     reference: Option<Box<WaveSensor>>,
@@ -87,12 +100,6 @@ impl Size<Wavefront> for OpticalModel<WaveSensor> {
     }
 }
 
-impl SensorBuilderProperty for WaveSensorBuilder {
-    fn pupil_sampling(&self) -> Option<usize> {
-        Some(self.0.src.pupil_sampling.side())
-    }
-}
-
 impl SensorPropagation for WaveSensor {
     fn propagate(&mut self, src: &mut Source) {
         let iter = self.amplitude.iter_mut().zip(&mut self.phase);
@@ -117,15 +124,6 @@ impl SensorPropagation for WaveSensor {
     // fn time_propagate(&mut self, _secs: f64, _src: &mut Source) {
     //     unimplemented!()
     // }
-}
-
-impl Builder for WaveSensorBuilder {
-    type Component = WaveSensor;
-    fn build(self) -> std::result::Result<Self::Component, CrseoError> {
-        let Self(omb) = self;
-        let om: OpticalModel<NoSensor> = omb.build().unwrap();
-        Ok(om.into())
-    }
 }
 
 impl FromBuilder for WaveSensor {

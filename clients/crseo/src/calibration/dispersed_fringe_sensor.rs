@@ -1,6 +1,6 @@
 use super::{Calib, Calibrate, CalibrateSegment, PushPull, Reconstructor};
 use crate::sensors::{
-    DispersedFringeSensor, DispersedFringeSensorBuidler, DispersedFringeSensorProcessing,
+    builders::DispersedFringeSensorBuidler, DispersedFringeSensor, DispersedFringeSensorProcessing,
 };
 use crseo::{
     gmt::{GmtBuilder, GmtMirror, GmtMirrorBuilder, GmtMx, MirrorGetSet},

@@ -1,7 +1,7 @@
 use super::{OpticalModel, OpticalModelError};
-use crate::{
-    sensors::{NoSensor, WaveSensorBuilder},
-    SensorBuilderProperty,
+use crate::sensors::{
+    builders::{SensorBuilderProperty, WaveSensorBuilder},
+    NoSensor,
 };
 use crseo::{atmosphere::AtmosphereBuilder, gmt::GmtBuilder, source::SourceBuilder, Builder};
 

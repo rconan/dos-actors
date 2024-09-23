@@ -1,12 +1,12 @@
-use crate::sensors::CameraBuilder;
-use crate::{DeviceInitialize, OpticalModel, OpticalModelBuilder};
-use crseo::centroiding::CentroidingBuilder;
-use crseo::imaging::ImagingBuilder;
-use crseo::{Builder, Centroiding, Imaging};
+use crate::{
+    sensors::builders::CameraBuilder, DeviceInitialize, OpticalModel, OpticalModelBuilder,
+};
+use crseo::{
+    centroiding::CentroidingBuilder, imaging::ImagingBuilder, Builder, Centroiding, Imaging,
+};
 use gmt_dos_clients_io::optics::{Dev, Frame};
 use interface::{Data, Read, UniqueIdentifier, Update, Write};
-use std::marker::PhantomData;
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
 #[derive(Debug, thiserror::Error)]
 pub enum CentroidsError {

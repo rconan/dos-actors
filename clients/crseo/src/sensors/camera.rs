@@ -6,13 +6,29 @@ use std::{
 use crseo::{FromBuilder, Imaging};
 use skyangle::Conversion;
 
-use crate::{OpticalModel, SensorPropagation};
+use crate::OpticalModel;
 
-mod builder;
-pub use builder::CameraBuilder;
+use super::{builders::CameraBuilder, SensorPropagation};
+
 mod interface;
 
-pub struct Camera<const I: usize = 1>(Imaging);
+/// Optical model camera
+///
+/// [Camera] is a newtype around [crseo::Imaging].
+///
+/// The number of frames that are co-added before resetting the camera is given by `I`.
+///
+/// # Examples:
+///
+/// Build a camera with the default [CameraBuilder] and without co-adding the frames.
+/// ```
+/// use gmt_dos_clients_crseo::sensors::Camera;
+/// use crseo::{Builder, FromBuilder};
+///
+/// let cam = Camera::<1>::builder().build()?;
+/// # Ok::<(),Box<dyn std::error::Error>>(())
+/// ```
+pub struct Camera<const I: usize = 1>(pub(super) Imaging);
 
 impl<const I: usize> Deref for Camera<I> {
     type Target = Imaging;
