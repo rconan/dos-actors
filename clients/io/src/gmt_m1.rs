@@ -108,4 +108,10 @@ pub mod segment {
         const PORT: u16 = 56_001 + 10 * (1 + DOF) as u16 + 100 * ID as u16;
         type DataType = Vec<f64>;
     }
+    /// BendingModes
+    pub enum BendingModes<const ID: u8> {}
+    impl<const ID: u8> UniqueIdentifier for BendingModes<ID> {
+        const PORT: u16 = 56_007 + 100 * ID as u16;
+        type DataType = Vec<f64>;
+    }
 }
