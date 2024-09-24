@@ -148,7 +148,7 @@ impl<const C: usize, const F: usize> Display for OpticalModel<DispersedFringeSen
 mod tests {
     use std::error::Error;
 
-    use crseo::{Builder, FromBuilder, Source};
+    use crseo::{FromBuilder, Source};
     use interface::Update;
 
     use crate::OpticalModel;

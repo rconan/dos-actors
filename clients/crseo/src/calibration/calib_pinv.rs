@@ -74,6 +74,13 @@ impl Mul<MatRef<'_, f64>> for &CalibPinv<f64> {
     }
 }
 
+impl Mul<MatRef<'_, f64>> for CalibPinv<f64> {
+    type Output = Mat<f64>;
+    fn mul(self, rhs: MatRef<'_, f64>) -> Self::Output {
+        self.mat.as_ref() * rhs
+    }
+}
+
 impl Mul<&Calib> for &CalibPinv<f64> {
     type Output = Mat<f64>;
     fn mul(self, rhs: &Calib) -> Self::Output {
@@ -84,6 +91,13 @@ impl Mul<&Calib> for &CalibPinv<f64> {
 impl Mul<&Calib> for &mut CalibPinv<f64> {
     type Output = Mat<f64>;
     fn mul(self, rhs: &Calib) -> Self::Output {
+        self.mat.as_ref() * rhs.mat_ref()
+    }
+}
+
+impl Mul<Calib> for CalibPinv<f64> {
+    type Output = Mat<f64>;
+    fn mul(self, rhs: Calib) -> Self::Output {
         self.mat.as_ref() * rhs.mat_ref()
     }
 }

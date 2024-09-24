@@ -5,7 +5,10 @@ use crate::{
 };
 use crseo::{Atmosphere, FromBuilder, Gmt, SegmentWiseSensor, Source};
 use gmt_dos_clients_io::{
-    gmt_m1::{segment::RBM, M1RigidBodyMotions},
+    gmt_m1::{
+        segment::{BendingModes, RBM},
+        M1ModeShapes, M1RigidBodyMotions,
+    },
     gmt_m2::{
         asm::{segment::AsmCommand, M2ASMAsmCommand},
         M2RigidBodyMotions,
@@ -107,6 +110,18 @@ impl<T: SensorPropagation> Read<M1RigidBodyMotions> for OpticalModel<T> {
             self.gmt
                 .m1_segment_state(1 + sid as i32, &data[..3], &data[3..]);
         });
+    }
+}
+
+impl<T: SensorPropagation, const SID: u8> Read<BendingModes<SID>> for OpticalModel<T> {
+    fn read(&mut self, data: Data<BendingModes<SID>>) {
+        self.gmt.m1_segment_modes(SID, &data);
+    }
+}
+
+impl<T: SensorPropagation> Read<M1ModeShapes> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M1ModeShapes>) {
+        self.gmt.m1_modes(&data);
     }
 }
 

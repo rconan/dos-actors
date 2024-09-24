@@ -13,11 +13,11 @@ use std::time::Instant;
 use super::{Calibrate, CalibrateSegment, CalibrationMode, SegmentSensorBuilder};
 
 impl<const SID: u8> PushPull<SID> for WaveSensor {
-    type PushPullSensor = WaveSensor;
+    type Sensor = WaveSensor;
 
     fn push_pull<F>(
         &mut self,
-        optical_model: &mut OpticalModel<Self::PushPullSensor>,
+        optical_model: &mut OpticalModel<<Self as PushPull<SID>>::Sensor>,
         i: usize,
         s: f64,
         cmd: &mut [f64],
@@ -62,7 +62,7 @@ where
     Gmt: GmtMirror<M>,
     GmtBuilder: GmtMirrorBuilder<M>,
 {
-    type SegmentSensor = WaveSensor;
+    type Sensor = WaveSensor;
 
     fn calibrate(
         builder: OpticalModelBuilder<SegmentSensorBuilder<M, Self, SID>>,

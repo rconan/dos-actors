@@ -33,125 +33,22 @@ use crate::{
     OpticalModelBuilder,
 };
 use crseo::{gmt::GmtMx, CrseoError, FromBuilder};
-use serde::{Deserialize, Serialize};
-use std::{
-    fmt::Debug,
-    ops::{Range, RangeInclusive},
-};
+use std::{fmt::Debug, thread};
 
 mod calib;
 mod calib_pinv;
 mod centroids;
+mod closed_loop;
 mod dispersed_fringe_sensor;
+mod mode;
 mod reconstructor;
 mod wave_sensor;
 
 pub use calib::{Calib, CalibBuilder};
 pub use calib_pinv::CalibPinv;
+pub use closed_loop::ClosedLoopCalibrate;
+pub use mode::CalibrationMode;
 pub use reconstructor::Reconstructor;
-
-/// Selection of calibration modes per segment
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub enum CalibrationMode {
-    /// Rigid body motions as amplitudes of motion
-    RBM([Option<f64>; 6]),
-    /// Mirror shapes
-    Modes {
-        /// total number of modes
-        n_mode: usize,
-        /// mode amplitude
-        stroke: f64,
-        /// index of the 1st mode to calibrate
-        start_idx: usize,
-        /// last mode to calibrate
-        end_id: Option<usize>,
-    },
-}
-impl Default for CalibrationMode {
-    fn default() -> Self {
-        Self::RBM([None; 6])
-    }
-}
-impl CalibrationMode {
-    /// Sets the number of modes and the mode amplitude
-    pub fn modes(n_mode: usize, stroke: f64) -> Self {
-        Self::Modes {
-            n_mode,
-            stroke,
-            start_idx: 0,
-            end_id: None,
-        }
-    }
-    /// Starts the calibration from the given mode
-    pub fn start_from(self, id: usize) -> Self {
-        if let Self::Modes {
-            n_mode,
-            stroke,
-            end_id,
-            ..
-        } = self
-        {
-            Self::Modes {
-                n_mode,
-                stroke,
-                start_idx: id - 1,
-                end_id,
-            }
-        } else {
-            self
-        }
-    }
-    /// Ends the calibration at the given mode
-    pub fn ends_at(self, id: usize) -> Self {
-        if let Self::Modes {
-            n_mode,
-            stroke,
-            start_idx,
-            ..
-        } = self
-        {
-            Self::Modes {
-                n_mode,
-                stroke,
-                start_idx,
-                end_id: Some(id),
-            }
-        } else {
-            self
-        }
-    }
-    /// Returns the indices as the range of modes to calibrate
-    pub fn range(&self) -> Range<usize> {
-        match self {
-            Self::RBM(_) => 0..6,
-            Self::Modes {
-                n_mode,
-                start_idx,
-                end_id,
-                ..
-            } => {
-                let end = end_id.unwrap_or(*n_mode);
-                *start_idx..end
-            }
-        }
-    }
-    /// Returns the mode number as the range of modes to calibrate
-    pub fn mode_range(&self) -> RangeInclusive<usize> {
-        match self {
-            Self::RBM(_) => 1..=6,
-            Self::Modes {
-                n_mode,
-                start_idx,
-                end_id,
-                ..
-            } => {
-                let start = *start_idx + 1;
-                let end = end_id.unwrap_or(*n_mode);
-                start..=end
-            }
-        }
-    }
-}
 
 #[derive(Debug, thiserror::Error)]
 pub enum CalibrationError {
@@ -167,10 +64,10 @@ type Result<T> = std::result::Result<T, CalibrationError>;
 
 /// Actuator push and pull
 pub trait PushPull<const SID: u8> {
-    type PushPullSensor;
+    type Sensor;
     fn push_pull<F>(
         &mut self,
-        optical_model: &mut OpticalModel<Self::PushPullSensor>,
+        optical_model: &mut OpticalModel<<Self as PushPull<SID>>::Sensor>,
         i: usize,
         s: f64,
         cmd: &mut [f64],
@@ -182,14 +79,14 @@ pub trait PushPull<const SID: u8> {
 
 type SensorBuilder<M, T> = <<T as Calibrate<M>>::Sensor as FromBuilder>::ComponentBuilder;
 type SegmentSensorBuilder<M, T, const SID: u8> =
-    <<T as CalibrateSegment<M, SID>>::SegmentSensor as FromBuilder>::ComponentBuilder;
+    <<T as CalibrateSegment<M, SID>>::Sensor as FromBuilder>::ComponentBuilder;
 
 /// Segment calibration
 pub trait CalibrateSegment<M: GmtMx, const SID: u8>
 where
-    Self: PushPull<SID, PushPullSensor = Self::SegmentSensor>,
+    Self: PushPull<SID, Sensor = <Self as CalibrateSegment<M, SID>>::Sensor>,
 {
-    type SegmentSensor: FromBuilder;
+    type Sensor: FromBuilder;
     fn calibrate(
         optical_model: OpticalModelBuilder<SegmentSensorBuilder<M, Self, SID>>,
         calib_mode: CalibrationMode,
@@ -200,44 +97,75 @@ where
 pub trait Calibrate<M: GmtMx>
 where
     <<Self as Calibrate<M>>::Sensor as FromBuilder>::ComponentBuilder: Clone + Send + 'static,
-    Self: CalibrateSegment<M, 1, SegmentSensor = Self::Sensor>,
-    Self: CalibrateSegment<M, 2, SegmentSensor = Self::Sensor>,
-    Self: CalibrateSegment<M, 3, SegmentSensor = Self::Sensor>,
-    Self: CalibrateSegment<M, 4, SegmentSensor = Self::Sensor>,
-    Self: CalibrateSegment<M, 5, SegmentSensor = Self::Sensor>,
-    Self: CalibrateSegment<M, 6, SegmentSensor = Self::Sensor>,
-    Self: CalibrateSegment<M, 7, SegmentSensor = Self::Sensor>,
+    Self: CalibrateSegment<M, 1, Sensor = <Self as Calibrate<M>>::Sensor>,
+    Self: CalibrateSegment<M, 2, Sensor = <Self as Calibrate<M>>::Sensor>,
+    Self: CalibrateSegment<M, 3, Sensor = <Self as Calibrate<M>>::Sensor>,
+    Self: CalibrateSegment<M, 4, Sensor = <Self as Calibrate<M>>::Sensor>,
+    Self: CalibrateSegment<M, 5, Sensor = <Self as Calibrate<M>>::Sensor>,
+    Self: CalibrateSegment<M, 6, Sensor = <Self as Calibrate<M>>::Sensor>,
+    Self: CalibrateSegment<M, 7, Sensor = <Self as Calibrate<M>>::Sensor>,
 {
     type Sensor: FromBuilder;
     fn calibrate(
         optical_model: &OpticalModelBuilder<SensorBuilder<M, Self>>,
         calib_mode: CalibrationMode,
-    ) -> Result<Reconstructor> {
-        let om = optical_model.clone();
-        let cm = calib_mode.clone();
-        let c1 = std::thread::spawn(move || <Self as CalibrateSegment<M, 1>>::calibrate(om, cm));
-        let om = optical_model.clone();
-        let cm = calib_mode.clone();
-        let c2 = std::thread::spawn(move || <Self as CalibrateSegment<M, 2>>::calibrate(om, cm));
-        let om = optical_model.clone();
-        let cm = calib_mode.clone();
-        let c3 = std::thread::spawn(move || <Self as CalibrateSegment<M, 3>>::calibrate(om, cm));
-        let om = optical_model.clone();
-        let cm = calib_mode.clone();
-        let c4 = std::thread::spawn(move || <Self as CalibrateSegment<M, 4>>::calibrate(om, cm));
-        let om = optical_model.clone();
-        let cm = calib_mode.clone();
-        let c5 = std::thread::spawn(move || <Self as CalibrateSegment<M, 5>>::calibrate(om, cm));
-        let om = optical_model.clone();
-        let cm = calib_mode.clone();
-        let c6 = std::thread::spawn(move || <Self as CalibrateSegment<M, 6>>::calibrate(om, cm));
-        let om = optical_model.clone();
-        let cm = calib_mode.clone();
-        let c7 = std::thread::spawn(move || <Self as CalibrateSegment<M, 7>>::calibrate(om, cm));
-        let mut ci = vec![];
-        for c in [c1, c2, c3, c4, c5, c6, c7] {
-            ci.push(c.join().unwrap().unwrap());
-        }
+    ) -> Result<Reconstructor>
+    where
+        <<Self as Calibrate<M>>::Sensor as FromBuilder>::ComponentBuilder: Clone + Send + Sync,
+    {
+        let ci: Result<Vec<_>> = thread::scope(|s| {
+            let c1 = s.spawn(|| {
+                <Self as CalibrateSegment<M, 1>>::calibrate(
+                    optical_model.clone(),
+                    calib_mode.clone(),
+                )
+            });
+            let c2 = s.spawn(|| {
+                <Self as CalibrateSegment<M, 2>>::calibrate(
+                    optical_model.clone(),
+                    calib_mode.clone(),
+                )
+            });
+            let c3 = s.spawn(|| {
+                <Self as CalibrateSegment<M, 3>>::calibrate(
+                    optical_model.clone(),
+                    calib_mode.clone(),
+                )
+            });
+            let c4 = s.spawn(|| {
+                <Self as CalibrateSegment<M, 4>>::calibrate(
+                    optical_model.clone(),
+                    calib_mode.clone(),
+                )
+            });
+            let c5 = s.spawn(|| {
+                <Self as CalibrateSegment<M, 5>>::calibrate(
+                    optical_model.clone(),
+                    calib_mode.clone(),
+                )
+            });
+            let c6 = s.spawn(|| {
+                <Self as CalibrateSegment<M, 6>>::calibrate(
+                    optical_model.clone(),
+                    calib_mode.clone(),
+                )
+            });
+            let c7 = s.spawn(|| {
+                <Self as CalibrateSegment<M, 7>>::calibrate(
+                    optical_model.clone(),
+                    calib_mode.clone(),
+                )
+            });
+            // let mut ci = vec![];
+            // for c in [c1, c2, c3, c4, c5, c6, c7] {
+            //     ci.push(c.join().unwrap().unwrap());
+            // }
+            // ci
+            [c1, c2, c3, c4, c5, c6, c7]
+                .into_iter()
+                .map(|c| c.join().unwrap())
+                .collect()
+        });
         // let c1 = <Self as CalibrateSegment<M, 1>>::calibrate(optical_model.clone(), calib_mode)?;
         // let c2 = <Self as CalibrateSegment<M, 2>>::calibrate(optical_model.clone(), calib_mode)?;
         // let c3 = <Self as CalibrateSegment<M, 3>>::calibrate(optical_model.clone(), calib_mode)?;
@@ -246,21 +174,6 @@ where
         // let c6 = <Self as CalibrateSegment<M, 6>>::calibrate(optical_model.clone(), calib_mode)?;
         // let c7 = <Self as CalibrateSegment<M, 7>>::calibrate(optical_model.clone(), calib_mode)?;
         // let ci = vec![c1, c2, c3, c4, c5, c6, c7];
-        Ok(Reconstructor::new(ci))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::sensors::{Camera, WaveSensor};
-
-    use super::*;
-    use crseo::gmt::GmtM1;
-
-    #[test]
-    fn wave_sensor() {
-        let omb = OpticalModel::<WaveSensor>::builder();
-        println!("{:#?}", omb);
-        // let calib = <WaveSensor as Calibrate<GmtM1>>::calibrate(&omb, CalibrationMode::RBM([Some(1e-6);6]));
+        Ok(Reconstructor::new(ci?))
     }
 }

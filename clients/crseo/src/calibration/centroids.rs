@@ -33,10 +33,10 @@ impl<K: CentroidKind, const SID: u8> PushPull<SID> for Centroids<K>
 where
     Centroids<K>: ValidCentroids,
 {
-    type PushPullSensor = Imaging;
+    type Sensor = Imaging;
     fn push_pull<F>(
         &mut self,
-        optical_model: &mut OpticalModel<Self::PushPullSensor>,
+        optical_model: &mut OpticalModel<<Self as PushPull<SID>>::Sensor>,
         i: usize,
         s: f64,
         cmd: &mut [f64],
@@ -88,7 +88,7 @@ where
     GmtBuilder: GmtMirrorBuilder<M>,
     Centroids<K>: ValidCentroids,
 {
-    type SegmentSensor = Imaging;
+    type Sensor = Imaging;
 
     fn calibrate(
         builder: OpticalModelBuilder<SegmentSensorBuilder<M, Self, SID>>,

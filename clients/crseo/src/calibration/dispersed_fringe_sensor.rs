@@ -11,11 +11,11 @@ use interface::Update;
 use std::time::Instant;
 
 impl<const SID: u8> PushPull<SID> for DispersedFringeSensorProcessing {
-    type PushPullSensor = DispersedFringeSensor<1, 1>;
+    type Sensor = DispersedFringeSensor<1, 1>;
 
     fn push_pull<F>(
         &mut self,
-        optical_model: &mut crate::OpticalModel<Self::PushPullSensor>,
+        optical_model: &mut crate::OpticalModel<<Self as PushPull<SID>>::Sensor>,
         i: usize,
         s: f64,
         cmd: &mut [f64],
@@ -54,7 +54,7 @@ where
     Gmt: GmtMirror<M>,
     GmtBuilder: GmtMirrorBuilder<M>,
 {
-    type SegmentSensor = DispersedFringeSensor<1, 1>;
+    type Sensor = DispersedFringeSensor<1, 1>;
 
     fn calibrate(
         builder: crate::OpticalModelBuilder<SegmentSensorBuilder<M, Self, SID>>,

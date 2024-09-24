@@ -63,7 +63,6 @@ impl<const C: usize, const F: usize> DeviceInitialize<DispersedFringeSensorProce
             .clone_with_sensor(self.sensor.as_ref().unwrap().clone_into::<1, 1>())
             .build()
             .unwrap();
-        println!("{om}");
         <OpticalModel<DispersedFringeSensor<1, 1>> as interface::Update>::update(&mut om);
         let mut dfsp0 = DispersedFringeSensorProcessing::from(om.sensor_mut().unwrap());
         device.set_reference(dfsp0.intercept());
@@ -121,5 +120,13 @@ impl<const C: usize, const F: usize> DispersedFringeSensorBuilder<C, F> {
         &self,
     ) -> DispersedFringeSensorBuilder<CO, FO> {
         DispersedFringeSensorBuilder(self.0.clone())
+    }
+}
+
+impl<const CI: usize, const FI: usize> OpticalModelBuilder<DispersedFringeSensorBuilder<CI, FI>> {
+    pub fn clone_into<const CO: usize, const FO: usize>(
+        &self,
+    ) -> OpticalModelBuilder<DispersedFringeSensorBuilder<CO, FO>> {
+        self.clone_with_sensor(self.sensor.as_ref().unwrap().clone_into::<CO, FO>())
     }
 }
