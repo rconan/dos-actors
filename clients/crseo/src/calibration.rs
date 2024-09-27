@@ -50,6 +50,15 @@ pub use closed_loop::ClosedLoopCalibrate;
 pub use mode::CalibrationMode;
 pub use reconstructor::Reconstructor;
 
+/// Calibration matrix properties
+pub trait CalibProps {
+    fn pseudoinverse(&self) -> CalibPinv<f64>;
+    fn area(&self) -> usize;
+    fn match_areas(&mut self, other: &mut Self);
+    fn mask_slice(&self) -> &[bool];
+    fn mask(&self, data: &[f64]) -> Vec<f64>;
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum CalibrationError {
     #[error("failed to build optical model")]
@@ -61,6 +70,32 @@ pub enum CalibrationError {
 }
 
 type Result<T> = std::result::Result<T, CalibrationError>;
+
+/// Trait alias for M1 or M2 [CalibrateSegment]s
+pub trait CalibrateAssembly<M: GmtMx, S: FromBuilder>:
+    CalibrateSegment<M, 1, Sensor = S>
+    + CalibrateSegment<M, 2, Sensor = S>
+    + CalibrateSegment<M, 3, Sensor = S>
+    + CalibrateSegment<M, 4, Sensor = S>
+    + CalibrateSegment<M, 5, Sensor = S>
+    + CalibrateSegment<M, 6, Sensor = S>
+    + CalibrateSegment<M, 7, Sensor = S>
+{
+}
+
+impl<
+        M: GmtMx,
+        S: FromBuilder,
+        T: CalibrateSegment<M, 1, Sensor = S>
+            + CalibrateSegment<M, 2, Sensor = S>
+            + CalibrateSegment<M, 3, Sensor = S>
+            + CalibrateSegment<M, 4, Sensor = S>
+            + CalibrateSegment<M, 5, Sensor = S>
+            + CalibrateSegment<M, 6, Sensor = S>
+            + CalibrateSegment<M, 7, Sensor = S>,
+    > CalibrateAssembly<M, S> for T
+{
+}
 
 /// Actuator push and pull
 pub trait PushPull<const SID: u8> {
@@ -97,13 +132,7 @@ where
 pub trait Calibrate<M: GmtMx>
 where
     <<Self as Calibrate<M>>::Sensor as FromBuilder>::ComponentBuilder: Clone + Send + 'static,
-    Self: CalibrateSegment<M, 1, Sensor = <Self as Calibrate<M>>::Sensor>,
-    Self: CalibrateSegment<M, 2, Sensor = <Self as Calibrate<M>>::Sensor>,
-    Self: CalibrateSegment<M, 3, Sensor = <Self as Calibrate<M>>::Sensor>,
-    Self: CalibrateSegment<M, 4, Sensor = <Self as Calibrate<M>>::Sensor>,
-    Self: CalibrateSegment<M, 5, Sensor = <Self as Calibrate<M>>::Sensor>,
-    Self: CalibrateSegment<M, 6, Sensor = <Self as Calibrate<M>>::Sensor>,
-    Self: CalibrateSegment<M, 7, Sensor = <Self as Calibrate<M>>::Sensor>,
+    Self: CalibrateAssembly<M, <Self as Calibrate<M>>::Sensor>,
 {
     type Sensor: FromBuilder;
     fn calibrate(

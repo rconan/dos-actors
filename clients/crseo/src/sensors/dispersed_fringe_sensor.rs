@@ -163,13 +163,13 @@ mod tests {
             .build()?;
         om.update();
 
-        let frame: Vec<_> = om.sensor().unwrap().frame().into();
+        // let frame: Vec<_> = om.sensor().unwrap().frame().into();
 
-        serde_pickle::to_writer(
-            &mut std::fs::File::create("dfs.pkl")?,
-            &frame,
-            Default::default(),
-        )?;
+        // serde_pickle::to_writer(
+        //     &mut std::fs::File::create("dfs.pkl")?,
+        //     &frame,
+        //     Default::default(),
+        // )?;
 
         Ok(())
     }

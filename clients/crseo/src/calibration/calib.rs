@@ -1,4 +1,4 @@
-use super::{CalibPinv, CalibrationMode};
+use super::{CalibPinv, CalibProps, CalibrationMode};
 use faer::{mat::from_column_major_slice, Mat, MatRef};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -39,6 +39,150 @@ pub struct Calib {
     pub(crate) mode: CalibrationMode,
     pub(crate) runtime: Duration,
     pub(crate) n_cols: Option<usize>,
+}
+
+impl From<&Calib> for Vec<i8> {
+    fn from(calib: &Calib) -> Self {
+        calib
+            .mask
+            .iter()
+            .take(calib.mask.len() / 2)
+            .map(|&x| x as i8)
+            .collect()
+    }
+}
+
+impl CalibProps for Calib {
+    /// Returns the pseudo-inverse of the calibration matrix
+    ///
+    /// The pseudo-inverse is computed using the SVD decomposition of the matrix
+    /// and the condition number of the matrix is also returned within [CalibPinv].
+    /// Returns a reference to the calibration matrix
+    /// Return the number of rows
+    /// ```
+    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// # use skyangle::Conversion;
+    /// #
+    /// # let calib = Calib::builder()
+    /// #    .c(vec![1f64,0.,0.,1.])
+    /// #    .n_mode(6)
+    /// #    .mode(CalibrationMode::RBM([
+    /// #        None, None, None,
+    /// #        Some(1f64.from_arcsec()), Some(1f64.from_arcsec()), None
+    /// #    ]))
+    /// #    .mask(vec![false, false, false, true, true, false])
+    /// #    .build();
+    /// let pinv = calib.pseudoinverse();
+    /// assert_eq!(pinv.cond(),1f64);
+    /// ```
+    fn pseudoinverse(&self) -> CalibPinv<f64> {
+        let svd = self.mat_ref().svd();
+        let s = svd.s_diagonal();
+        let cond = s[0] / s[s.nrows() - 1];
+        CalibPinv {
+            mat: svd.pseudoinverse(),
+            cond,
+            mode: self.mode,
+        }
+    }
+
+    /// Returns the number of non-zero elements in the inputs mask
+    /// ```
+    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// # use skyangle::Conversion;
+    /// #
+    /// # let calib = Calib::builder()
+    /// #    .c(vec![1f64,0.,0.,1.])
+    /// #    .n_mode(6)
+    /// #    .mode(CalibrationMode::RBM([
+    /// #        None, None, None,
+    /// #        Some(1f64.from_arcsec()), Some(1f64.from_arcsec()), None
+    /// #    ]))
+    /// #    .mask(vec![false, false, false, true, true, false])
+    /// #    .build();
+    /// assert_eq!(calib.area(), 2);
+    /// ```
+    fn area(&self) -> usize {
+        self.mask.iter().filter(|x| **x).count()
+    }
+    /// Computes the intersection of the mask with the mask on another [Calib]
+    ///
+    /// Both matrices are filtered according to the mask resulting from the
+    /// intersection of their masks.
+    fn match_areas(&mut self, other: &mut Calib) {
+        assert_eq!(self.mask.len(), other.mask.len());
+        let area_a = self.area();
+        let area_b = other.area();
+        let mask: Vec<_> = self
+            .mask
+            .iter()
+            .zip(other.mask.iter())
+            .map(|(&a, &b)| a && b)
+            .collect();
+
+        let c_to_area: Vec<_> = self
+            .c
+            .chunks(area_a)
+            .flat_map(|c| {
+                self.mask
+                    .iter()
+                    .zip(&mask)
+                    .filter(|&(&ma, _)| ma)
+                    .zip(c)
+                    .filter(|&((_, &mb), _)| mb)
+                    .map(|(_, c)| *c)
+            })
+            .collect();
+        self.c = c_to_area;
+        let c_to_area: Vec<_> = other
+            .c
+            .chunks(area_b)
+            .flat_map(|c| {
+                other
+                    .mask
+                    .iter()
+                    .zip(&mask)
+                    .filter(|&(&ma, _)| ma)
+                    .zip(c)
+                    .filter(|&((_, &mb), _)| mb)
+                    .map(|(_, c)| *c)
+            })
+            .collect();
+        other.c = c_to_area;
+
+        self.mask = mask.clone();
+        other.mask = mask;
+    }
+    fn mask_slice(&self) -> &[bool] {
+        &self.mask
+    }
+    /// Applies the mask to the input data
+    ///
+    /// The mask is applied element-wise to the input data, returning a new
+    /// vector with only the elements for which the mask is `true`.
+    /// ```
+    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// # use skyangle::Conversion;
+    /// #
+    /// # let calib = Calib::builder()
+    /// #    .c(vec![1f64,0.,0.,1.])
+    /// #    .n_mode(6)
+    /// #    .mode(CalibrationMode::RBM([
+    /// #        None, None, None,
+    /// #        Some(1f64.from_arcsec()), Some(1f64.from_arcsec()), None
+    /// #    ]))
+    /// #    .mask(vec![false, false, false, true, true, false])
+    /// #    .build();
+    /// let r_xy = calib.mask(vec![1.,2.,3.,4.,5.,6.].as_slice());
+    /// assert_eq!(r_xy,vec![4.,5.]);
+    /// ```
+    fn mask(&self, data: &[f64]) -> Vec<f64> {
+        assert_eq!(data.len(), self.mask_slice().len());
+        data.iter()
+            .zip(self.mask_slice().iter())
+            .filter_map(|(x, b)| if *b { Some(*x) } else { None })
+            .collect()
+    }
 }
 
 impl Calib {
@@ -157,132 +301,6 @@ impl Calib {
     #[inline]
     pub fn mat_ref(&self) -> MatRef<'_, f64> {
         from_column_major_slice::<f64>(&self.c, self.n_rows(), self.n_cols())
-    }
-    /// Returns the pseudo-inverse of the calibration matrix
-    ///
-    /// The pseudo-inverse is computed using the SVD decomposition of the matrix
-    /// and the condition number of the matrix is also returned within [CalibPinv].
-    /// Returns a reference to the calibration matrix
-    /// Return the number of rows
-    /// ```
-    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
-    /// # use skyangle::Conversion;
-    /// #
-    /// # let calib = Calib::builder()
-    /// #    .c(vec![1f64,0.,0.,1.])
-    /// #    .n_mode(6)
-    /// #    .mode(CalibrationMode::RBM([
-    /// #        None, None, None,
-    /// #        Some(1f64.from_arcsec()), Some(1f64.from_arcsec()), None
-    /// #    ]))
-    /// #    .mask(vec![false, false, false, true, true, false])
-    /// #    .build();
-    /// let pinv = calib.pseudoinverse();
-    /// assert_eq!(pinv.cond(),1f64);
-    /// ```
-    pub fn pseudoinverse(&self) -> CalibPinv<f64> {
-        let svd = self.mat_ref().svd();
-        let s = svd.s_diagonal();
-        let cond = s[0] / s[s.nrows() - 1];
-        CalibPinv {
-            mat: svd.pseudoinverse(),
-            cond,
-            mode: self.mode,
-        }
-    }
-    /// Returns the number of non-zero elements in the inputs mask
-    /// ```
-    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
-    /// # use skyangle::Conversion;
-    /// #
-    /// # let calib = Calib::builder()
-    /// #    .c(vec![1f64,0.,0.,1.])
-    /// #    .n_mode(6)
-    /// #    .mode(CalibrationMode::RBM([
-    /// #        None, None, None,
-    /// #        Some(1f64.from_arcsec()), Some(1f64.from_arcsec()), None
-    /// #    ]))
-    /// #    .mask(vec![false, false, false, true, true, false])
-    /// #    .build();
-    /// assert_eq!(calib.area(), 2);
-    /// ```
-    pub fn area(&self) -> usize {
-        self.mask.iter().filter(|x| **x).count()
-    }
-    /// Applies the mask to the input data
-    ///
-    /// The mask is applied element-wise to the input data, returning a new
-    /// vector with only the elements for which the mask is `true`.
-    /// ```
-    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
-    /// # use skyangle::Conversion;
-    /// #
-    /// # let calib = Calib::builder()
-    /// #    .c(vec![1f64,0.,0.,1.])
-    /// #    .n_mode(6)
-    /// #    .mode(CalibrationMode::RBM([
-    /// #        None, None, None,
-    /// #        Some(1f64.from_arcsec()), Some(1f64.from_arcsec()), None
-    /// #    ]))
-    /// #    .mask(vec![false, false, false, true, true, false])
-    /// #    .build();
-    /// let r_xy = calib.mask(vec![1.,2.,3.,4.,5.,6.].as_slice());
-    /// assert_eq!(r_xy,vec![4.,5.]);
-    /// ```
-    pub fn mask(&self, data: &[f64]) -> Vec<f64> {
-        assert_eq!(data.len(), self.mask.len());
-        data.iter()
-            .zip(self.mask.iter())
-            .filter_map(|(x, b)| if *b { Some(*x) } else { None })
-            .collect()
-    }
-    /// Computes the intersection of the mask with the mask on another [Calib]
-    ///
-    /// Both matrices are filtered according to the mask resulting from the
-    /// intersection of their masks.
-    pub fn match_areas(&mut self, other: &mut Calib) {
-        assert_eq!(self.mask.len(), other.mask.len());
-        let area_a = self.area();
-        let area_b = other.area();
-        let mask: Vec<_> = self
-            .mask
-            .iter()
-            .zip(other.mask.iter())
-            .map(|(&a, &b)| a && b)
-            .collect();
-
-        let c_to_area: Vec<_> = self
-            .c
-            .chunks(area_a)
-            .flat_map(|c| {
-                self.mask
-                    .iter()
-                    .zip(&mask)
-                    .filter(|&(&ma, _)| ma)
-                    .zip(c)
-                    .filter(|&((_, &mb), _)| mb)
-                    .map(|(_, c)| *c)
-            })
-            .collect();
-        self.c = c_to_area;
-        let c_to_area: Vec<_> = other
-            .c
-            .chunks(area_b)
-            .flat_map(|c| {
-                other
-                    .mask
-                    .iter()
-                    .zip(&mask)
-                    .filter(|&(&ma, _)| ma)
-                    .zip(c)
-                    .filter(|&((_, &mb), _)| mb)
-                    .map(|(_, c)| *c)
-            })
-            .collect();
-        other.c = c_to_area;
-
-        self.mask = mask.clone();
-        other.mask = mask;
     }
 }
 impl Display for Calib {

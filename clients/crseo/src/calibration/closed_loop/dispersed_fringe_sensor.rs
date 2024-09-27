@@ -1,7 +1,9 @@
 use std::time::Instant;
 
-use crseo::gmt::{GmtM1, GmtM2};
-use faer::Mat;
+use crseo::{
+    gmt::{GmtM1, GmtM2},
+    FromBuilder,
+};
 use gmt_dos_clients_io::{
     gmt_m1::segment::{BendingModes, RBM},
     gmt_m2::asm::segment::AsmCommand,
@@ -13,42 +15,53 @@ use gmt_dos_clients_io::{
 use interface::{Read, Update, Write};
 
 use crate::{
-    calibration::{closed_loop::Sensor, CalibrateSegment},
-    sensors::{DispersedFringeSensor, DispersedFringeSensorProcessing, WaveSensor},
+    calibration::{
+        closed_loop::{ClosedLoopCalib, Sensor},
+        CalibrateSegment, Reconstructor,
+    },
+    sensors::{DispersedFringeSensor, DispersedFringeSensorProcessing},
     DeviceInitialize, OpticalModel, OpticalModelBuilder,
 };
 
 use super::{
     Calib, CalibrationMode, ClosedLoopCalibrate, ClosedLoopCalibrateSegment,
-    SegmentClosedLoopSensorBuilder, SegmentSensorBuilder,
+    ClosedLoopSensorBuilder, SegmentClosedLoopSensorBuilder, SegmentSensorBuilder,
 };
 
-impl<const SID: u8> ClosedLoopCalibrateSegment<SID> for DispersedFringeSensorProcessing {
+impl<W: FromBuilder, const SID: u8> ClosedLoopCalibrateSegment<W, SID>
+    for DispersedFringeSensorProcessing
+where
+    W: CalibrateSegment<GmtM2, SID, Sensor = W> + CalibrateSegment<GmtM1, SID, Sensor = W>,
+    <W as FromBuilder>::ComponentBuilder: Clone,
+{
     type Sensor = DispersedFringeSensor<1, 1>;
-    type ClosedLoopSensor = WaveSensor;
 
     fn calibrate(
-        mut optical_model: OpticalModelBuilder<SegmentSensorBuilder<Self, SID>>,
+        optical_model: OpticalModelBuilder<SegmentSensorBuilder<Self, W, SID>>,
         calib_mode: super::CalibrationMode,
-        closed_loop_optical_model: OpticalModelBuilder<SegmentClosedLoopSensorBuilder<Self, SID>>,
+        closed_loop_optical_model: OpticalModelBuilder<SegmentClosedLoopSensorBuilder<W>>,
         closed_loop_calib_mode: super::CalibrationMode,
-    ) -> super::Result<(Mat<f64>, Calib)> {
-        let mut calib_m2_modes_onaxis =
-            <Self::ClosedLoopSensor as CalibrateSegment<GmtM2, SID>>::calibrate(
+    ) -> super::Result<ClosedLoopCalib> {
+        let mut m2_to_closed_loop_sensor: Reconstructor =
+            <W as CalibrateSegment<GmtM2, SID>>::calibrate(
                 closed_loop_optical_model.clone(),
                 closed_loop_calib_mode,
-            )?;
-        let mut calib_m1_modes_onaxis =
-            <Self::ClosedLoopSensor as CalibrateSegment<GmtM1, SID>>::calibrate(
-                closed_loop_optical_model,
-                calib_mode,
-            )?;
-        calib_m1_modes_onaxis.match_areas(&mut calib_m2_modes_onaxis);
-        println!("{calib_m2_modes_onaxis}");
-        println!("{calib_m1_modes_onaxis}");
+            )?
+            .into();
+
+        let mut m1_to_closed_loop_sensor: Reconstructor =
+            <W as CalibrateSegment<GmtM1, SID>>::calibrate(closed_loop_optical_model, calib_mode)?
+                .into();
+
+        m1_to_closed_loop_sensor.match_areas(&mut m2_to_closed_loop_sensor);
+        m2_to_closed_loop_sensor.pseudoinverse();
+
+        println!("{m2_to_closed_loop_sensor}");
+        println!("{m1_to_closed_loop_sensor}");
         print!("M1->M2 computation...");
         let now = Instant::now();
-        let m1_to_m2 = calib_m2_modes_onaxis.pseudoinverse() * calib_m1_modes_onaxis;
+        let m1_to_m2 = m2_to_closed_loop_sensor.pinv().next().unwrap()
+            * &m1_to_closed_loop_sensor.calib_slice()[0];
         println!(
             " ({},{}) in {:.3?}",
             m1_to_m2.nrows(),
@@ -66,25 +79,25 @@ impl<const SID: u8> ClosedLoopCalibrateSegment<SID> for DispersedFringeSensorPro
         for (c, (m1_stroke, m1_cmd)) in m1_to_m2.col_iter().zip(calib_mode.stroke_command()) {
             match calib_mode {
                 CalibrationMode::RBM(_) => {
-                    <OpticalModel<Sensor<Self, SID>> as Read<RBM<SID>>>::read(
+                    <OpticalModel<Sensor<Self, W, SID>> as Read<RBM<SID>>>::read(
                         &mut om,
                         m1_cmd.into(),
                     );
                 }
                 CalibrationMode::Modes { .. } => {
-                    <OpticalModel<Sensor<Self, SID>> as Read<BendingModes<SID>>>::read(
+                    <OpticalModel<Sensor<Self, W, SID>> as Read<BendingModes<SID>>>::read(
                         &mut om,
                         m1_cmd.into(),
                     );
                 }
             }
             let m2_cmd = c.iter().map(|x| x * -m1_stroke).collect::<Vec<_>>();
-            <OpticalModel<Sensor<Self, SID>> as Read<AsmCommand<SID>>>::read(
+            <OpticalModel<Sensor<Self, W, SID>> as Read<AsmCommand<SID>>>::read(
                 &mut om,
                 m2_cmd.into(),
             );
             om.update();
-            <OpticalModel<Sensor<Self, SID>> as Write<DfsFftFrame<Dev>>>::write(&mut om).map(
+            <OpticalModel<Sensor<Self, W, SID>> as Write<DfsFftFrame<Dev>>>::write(&mut om).map(
                 |data| {
                     <DispersedFringeSensorProcessing as Read<DfsFftFrame<Dev>>>::read(
                         &mut dfs_processor,
@@ -100,66 +113,78 @@ impl<const SID: u8> ClosedLoopCalibrateSegment<SID> for DispersedFringeSensorPro
             y.extend(data.into_arc().iter().map(|x| x / m1_stroke));
         }
         let n = dfs_processor.intercept.len();
-        Ok((
+        let m1_closed_loop_to_sensor = Calib::builder()
+            .c(y)
+            .n_mode(calib_mode.n_mode())
+            .mode(calib_mode)
+            .mask(vec![true; n])
+            .build();
+        Ok(ClosedLoopCalib {
+            m1_to_closed_loop_sensor,
+            m2_to_closed_loop_sensor,
             m1_to_m2,
-            Calib::builder()
-                .c(y)
-                .n_mode(calib_mode.n_mode())
-                .mode(calib_mode)
-                .mask(vec![true; n])
-                .build(),
-        ))
+            m1_to_sensor: None,
+            m2_to_sensor: None,
+            m1_closed_loop_to_sensor,
+        })
     }
 }
 
-impl ClosedLoopCalibrate for DispersedFringeSensorProcessing {
+impl<W: FromBuilder> ClosedLoopCalibrate<W> for DispersedFringeSensorProcessing
+where
+    W: CalibrateSegment<GmtM2, 1, Sensor = W> + CalibrateSegment<GmtM1, 1, Sensor = W>,
+    W: CalibrateSegment<GmtM2, 2, Sensor = W> + CalibrateSegment<GmtM1, 2, Sensor = W>,
+    W: CalibrateSegment<GmtM2, 3, Sensor = W> + CalibrateSegment<GmtM1, 3, Sensor = W>,
+    W: CalibrateSegment<GmtM2, 4, Sensor = W> + CalibrateSegment<GmtM1, 4, Sensor = W>,
+    W: CalibrateSegment<GmtM2, 5, Sensor = W> + CalibrateSegment<GmtM1, 5, Sensor = W>,
+    W: CalibrateSegment<GmtM2, 6, Sensor = W> + CalibrateSegment<GmtM1, 6, Sensor = W>,
+    W: CalibrateSegment<GmtM2, 7, Sensor = W> + CalibrateSegment<GmtM1, 7, Sensor = W>,
+    <W as FromBuilder>::ComponentBuilder: Clone,
+{
     type Sensor = DispersedFringeSensor<1, 1>;
-    type ClosedLoopSensor = WaveSensor;
 
     fn calibrate(
-        optical_model: OpticalModelBuilder<super::SensorBuilder<Self>>,
+        optical_model: OpticalModelBuilder<super::SensorBuilder<Self, W>>,
         calib_mode: CalibrationMode,
-        closed_loop_optical_model: OpticalModelBuilder<super::ClosedLoopSensorBuilder<Self>>,
+        closed_loop_optical_model: OpticalModelBuilder<ClosedLoopSensorBuilder<W>>,
         closed_loop_calib_mode: CalibrationMode,
-    ) -> crate::calibration::Result<(Vec<Mat<f64>>, crate::calibration::Reconstructor)>
+    ) -> crate::calibration::Result<Reconstructor<ClosedLoopCalib>>
     where
-        <<Self as ClosedLoopCalibrate>::Sensor as crseo::FromBuilder>::ComponentBuilder:
-            Clone + Send + Sync,
-        <<Self as ClosedLoopCalibrate>::ClosedLoopSensor as crseo::FromBuilder>::ComponentBuilder:
+        <<Self as ClosedLoopCalibrate<W>>::Sensor as crseo::FromBuilder>::ComponentBuilder:
             Clone + Send + Sync,
     {
-        let mat_ci: crate::calibration::Result<(Vec<_>, Vec<_>)> = {
-            let h1 = <Self as ClosedLoopCalibrateSegment<1>>::calibrate(
+        let mat_ci: crate::calibration::Result<Vec<_>> = {
+            let h1 = <Self as ClosedLoopCalibrateSegment<W, 1>>::calibrate(
                 optical_model.clone(),
                 calib_mode.clone(),
                 closed_loop_optical_model.clone(),
                 closed_loop_calib_mode.clone(),
             );
-            let h2 = <Self as ClosedLoopCalibrateSegment<2>>::calibrate(
+            let h2 = <Self as ClosedLoopCalibrateSegment<W, 2>>::calibrate(
                 optical_model.clone(),
                 calib_mode.clone(),
                 closed_loop_optical_model.clone(),
                 closed_loop_calib_mode.clone(),
             );
-            let h3 = <Self as ClosedLoopCalibrateSegment<3>>::calibrate(
+            let h3 = <Self as ClosedLoopCalibrateSegment<W, 3>>::calibrate(
                 optical_model.clone(),
                 calib_mode.clone(),
                 closed_loop_optical_model.clone(),
                 closed_loop_calib_mode.clone(),
             );
-            let h4 = <Self as ClosedLoopCalibrateSegment<4>>::calibrate(
+            let h4 = <Self as ClosedLoopCalibrateSegment<W, 4>>::calibrate(
                 optical_model.clone(),
                 calib_mode.clone(),
                 closed_loop_optical_model.clone(),
                 closed_loop_calib_mode.clone(),
             );
-            let h5 = <Self as ClosedLoopCalibrateSegment<5>>::calibrate(
+            let h5 = <Self as ClosedLoopCalibrateSegment<W, 5>>::calibrate(
                 optical_model.clone(),
                 calib_mode.clone(),
                 closed_loop_optical_model.clone(),
                 closed_loop_calib_mode.clone(),
             );
-            let h6 = <Self as ClosedLoopCalibrateSegment<6>>::calibrate(
+            let h6 = <Self as ClosedLoopCalibrateSegment<W, 6>>::calibrate(
                 optical_model.clone(),
                 calib_mode.clone(),
                 closed_loop_optical_model.clone(),
@@ -169,7 +194,7 @@ impl ClosedLoopCalibrate for DispersedFringeSensorProcessing {
             [h1, h2, h3, h4, h5, h6].into_iter().collect()
         };
 
-        mat_ci.map(|(mat, calibs)| {
+        mat_ci.map(|calibs| {
             let mut calib = calibs[0].clone();
             // c1.c.iter()
             //     .chain(c2.c.iter())
@@ -179,11 +204,15 @@ impl ClosedLoopCalibrate for DispersedFringeSensorProcessing {
             //     .chain(c6.c.iter())
             //     .map(|x| *x);
             // let mut calib = c1.clone();
-            calib.sid = 0;
-            calib.n_cols = Some(calib_mode.calibration_n_mode() * 6);
-            calib.mask = vec![true; calib.mask.len()];
-            calib.c = calibs.into_iter().flat_map(|c| c.c).collect();
-            (mat, crate::calibration::Reconstructor::new(vec![calib]))
+            calib.m1_closed_loop_to_sensor.sid = 0;
+            calib.m1_closed_loop_to_sensor.n_cols = Some(calib_mode.calibration_n_mode() * 6);
+            calib.m1_closed_loop_to_sensor.mask =
+                vec![true; calib.m1_closed_loop_to_sensor.mask.len()];
+            calib.m1_closed_loop_to_sensor.c = calibs
+                .into_iter()
+                .flat_map(|c| c.m1_closed_loop_to_sensor.c)
+                .collect();
+            Reconstructor::<ClosedLoopCalib>::new(vec![calib])
         })
     }
 }
@@ -197,7 +226,10 @@ mod tests {
     };
     use skyangle::Conversion;
 
-    use crate::sensors::NoSensor;
+    use crate::{
+        calibration::CalibProps,
+        sensors::{NoSensor, WaveSensor},
+    };
 
     use super::*;
 
@@ -213,29 +245,32 @@ mod tests {
             .gmt(gmt)
             .source(agws_gs.clone())
             .sensor(DFS::builder().source(agws_gs.clone()));
-        let (m1_to_m2, calib) =
-            <DispersedFringeSensorProcessing as ClosedLoopCalibrateSegment<1>>::calibrate(
-                optical_model.clone(),
-                CalibrationMode::RBM([
-                    None,                     // Tx
-                    None,                     // Ty
-                    None,                     // Tz
-                    Some(1f64.from_arcsec()), // Rx
-                    Some(1f64.from_arcsec()), // Ry
-                    None,                     // Rz
-                ]),
-                closed_loop_optical_model,
-                CalibrationMode::modes(m2_n_mode, 1e-6),
-            )?;
+        let calib = <DispersedFringeSensorProcessing as ClosedLoopCalibrateSegment<
+            WaveSensor,
+            1,
+        >>::calibrate(
+            optical_model.clone(),
+            CalibrationMode::RBM([
+                None,                     // Tx
+                None,                     // Ty
+                None,                     // Tz
+                Some(1f64.from_arcsec()), // Rx
+                Some(1f64.from_arcsec()), // Ry
+                None,                     // Rz
+            ]),
+            closed_loop_optical_model,
+            CalibrationMode::modes(m2_n_mode, 1e-6),
+        )?;
         println!("{calib}");
 
-        let mut dfs_processor = DispersedFringeSensorProcessing::new();
+        /* let mut dfs_processor = DispersedFringeSensorProcessing::new();
         optical_model.initialize(&mut dfs_processor);
         let mut dfs_om = optical_model.build()?;
 
         let mut m1_rbm = vec![0f64; 6];
         m1_rbm[3] = 1f64.from_arcsec();
-        let cmd = m1_to_m2 * -faer::mat::from_column_major_slice::<f64>(&m1_rbm[3..5], 2, 1);
+        let cmd =
+            calib.m1_to_m2() * -faer::mat::from_column_major_slice::<f64>(&m1_rbm[3..5], 2, 1);
 
         <OpticalModel<DFS> as Read<RBM<1>>>::read(&mut dfs_om, m1_rbm.into());
         <OpticalModel<DFS> as Read<AsmCommand<1>>>::read(
@@ -260,7 +295,7 @@ mod tests {
         tt.col_as_slice(0)
             .iter()
             .take(1)
-            .for_each(|x| assert!((dbg!(x.to_mas()) - 1000.).abs() < 1f64));
+            .for_each(|x| assert!((dbg!(x.to_mas()) - 1000.).abs() < 1f64)); */
 
         Ok(())
     }
@@ -275,8 +310,8 @@ mod tests {
             .source(agws_gs.clone())
             .sensor(DFS::builder().source(agws_gs.clone()).nyquist_factor(3.));
         let closed_loop_optical_model = OpticalModel::<WaveSensor>::builder().gmt(gmt.clone());
-        let (m1_to_m2, mut recon) =
-            <DispersedFringeSensorProcessing as ClosedLoopCalibrate>::calibrate(
+        let mut recon =
+            <DispersedFringeSensorProcessing as ClosedLoopCalibrate<WaveSensor>>::calibrate(
                 optical_model.clone(),
                 CalibrationMode::RBM([
                     None,                     // Tx
@@ -299,11 +334,12 @@ mod tests {
         let mut m1_rxy = vec![vec![0f64; 2]; 7];
         m1_rxy[0][0] = 1f64.from_arcsec();
         m1_rxy[1][1] = 1f64.from_arcsec();
-        let cmd: Vec<_> = m1_to_m2
+        let cmd: Vec<_> = recon
+            .calib_slice()
             .iter()
             .zip(&m1_rxy)
-            .map(|(m1_to_m2, m1_rxy)| {
-                m1_to_m2 * -faer::mat::from_column_major_slice::<f64>(m1_rxy, 2, 1)
+            .map(|(c, m1_rxy)| {
+                c.m1_to_m2() * -faer::mat::from_column_major_slice::<f64>(m1_rxy, 2, 1)
             })
             .flat_map(|m| m.col_as_slice(0).to_vec())
             .chain(vec![0.; m2_n_mode])

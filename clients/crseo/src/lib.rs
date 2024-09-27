@@ -57,7 +57,7 @@ pub use optical_model::{builder::OpticalModelBuilder, OpticalModel};
 impl<T> TimerMarker for OpticalModel<T> {}
 
 pub trait DeviceInitialize<D> {
-    fn initialize(&mut self, device: &mut D);
+    fn initialize(&self, device: &mut D);
 }
 
 pub trait Processing {

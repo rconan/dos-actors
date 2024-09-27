@@ -1,97 +1,92 @@
 use std::thread;
 
 use crseo::FromBuilder;
-use faer::Mat;
 
 use crate::OpticalModelBuilder;
 
 use super::{Calib, CalibrationMode, PushPull, Reconstructor, Result};
 
-mod dispersed_fringer_sensor;
+mod calib;
+mod dispersed_fringe_sensor;
+mod linear_model;
 
-type SegmentSensorBuilder<T, const SID: u8> =
-    <<T as ClosedLoopCalibrateSegment<SID>>::Sensor as FromBuilder>::ComponentBuilder;
-type SegmentClosedLoopSensorBuilder<T, const SID: u8> =
-    <<T as ClosedLoopCalibrateSegment<SID>>::ClosedLoopSensor as FromBuilder>::ComponentBuilder;
-type Sensor<T, const SID: u8> = <T as ClosedLoopCalibrateSegment<SID>>::Sensor;
+pub use calib::ClosedLoopCalib;
 
-/// Closed-loop segment calibration
-pub trait ClosedLoopCalibrateSegment<const SID: u8>
-where
-    Self: PushPull<SID, Sensor = <Self as ClosedLoopCalibrateSegment<SID>>::Sensor>,
+/// Trait alias for M1 [ClosedLoopCalibrateSegment]s with M2
+pub trait ClosedLoopCalibrateAssembly<W: FromBuilder, S: FromBuilder>:
+    ClosedLoopCalibrateSegment<W, 1, Sensor = S>
+    + ClosedLoopCalibrateSegment<W, 2, Sensor = S>
+    + ClosedLoopCalibrateSegment<W, 3, Sensor = S>
+    + ClosedLoopCalibrateSegment<W, 4, Sensor = S>
+    + ClosedLoopCalibrateSegment<W, 5, Sensor = S>
+    + ClosedLoopCalibrateSegment<W, 6, Sensor = S>
+    + ClosedLoopCalibrateSegment<W, 7, Sensor = S>
 {
-    type Sensor: FromBuilder;
-    type ClosedLoopSensor: FromBuilder;
-
-    fn calibrate(
-        optical_model: OpticalModelBuilder<SegmentSensorBuilder<Self, SID>>,
-        calib_mode: CalibrationMode,
-        closed_loop_optical_model: OpticalModelBuilder<SegmentClosedLoopSensorBuilder<Self, SID>>,
-        closed_loop_calib_mode: CalibrationMode,
-    ) -> Result<(Mat<f64>, Calib)>;
+}
+impl<
+        W: FromBuilder,
+        S: FromBuilder,
+        T: ClosedLoopCalibrateSegment<W, 1, Sensor = S>
+            + ClosedLoopCalibrateSegment<W, 2, Sensor = S>
+            + ClosedLoopCalibrateSegment<W, 3, Sensor = S>
+            + ClosedLoopCalibrateSegment<W, 4, Sensor = S>
+            + ClosedLoopCalibrateSegment<W, 5, Sensor = S>
+            + ClosedLoopCalibrateSegment<W, 6, Sensor = S>
+            + ClosedLoopCalibrateSegment<W, 7, Sensor = S>,
+    > ClosedLoopCalibrateAssembly<W, S> for T
+{
 }
 
-type SensorBuilder<T> = <<T as ClosedLoopCalibrate>::Sensor as FromBuilder>::ComponentBuilder;
-type ClosedLoopSensorBuilder<T> =
-    <<T as ClosedLoopCalibrate>::ClosedLoopSensor as FromBuilder>::ComponentBuilder;
+type SegmentSensorBuilder<T, W, const SID: u8> =
+    <<T as ClosedLoopCalibrateSegment<W, SID>>::Sensor as FromBuilder>::ComponentBuilder;
+type SegmentClosedLoopSensorBuilder<T> = <T as FromBuilder>::ComponentBuilder;
+type Sensor<T, W, const SID: u8> = <T as ClosedLoopCalibrateSegment<W, SID>>::Sensor;
+
+/// Closed-loop segment calibration
+pub trait ClosedLoopCalibrateSegment<ClosedLoopSensor: FromBuilder, const SID: u8>
+where
+    Self:
+        PushPull<SID, Sensor = <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, SID>>::Sensor>,
+{
+    type Sensor: FromBuilder;
+
+    fn calibrate(
+        optical_model: OpticalModelBuilder<SegmentSensorBuilder<Self, ClosedLoopSensor, SID>>,
+        calib_mode: CalibrationMode,
+        closed_loop_optical_model: OpticalModelBuilder<
+            <ClosedLoopSensor as FromBuilder>::ComponentBuilder,
+        >,
+        closed_loop_calib_mode: CalibrationMode,
+    ) -> Result<ClosedLoopCalib>;
+}
+
+type SensorBuilder<T, W> = <<T as ClosedLoopCalibrate<W>>::Sensor as FromBuilder>::ComponentBuilder;
+type ClosedLoopSensorBuilder<T> = <T as FromBuilder>::ComponentBuilder;
 
 /// Closed-loop  calibration
-pub trait ClosedLoopCalibrate
+pub trait ClosedLoopCalibrate<ClosedLoopSensor: FromBuilder>
 where
-    Self: ClosedLoopCalibrateSegment<
-        1,
-        Sensor = <Self as ClosedLoopCalibrate>::Sensor,
-        ClosedLoopSensor = <Self as ClosedLoopCalibrate>::ClosedLoopSensor,
-    >,
-    Self: ClosedLoopCalibrateSegment<
-        2,
-        Sensor = <Self as ClosedLoopCalibrate>::Sensor,
-        ClosedLoopSensor = <Self as ClosedLoopCalibrate>::ClosedLoopSensor,
-    >,
-    Self: ClosedLoopCalibrateSegment<
-        3,
-        Sensor = <Self as ClosedLoopCalibrate>::Sensor,
-        ClosedLoopSensor = <Self as ClosedLoopCalibrate>::ClosedLoopSensor,
-    >,
-    Self: ClosedLoopCalibrateSegment<
-        4,
-        Sensor = <Self as ClosedLoopCalibrate>::Sensor,
-        ClosedLoopSensor = <Self as ClosedLoopCalibrate>::ClosedLoopSensor,
-    >,
-    Self: ClosedLoopCalibrateSegment<
-        5,
-        Sensor = <Self as ClosedLoopCalibrate>::Sensor,
-        ClosedLoopSensor = <Self as ClosedLoopCalibrate>::ClosedLoopSensor,
-    >,
-    Self: ClosedLoopCalibrateSegment<
-        6,
-        Sensor = <Self as ClosedLoopCalibrate>::Sensor,
-        ClosedLoopSensor = <Self as ClosedLoopCalibrate>::ClosedLoopSensor,
-    >,
-    Self: ClosedLoopCalibrateSegment<
-        7,
-        Sensor = <Self as ClosedLoopCalibrate>::Sensor,
-        ClosedLoopSensor = <Self as ClosedLoopCalibrate>::ClosedLoopSensor,
+    Self: ClosedLoopCalibrateAssembly<
+        ClosedLoopSensor,
+        <Self as ClosedLoopCalibrate<ClosedLoopSensor>>::Sensor,
     >,
 {
     type Sensor: FromBuilder;
-    type ClosedLoopSensor: FromBuilder;
 
     fn calibrate(
-        optical_model: OpticalModelBuilder<SensorBuilder<Self>>,
+        optical_model: OpticalModelBuilder<SensorBuilder<Self, ClosedLoopSensor>>,
         calib_mode: CalibrationMode,
-        closed_loop_optical_model: OpticalModelBuilder<ClosedLoopSensorBuilder<Self>>,
+        closed_loop_optical_model: OpticalModelBuilder<ClosedLoopSensorBuilder<ClosedLoopSensor>>,
         closed_loop_calib_mode: CalibrationMode,
-    ) -> Result<(Vec<Mat<f64>>, Reconstructor)>
+    ) -> Result<Reconstructor<ClosedLoopCalib>>
     where
-        <<Self as ClosedLoopCalibrate>::Sensor as FromBuilder>::ComponentBuilder:
+        <<Self as ClosedLoopCalibrate<ClosedLoopSensor>>::Sensor as FromBuilder>::ComponentBuilder:
             Clone + Send + Sync,
-        <<Self as ClosedLoopCalibrate>::ClosedLoopSensor as FromBuilder>::ComponentBuilder:
-            Clone + Send + Sync,
+        <ClosedLoopSensor as FromBuilder>::ComponentBuilder: Clone + Send + Sync,
     {
-        let mat_ci: Result<(Vec<_>, Vec<_>)> = thread::scope(|s| {
+        let mat_ci: Result<Vec<_>> = thread::scope(|s| {
             let h1 = s.spawn(|| {
-                <Self as ClosedLoopCalibrateSegment<1>>::calibrate(
+                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 1>>::calibrate(
                     optical_model.clone(),
                     calib_mode.clone(),
                     closed_loop_optical_model.clone(),
@@ -99,7 +94,7 @@ where
                 )
             });
             let h2 = s.spawn(|| {
-                <Self as ClosedLoopCalibrateSegment<2>>::calibrate(
+                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 2>>::calibrate(
                     optical_model.clone(),
                     calib_mode.clone(),
                     closed_loop_optical_model.clone(),
@@ -107,7 +102,7 @@ where
                 )
             });
             let h3 = s.spawn(|| {
-                <Self as ClosedLoopCalibrateSegment<3>>::calibrate(
+                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 3>>::calibrate(
                     optical_model.clone(),
                     calib_mode.clone(),
                     closed_loop_optical_model.clone(),
@@ -115,7 +110,7 @@ where
                 )
             });
             let h4 = s.spawn(|| {
-                <Self as ClosedLoopCalibrateSegment<4>>::calibrate(
+                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 4>>::calibrate(
                     optical_model.clone(),
                     calib_mode.clone(),
                     closed_loop_optical_model.clone(),
@@ -123,7 +118,7 @@ where
                 )
             });
             let h5 = s.spawn(|| {
-                <Self as ClosedLoopCalibrateSegment<5>>::calibrate(
+                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 5>>::calibrate(
                     optical_model.clone(),
                     calib_mode.clone(),
                     closed_loop_optical_model.clone(),
@@ -131,7 +126,7 @@ where
                 )
             });
             let h6 = s.spawn(|| {
-                <Self as ClosedLoopCalibrateSegment<6>>::calibrate(
+                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 6>>::calibrate(
                     optical_model.clone(),
                     calib_mode.clone(),
                     closed_loop_optical_model.clone(),
@@ -139,7 +134,7 @@ where
                 )
             });
             let h7 = s.spawn(|| {
-                <Self as ClosedLoopCalibrateSegment<7>>::calibrate(
+                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 7>>::calibrate(
                     optical_model.clone(),
                     calib_mode.clone(),
                     closed_loop_optical_model.clone(),
@@ -164,7 +159,7 @@ where
         // let c6 = <Self as CalibrateSegment<M, 6>>::calibrate(optical_model.clone(), calib_mode)?;
         // let c7 = <Self as CalibrateSegment<M, 7>>::calibrate(optical_model.clone(), calib_mode)?;
         // let ci = vec![c1, c2, c3, c4, c5, c6, c7];
-        // Ok(Reconstructor::new(ci?))
-        mat_ci.map(|(mat, calib)| (mat, Reconstructor::new(calib)))
+        Ok(Reconstructor::<ClosedLoopCalib>::new(mat_ci?))
+        // mat_ci.map(|(mat, calib)| (mat, Reconstructor::new(calib)))
     }
 }

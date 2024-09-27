@@ -10,7 +10,7 @@ use crseo::{
 use interface::Update;
 use std::time::Instant;
 
-trait ValidCentroids {
+pub trait ValidCentroids {
     fn get(&mut self) -> Vec<Vec<f32>>;
 }
 impl ValidCentroids for Centroids<Full> {
@@ -95,6 +95,7 @@ where
         calib_mode: CalibrationMode,
     ) -> super::Result<Calib> {
         let mut centroids = Centroids::try_from(builder.sensor.as_ref().unwrap())?;
+
         match calib_mode {
             CalibrationMode::RBM(stroke) => {
                 let mut optical_model = builder.build()?;
@@ -164,12 +165,21 @@ where
                         },
                     ));
                 }
-                let iter = centroids.reference.valid_lenslets.iter().map(|&v| v > 0);
+                let iter = centroids
+                    .reference
+                    .valid_lenslets
+                    .chunks(centroids.centroids.n_lenslet_total)
+                    .flat_map(|v| {
+                        v.iter()
+                            .map(|&v| v > 0)
+                            .cycle()
+                            .take(centroids.centroids.n_lenslet_total * 2)
+                    });
                 Ok(Calib {
                     sid: SID,
                     n_mode,
                     c: calib.into_iter().flatten().collect(),
-                    mask: iter.clone().chain(iter).collect(),
+                    mask: iter.collect(),
                     mode: calib_mode,
                     runtime: now.elapsed(),
                     n_cols: None,
@@ -231,4 +241,91 @@ where
            Ok(Reconstructor::new(ci))
        }
     */
+}
+
+#[cfg(test)]
+mod tests {
+    use std::error::Error;
+
+    use crseo::{gmt::GmtM1, imaging::LensletArray, FromBuilder, Gmt, Source};
+    use gmt_dos_clients_io::{
+        gmt_m1::segment::BendingModes,
+        optics::{Dev, Frame, SensorData},
+    };
+    use interface::{Read, Update, Write};
+    use skyangle::Conversion;
+
+    use crate::{calibration::CalibProps, sensors::Camera, DeviceInitialize, OpticalModel};
+
+    use super::*;
+
+    #[test]
+    fn centroids() -> Result<(), Box<dyn Error>> {
+        let m1_n_mode = 6;
+        let n_gs = 3;
+
+        let agws_gs = Source::builder().size(n_gs).on_ring(6f32.from_arcmin());
+        let sh48 = Camera::builder()
+            .n_sensor(n_gs)
+            .lenslet_array(LensletArray::default().n_side_lenslet(48).n_px_lenslet(32))
+            .lenslet_flux(0.75);
+        let mut sh48_centroids: Centroids = Centroids::try_from(&sh48)?;
+
+        let gmt = Gmt::builder().m1("bending modes", m1_n_mode);
+
+        let mut optical_model = OpticalModel::<Camera<1>>::builder()
+            .gmt(gmt.clone())
+            .source(agws_gs.clone())
+            .sensor(sh48);
+
+        optical_model.initialize(&mut sh48_centroids);
+        dbg!(sh48_centroids.n_valid_lenslets());
+
+        let calib = <Centroids as CalibrateSegment<GmtM1, 1>>::calibrate(
+            optical_model.clone().into(),
+            CalibrationMode::modes(m1_n_mode, 1e-4),
+        )?;
+        println!("{calib}");
+        let calib_pinv = calib.pseudoinverse();
+        dbg!(calib_pinv.cond());
+
+        // sh48_centroids.valid_lenslets(&calib);
+
+        let mut sh48_om = optical_model.build()?;
+        println!("{sh48_om}");
+
+        let mut m1_bm = vec![0f64; m1_n_mode];
+        m1_bm[3] = 1e-4;
+
+        <OpticalModel<Camera<1>> as Read<BendingModes<1>>>::read(
+            &mut sh48_om,
+            m1_bm.clone().into(),
+        );
+
+        sh48_om.update();
+
+        <OpticalModel<Camera<1>> as Write<Frame<Dev>>>::write(&mut sh48_om)
+            .map(|data| <Centroids as Read<Frame<Dev>>>::read(&mut sh48_centroids, data));
+        sh48_centroids.update();
+        let y = <Centroids as Write<SensorData>>::write(&mut sh48_centroids)
+            .map(|data| {
+                let s = data.as_arc();
+                // serde_pickle::to_writer(
+                //     &mut File::create("3gs-offaxis.pkl").unwrap(),
+                //     &(s.as_ref(), &calib, sh48_centroids.get_valid_lenslets()),
+                //     Default::default(),
+                // )
+                // .unwrap();
+                calib.mask(&s)
+            })
+            .unwrap();
+        dbg!(y.len());
+
+        let m1_bm_e = &calib_pinv * y;
+        println!("{:?}", m1_bm_e);
+
+        assert!((m1_bm_e[3] - m1_bm[3]).abs() * 1e4 < 1e-3);
+
+        Ok(())
+    }
 }

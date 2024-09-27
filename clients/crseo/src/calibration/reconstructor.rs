@@ -7,14 +7,17 @@ use std::{
     sync::Arc,
 };
 
-use super::{Calib, CalibPinv};
+use super::{Calib, CalibPinv, CalibProps};
 
 /// Reconstructor from calibration matrices
 ///
 /// A reconstructor is a collection of segment wise calibration matrices.
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub struct Reconstructor {
-    calib: Vec<Calib>,
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct Reconstructor<C = Calib>
+where
+    C: CalibProps,
+{
+    calib: Vec<C>,
     pinv: Vec<Option<CalibPinv<f64>>>,
     data: Arc<Vec<f64>>,
     estimate: Arc<Vec<f64>>,
@@ -26,14 +29,17 @@ impl From<Calib> for Reconstructor {
     }
 }
 
-impl Reconstructor {
+impl<C: CalibProps + Default> Reconstructor<C> {
     /// Creates a new reconstructor
-    pub fn new(calib: Vec<Calib>) -> Self {
+    pub fn new(calib: Vec<C>) -> Self {
         Self {
             pinv: vec![None; calib.len()],
             calib,
             ..Default::default()
         }
+    }
+    pub fn calib_slice(&self) -> &[C] {
+        &self.calib
     }
     /// Computes the pseudo-inverse of the calibration matrices
     pub fn pseudoinverse(&mut self) -> &mut Self {
@@ -66,7 +72,7 @@ impl Reconstructor {
     //     self.calib.iter().map(|c| c.mat_ref())
     // }
     /// Returns an iterator over the calibration matrices
-    pub fn calib(&self) -> impl Iterator<Item = &Calib> {
+    pub fn calib(&self) -> impl Iterator<Item = &C> {
         self.calib.iter()
     }
     /// Returns an iterator over the pseudo-inverse of the calibration matrices
@@ -78,7 +84,7 @@ impl Reconstructor {
             .map(|p| &*p)
     }
     /// Returns an iterator over the calibration matrices and their pseudo-inverse
-    pub fn calib_pinv(&mut self) -> impl Iterator<Item = (&Calib, &CalibPinv<f64>)> {
+    pub fn calib_pinv(&mut self) -> impl Iterator<Item = (&C, &CalibPinv<f64>)> {
         self.pinv
             .iter_mut()
             .zip(&self.calib)
@@ -87,12 +93,12 @@ impl Reconstructor {
     }
     /// Returns the calibration matrices cross-talk vector
     pub fn cross_talks(&self) -> Vec<usize> {
-        let n = self.calib[0].mask.len();
+        let n = self.calib[0].mask_slice().len();
         (0..n)
             .map(|i| {
                 self.calib
                     .iter()
-                    .fold(0usize, |m, c| m + if c.mask[i] { 1 } else { 0 })
+                    .fold(0usize, |m, c| m + if c.mask_slice()[i] { 1 } else { 0 })
             })
             .collect()
     }
@@ -102,7 +108,7 @@ impl Reconstructor {
     }
 }
 
-impl Display for Reconstructor {
+impl<C: CalibProps + Default + Display> Display for Reconstructor<C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "RECONSTRUCTOR (non-zeros={}): ", self.area())?;
         for (c, ic) in self.calib.iter().zip(&self.pinv) {
@@ -116,7 +122,10 @@ impl Display for Reconstructor {
     }
 }
 
-impl Update for Reconstructor {
+impl<C> Update for Reconstructor<C>
+where
+    C: CalibProps + Default + Send + Sync,
+{
     fn update(&mut self) {
         let data = Arc::clone(&self.data);
         self.estimate = Arc::new(
@@ -127,13 +136,19 @@ impl Update for Reconstructor {
     }
 }
 
-impl<U: UniqueIdentifier<DataType = Vec<f64>>> Read<U> for Reconstructor {
+impl<C, U: UniqueIdentifier<DataType = Vec<f64>>> Read<U> for Reconstructor<C>
+where
+    C: CalibProps + Default + Send + Sync,
+{
     fn read(&mut self, data: Data<U>) {
         self.data = data.into_arc();
     }
 }
 
-impl<U: UniqueIdentifier<DataType = Vec<f64>>> Write<U> for Reconstructor {
+impl<C, U: UniqueIdentifier<DataType = Vec<f64>>> Write<U> for Reconstructor<C>
+where
+    C: CalibProps + Default + Send + Sync,
+{
     fn write(&mut self) -> Option<Data<U>> {
         Some(self.estimate.clone().into())
     }
@@ -155,10 +170,10 @@ impl Mul<MatRef<'_, f64>> for &Reconstructor {
     }
 }
 
-impl Div<&Reconstructor> for MatRef<'_, f64> {
+impl<C: CalibProps> Div<&Reconstructor<C>> for MatRef<'_, f64> {
     type Output = Vec<Mat<f64>>;
 
-    fn div(self, rhs: &Reconstructor) -> Self::Output {
+    fn div(self, rhs: &Reconstructor<C>) -> Self::Output {
         rhs.pinv
             .iter()
             .filter_map(|ic| ic.as_ref().map(|ic| ic * self))

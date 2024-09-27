@@ -93,3 +93,106 @@ impl<const I: usize> Display for OpticalModel<Camera<I>> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use ::interface::{Update, Write};
+    use crseo::{
+        imaging::{ImagingBuilder, LensletArray},
+        Builder, Gmt, Source,
+    };
+    use gmt_dos_clients_io::optics::{Frame, Host};
+
+    use super::*;
+
+    #[test]
+    fn imgr_flux() -> Result<(), Box<dyn std::error::Error>> {
+        let n_gs = 3;
+        let flux0 = {
+            let mut gmt = Gmt::builder().build()?;
+            let mut src = Source::builder()
+                .size(n_gs)
+                .zenith_azimuth(vec![0.; n_gs], vec![0.; n_gs])
+                .build()?;
+            println!("{src}");
+
+            let imgr_builder = ImagingBuilder::default().n_sensor(n_gs);
+
+            let mut imgr = imgr_builder.build()?;
+            println!("{imgr}");
+
+            src.through(&mut gmt).xpupil().through(&mut imgr);
+
+            let frame = imgr.frame();
+            Vec::<f32>::from(&frame).iter().sum::<f32>()
+        };
+
+        let mut om: OpticalModel<Camera> = OpticalModel::<Camera<1>>::builder()
+            .source(
+                Source::builder()
+                    .size(n_gs)
+                    .zenith_azimuth(vec![0.; n_gs], vec![0.; n_gs]),
+            )
+            .sensor(Camera::<1>::builder().n_sensor(n_gs))
+            .build()?;
+        om.update();
+        println!("{om}");
+        <OpticalModel<Camera<1>> as Write<Frame<Host>>>::write(&mut om)
+            .map(|data| data.iter().sum::<f32>())
+            .map(|x| assert_eq!(x, flux0));
+
+        Ok(())
+    }
+
+    #[test]
+    fn sh_flux() -> Result<(), Box<dyn std::error::Error>> {
+        let n_gs = 3;
+        let n_lenslet = 48;
+        let n_px_lenslet = 32;
+        let flux0 = {
+            let mut gmt = Gmt::builder().build()?;
+            let mut src = Source::builder()
+                .size(n_gs)
+                .zenith_azimuth(vec![0.; n_gs], vec![0.; n_gs])
+                .pupil_sampling(n_lenslet * n_px_lenslet + 1)
+                .build()?;
+            println!("{src}");
+
+            let imgr_builder = ImagingBuilder::default().n_sensor(n_gs).lenslet_array(
+                LensletArray::default()
+                    .n_side_lenslet(n_lenslet)
+                    .n_px_lenslet(n_px_lenslet),
+            );
+
+            let mut imgr = imgr_builder.build()?;
+            println!("{imgr}");
+
+            src.through(&mut gmt).xpupil().through(&mut imgr);
+
+            let frame = imgr.frame();
+            Vec::<f32>::from(&frame).iter().sum::<f32>()
+        };
+
+        let mut om: OpticalModel<Camera> = OpticalModel::<Camera<1>>::builder()
+            .source(
+                Source::builder()
+                    .size(n_gs)
+                    .zenith_azimuth(vec![0.; n_gs], vec![0.; n_gs]),
+            )
+            .sensor(
+                Camera::<1>::builder().n_sensor(n_gs).lenslet_array(
+                    LensletArray::default()
+                        .n_side_lenslet(n_lenslet)
+                        .n_px_lenslet(n_px_lenslet),
+                ),
+            )
+            .build()?;
+        om.update();
+        println!("{om}");
+        <OpticalModel<Camera<1>> as Write<Frame<Host>>>::write(&mut om)
+            .map(|data| data.iter().sum::<f32>())
+            .map(|x| assert_eq!(x, flux0));
+
+        Ok(())
+    }
+}

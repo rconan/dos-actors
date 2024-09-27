@@ -58,7 +58,7 @@ impl<const C: usize, const F: usize> SensorBuilderProperty for DispersedFringeSe
 impl<const C: usize, const F: usize> DeviceInitialize<DispersedFringeSensorProcessing>
     for OpticalModelBuilder<DispersedFringeSensorBuilder<C, F>>
 {
-    fn initialize(&mut self, device: &mut DispersedFringeSensorProcessing) {
+    fn initialize(&self, device: &mut DispersedFringeSensorProcessing) {
         let mut om = self
             .clone_with_sensor(self.sensor.as_ref().unwrap().clone_into::<1, 1>())
             .build()

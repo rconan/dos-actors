@@ -2,7 +2,10 @@ use super::{
     Calib, Calibrate, CalibrateSegment, PushPull, Reconstructor, SegmentSensorBuilder,
     SensorBuilder,
 };
-use crate::sensors::{DispersedFringeSensor, DispersedFringeSensorProcessing};
+use crate::{
+    sensors::{DispersedFringeSensor, DispersedFringeSensorProcessing},
+    DeviceInitialize,
+};
 use crseo::{
     gmt::{GmtBuilder, GmtMirror, GmtMirrorBuilder, GmtMx, MirrorGetSet},
     Gmt,
@@ -61,12 +64,13 @@ where
         calib_mode: super::CalibrationMode,
     ) -> super::Result<Calib> {
         let mut dfs_processor = DispersedFringeSensorProcessing::new();
-        {
-            let mut om_dfs11 = builder.clone().build()?;
-            om_dfs11.update();
-            let mut dfsp11 = DispersedFringeSensorProcessing::from(om_dfs11.sensor_mut().unwrap());
-            dfs_processor.set_reference(dfsp11.intercept());
-        }
+        builder.initialize(&mut dfs_processor);
+        // {
+        //     let mut om_dfs11 = builder.clone().build()?;
+        //     om_dfs11.update();
+        //     let mut dfsp11 = DispersedFringeSensorProcessing::from(om_dfs11.sensor_mut().unwrap());
+        //     dfs_processor.set_reference(dfsp11.intercept());
+        // }
         match calib_mode {
             super::CalibrationMode::RBM(stroke) => {
                 let mut optical_model = builder.build()?;
@@ -188,5 +192,36 @@ where
         calib.runtime = c1.runtime + c2.runtime + c3.runtime + c4.runtime + c5.runtime + c6.runtime;
         calib.n_cols = Some(6);
         Ok(Reconstructor::new(vec![calib]))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::error::Error;
+
+    use crseo::{FromBuilder, Source};
+    use interface::Update;
+
+    use crate::OpticalModel;
+
+    use super::*;
+
+    #[test]
+    fn dfs() -> std::result::Result<(), Box<dyn Error>> {
+        let mut om = OpticalModel::<DispersedFringeSensor<1, 1>>::builder()
+            .source(Source::builder().size(2))
+            .sensor(DispersedFringeSensor::<1, 1>::builder())
+            .build()?;
+        om.update();
+
+        // let frame: Vec<_> = om.sensor().unwrap().frame().into();
+
+        // serde_pickle::to_writer(
+        //     &mut std::fs::File::create("dfs.pkl")?,
+        //     &frame,
+        //     Default::default(),
+        // )?;
+
+        Ok(())
     }
 }
