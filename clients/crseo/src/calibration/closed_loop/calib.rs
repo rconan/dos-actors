@@ -3,7 +3,7 @@ use std::fmt::Display;
 use faer::{Mat, MatRef};
 use serde::{Deserialize, Serialize};
 
-use crate::calibration::{Calib, CalibPinv, CalibProps, Reconstructor};
+use crate::calibration::{Calib, CalibPinv, CalibProps, CalibrationMode, Reconstructor};
 
 /// Closed-loop calibration matrix
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -41,6 +41,29 @@ impl CalibProps for ClosedLoopCalib {
 
     fn mask(&self, data: &[f64]) -> Vec<f64> {
         self.m1_closed_loop_to_sensor.mask(data)
+    }
+
+    fn n_cols(&self) -> usize {
+        self.m1_closed_loop_to_sensor.n_cols()
+    }
+
+    fn n_rows(&self) -> usize {
+        self.m1_closed_loop_to_sensor.n_rows()
+    }
+
+    fn mat_ref(&self) -> MatRef<'_, f64> {
+        self.m1_closed_loop_to_sensor.mat_ref()
+    }
+
+    fn n_mode(&self) -> usize {
+        self.m1_closed_loop_to_sensor.n_mode()
+    }
+    fn mode(&self) -> CalibrationMode {
+        self.m1_closed_loop_to_sensor.mode()
+    }
+
+    fn sid(&self) -> u8 {
+        self.m1_closed_loop_to_sensor.sid()
     }
 }
 

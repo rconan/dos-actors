@@ -95,11 +95,12 @@ where
                         ),
                     );
                 }
+                let c: Vec<_> = calib.into_iter().flatten().collect();
                 Ok(Calib {
                     sid: SID,
                     n_mode: 6,
-                    c: calib.into_iter().flatten().collect(),
-                    mask: vec![],
+                    mask: vec![true; c.len()],
+                    c,
                     mode: calib_mode,
                     runtime: now.elapsed(),
                     n_cols: None,
@@ -127,16 +128,18 @@ where
                         ),
                     );
                 }
+                let c: Vec<_> = calib.into_iter().flatten().collect();
                 Ok(Calib {
                     sid: SID,
                     n_mode,
-                    c: calib.into_iter().flatten().collect(),
-                    mask: vec![],
+                    mask: vec![true; c.len()],
+                    c,
                     mode: calib_mode,
                     runtime: now.elapsed(),
                     n_cols: None,
                 })
             }
+            _ => unimplemented!(),
         }
     }
 }
@@ -154,44 +157,44 @@ where
     ) -> super::Result<super::Reconstructor> {
         let c1 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 1>>::calibrate(
             optical_model.clone(),
-            calib_mode,
+            calib_mode.clone(),
         )?;
         let c2 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 2>>::calibrate(
             optical_model.clone(),
-            calib_mode,
+            calib_mode.clone(),
         )?;
         let c3 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 3>>::calibrate(
             optical_model.clone(),
-            calib_mode,
+            calib_mode.clone(),
         )?;
         let c4 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 4>>::calibrate(
             optical_model.clone(),
-            calib_mode,
+            calib_mode.clone(),
         )?;
         let c5 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 5>>::calibrate(
             optical_model.clone(),
-            calib_mode,
+            calib_mode.clone(),
         )?;
         let c6 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 6>>::calibrate(
             optical_model.clone(),
-            calib_mode,
+            calib_mode.clone(),
         )?;
 
-        let iter =
-            c1.c.iter()
-                .chain(c2.c.iter())
-                .chain(c3.c.iter())
-                .chain(c4.c.iter())
-                .chain(c5.c.iter())
-                .chain(c6.c.iter())
-                .map(|x| *x);
-        let mut calib = c1.clone();
-        calib.sid = 0;
-        calib.c = iter.collect();
-        calib.mask = vec![true; calib.c.len() / 6];
-        calib.runtime = c1.runtime + c2.runtime + c3.runtime + c4.runtime + c5.runtime + c6.runtime;
-        calib.n_cols = Some(6);
-        Ok(Reconstructor::new(vec![calib]))
+        // let iter =
+        //     c1.c.iter()
+        //         .chain(c2.c.iter())
+        //         .chain(c3.c.iter())
+        //         .chain(c4.c.iter())
+        //         .chain(c5.c.iter())
+        //         .chain(c6.c.iter())
+        //         .map(|x| *x);
+        // let mut calib = c1.clone();
+        // calib.sid = 0;
+        // calib.c = iter.collect();
+        // calib.mask = vec![true; calib.c.len() / 6];
+        // calib.runtime = c1.runtime + c2.runtime + c3.runtime + c4.runtime + c5.runtime + c6.runtime;
+        // calib.n_cols = Some(6);
+        Ok(Reconstructor::new(vec![c1, c2, c3, c4, c5, c6]))
     }
 }
 

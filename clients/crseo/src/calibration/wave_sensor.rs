@@ -123,6 +123,7 @@ where
                 }
                 (calib, n_mode)
             }
+            _ => unimplemented!(),
         };
         let n = calib[0].len();
         let mask = calib.iter().fold(vec![true; n], |mut m, c| {

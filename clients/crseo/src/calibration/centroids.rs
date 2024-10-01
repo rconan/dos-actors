@@ -96,9 +96,15 @@ where
     ) -> super::Result<Calib> {
         let mut centroids = Centroids::try_from(builder.sensor.as_ref().unwrap())?;
 
+        let mut optical_model = builder.build()?;
+        println!(
+            "Calibrating {:} modes {:?} with centroids for segment {SID}...",
+            <Gmt as GmtMirror<M>>::to_string(&optical_model.gmt),
+            calib_mode.mode_range()
+        );
+
         match calib_mode {
             CalibrationMode::RBM(stroke) => {
-                let mut optical_model = builder.build()?;
                 optical_model.gmt.keep(&[SID as i32]);
                 centroids.setup(&mut optical_model);
 
@@ -123,29 +129,29 @@ where
                         },
                     ));
                 }
-                // self.mask = mask;
-                //self.c = calib.into_iter().flatten().collect()
+                let iter = centroids
+                    .reference
+                    .valid_lenslets
+                    .chunks(centroids.centroids.n_lenslet_total)
+                    .flat_map(|v| {
+                        v.iter()
+                            .map(|&v| v > 0)
+                            .cycle()
+                            .take(centroids.centroids.n_lenslet_total * 2)
+                    });
                 Ok(Calib {
                     sid: SID,
                     n_mode: 6,
                     c: calib.into_iter().flatten().collect(),
-                    mask: vec![],
+                    mask: iter.collect(),
                     mode: calib_mode,
                     runtime: now.elapsed(),
                     n_cols: None,
                 })
             }
             CalibrationMode::Modes { n_mode, stroke, .. } => {
-                let gmt = builder.clone().gmt.n_mode::<M>(n_mode);
-                let mut optical_model = builder.gmt(gmt).build()?;
                 optical_model.gmt.keep(&[SID as i32]);
                 centroids.setup(&mut optical_model);
-
-                println!(
-                    "Calibrating {:} modes {:?} with centroids for segment {SID}...",
-                    <Gmt as GmtMirror<M>>::to_string(&optical_model.gmt),
-                    calib_mode.mode_range()
-                );
 
                 let mut a = vec![0f64; n_mode];
                 let mut calib = vec![];
@@ -185,6 +191,7 @@ where
                     n_cols: None,
                 })
             }
+            _ => unimplemented!(),
         }
     }
 }
@@ -273,7 +280,7 @@ mod tests {
 
         let gmt = Gmt::builder().m1("bending modes", m1_n_mode);
 
-        let mut optical_model = OpticalModel::<Camera<1>>::builder()
+        let optical_model = OpticalModel::<Camera<1>>::builder()
             .gmt(gmt.clone())
             .source(agws_gs.clone())
             .sensor(sh48);

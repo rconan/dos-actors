@@ -19,6 +19,11 @@ impl CalibBuilder {
     pub fn new() -> Self {
         Default::default()
     }
+    /// Sets the segment ID #
+    pub fn sid(mut self, sid: u8) -> Self {
+        self.sid = sid;
+        self
+    }
     /// Sets the calibration matrix column wise
     pub fn c(mut self, c: Vec<f64>) -> Self {
         self.c = c;

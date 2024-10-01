@@ -3,7 +3,7 @@ use std::ops::Mul;
 use faer::{mat::from_column_major_slice, Mat, MatRef};
 use serde::{Deserialize, Serialize};
 
-use super::{Calib, CalibrationMode};
+use super::{Calib, CalibProps, CalibrationMode};
 
 /// Calibration matrix pseudo-inverse
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -19,17 +19,20 @@ impl<T: faer::Entity> CalibPinv<T> {
     pub fn cond(&self) -> T {
         self.cond
     }
+    /// Transforms the pseudo-inverse matrix
+    pub fn transform<F: Fn(MatRef<'_, T>) -> Mat<T>>(&mut self, fun: F) {
+        self.mat = fun(self.mat.as_ref());
+    }
 }
 
 impl Mul<Vec<f64>> for &CalibPinv<f64> {
     type Output = Vec<f64>;
     fn mul(self, rhs: Vec<f64>) -> Self::Output {
         let e = self.mat.as_ref() * from_column_major_slice::<f64>(rhs.as_slice(), rhs.len(), 1);
-        let n = e.nrows();
         let iter = e
             .row_iter()
             .flat_map(|r| r.iter().cloned().collect::<Vec<_>>());
-        match self.mode {
+        /*         match self.mode {
             CalibrationMode::RBM(tr_xyz) => {
                 if n < 6 {
                     let mut out = vec![0.; 6];
@@ -63,7 +66,9 @@ impl Mul<Vec<f64>> for &CalibPinv<f64> {
                     iter.collect()
                 }
             }
-        }
+            _ => unimplemented!(),
+        } */
+        self.mode.fill(iter)
     }
 }
 

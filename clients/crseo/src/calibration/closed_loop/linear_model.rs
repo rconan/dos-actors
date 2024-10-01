@@ -46,13 +46,16 @@ where
         let mut m2_to_closed_loop_sensor: Reconstructor =
             <W as CalibrateSegment<GmtM2, SID>>::calibrate(
                 closed_loop_optical_model.clone(),
-                closed_loop_calib_mode,
+                closed_loop_calib_mode.clone(),
             )?
             .into();
 
         let mut m1_to_closed_loop_sensor: Reconstructor =
-            <W as CalibrateSegment<GmtM1, SID>>::calibrate(closed_loop_optical_model, calib_mode)?
-                .into();
+            <W as CalibrateSegment<GmtM1, SID>>::calibrate(
+                closed_loop_optical_model,
+                calib_mode.clone(),
+            )?
+            .into();
 
         m1_to_closed_loop_sensor.match_areas(&mut m2_to_closed_loop_sensor);
         m1_to_closed_loop_sensor.pseudoinverse();
@@ -71,7 +74,7 @@ where
 
         let mut m2_to_sensor: Reconstructor = <Self as CalibrateSegment<GmtM2, SID>>::calibrate(
             optical_model.clone(),
-            closed_loop_calib_mode,
+            closed_loop_calib_mode.clone(),
         )?
         .into();
         m2_to_sensor.pseudoinverse();
@@ -79,7 +82,8 @@ where
         // println!("cond. #: {}", m2_to_sensor.pseudoinverse().cond());
 
         let mut m1_to_sensor: Reconstructor =
-            <Self as CalibrateSegment<GmtM1, SID>>::calibrate(optical_model, calib_mode)?.into();
+            <Self as CalibrateSegment<GmtM1, SID>>::calibrate(optical_model, calib_mode.clone())?
+                .into();
         m1_to_sensor.pseudoinverse();
         // println!("{m1_to_sensor}");
         // println!("cond. #: {}", m1_to_sensor.pseudoinverse().cond());
@@ -196,7 +200,7 @@ mod tests {
             .m1("bending modes", m1_n_mode)
             .m2("Karhunen-Loeve", m2_n_mode);
 
-        let mut optical_model = OpticalModel::<Camera<1>>::builder()
+        let optical_model = OpticalModel::<Camera<1>>::builder()
             .gmt(gmt.clone())
             .source(agws_gs.clone())
             .sensor(sh48);
@@ -261,8 +265,8 @@ mod tests {
 
     #[test]
     fn centroids() -> Result<(), Box<dyn Error>> {
-        let m1_n_mode = 6;
-        let m2_n_mode = 15;
+        let m1_n_mode = 27;
+        let m2_n_mode = 66;
         let n_gs = 3;
 
         let agws_gs = Source::builder().size(n_gs).on_ring(6f32.from_arcmin());
@@ -276,7 +280,7 @@ mod tests {
             .m1("bending modes", m1_n_mode)
             .m2("Karhunen-Loeve", m2_n_mode);
 
-        let mut optical_model = OpticalModel::<Camera<1>>::builder()
+        let optical_model = OpticalModel::<Camera<1>>::builder()
             .gmt(gmt.clone())
             .source(agws_gs.clone())
             .sensor(sh48);

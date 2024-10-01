@@ -32,8 +32,11 @@ use crate::{
     centroiding::CentroidsError, optical_model::OpticalModelError, OpticalModel,
     OpticalModelBuilder,
 };
-use crseo::{gmt::GmtMx, CrseoError, FromBuilder};
-use std::{fmt::Debug, thread};
+use crseo::{gmt::GmtMx, CrseoError, FromBuilder, Propagation};
+use faer::MatRef;
+use gmt_dos_clients_io::gmt_m1::segment::{BendingModes, RBM};
+use interface::{Read, UniqueIdentifier, Update, Write};
+use std::{fmt::Debug, sync::Arc, thread};
 
 mod calib;
 mod calib_pinv;
@@ -46,17 +49,26 @@ mod wave_sensor;
 
 pub use calib::{Calib, CalibBuilder};
 pub use calib_pinv::CalibPinv;
-pub use closed_loop::ClosedLoopCalibrate;
+pub use closed_loop::{ClosedLoopCalib, ClosedLoopCalibrate};
 pub use mode::CalibrationMode;
-pub use reconstructor::Reconstructor;
+pub use reconstructor::{Collapse, Reconstructor};
 
 /// Calibration matrix properties
 pub trait CalibProps {
+    fn sid(&self) -> u8;
     fn pseudoinverse(&self) -> CalibPinv<f64>;
     fn area(&self) -> usize;
     fn match_areas(&mut self, other: &mut Self);
     fn mask_slice(&self) -> &[bool];
     fn mask(&self, data: &[f64]) -> Vec<f64>;
+    fn n_cols(&self) -> usize;
+    fn n_rows(&self) -> usize;
+    fn mat_ref(&self) -> MatRef<'_, f64>;
+    fn n_mode(&self) -> usize;
+    fn mode(&self) -> CalibrationMode;
+    fn smode(&self) -> (u8, CalibrationMode) {
+        (self.sid(), self.mode())
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -70,6 +82,20 @@ pub enum CalibrationError {
 }
 
 type Result<T> = std::result::Result<T, CalibrationError>;
+
+pub trait Block {
+    /// Block matrix
+    ///
+    /// Creates a block matrix from a nested array such as
+    /// `[[A,B];[C,D]]` becomes
+    /// ```
+    /// | A B |
+    /// | C D |
+    /// ```
+    fn block(array: &[&[&Self]]) -> Self
+    where
+        Self: Sized;
+}
 
 /// Trait alias for M1 or M2 [CalibrateSegment]s
 pub trait CalibrateAssembly<M: GmtMx, S: FromBuilder>:
@@ -110,6 +136,46 @@ pub trait PushPull<const SID: u8> {
     ) -> Vec<f64>
     where
         F: Fn(&mut crseo::Gmt, u8, &[f64]);
+}
+
+pub trait PushPullAlt<const SID: u8>
+where
+    <Self as PushPullAlt<SID>>::Sensor: Propagation,
+    OpticalModel<Self::Sensor>: Write<Self::Input>,
+    Self: Read<Self::Input> + Write<Self::Output>,
+{
+    type Sensor;
+    type Input: UniqueIdentifier;
+    type Output: UniqueIdentifier;
+    fn push_pull(
+        &mut self,
+        optical_model: &mut OpticalModel<<Self as PushPullAlt<SID>>::Sensor>,
+        cmd: &[f64],
+        calib_mode: &CalibrationMode,
+    ) -> Arc<<Self::Output as UniqueIdentifier>::DataType> {
+        match calib_mode {
+            CalibrationMode::RBM(_) => {
+                <OpticalModel<Self::Sensor> as Read<RBM<SID>>>::read(
+                    optical_model,
+                    cmd.to_vec().into(),
+                );
+            }
+            CalibrationMode::Modes { .. } => {
+                <OpticalModel<Self::Sensor> as Read<BendingModes<SID>>>::read(
+                    optical_model,
+                    cmd.to_vec().into(),
+                );
+            }
+            _ => unimplemented!(),
+        }
+        optical_model.update();
+        <OpticalModel<Self::Sensor> as Write<Self::Input>>::write(optical_model)
+            .map(|data| <Self as Read<Self::Input>>::read(self, data));
+        optical_model.update();
+        <Self as Write<Self::Output>>::write(self)
+            .unwrap()
+            .into_arc()
+    }
 }
 
 type SensorBuilder<M, T> = <<T as Calibrate<M>>::Sensor as FromBuilder>::ComponentBuilder;

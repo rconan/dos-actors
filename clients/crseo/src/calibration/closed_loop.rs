@@ -1,8 +1,9 @@
-use std::thread;
+use std::{sync::Arc, thread};
 
 use crseo::FromBuilder;
+use faer::ColRef;
 
-use crate::OpticalModelBuilder;
+use crate::{OpticalModel, OpticalModelBuilder};
 
 use super::{Calib, CalibrationMode, PushPull, Reconstructor, Result};
 
@@ -40,7 +41,20 @@ impl<
 type SegmentSensorBuilder<T, W, const SID: u8> =
     <<T as ClosedLoopCalibrateSegment<W, SID>>::Sensor as FromBuilder>::ComponentBuilder;
 type SegmentClosedLoopSensorBuilder<T> = <T as FromBuilder>::ComponentBuilder;
-type Sensor<T, W, const SID: u8> = <T as ClosedLoopCalibrateSegment<W, SID>>::Sensor;
+// type Sensor<T, W, const SID: u8> = <T as ClosedLoopCalibrateSegment<W, SID>>::Sensor;
+
+/// Actuator push and pull
+pub trait ClosedLoopPushPull<const SID: u8> {
+    type Sensor;
+    fn push_pull(
+        &mut self,
+        optical_model: &mut OpticalModel<<Self as ClosedLoopPushPull<SID>>::Sensor>,
+        s: f64,
+        cmd: &[f64],
+        calib_mode: &CalibrationMode,
+        c: ColRef<'_, f64>,
+    ) -> Arc<Vec<f64>>;
+}
 
 /// Closed-loop segment calibration
 pub trait ClosedLoopCalibrateSegment<ClosedLoopSensor: FromBuilder, const SID: u8>

@@ -7,7 +7,7 @@ use std::{
     sync::Arc,
 };
 
-use super::{Calib, CalibPinv, CalibProps};
+use super::{Block, Calib, CalibPinv, CalibProps, CalibrationMode, ClosedLoopCalib};
 
 /// Reconstructor from calibration matrices
 ///
@@ -76,12 +76,12 @@ impl<C: CalibProps + Default> Reconstructor<C> {
         self.calib.iter()
     }
     /// Returns an iterator over the pseudo-inverse of the calibration matrices
-    pub fn pinv(&mut self) -> impl Iterator<Item = &CalibPinv<f64>> {
+    pub fn pinv(&mut self) -> impl Iterator<Item = &mut CalibPinv<f64>> {
         self.pinv
             .iter_mut()
             .zip(&self.calib)
             .map(|(p, c)| p.get_or_insert_with(|| c.pseudoinverse()))
-            .map(|p| &*p)
+            .map(|p| p)
     }
     /// Returns an iterator over the calibration matrices and their pseudo-inverse
     pub fn calib_pinv(&mut self) -> impl Iterator<Item = (&C, &CalibPinv<f64>)> {
@@ -119,6 +119,133 @@ impl<C: CalibProps + Default + Display> Display for Reconstructor<C> {
             }
         }
         Ok(())
+    }
+}
+
+pub trait Collapse {
+    /// Collapses the calibration matrices into a single matrix
+    ///
+    /// The matrices are concatenated column wise.
+    fn collapse(self) -> Reconstructor;
+}
+
+impl Collapse for Reconstructor {
+    fn collapse(self) -> Self {
+        let mut calib = self.calib[0].clone();
+        calib.sid = 0;
+        calib.mode = self
+            .calib
+            .iter()
+            .fold(CalibrationMode::mirror(None), |m, calib| {
+                m.update(calib.smode())
+            });
+        calib.runtime = self.calib.iter().map(|calib| calib.runtime).sum();
+        calib.mask = self.calib[0].mask.clone();
+        calib.n_cols = Some(self.calib.iter().map(|calib| calib.n_cols()).sum());
+        calib.c = self.calib.into_iter().flat_map(|calib| calib.c).collect();
+        Reconstructor::new(vec![calib])
+    }
+}
+
+impl Collapse for Reconstructor<ClosedLoopCalib> {
+    fn collapse(self) -> Reconstructor {
+        let Calib {
+            n_mode,
+            mask,
+            mode,
+            runtime,
+            ..
+        } = self.calib[0].m1_closed_loop_to_sensor.clone();
+        let calib = Calib {
+            sid: 0,
+            n_mode,
+            mask,
+            n_cols: Some(mode.calibration_n_mode() * 6),
+            mode,
+            runtime,
+            c: self
+                .calib
+                .into_iter()
+                .flat_map(|c| c.m1_closed_loop_to_sensor.c)
+                .collect(),
+        };
+        Reconstructor::new(vec![calib])
+    }
+}
+
+impl Reconstructor {
+    /// Normalize the calibration matrices by their Froebenius norms
+    pub fn normalize(&mut self) -> Vec<f64> {
+        self.calib.iter_mut().map(|c| c.normalize()).collect()
+    }
+}
+
+impl<C: CalibProps> Reconstructor<C> {
+    /// Returns the # of calibration matrix
+    pub fn len(&self) -> usize {
+        self.calib.len()
+    }
+    /// Collapses the calibration matrices into a single block-diagonal matrix
+    ///
+    /// The matrices are concatenated along the main diagonal.
+    pub fn diagonal(&self) -> Reconstructor {
+        let n_rows: usize = self.calib.iter().map(|c| c.n_rows()).sum();
+        let n_cols: usize = self.calib.iter().map(|c| c.n_cols()).sum();
+
+        let mut block_diag_mat = Mat::<f64>::zeros(n_rows, n_cols);
+
+        let mut ni = 0;
+        let mut mi = 0;
+        let mut n_mode = 0;
+        let mut mask = vec![];
+        let mut modes: [Option<Box<CalibrationMode>>; 7] =
+            [None, None, None, None, None, None, None];
+        for (calib, mode) in self.calib.iter().zip(modes.iter_mut()) {
+            let mat = calib.mat_ref();
+            let mut dst = block_diag_mat
+                .as_mut()
+                .submatrix_mut(ni, mi, mat.nrows(), mat.ncols());
+            dst.copy_from(mat);
+
+            n_mode += calib.n_mode();
+            mask.extend(calib.mask_slice());
+            *mode = Some(Box::new(calib.mode()));
+
+            ni += mat.nrows();
+            mi += mat.ncols();
+        }
+        let calib = Calib {
+            sid: 0,
+            n_mode,
+            mask,
+            mode: Default::default(), //CalibrationMode::mirror(modes),
+            runtime: Default::default(),
+            n_cols: Some(n_cols),
+            c: block_diag_mat
+                .col_iter()
+                .flat_map(|x| x.iter().cloned().collect::<Vec<_>>())
+                .collect(),
+        };
+        Reconstructor::new(vec![calib])
+    }
+}
+
+impl Block for Reconstructor {
+    fn block(array: &[&[&Self]]) -> Self
+    where
+        Self: Sized,
+    {
+        let calib_array: Vec<Vec<&Calib>> = array
+            .iter()
+            .map(|row| {
+                row.iter()
+                    .flat_map(|r| r.calib_slice().iter().collect::<Vec<_>>())
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        let calib_array: Vec<&[&Calib]> = calib_array.iter().map(|c| c.as_slice()).collect();
+        let calib = <Calib as Block>::block(&calib_array);
+        Reconstructor::new(vec![calib])
     }
 }
 
