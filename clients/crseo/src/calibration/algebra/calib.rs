@@ -1,4 +1,4 @@
-use super::{Block, CalibPinv, CalibProps, CalibrationMode};
+use super::{Block, CalibPinv, CalibProps, CalibrationMode, Modality};
 use faer::{mat::from_column_major_slice, Mat, MatRef};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -31,12 +31,15 @@ pub use builder::CalibBuilder;
 ///     .build();
 /// ```
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct Calib {
+pub struct Calib<M = CalibrationMode>
+where
+    M: Modality,
+{
     pub(crate) sid: u8,
     pub(crate) n_mode: usize,
     pub(crate) c: Vec<f64>,
     pub(crate) mask: Vec<bool>,
-    pub(crate) mode: CalibrationMode,
+    pub(crate) mode: M,
     pub(crate) runtime: Duration,
     pub(crate) n_cols: Option<usize>,
 }
@@ -52,7 +55,11 @@ impl From<&Calib> for Vec<i8> {
     }
 }
 
-impl CalibProps for Calib {
+impl<M> CalibProps<M> for Calib<M>
+where
+    M: Modality,
+    Calib<M>: Display,
+{
     /// Returns the segment ID
     fn sid(&self) -> u8 {
         self.sid
@@ -79,7 +86,7 @@ impl CalibProps for Calib {
     /// let pinv = calib.pseudoinverse();
     /// assert_eq!(pinv.cond(),1f64);
     /// ```
-    fn pseudoinverse(&self) -> CalibPinv<f64> {
+    fn pseudoinverse(&self) -> CalibPinv<f64, M> {
         let svd = self.mat_ref().svd();
         let s = svd.s_diagonal();
         let cond = s[0] / s[s.nrows() - 1];
@@ -112,7 +119,7 @@ impl CalibProps for Calib {
     ///
     /// Both matrices are filtered according to the mask resulting from the
     /// intersection of their masks.
-    fn match_areas(&mut self, other: &mut Calib) {
+    fn match_areas(&mut self, other: &mut Calib<M>) {
         assert_eq!(
             self.mask.len(),
             other.mask.len(),
@@ -212,16 +219,7 @@ impl CalibProps for Calib {
         if let Some(n_cols) = self.n_cols {
             return n_cols;
         }
-        match self.mode {
-            CalibrationMode::RBM(tr_xyz) => tr_xyz.iter().filter_map(|&x| x).count(),
-            CalibrationMode::Modes {
-                n_mode,
-                start_idx,
-                end_id,
-                ..
-            } => end_id.unwrap_or(n_mode) - start_idx,
-            _ => unimplemented!(),
-        }
+        self.mode.n_cols()
     }
     /// Return the number of rows
     /// ```
@@ -291,12 +289,30 @@ impl CalibProps for Calib {
         self.n_mode
     }
     #[inline]
-    fn mode(&self) -> CalibrationMode {
+    fn mode(&self) -> M {
         self.mode.clone()
+    }
+    /// Normalize the calibration matrix by its Froebenius norm
+    fn normalize(&mut self) -> f64 {
+        let mat = self.mat_ref();
+        let norm = mat.norm_l2();
+        self.c = mat
+            .col_iter()
+            .flat_map(|c| c.iter().map(|&x| x / norm).collect::<Vec<_>>())
+            .collect();
+        norm
+    }
+    /// Return the calibration matrix Froebenius norm
+    fn norm_l2(&mut self) -> f64 {
+        self.mat_ref().norm_l2()
     }
 }
 
-impl Calib {
+impl<M> Calib<M>
+where
+    M: Modality + Default,
+    Calib<M>: CalibProps<M> + Display,
+{
     /// Returns the calibration matrix builder
     /// ```
     /// use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
@@ -312,26 +328,16 @@ impl Calib {
     ///     .mask(vec![false, false, false, true, true, false])
     ///     .build();
     /// ```
-    pub fn builder() -> CalibBuilder {
+    pub fn builder() -> CalibBuilder<M> {
         CalibBuilder::default()
-    }
-    /// Normalize the calibration matrix by its Froebenius norm
-    pub fn normalize(&mut self) -> f64 {
-        let mat = self.mat_ref();
-        let norm = mat.norm_l2();
-        self.c = mat
-            .col_iter()
-            .flat_map(|c| c.iter().map(|&x| x / norm).collect::<Vec<_>>())
-            .collect();
-        norm
-    }
-    /// Return the calibration matrix Froebenius norm
-    pub fn norm_l2(&mut self) -> f64 {
-        self.mat_ref().norm_l2()
     }
 }
 
-impl Block for Calib {
+impl<M> Block for Calib<M>
+where
+    M: Modality + Default,
+    Calib<M>: CalibProps<M> + Display,
+{
     fn block(array: &[&[&Self]]) -> Self
     where
         Self: Sized,
@@ -413,7 +419,7 @@ impl Block for Calib {
     }
 }
 
-impl Display for Calib {
+impl<M: Modality + Display> Display for Calib<M> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.sid > 0 {
             write!(

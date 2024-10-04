@@ -3,17 +3,21 @@ use std::ops::Mul;
 use faer::{mat::from_column_major_slice, Mat, MatRef};
 use serde::{Deserialize, Serialize};
 
-use super::{Calib, CalibProps, CalibrationMode};
+use super::{Calib, CalibProps, CalibrationMode, Modality};
 
 /// Calibration matrix pseudo-inverse
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct CalibPinv<T: faer::Entity> {
+pub struct CalibPinv<T, M = CalibrationMode>
+where
+    T: faer::Entity,
+    M: Modality,
+{
     pub(crate) mat: Mat<T>,
     pub(crate) cond: T,
-    pub(crate) mode: CalibrationMode,
+    pub(crate) mode: M,
 }
 
-impl<T: faer::Entity> CalibPinv<T> {
+impl<M: Modality, T: faer::Entity> CalibPinv<T, M> {
     /// Returns the condition number of the calibration matrix
     #[inline]
     pub fn cond(&self) -> T {
@@ -25,7 +29,7 @@ impl<T: faer::Entity> CalibPinv<T> {
     }
 }
 
-impl Mul<Vec<f64>> for &CalibPinv<f64> {
+impl<M: Modality> Mul<Vec<f64>> for &CalibPinv<f64, M> {
     type Output = Vec<f64>;
     fn mul(self, rhs: Vec<f64>) -> Self::Output {
         let e = self.mat.as_ref() * from_column_major_slice::<f64>(rhs.as_slice(), rhs.len(), 1);
@@ -72,7 +76,7 @@ impl Mul<Vec<f64>> for &CalibPinv<f64> {
     }
 }
 
-impl Mul<MatRef<'_, f64>> for &CalibPinv<f64> {
+impl<M: Modality> Mul<MatRef<'_, f64>> for &CalibPinv<f64, M> {
     type Output = Mat<f64>;
     fn mul(self, rhs: MatRef<'_, f64>) -> Self::Output {
         self.mat.as_ref() * rhs
@@ -86,19 +90,33 @@ impl Mul<MatRef<'_, f64>> for CalibPinv<f64> {
     }
 }
 
-impl Mul<&Calib> for &CalibPinv<f64> {
+// impl Mul<&Calib> for &CalibPinv<f64> {
+//     type Output = Mat<f64>;
+//     fn mul(self, rhs: &Calib) -> Self::Output {
+//         self.mat.as_ref() * rhs.mat_ref()
+//     }
+// }
+
+impl<M: Modality, C: CalibProps<M>> Mul<&C> for &CalibPinv<f64, M> {
     type Output = Mat<f64>;
-    fn mul(self, rhs: &Calib) -> Self::Output {
+    fn mul(self, rhs: &C) -> Self::Output {
         self.mat.as_ref() * rhs.mat_ref()
     }
 }
 
-impl Mul<&Calib> for &mut CalibPinv<f64> {
+impl<M: Modality, C: CalibProps<M>> Mul<&C> for &mut CalibPinv<f64, M> {
     type Output = Mat<f64>;
-    fn mul(self, rhs: &Calib) -> Self::Output {
+    fn mul(self, rhs: &C) -> Self::Output {
         self.mat.as_ref() * rhs.mat_ref()
     }
 }
+
+// impl Mul<&Calib> for &mut CalibPinv<f64> {
+//     type Output = Mat<f64>;
+//     fn mul(self, rhs: &Calib) -> Self::Output {
+//         self.mat.as_ref() * rhs.mat_ref()
+//     }
+// }
 
 impl Mul<Calib> for CalibPinv<f64> {
     type Output = Mat<f64>;

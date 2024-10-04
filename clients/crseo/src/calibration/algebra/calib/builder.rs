@@ -1,20 +1,20 @@
-use crate::calibration::CalibrationMode;
+use crate::calibration::algebra::Modality;
 use serde::{Deserialize, Serialize};
 
 use super::Calib;
 
 /// Builder for [Calib]
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct CalibBuilder {
+pub struct CalibBuilder<M: Modality> {
     pub(crate) sid: u8,
     pub(crate) n_mode: usize,
     pub(crate) c: Vec<f64>,
     pub(crate) mask: Vec<bool>,
-    pub(crate) mode: CalibrationMode,
+    pub(crate) mode: M,
     pub(crate) n_cols: Option<usize>,
 }
 
-impl CalibBuilder {
+impl<M: Modality + Default> CalibBuilder<M> {
     /// Creates a new empty builder
     pub fn new() -> Self {
         Default::default()
@@ -35,7 +35,7 @@ impl CalibBuilder {
         self
     }
     /// Sets the calibration mode
-    pub fn mode(mut self, mode: CalibrationMode) -> Self {
+    pub fn mode(mut self, mode: M) -> Self {
         self.mode = mode;
         self
     }
@@ -50,7 +50,7 @@ impl CalibBuilder {
         self
     }
     /// Builds [Calib]
-    pub fn build(self) -> Calib {
+    pub fn build(self) -> Calib<M> {
         let Self {
             sid,
             n_mode,

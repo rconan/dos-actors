@@ -3,33 +3,46 @@ use interface::{Data, Read, UniqueIdentifier, Update, Write};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Display, Formatter},
+    marker::PhantomData,
     ops::{Div, Mul, SubAssign},
     sync::Arc,
 };
 
-use super::{Block, Calib, CalibPinv, CalibProps, CalibrationMode, ClosedLoopCalib};
+use crate::calibration::MirrorMode;
+
+use super::{Block, Calib, CalibPinv, CalibProps, CalibrationMode, ClosedLoopCalib, Modality};
 
 /// Reconstructor from calibration matrices
 ///
 /// A reconstructor is a collection of segment wise calibration matrices.
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct Reconstructor<C = Calib>
+pub struct Reconstructor<M = CalibrationMode, C = Calib<M>>
 where
-    C: CalibProps,
+    M: Modality,
+    C: CalibProps<M>,
 {
     calib: Vec<C>,
-    pinv: Vec<Option<CalibPinv<f64>>>,
+    pinv: Vec<Option<CalibPinv<f64, M>>>,
     data: Arc<Vec<f64>>,
     estimate: Arc<Vec<f64>>,
+    mode: PhantomData<M>,
 }
 
-impl From<Calib> for Reconstructor {
-    fn from(calib: Calib) -> Self {
+impl<M> From<Calib<M>> for Reconstructor<M, Calib<M>>
+where
+    M: Modality + Default,
+    Calib<M>: CalibProps<M> + Default,
+{
+    fn from(calib: Calib<M>) -> Self {
         Self::new(vec![calib])
     }
 }
 
-impl<C: CalibProps + Default> Reconstructor<C> {
+impl<M, C> Reconstructor<M, C>
+where
+    M: Modality + Default,
+    C: CalibProps<M> + Default,
+{
     /// Creates a new reconstructor
     pub fn new(calib: Vec<C>) -> Self {
         Self {
@@ -62,7 +75,7 @@ impl<C: CalibProps + Default> Reconstructor<C> {
     /// Solves `AX=B` for each pair of calibration matrices in two reconstructors
     ///
     /// [Self] is A and `B` is another reconstructor
-    pub fn least_square_solve(&mut self, b: &Reconstructor) -> Vec<Mat<f64>> {
+    pub fn least_square_solve(&mut self, b: &Reconstructor<M, C>) -> Vec<Mat<f64>> {
         self.pinv()
             .zip(&b.calib)
             .map(|(pinv, calib)| pinv * calib)
@@ -76,7 +89,7 @@ impl<C: CalibProps + Default> Reconstructor<C> {
         self.calib.iter()
     }
     /// Returns an iterator over the pseudo-inverse of the calibration matrices
-    pub fn pinv(&mut self) -> impl Iterator<Item = &mut CalibPinv<f64>> {
+    pub fn pinv(&mut self) -> impl Iterator<Item = &mut CalibPinv<f64, M>> {
         self.pinv
             .iter_mut()
             .zip(&self.calib)
@@ -84,7 +97,7 @@ impl<C: CalibProps + Default> Reconstructor<C> {
             .map(|p| p)
     }
     /// Returns an iterator over the calibration matrices and their pseudo-inverse
-    pub fn calib_pinv(&mut self) -> impl Iterator<Item = (&C, &CalibPinv<f64>)> {
+    pub fn calib_pinv(&mut self) -> impl Iterator<Item = (&C, &CalibPinv<f64, M>)> {
         self.pinv
             .iter_mut()
             .zip(&self.calib)
@@ -108,7 +121,7 @@ impl<C: CalibProps + Default> Reconstructor<C> {
     }
 }
 
-impl<C: CalibProps + Default + Display> Display for Reconstructor<C> {
+impl<M: Modality + Default, C: CalibProps<M> + Default + Display> Display for Reconstructor<M, C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "RECONSTRUCTOR (non-zeros={}): ", self.area())?;
         for (c, ic) in self.calib.iter().zip(&self.pinv) {
@@ -126,29 +139,38 @@ pub trait Collapse {
     /// Collapses the calibration matrices into a single matrix
     ///
     /// The matrices are concatenated column wise.
-    fn collapse(self) -> Reconstructor;
+    fn collapse(self) -> Reconstructor<MirrorMode, Calib<MirrorMode>>;
 }
 
 impl Collapse for Reconstructor {
-    fn collapse(self) -> Self {
-        let mut calib = self.calib[0].clone();
-        calib.sid = 0;
-        calib.mode = self
-            .calib
-            .iter()
-            .fold(CalibrationMode::mirror(None), |m, calib| {
-                m.update(calib.smode())
-            });
-        calib.runtime = self.calib.iter().map(|calib| calib.runtime).sum();
-        calib.mask = self.calib[0].mask.clone();
-        calib.n_cols = Some(self.calib.iter().map(|calib| calib.n_cols()).sum());
-        calib.c = self.calib.into_iter().flat_map(|calib| calib.c).collect();
+    fn collapse(self) -> Reconstructor<MirrorMode, Calib<MirrorMode>> {
+        // let Calib {
+        //     sid,
+        //     n_mode,
+        //     c,
+        //     mask,
+        //     mode,
+        //     runtime,
+        //     n_cols,
+        // } = self;
+        let calib = Calib {
+            sid: 0,
+            n_mode: self.calib[0].n_mode,
+            mask: self.calib[0].mask.clone(),
+            mode: self
+                .calib
+                .iter()
+                .fold(MirrorMode::default(), |m, calib| m.update(calib.smode())),
+            runtime: self.calib.iter().map(|calib| calib.runtime).sum(),
+            n_cols: Some(self.calib.iter().map(|calib| calib.n_cols()).sum()),
+            c: self.calib.into_iter().flat_map(|calib| calib.c).collect(),
+        };
         Reconstructor::new(vec![calib])
     }
 }
 
-impl Collapse for Reconstructor<ClosedLoopCalib> {
-    fn collapse(self) -> Reconstructor {
+impl Collapse for Reconstructor<CalibrationMode, ClosedLoopCalib> {
+    fn collapse(self) -> Reconstructor<MirrorMode, Calib<MirrorMode>> {
         let Calib {
             n_mode,
             mask,
@@ -161,7 +183,10 @@ impl Collapse for Reconstructor<ClosedLoopCalib> {
             n_mode,
             mask,
             n_cols: Some(mode.calibration_n_mode() * 6),
-            mode,
+            mode: self
+                .calib
+                .iter()
+                .fold(MirrorMode::default(), |m, calib| m.update(calib.smode())),
             runtime,
             c: self
                 .calib
@@ -173,14 +198,14 @@ impl Collapse for Reconstructor<ClosedLoopCalib> {
     }
 }
 
-impl Reconstructor {
+impl<M: Modality + Default, C: CalibProps<M> + Default + Display> Reconstructor<M, C> {
     /// Normalize the calibration matrices by their Froebenius norms
     pub fn normalize(&mut self) -> Vec<f64> {
         self.calib.iter_mut().map(|c| c.normalize()).collect()
     }
 }
 
-impl<C: CalibProps> Reconstructor<C> {
+impl<C: CalibProps<CalibrationMode>> Reconstructor<CalibrationMode, C> {
     /// Returns the # of calibration matrix
     pub fn len(&self) -> usize {
         self.calib.len()
@@ -188,7 +213,7 @@ impl<C: CalibProps> Reconstructor<C> {
     /// Collapses the calibration matrices into a single block-diagonal matrix
     ///
     /// The matrices are concatenated along the main diagonal.
-    pub fn diagonal(&self) -> Reconstructor {
+    pub fn diagonal(&self) -> Reconstructor<MirrorMode, Calib<MirrorMode>> {
         let n_rows: usize = self.calib.iter().map(|c| c.n_rows()).sum();
         let n_cols: usize = self.calib.iter().map(|c| c.n_cols()).sum();
 
@@ -198,8 +223,7 @@ impl<C: CalibProps> Reconstructor<C> {
         let mut mi = 0;
         let mut n_mode = 0;
         let mut mask = vec![];
-        let mut modes: [Option<Box<CalibrationMode>>; 7] =
-            [None, None, None, None, None, None, None];
+        let mut modes: [Option<CalibrationMode>; 7] = [None, None, None, None, None, None, None];
         for (calib, mode) in self.calib.iter().zip(modes.iter_mut()) {
             let mat = calib.mat_ref();
             let mut dst = block_diag_mat
@@ -209,7 +233,7 @@ impl<C: CalibProps> Reconstructor<C> {
 
             n_mode += calib.n_mode();
             mask.extend(calib.mask_slice());
-            *mode = Some(Box::new(calib.mode()));
+            *mode = Some(calib.mode());
 
             ni += mat.nrows();
             mi += mat.ncols();
@@ -218,7 +242,7 @@ impl<C: CalibProps> Reconstructor<C> {
             sid: 0,
             n_mode,
             mask,
-            mode: Default::default(), //CalibrationMode::mirror(modes),
+            mode: MirrorMode::new(modes),
             runtime: Default::default(),
             n_cols: Some(n_cols),
             c: block_diag_mat
@@ -230,12 +254,12 @@ impl<C: CalibProps> Reconstructor<C> {
     }
 }
 
-impl Block for Reconstructor {
+impl<M: Modality + Default, C: CalibProps<M> + Block + Default> Block for Reconstructor<M, C> {
     fn block(array: &[&[&Self]]) -> Self
     where
         Self: Sized,
     {
-        let calib_array: Vec<Vec<&Calib>> = array
+        let calib_array: Vec<Vec<&C>> = array
             .iter()
             .map(|row| {
                 row.iter()
@@ -243,15 +267,16 @@ impl Block for Reconstructor {
                     .collect::<Vec<_>>()
             })
             .collect();
-        let calib_array: Vec<&[&Calib]> = calib_array.iter().map(|c| c.as_slice()).collect();
-        let calib = <Calib as Block>::block(&calib_array);
+        let calib_array: Vec<&[&C]> = calib_array.iter().map(|c| c.as_slice()).collect();
+        let calib = <C as Block>::block(&calib_array);
         Reconstructor::new(vec![calib])
     }
 }
 
-impl<C> Update for Reconstructor<C>
+impl<M, C> Update for Reconstructor<M, C>
 where
-    C: CalibProps + Default + Send + Sync,
+    M: Modality + Default + Send + Sync,
+    C: CalibProps<M> + Default + Send + Sync,
 {
     fn update(&mut self) {
         let data = Arc::clone(&self.data);
@@ -263,18 +288,22 @@ where
     }
 }
 
-impl<C, U: UniqueIdentifier<DataType = Vec<f64>>> Read<U> for Reconstructor<C>
+impl<M, C, U> Read<U> for Reconstructor<M, C>
 where
-    C: CalibProps + Default + Send + Sync,
+    M: Modality + Default + Send + Sync,
+    C: CalibProps<M> + Default + Send + Sync,
+    U: UniqueIdentifier<DataType = Vec<f64>>,
 {
     fn read(&mut self, data: Data<U>) {
         self.data = data.into_arc();
     }
 }
 
-impl<C, U: UniqueIdentifier<DataType = Vec<f64>>> Write<U> for Reconstructor<C>
+impl<M, C, U> Write<U> for Reconstructor<M, C>
 where
-    C: CalibProps + Default + Send + Sync,
+    M: Modality + Default + Send + Sync,
+    C: CalibProps<M> + Default + Send + Sync,
+    U: UniqueIdentifier<DataType = Vec<f64>>,
 {
     fn write(&mut self) -> Option<Data<U>> {
         Some(self.estimate.clone().into())
@@ -297,10 +326,10 @@ impl Mul<MatRef<'_, f64>> for &Reconstructor {
     }
 }
 
-impl<C: CalibProps> Div<&Reconstructor<C>> for MatRef<'_, f64> {
+impl<M: Modality, C: CalibProps<M>> Div<&Reconstructor<M, C>> for MatRef<'_, f64> {
     type Output = Vec<Mat<f64>>;
 
-    fn div(self, rhs: &Reconstructor<C>) -> Self::Output {
+    fn div(self, rhs: &Reconstructor<M, C>) -> Self::Output {
         rhs.pinv
             .iter()
             .filter_map(|ic| ic.as_ref().map(|ic| ic * self))

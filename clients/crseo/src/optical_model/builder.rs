@@ -4,6 +4,7 @@ use crate::sensors::{
     NoSensor,
 };
 use crseo::{atmosphere::AtmosphereBuilder, gmt::GmtBuilder, source::SourceBuilder, Builder};
+use serde::{Deserialize, Serialize};
 
 /// GMT optical model builder
 ///
@@ -18,7 +19,7 @@ use crseo::{atmosphere::AtmosphereBuilder, gmt::GmtBuilder, source::SourceBuilde
 /// let om = OpticalModel::<NoSensor>::builder().build()?;
 /// # Ok::<(),Box<dyn std::error::Error>>(())
 /// ```
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct OpticalModelBuilder<S = NoSensor> {
     pub(crate) gmt: GmtBuilder,
     pub(crate) src: SourceBuilder,

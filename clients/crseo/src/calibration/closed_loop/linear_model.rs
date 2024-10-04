@@ -5,8 +5,7 @@ use crseo::{
 
 use crate::{
     calibration::{
-        closed_loop::ClosedLoopCalib, CalibrateAssembly, CalibrateSegment, CalibrationMode,
-        Reconstructor,
+        CalibrateAssembly, CalibrateSegment, CalibrationMode, ClosedLoopCalib, Reconstructor,
     },
     centroiding::CentroidKind,
     sensors::WaveSensor,

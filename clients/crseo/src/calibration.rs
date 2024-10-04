@@ -33,43 +33,22 @@ use crate::{
     OpticalModelBuilder,
 };
 use crseo::{gmt::GmtMx, CrseoError, FromBuilder, Propagation};
-use faer::MatRef;
 use gmt_dos_clients_io::gmt_m1::segment::{BendingModes, RBM};
 use interface::{Read, UniqueIdentifier, Update, Write};
 use std::{fmt::Debug, sync::Arc, thread};
 
-mod calib;
-mod calib_pinv;
+mod algebra;
 mod centroids;
 mod closed_loop;
 mod dispersed_fringe_sensor;
 mod mode;
-mod reconstructor;
 mod wave_sensor;
 
-pub use calib::{Calib, CalibBuilder};
-pub use calib_pinv::CalibPinv;
-pub use closed_loop::{ClosedLoopCalib, ClosedLoopCalibrate};
-pub use mode::CalibrationMode;
-pub use reconstructor::{Collapse, Reconstructor};
-
-/// Calibration matrix properties
-pub trait CalibProps {
-    fn sid(&self) -> u8;
-    fn pseudoinverse(&self) -> CalibPinv<f64>;
-    fn area(&self) -> usize;
-    fn match_areas(&mut self, other: &mut Self);
-    fn mask_slice(&self) -> &[bool];
-    fn mask(&self, data: &[f64]) -> Vec<f64>;
-    fn n_cols(&self) -> usize;
-    fn n_rows(&self) -> usize;
-    fn mat_ref(&self) -> MatRef<'_, f64>;
-    fn n_mode(&self) -> usize;
-    fn mode(&self) -> CalibrationMode;
-    fn smode(&self) -> (u8, CalibrationMode) {
-        (self.sid(), self.mode())
-    }
-}
+pub use algebra::{
+    Block, Calib, CalibBuilder, CalibPinv, CalibProps, ClosedLoopCalib, Collapse, Reconstructor,
+};
+pub use closed_loop::ClosedLoopCalibrate;
+pub use mode::{CalibrationMode, MirrorMode};
 
 #[derive(Debug, thiserror::Error)]
 pub enum CalibrationError {
@@ -82,20 +61,6 @@ pub enum CalibrationError {
 }
 
 type Result<T> = std::result::Result<T, CalibrationError>;
-
-pub trait Block {
-    /// Block matrix
-    ///
-    /// Creates a block matrix from a nested array such as
-    /// `[[A,B];[C,D]]` becomes
-    /// ```
-    /// | A B |
-    /// | C D |
-    /// ```
-    fn block(array: &[&[&Self]]) -> Self
-    where
-        Self: Sized;
-}
 
 /// Trait alias for M1 or M2 [CalibrateSegment]s
 pub trait CalibrateAssembly<M: GmtMx, S: FromBuilder>:
@@ -165,8 +130,7 @@ where
                     optical_model,
                     cmd.to_vec().into(),
                 );
-            }
-            _ => unimplemented!(),
+            } // _ => unimplemented!(),
         }
         optical_model.update();
         <OpticalModel<Self::Sensor> as Write<Self::Input>>::write(optical_model)

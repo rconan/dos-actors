@@ -138,8 +138,7 @@ where
                     runtime: now.elapsed(),
                     n_cols: None,
                 })
-            }
-            _ => unimplemented!(),
+            } // _ => unimplemented!(),
         }
     }
 }

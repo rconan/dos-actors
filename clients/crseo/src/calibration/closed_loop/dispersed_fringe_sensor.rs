@@ -16,9 +16,7 @@ use gmt_dos_clients_io::{
 use interface::{Read, Update, Write};
 
 use crate::{
-    calibration::{
-        closed_loop::ClosedLoopCalib, CalibrateAssembly, CalibrateSegment, Reconstructor,
-    },
+    calibration::{CalibrateAssembly, CalibrateSegment, ClosedLoopCalib, Reconstructor},
     sensors::{DispersedFringeSensor, DispersedFringeSensorProcessing},
     DeviceInitialize, OpticalModel, OpticalModelBuilder,
 };
@@ -48,8 +46,7 @@ impl<const SID: u8> ClosedLoopPushPull<SID> for DispersedFringeSensorProcessing 
                     om,
                     cmd.to_vec().into(),
                 );
-            }
-            _ => unimplemented!(),
+            } // _ => unimplemented!(),
         }
         let m2_cmd = c.iter().map(|x| x * -s).collect::<Vec<_>>();
         <OpticalModel<Self::Sensor> as Read<AsmCommand<SID>>>::read(om, m2_cmd.into());
@@ -210,6 +207,7 @@ where
         }
         let n = dfs_processor.intercept.len();
         let m1_closed_loop_to_sensor = Calib::builder()
+            .sid(SID)
             .c(y)
             .n_mode(calib_mode.n_mode())
             .mode(calib_mode)
@@ -238,7 +236,7 @@ where
         calib_mode: CalibrationMode,
         closed_loop_optical_model: OpticalModelBuilder<ClosedLoopSensorBuilder<W>>,
         closed_loop_calib_mode: CalibrationMode,
-    ) -> crate::calibration::Result<Reconstructor<ClosedLoopCalib>>
+    ) -> crate::calibration::Result<Reconstructor<CalibrationMode, ClosedLoopCalib>>
     where
         <<Self as ClosedLoopCalibrate<W>>::Sensor as crseo::FromBuilder>::ComponentBuilder:
             Clone + Send + Sync,
@@ -302,7 +300,7 @@ where
             //     .into_iter()
             //     .flat_map(|c| c.m1_closed_loop_to_sensor.c)
             //     .collect();
-            Reconstructor::<ClosedLoopCalib>::new(calibs)
+            Reconstructor::<CalibrationMode, ClosedLoopCalib>::new(calibs)
         })
     }
 }

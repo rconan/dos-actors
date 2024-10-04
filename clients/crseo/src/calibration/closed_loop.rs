@@ -5,13 +5,10 @@ use faer::ColRef;
 
 use crate::{OpticalModel, OpticalModelBuilder};
 
-use super::{Calib, CalibrationMode, PushPull, Reconstructor, Result};
+use super::{Calib, CalibrationMode, ClosedLoopCalib, PushPull, Reconstructor, Result};
 
-mod calib;
 mod dispersed_fringe_sensor;
 mod linear_model;
-
-pub use calib::ClosedLoopCalib;
 
 /// Trait alias for M1 [ClosedLoopCalibrateSegment]s with M2
 pub trait ClosedLoopCalibrateAssembly<W: FromBuilder, S: FromBuilder>:
@@ -92,7 +89,7 @@ where
         calib_mode: CalibrationMode,
         closed_loop_optical_model: OpticalModelBuilder<ClosedLoopSensorBuilder<ClosedLoopSensor>>,
         closed_loop_calib_mode: CalibrationMode,
-    ) -> Result<Reconstructor<ClosedLoopCalib>>
+    ) -> Result<Reconstructor<CalibrationMode, ClosedLoopCalib>>
     where
         <<Self as ClosedLoopCalibrate<ClosedLoopSensor>>::Sensor as FromBuilder>::ComponentBuilder:
             Clone + Send + Sync,
@@ -173,7 +170,9 @@ where
         // let c6 = <Self as CalibrateSegment<M, 6>>::calibrate(optical_model.clone(), calib_mode)?;
         // let c7 = <Self as CalibrateSegment<M, 7>>::calibrate(optical_model.clone(), calib_mode)?;
         // let ci = vec![c1, c2, c3, c4, c5, c6, c7];
-        Ok(Reconstructor::<ClosedLoopCalib>::new(mat_ci?))
+        Ok(Reconstructor::<CalibrationMode, ClosedLoopCalib>::new(
+            mat_ci?,
+        ))
         // mat_ci.map(|(mat, calib)| (mat, Reconstructor::new(calib)))
     }
 }
