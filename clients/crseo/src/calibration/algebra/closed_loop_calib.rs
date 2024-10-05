@@ -3,8 +3,8 @@ use std::fmt::Display;
 use faer::{Mat, MatRef};
 use serde::{Deserialize, Serialize};
 
-use super::{Calib, CalibPinv, CalibProps, CalibrationMode, Modality};
-use crate::calibration::Reconstructor;
+use super::{Calib, CalibPinv, CalibProps, CalibrationMode};
+use crate::calibration::{algebra::Reconstructor, mode::Modality};
 
 /// Closed-loop calibration matrix
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -25,8 +25,8 @@ impl ClosedLoopCalib {
         self.m1_to_m2.as_ref()
     }
 }
-impl CalibProps for ClosedLoopCalib {
-    fn pseudoinverse(&self) -> CalibPinv<f64> {
+impl<M: Modality + Display> CalibProps<M> for ClosedLoopCalib<M> {
+    fn pseudoinverse(&self) -> CalibPinv<f64, M> {
         self.m1_closed_loop_to_sensor.pseudoinverse()
     }
 
@@ -34,7 +34,7 @@ impl CalibProps for ClosedLoopCalib {
         self.m1_closed_loop_to_sensor.area()
     }
 
-    fn match_areas(&mut self, other: &mut ClosedLoopCalib) {
+    fn match_areas(&mut self, other: &mut ClosedLoopCalib<M>) {
         self.m1_closed_loop_to_sensor
             .match_areas(&mut other.m1_closed_loop_to_sensor);
     }
@@ -62,7 +62,7 @@ impl CalibProps for ClosedLoopCalib {
     fn n_mode(&self) -> usize {
         self.m1_closed_loop_to_sensor.n_mode()
     }
-    fn mode(&self) -> CalibrationMode {
+    fn mode(&self) -> M {
         self.m1_closed_loop_to_sensor.mode()
     }
 
@@ -79,7 +79,7 @@ impl CalibProps for ClosedLoopCalib {
     }
 }
 
-impl Display for ClosedLoopCalib {
+impl<M: Modality + Display> Display for ClosedLoopCalib<M> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "\nClosed-loop calibration matrix:")?;
         write!(

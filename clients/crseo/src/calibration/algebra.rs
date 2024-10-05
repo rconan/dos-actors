@@ -1,6 +1,6 @@
 use faer::MatRef;
 
-use super::CalibrationMode;
+use super::{mode::Modality, CalibrationMode};
 
 pub mod calib;
 mod closed_loop_calib;
@@ -47,9 +47,4 @@ pub trait Block {
     fn block(array: &[&[&Self]]) -> Self
     where
         Self: Sized;
-}
-
-pub trait Modality: std::fmt::Debug + Clone {
-    fn n_cols(&self) -> usize;
-    fn fill(&self, iter: impl Iterator<Item = f64>) -> Vec<f64>;
 }

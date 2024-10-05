@@ -1,4 +1,4 @@
-use crate::calibration::algebra::Modality;
+use crate::calibration::mode::Modality;
 use serde::{Deserialize, Serialize};
 
 use super::Calib;

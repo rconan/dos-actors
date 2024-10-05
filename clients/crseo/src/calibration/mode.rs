@@ -4,7 +4,10 @@ pub use segment::CalibrationMode;
 mod mirror;
 pub use mirror::MirrorMode;
 
-use super::algebra::Modality;
+pub trait Modality: std::fmt::Debug + Clone {
+    fn n_cols(&self) -> usize;
+    fn fill(&self, iter: impl Iterator<Item = f64>) -> Vec<f64>;
+}
 
 impl Modality for CalibrationMode {
     fn n_cols(&self) -> usize {

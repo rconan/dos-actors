@@ -3,7 +3,9 @@ use std::ops::Mul;
 use faer::{mat::from_column_major_slice, Mat, MatRef};
 use serde::{Deserialize, Serialize};
 
-use super::{Calib, CalibProps, CalibrationMode, Modality};
+use crate::calibration::mode::Modality;
+
+use super::{Calib, CalibProps, CalibrationMode};
 
 /// Calibration matrix pseudo-inverse
 #[derive(Debug, Serialize, Deserialize, Clone)]

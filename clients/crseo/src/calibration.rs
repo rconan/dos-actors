@@ -37,18 +37,16 @@ use gmt_dos_clients_io::gmt_m1::segment::{BendingModes, RBM};
 use interface::{Read, UniqueIdentifier, Update, Write};
 use std::{fmt::Debug, sync::Arc, thread};
 
-mod algebra;
+pub mod algebra;
 mod centroids;
 mod closed_loop;
 mod dispersed_fringe_sensor;
 mod mode;
 mod wave_sensor;
 
-pub use algebra::{
-    Block, Calib, CalibBuilder, CalibPinv, CalibProps, ClosedLoopCalib, Collapse, Reconstructor,
-};
+pub use algebra::{Calib, ClosedLoopCalib, Reconstructor};
 pub use closed_loop::ClosedLoopCalibrate;
-pub use mode::{CalibrationMode, MirrorMode};
+pub use mode::{CalibrationMode, MirrorMode, Modality};
 
 #[derive(Debug, thiserror::Error)]
 pub enum CalibrationError {
@@ -167,62 +165,55 @@ where
     type Sensor: FromBuilder;
     fn calibrate(
         optical_model: &OpticalModelBuilder<SensorBuilder<M, Self>>,
-        calib_mode: CalibrationMode,
+        mirror_mode: impl Into<MirrorMode>,
     ) -> Result<Reconstructor>
     where
         <<Self as Calibrate<M>>::Sensor as FromBuilder>::ComponentBuilder: Clone + Send + Sync,
     {
+        let mut mode_iter = Into::<MirrorMode>::into(mirror_mode).into_iter();
         let ci: Result<Vec<_>> = thread::scope(|s| {
-            let c1 = s.spawn(|| {
-                <Self as CalibrateSegment<M, 1>>::calibrate(
-                    optical_model.clone(),
-                    calib_mode.clone(),
-                )
+            let c1 = mode_iter.next().unwrap().map(|calib_mode| {
+                s.spawn(move || {
+                    <Self as CalibrateSegment<M, 1>>::calibrate(optical_model.clone(), calib_mode)
+                })
             });
-            let c2 = s.spawn(|| {
-                <Self as CalibrateSegment<M, 2>>::calibrate(
-                    optical_model.clone(),
-                    calib_mode.clone(),
-                )
+            let c2 = mode_iter.next().unwrap().map(|calib_mode| {
+                s.spawn(move || {
+                    <Self as CalibrateSegment<M, 2>>::calibrate(optical_model.clone(), calib_mode)
+                })
             });
-            let c3 = s.spawn(|| {
-                <Self as CalibrateSegment<M, 3>>::calibrate(
-                    optical_model.clone(),
-                    calib_mode.clone(),
-                )
+            let c3 = mode_iter.next().unwrap().map(|calib_mode| {
+                s.spawn(move || {
+                    <Self as CalibrateSegment<M, 3>>::calibrate(optical_model.clone(), calib_mode)
+                })
             });
-            let c4 = s.spawn(|| {
-                <Self as CalibrateSegment<M, 4>>::calibrate(
-                    optical_model.clone(),
-                    calib_mode.clone(),
-                )
+            let c4 = mode_iter.next().unwrap().map(|calib_mode| {
+                s.spawn(move || {
+                    <Self as CalibrateSegment<M, 4>>::calibrate(optical_model.clone(), calib_mode)
+                })
             });
-            let c5 = s.spawn(|| {
-                <Self as CalibrateSegment<M, 5>>::calibrate(
-                    optical_model.clone(),
-                    calib_mode.clone(),
-                )
+            let c5 = mode_iter.next().unwrap().map(|calib_mode| {
+                s.spawn(move || {
+                    <Self as CalibrateSegment<M, 5>>::calibrate(optical_model.clone(), calib_mode)
+                })
             });
-            let c6 = s.spawn(|| {
-                <Self as CalibrateSegment<M, 6>>::calibrate(
-                    optical_model.clone(),
-                    calib_mode.clone(),
-                )
+            let c6 = mode_iter.next().unwrap().map(|calib_mode| {
+                s.spawn(move || {
+                    <Self as CalibrateSegment<M, 6>>::calibrate(optical_model.clone(), calib_mode)
+                })
             });
-            let c7 = s.spawn(|| {
-                <Self as CalibrateSegment<M, 7>>::calibrate(
-                    optical_model.clone(),
-                    calib_mode.clone(),
-                )
-            });
-            // let mut ci = vec![];
-            // for c in [c1, c2, c3, c4, c5, c6, c7] {
-            //     ci.push(c.join().unwrap().unwrap());
-            // }
-            // ci
+            let c7 = mode_iter.next().unwrap().map(|calib_mode| {
+                s.spawn(move || {
+                    <Self as CalibrateSegment<M, 7>>::calibrate(optical_model.clone(), calib_mode)
+                })
+            }); // let mut ci = vec![];
+                // for c in [c1, c2, c3, c4, c5, c6, c7] {
+                //     ci.push(c.join().unwrap().unwrap());
+                // }
+                // ci
             [c1, c2, c3, c4, c5, c6, c7]
                 .into_iter()
-                .map(|c| c.join().unwrap())
+                .filter_map(|c| c.map(|c| c.join().unwrap()))
                 .collect()
         });
         // let c1 = <Self as CalibrateSegment<M, 1>>::calibrate(optical_model.clone(), calib_mode)?;
@@ -233,6 +224,46 @@ where
         // let c6 = <Self as CalibrateSegment<M, 6>>::calibrate(optical_model.clone(), calib_mode)?;
         // let c7 = <Self as CalibrateSegment<M, 7>>::calibrate(optical_model.clone(), calib_mode)?;
         // let ci = vec![c1, c2, c3, c4, c5, c6, c7];
+        Ok(Reconstructor::new(ci?))
+    }
+
+    fn calibrate_serial(
+        optical_model: &OpticalModelBuilder<SensorBuilder<M, Self>>,
+        mirror_mode: impl Into<MirrorMode>,
+    ) -> Result<Reconstructor>
+    where
+        <<Self as Calibrate<M>>::Sensor as FromBuilder>::ComponentBuilder: Clone + Send + Sync,
+    {
+        let mut mode_iter = Into::<MirrorMode>::into(mirror_mode).into_iter();
+        let c1 = mode_iter.next().unwrap().map(|calib_mode| {
+            <Self as CalibrateSegment<M, 1>>::calibrate(optical_model.clone(), calib_mode)
+        });
+        let c2 = mode_iter.next().unwrap().map(|calib_mode| {
+            <Self as CalibrateSegment<M, 2>>::calibrate(optical_model.clone(), calib_mode)
+        });
+        let c3 = mode_iter.next().unwrap().map(|calib_mode| {
+            <Self as CalibrateSegment<M, 3>>::calibrate(optical_model.clone(), calib_mode)
+        });
+        let c4 = mode_iter.next().unwrap().map(|calib_mode| {
+            <Self as CalibrateSegment<M, 4>>::calibrate(optical_model.clone(), calib_mode)
+        });
+        let c5 = mode_iter.next().unwrap().map(|calib_mode| {
+            <Self as CalibrateSegment<M, 5>>::calibrate(optical_model.clone(), calib_mode)
+        });
+        let c6 = mode_iter.next().unwrap().map(|calib_mode| {
+            <Self as CalibrateSegment<M, 6>>::calibrate(optical_model.clone(), calib_mode)
+        });
+        let c7 = mode_iter.next().unwrap().map(|calib_mode| {
+            <Self as CalibrateSegment<M, 7>>::calibrate(optical_model.clone(), calib_mode)
+        }); // let mut ci = vec![];
+            // for c in [c1, c2, c3, c4, c5, c6, c7] {
+            //     ci.push(c.join().unwrap().unwrap());
+            // }
+            // ci
+        let ci: Result<Vec<_>> = [c1, c2, c3, c4, c5, c6, c7]
+            .into_iter()
+            .filter_map(|c| c.map(|c| c))
+            .collect();
         Ok(Reconstructor::new(ci?))
     }
 }

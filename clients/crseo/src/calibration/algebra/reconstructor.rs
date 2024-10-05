@@ -8,9 +8,9 @@ use std::{
     sync::Arc,
 };
 
-use crate::calibration::MirrorMode;
+use crate::calibration::mode::{MirrorMode, Modality};
 
-use super::{Block, Calib, CalibPinv, CalibProps, CalibrationMode, ClosedLoopCalib, Modality};
+use super::{Block, Calib, CalibPinv, CalibProps, CalibrationMode, ClosedLoopCalib};
 
 /// Reconstructor from calibration matrices
 ///
@@ -330,6 +330,17 @@ impl<M: Modality, C: CalibProps<M>> Div<&Reconstructor<M, C>> for MatRef<'_, f64
     type Output = Vec<Mat<f64>>;
 
     fn div(self, rhs: &Reconstructor<M, C>) -> Self::Output {
+        rhs.pinv
+            .iter()
+            .filter_map(|ic| ic.as_ref().map(|ic| ic * self))
+            .collect()
+    }
+}
+
+impl<M: Modality, C: CalibProps<M>> Div<&mut Reconstructor<M, C>> for MatRef<'_, f64> {
+    type Output = Vec<Mat<f64>>;
+
+    fn div(self, rhs: &mut Reconstructor<M, C>) -> Self::Output {
         rhs.pinv
             .iter()
             .filter_map(|ic| ic.as_ref().map(|ic| ic * self))

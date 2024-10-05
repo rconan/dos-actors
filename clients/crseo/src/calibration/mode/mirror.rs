@@ -57,3 +57,14 @@ impl From<CalibrationMode> for MirrorMode {
         Self([Some(value); 7])
     }
 }
+
+impl<const N: usize> From<[CalibrationMode; N]> for MirrorMode {
+    fn from(value: [CalibrationMode; N]) -> Self {
+        let mut mirror = [None; 7];
+        mirror
+            .iter_mut()
+            .zip(value.iter())
+            .for_each(|(m, s)| *m = Some(*s));
+        Self(mirror)
+    }
+}

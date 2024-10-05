@@ -23,7 +23,7 @@ use crate::{
 
 use super::{
     Calib, CalibrationMode, ClosedLoopCalibrate, ClosedLoopCalibrateSegment, ClosedLoopPushPull,
-    ClosedLoopSensorBuilder, SegmentClosedLoopSensorBuilder, SegmentSensorBuilder,
+    SegmentClosedLoopSensorBuilder, SegmentSensorBuilder,
 };
 
 impl<const SID: u8> ClosedLoopPushPull<SID> for DispersedFringeSensorProcessing {
@@ -226,6 +226,111 @@ where
 
 impl<W: FromBuilder> ClosedLoopCalibrate<W> for DispersedFringeSensorProcessing
 where
+    <W as FromBuilder>::ComponentBuilder: Clone,
+    W: CalibrateAssembly<GmtM2, W> + CalibrateAssembly<GmtM1, W>,
+{
+    type Sensor = DispersedFringeSensor<1, 1>;
+}
+
+/* impl<W: FromBuilder> ClosedLoopCalibrate<W> for DispersedFringeSensorProcessing
+where
+    <W as FromBuilder>::ComponentBuilder: Clone,
+    W: CalibrateAssembly<GmtM2, W> + CalibrateAssembly<GmtM1, W>,
+{
+    type Sensor = DispersedFringeSensor<1, 1>;
+    fn calibrate(
+        optical_model: &OpticalModelBuilder<super::SensorBuilder<Self, W>>,
+        mirror_mode: impl Into<MirrorMode>,
+        closed_loop_optical_model: &OpticalModelBuilder<ClosedLoopSensorBuilder<W>>,
+        closed_loop_calib_mode: CalibrationMode,
+    ) -> crate::calibration::Result<Reconstructor<CalibrationMode, ClosedLoopCalib>>
+    where
+        <<Self as ClosedLoopCalibrate<W>>::Sensor as crseo::FromBuilder>::ComponentBuilder:
+            Clone + Send + Sync,
+    {
+        let mut mode_iter = Into::<MirrorMode>::into(mirror_mode).into_iter();
+
+        let h1 = mode_iter.next().unwrap().map(|calib_mode| {
+            <Self as ClosedLoopCalibrateSegment<W, 1>>::calibrate(
+                optical_model.clone(),
+                calib_mode.clone(),
+                closed_loop_optical_model.clone(),
+                closed_loop_calib_mode,
+            )
+        });
+        let h2 = mode_iter.next().unwrap().map(|calib_mode| {
+            <Self as ClosedLoopCalibrateSegment<W, 2>>::calibrate(
+                optical_model.clone(),
+                calib_mode.clone(),
+                closed_loop_optical_model.clone(),
+                closed_loop_calib_mode,
+            )
+        });
+        let h3 = mode_iter.next().unwrap().map(|calib_mode| {
+            <Self as ClosedLoopCalibrateSegment<W, 3>>::calibrate(
+                optical_model.clone(),
+                calib_mode.clone(),
+                closed_loop_optical_model.clone(),
+                closed_loop_calib_mode,
+            )
+        });
+        let h4 = mode_iter.next().unwrap().map(|calib_mode| {
+            <Self as ClosedLoopCalibrateSegment<W, 4>>::calibrate(
+                optical_model.clone(),
+                calib_mode.clone(),
+                closed_loop_optical_model.clone(),
+                closed_loop_calib_mode,
+            )
+        });
+        let h5 = mode_iter.next().unwrap().map(|calib_mode| {
+            <Self as ClosedLoopCalibrateSegment<W, 5>>::calibrate(
+                optical_model.clone(),
+                calib_mode.clone(),
+                closed_loop_optical_model.clone(),
+                closed_loop_calib_mode,
+            )
+        });
+        let h6 = mode_iter.next().unwrap().map(|calib_mode| {
+            <Self as ClosedLoopCalibrateSegment<W, 6>>::calibrate(
+                optical_model.clone(),
+                calib_mode.clone(),
+                closed_loop_optical_model.clone(),
+                closed_loop_calib_mode,
+            )
+        });
+        let h7 = mode_iter.next().unwrap().map(|calib_mode| {
+            <Self as ClosedLoopCalibrateSegment<W, 7>>::calibrate(
+                optical_model.clone(),
+                calib_mode.clone(),
+                closed_loop_optical_model.clone(),
+                closed_loop_calib_mode,
+            )
+        }); // let mut ci = vec![];
+            // for c in [c1, c2, c3, c4, c5, c6, c7] {
+            //     ci.push(c.join().unwrap().unwrap());
+            // }
+            // ci
+        let mat_ci: crate::calibration::Result<Vec<_>> = [h1, h2, h3, h4, h5, h6, h7]
+            .into_iter()
+            .filter_map(|h| h)
+            .collect();
+        // let c1 = <Self as CalibrateSegment<M, 1>>::calibrate(optical_model.clone(), calib_mode)?;
+        // let c2 = <Self as CalibrateSegment<M, 2>>::calibrate(optical_model.clone(), calib_mode)?;
+        // let c3 = <Self as CalibrateSegment<M, 3>>::calibrate(optical_model.clone(), calib_mode)?;
+        // let c4 = <Self as CalibrateSegment<M, 4>>::calibrate(optical_model.clone(), calib_mode)?;
+        // let c5 = <Self as CalibrateSegment<M, 5>>::calibrate(optical_model.clone(), calib_mode)?;
+        // let c6 = <Self as CalibrateSegment<M, 6>>::calibrate(optical_model.clone(), calib_mode)?;
+        // let c7 = <Self as CalibrateSegment<M, 7>>::calibrate(optical_model.clone(), calib_mode)?;
+        // let ci = vec![c1, c2, c3, c4, c5, c6, c7];
+        Ok(Reconstructor::<CalibrationMode, ClosedLoopCalib>::new(
+            mat_ci?,
+        ))
+        // mat_ci.map(|(mat, calib)| (mat, Reconstructor::new(calib)))
+    }
+}
+ */
+/* impl<W: FromBuilder> ClosedLoopCalibrate<W> for DispersedFringeSensorProcessing
+where
     W: CalibrateAssembly<GmtM2, W> + CalibrateAssembly<GmtM1, W>,
     <W as FromBuilder>::ComponentBuilder: Clone,
 {
@@ -304,6 +409,7 @@ where
         })
     }
 }
+ */
 #[cfg(test)]
 mod tests {
     use std::error::Error;

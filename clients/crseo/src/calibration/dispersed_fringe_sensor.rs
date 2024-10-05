@@ -1,7 +1,4 @@
-use super::{
-    Calib, Calibrate, CalibrateSegment, PushPull, Reconstructor, SegmentSensorBuilder,
-    SensorBuilder,
-};
+use super::{Calib, Calibrate, CalibrateSegment, PushPull, SegmentSensorBuilder};
 use crate::{
     sensors::{DispersedFringeSensor, DispersedFringeSensorProcessing},
     DeviceInitialize,
@@ -150,51 +147,52 @@ where
 {
     type Sensor = DispersedFringeSensor<1, 1>;
 
-    fn calibrate(
-        optical_model: &crate::OpticalModelBuilder<SensorBuilder<M, Self>>,
-        calib_mode: super::CalibrationMode,
-    ) -> super::Result<super::Reconstructor> {
-        let c1 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 1>>::calibrate(
-            optical_model.clone(),
-            calib_mode.clone(),
-        )?;
-        let c2 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 2>>::calibrate(
-            optical_model.clone(),
-            calib_mode.clone(),
-        )?;
-        let c3 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 3>>::calibrate(
-            optical_model.clone(),
-            calib_mode.clone(),
-        )?;
-        let c4 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 4>>::calibrate(
-            optical_model.clone(),
-            calib_mode.clone(),
-        )?;
-        let c5 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 5>>::calibrate(
-            optical_model.clone(),
-            calib_mode.clone(),
-        )?;
-        let c6 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 6>>::calibrate(
-            optical_model.clone(),
-            calib_mode.clone(),
-        )?;
+    /*     fn calibrate(
+           optical_model: &crate::OpticalModelBuilder<SensorBuilder<M, Self>>,
+           calib_mode: impl Into<MirrorMode>,
+       ) -> super::Result<super::Reconstructor> {
+           let c1 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 1>>::calibrate(
+               optical_model.clone(),
+               calib_mode.clone(),
+           )?;
+           let c2 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 2>>::calibrate(
+               optical_model.clone(),
+               calib_mode.clone(),
+           )?;
+           let c3 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 3>>::calibrate(
+               optical_model.clone(),
+               calib_mode.clone(),
+           )?;
+           let c4 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 4>>::calibrate(
+               optical_model.clone(),
+               calib_mode.clone(),
+           )?;
+           let c5 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 5>>::calibrate(
+               optical_model.clone(),
+               calib_mode.clone(),
+           )?;
+           let c6 = <DispersedFringeSensorProcessing as CalibrateSegment<M, 6>>::calibrate(
+               optical_model.clone(),
+               calib_mode.clone(),
+           )?;
 
-        // let iter =
-        //     c1.c.iter()
-        //         .chain(c2.c.iter())
-        //         .chain(c3.c.iter())
-        //         .chain(c4.c.iter())
-        //         .chain(c5.c.iter())
-        //         .chain(c6.c.iter())
-        //         .map(|x| *x);
-        // let mut calib = c1.clone();
-        // calib.sid = 0;
-        // calib.c = iter.collect();
-        // calib.mask = vec![true; calib.c.len() / 6];
-        // calib.runtime = c1.runtime + c2.runtime + c3.runtime + c4.runtime + c5.runtime + c6.runtime;
-        // calib.n_cols = Some(6);
-        Ok(Reconstructor::new(vec![c1, c2, c3, c4, c5, c6]))
-    }
+           // let iter =
+           //     c1.c.iter()
+           //         .chain(c2.c.iter())
+           //         .chain(c3.c.iter())
+           //         .chain(c4.c.iter())
+           //         .chain(c5.c.iter())
+           //         .chain(c6.c.iter())
+           //         .map(|x| *x);
+           // let mut calib = c1.clone();
+           // calib.sid = 0;
+           // calib.c = iter.collect();
+           // calib.mask = vec![true; calib.c.len() / 6];
+           // calib.runtime = c1.runtime + c2.runtime + c3.runtime + c4.runtime + c5.runtime + c6.runtime;
+           // calib.n_cols = Some(6);
+           Ok(Reconstructor::new(vec![c1, c2, c3, c4, c5, c6]))
+       }
+    */
 }
 
 #[cfg(test)]
