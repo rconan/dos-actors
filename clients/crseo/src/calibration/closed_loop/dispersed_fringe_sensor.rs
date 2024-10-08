@@ -503,7 +503,7 @@ mod tests {
         let closed_loop_optical_model = OpticalModel::<WaveSensor>::builder().gmt(gmt.clone());
         let mut recon =
             <DispersedFringeSensorProcessing as ClosedLoopCalibrate<WaveSensor>>::calibrate(
-                optical_model.clone(),
+                &optical_model,
                 CalibrationMode::RBM([
                     None,                     // Tx
                     None,                     // Ty
@@ -512,7 +512,7 @@ mod tests {
                     Some(1f64.from_arcsec()), // Ry
                     None,                     // Rz
                 ]),
-                closed_loop_optical_model,
+                &closed_loop_optical_model,
                 CalibrationMode::modes(m2_n_mode, 1e-6),
             )?;
         recon.pseudoinverse();

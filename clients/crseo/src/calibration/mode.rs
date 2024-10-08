@@ -3,6 +3,8 @@ mod segment;
 pub use segment::CalibrationMode;
 mod mirror;
 pub use mirror::MirrorMode;
+mod mixed;
+pub use mixed::MixedMirrorMode;
 
 pub trait Modality: std::fmt::Debug + Clone {
     fn n_cols(&self) -> usize;
@@ -118,3 +120,19 @@ impl Modality for MirrorMode {
             .collect()
     }
 }
+
+impl Modality for MixedMirrorMode {
+    fn n_cols(&self) -> usize {
+        self.iter().map(|mirror| mirror.n_cols()).sum()
+    }
+    fn fill(&self, mut iter: impl Iterator<Item = f64>) -> Vec<f64> {
+        self.iter()
+            .flat_map(|mirror| mirror.fill(iter.by_ref()))
+            .collect()
+    }
+}
+
+pub trait MirrorModality: Modality {}
+
+impl MirrorModality for MirrorMode {}
+impl MirrorModality for MixedMirrorMode {}

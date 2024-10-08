@@ -30,6 +30,10 @@ impl<M: Modality + Display> CalibProps<M> for ClosedLoopCalib<M> {
         self.m1_closed_loop_to_sensor.pseudoinverse()
     }
 
+    fn truncated_pseudoinverse(&self, n: usize) -> CalibPinv<f64, M> {
+        self.m1_closed_loop_to_sensor.truncated_pseudoinverse(n)
+    }
+
     fn area(&self) -> usize {
         self.m1_closed_loop_to_sensor.area()
     }
@@ -39,8 +43,12 @@ impl<M: Modality + Display> CalibProps<M> for ClosedLoopCalib<M> {
             .match_areas(&mut other.m1_closed_loop_to_sensor);
     }
 
-    fn mask_slice(&self) -> &[bool] {
-        self.m1_closed_loop_to_sensor.mask_slice()
+    fn mask_as_slice(&self) -> &[bool] {
+        self.m1_closed_loop_to_sensor.mask_as_slice()
+    }
+
+    fn mask_as_mut_slice(&mut self) -> &mut [bool] {
+        self.m1_closed_loop_to_sensor.mask_as_mut_slice()
     }
 
     fn mask(&self, data: &[f64]) -> Vec<f64> {
@@ -77,33 +85,44 @@ impl<M: Modality + Display> CalibProps<M> for ClosedLoopCalib<M> {
     fn norm_l2(&mut self) -> f64 {
         self.m1_closed_loop_to_sensor.norm_l2()
     }
+
+    fn as_slice(&self) -> &[f64] {
+        self.m1_closed_loop_to_sensor.as_slice()
+    }
+
+    fn mode_as_mut(&mut self) -> &mut M {
+        self.m1_closed_loop_to_sensor.mode_as_mut()
+    }
+
+    fn as_mut_slice(&mut self) -> &mut [f64] {
+        self.m1_closed_loop_to_sensor.as_mut_slice()
+    }
+
+    fn as_mut(&mut self) -> &mut Vec<f64> {
+        &mut self.m1_closed_loop_to_sensor.c
+    }
 }
 
 impl<M: Modality + Display> Display for ClosedLoopCalib<M> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "\nClosed-loop calibration matrix:")?;
-        write!(
-            f,
-            " * M1 -> closed-loop sensor: {:}",
-            self.m1_to_closed_loop_sensor
-        )?;
-        write!(
-            f,
-            " * M2 -> closed-loop sensor: {:}",
-            self.m2_to_closed_loop_sensor
-        )?;
-        writeln!(f, " * M1 -> M2: {:?}", self.m1_to_m2.shape())?;
-        if let Some(m1_to_sensor) = &self.m1_to_sensor {
-            write!(f, " * M1 -> sensor: {:}", m1_to_sensor)?;
-        }
-        if let Some(m2_to_sensor) = &self.m2_to_sensor {
-            write!(f, " * M2 -> sensor: {:}", m2_to_sensor)?;
-        }
-        writeln!(
-            f,
-            " * M1 closed-loop -> sensor: {:}",
-            self.m1_closed_loop_to_sensor
-        )?;
-        Ok(())
+        // writeln!(f, "\nClosed-loop calibration matrix:")?;
+        // write!(
+        //     f,
+        //     " * M1 -> closed-loop sensor: {:}",
+        //     self.m1_to_closed_loop_sensor
+        // )?;
+        // write!(
+        //     f,
+        //     " * M2 -> closed-loop sensor: {:}",
+        //     self.m2_to_closed_loop_sensor
+        // )?;
+        // writeln!(f, " * M1 -> M2: {:?}", self.m1_to_m2.shape())?;
+        // if let Some(m1_to_sensor) = &self.m1_to_sensor {
+        //     write!(f, " * M1 -> sensor: {:}", m1_to_sensor)?;
+        // }
+        // if let Some(m2_to_sensor) = &self.m2_to_sensor {
+        //     write!(f, " * M2 -> sensor: {:}", m2_to_sensor)?;
+        // }
+        self.m1_closed_loop_to_sensor.fmt(f)
     }
 }

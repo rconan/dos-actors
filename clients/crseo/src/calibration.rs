@@ -44,9 +44,9 @@ mod dispersed_fringe_sensor;
 mod mode;
 mod wave_sensor;
 
-pub use algebra::{Calib, ClosedLoopCalib, Reconstructor};
+pub use algebra::{Calib, ClosedLoopCalib, ClosedLoopReconstructor, Reconstructor};
 pub use closed_loop::ClosedLoopCalibrate;
-pub use mode::{CalibrationMode, MirrorMode, Modality};
+pub use mode::{CalibrationMode, MirrorMode, MixedMirrorMode, Modality};
 
 #[derive(Debug, thiserror::Error)]
 pub enum CalibrationError {

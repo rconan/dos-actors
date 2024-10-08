@@ -131,7 +131,7 @@ mod tests {
     use skyangle::Conversion;
 
     use crate::{
-        calibration::{CalibProps, ClosedLoopCalibrate},
+        calibration::{algebra::CalibProps, ClosedLoopCalibrate, ClosedLoopReconstructor},
         sensors::{Camera, NoSensor},
         DeviceInitialize, OpticalModel,
     };
@@ -290,9 +290,9 @@ mod tests {
 
         let closed_loop_optical_model = OpticalModel::<WaveSensor>::builder().gmt(gmt.clone());
         let mut calib = <Centroids as ClosedLoopCalibrate<WaveSensor>>::calibrate(
-            optical_model.clone().into(),
+            &(&optical_model).into(),
             CalibrationMode::modes(m1_n_mode, 1e-4),
-            closed_loop_optical_model,
+            &closed_loop_optical_model,
             CalibrationMode::modes(m2_n_mode, 1e-6).start_from(2),
         )?;
         calib.pseudoinverse();
@@ -344,9 +344,9 @@ mod tests {
         sh48_centroids.update();
         let m1_bm_e = <Centroids as Write<SensorData>>::write(&mut sh48_centroids)
             .map(|data| {
-                <Reconstructor<ClosedLoopCalib> as Read<SensorData>>::read(&mut calib, data);
+                <ClosedLoopReconstructor as Read<SensorData>>::read(&mut calib, data);
                 calib.update();
-                <Reconstructor<ClosedLoopCalib> as Write<M1ModeShapes>>::write(&mut calib)
+                <ClosedLoopReconstructor as Write<M1ModeShapes>>::write(&mut calib)
             })
             .flatten()
             .unwrap()

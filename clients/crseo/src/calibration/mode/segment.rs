@@ -260,11 +260,45 @@ impl CalibrationMode {
             // &Self::Mirror(_) => todo!(),
         }
     }
+    /// Merge two [CalibrationMode]s
+    ///
+    /// `other` will overwrite `self` when it is not [None]
+    pub fn merge<'a>(
+        &'a mut self,
+        other: Self,
+        c: &'a mut Vec<Vec<f64>>,
+        mut co: impl Iterator<Item = Vec<f64>>,
+    ) {
+        let mut idx = 0;
+        match (self, other) {
+            (CalibrationMode::RBM(left), CalibrationMode::RBM(right)) => {
+                for (l, r) in left.iter_mut().zip(right.into_iter()) {
+                    match (l.is_some(), r.is_some()) {
+                        (true, true) => {
+                            *l = r;
+                            c[idx] = co.next().unwrap();
+                            idx += 1;
+                        }
+                        (true, false) => {
+                            idx += 1;
+                        }
+                        (false, true) => {
+                            *l = r;
+                            c.insert(idx, co.next().unwrap());
+                        }
+                        (false, false) => (),
+                    }
+                }
+            }
+            _ => unimplemented!("only merging of RBMs is implemented"),
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::calibration::algebra::Modality;
+
+    use crate::calibration::Modality;
 
     use super::*;
 
@@ -314,43 +348,5 @@ mod tests {
         let data = vec![4., 5., 6.];
         let filled = mode.fill(data.into_iter());
         assert_eq!(filled, [0., 0., 4., 5., 6., 0.]);
-    }
-
-    #[test]
-    fn rbm_mirror() {
-        let mode = CalibrationMode::mirror(Some([
-            Some(CalibrationMode::t_z(1.).into()),
-            None,
-            None,
-            None,
-            Some(CalibrationMode::t_z(1.).into()),
-            None,
-            Some(CalibrationMode::t_z(0.).into()),
-        ]));
-        let data = vec![1., 5.];
-        let filled = mode.fill(data.into_iter());
-        assert_eq!(
-            filled,
-            [0., 0., 1., 0., 0., 0., 0., 0., 5., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
-        );
-    }
-
-    #[test]
-    fn modes_mirror() {
-        let mode = CalibrationMode::mirror(Some([
-            Some(CalibrationMode::modes(3, 1.).into()),
-            None,
-            Some(CalibrationMode::modes(3, 0.).into()),
-            None,
-            Some(CalibrationMode::modes(3, 1.).into()),
-            None,
-            Some(CalibrationMode::modes(3, 0.).into()),
-        ]));
-        let data = vec![1., 2., 3., 4., 5., 6.];
-        let filled = mode.fill(data.into_iter());
-        assert_eq!(
-            filled,
-            [1.0, 2.0, 3.0, 0.0, 0.0, 0.0, 4.0, 5.0, 6.0, 0.0, 0.0, 0.0,]
-        );
     }
 }

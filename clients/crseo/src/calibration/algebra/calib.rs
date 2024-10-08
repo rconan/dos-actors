@@ -1,4 +1,7 @@
-use crate::calibration::mode::Modality;
+use crate::calibration::{
+    mode::{MixedMirrorMode, Modality},
+    MirrorMode,
+};
 
 use super::{Block, CalibPinv, CalibProps, CalibrationMode};
 use faer::{mat::from_column_major_slice, Mat, MatRef};
@@ -39,6 +42,7 @@ where
 {
     pub(crate) sid: u8,
     pub(crate) n_mode: usize,
+    // column wise values
     pub(crate) c: Vec<f64>,
     pub(crate) mask: Vec<bool>,
     pub(crate) mode: M,
@@ -94,6 +98,30 @@ where
         let cond = s[0] / s[s.nrows() - 1];
         CalibPinv {
             mat: svd.pseudoinverse(),
+            cond,
+            mode: self.mode.clone(),
+        }
+    }
+    /// Returns the trucated pseudo-inverse of the calibration matrix
+    ///
+    /// The inverse of the last `n` eigen values are set to zero
+    fn truncated_pseudoinverse(&self, n: usize) -> CalibPinv<f64, M> {
+        let svd = self.mat_ref().svd();
+        let s = svd.s_diagonal();
+        let n_s = s.nrows();
+        let u = svd.u().subcols(0, n_s);
+        let v = svd.v();
+        let i_s: Vec<_> = s
+            .iter()
+            .take(n_s - n)
+            .map(|x| x.recip())
+            .chain(vec![0.; n])
+            .collect();
+        let i_s_diag = from_column_major_slice::<f64>(&i_s, n_s, 1).column_vector_as_diagonal();
+        let mat = v * i_s_diag * u.transpose();
+        let cond = s[0] / s[n_s - n - 1];
+        CalibPinv {
+            mat,
             cond,
             mode: self.mode.clone(),
         }
@@ -169,8 +197,11 @@ where
         self.mask = mask.clone();
         other.mask = mask;
     }
-    fn mask_slice(&self) -> &[bool] {
+    fn mask_as_slice(&self) -> &[bool] {
         &self.mask
+    }
+    fn mask_as_mut_slice(&mut self) -> &mut [bool] {
+        &mut self.mask
     }
     /// Applies the mask to the input data
     ///
@@ -196,7 +227,7 @@ where
         // assert_eq!(data.len(), self.mask_slice().iter().filter(|&&x| x).count());
         data.iter()
             .cycle()
-            .zip(self.mask_slice().iter())
+            .zip(self.mask_as_slice().iter())
             .filter_map(|(x, b)| if *b { Some(*x) } else { None })
             .collect()
     }
@@ -241,7 +272,12 @@ where
     /// ```
     #[inline]
     fn n_rows(&self) -> usize {
-        self.c.len() / self.n_cols()
+        let n_cols = self.n_cols();
+        if n_cols > 0 {
+            self.c.len() / n_cols
+        } else {
+            0
+        }
     }
     /// Returns a reference to the calibration matrix
     /// Return the number of rows
@@ -308,6 +344,22 @@ where
     fn norm_l2(&mut self) -> f64 {
         self.mat_ref().norm_l2()
     }
+    /// Return a slice of [Calib] column wise
+    fn as_slice(&self) -> &[f64] {
+        self.c.as_slice()
+    }
+
+    fn mode_as_mut(&mut self) -> &mut M {
+        &mut self.mode
+    }
+
+    fn as_mut_slice(&mut self) -> &mut [f64] {
+        self.c.as_mut_slice()
+    }
+
+    fn as_mut(&mut self) -> &mut Vec<f64> {
+        &mut self.c
+    }
 }
 
 impl<M> Calib<M>
@@ -335,12 +387,12 @@ where
     }
 }
 
-impl<M> Block for Calib<M>
+impl Block for Calib<MirrorMode>
 where
-    M: Modality + Default,
-    Calib<M>: CalibProps<M> + Display,
+    Calib<MirrorMode>: CalibProps<MirrorMode> + Display,
 {
-    fn block(array: &[&[&Self]]) -> Self
+    type Output = Calib<MixedMirrorMode>;
+    fn block(array: &[&[&Self]]) -> Self::Output
     where
         Self: Sized,
     {
@@ -378,10 +430,11 @@ where
         let mut ni: usize = 0;
         let mut mj: usize;
         let mut mask = vec![];
+        let mut mode = vec![];
         for row in array.iter() {
             mj = 0;
 
-            let mut row_mask: Vec<bool> = row[0].mask_slice().to_vec();
+            let mut row_mask: Vec<bool> = row[0].mask_as_slice().to_vec();
             for calib in row.iter() {
                 // row_mask.extend(calib.mask_slice());
 
@@ -393,10 +446,11 @@ where
                 mj += elem.ncols();
                 row_mask
                     .iter_mut()
-                    .zip(calib.mask_slice().into_iter())
+                    .zip(calib.mask_as_slice().into_iter())
                     .for_each(|(m, r)| {
                         *m &= r;
                     });
+                mode.push(calib.mode());
             }
             // mask.iter_mut()
             //     .zip(row_mask.into_iter())
@@ -414,7 +468,95 @@ where
                 .flat_map(|x| x.iter().cloned().collect::<Vec<_>>())
                 .collect(),
             mask,
-            mode: Default::default(),
+            mode: MixedMirrorMode::from(mode),
+            runtime: Default::default(),
+            n_cols: Some(n_cols),
+        }
+    }
+}
+
+impl Block for Calib<MixedMirrorMode>
+where
+    Calib<MixedMirrorMode>: CalibProps<MixedMirrorMode> + Display,
+{
+    type Output = Calib<MixedMirrorMode>;
+    fn block(array: &[&[&Self]]) -> Self::Output
+    where
+        Self: Sized,
+    {
+        let mut rows_n_cols: Vec<_> = array
+            .iter()
+            .map(|&row| row.iter().map(|r| r.n_cols()).sum::<usize>())
+            .collect();
+        rows_n_cols.dedup();
+        let n_cols = if rows_n_cols.len() > 1 {
+            panic!(
+                "All rows must have the same number of columns: {:?}",
+                rows_n_cols
+            );
+        } else {
+            rows_n_cols.pop().unwrap()
+        };
+
+        let n_rows = array
+            .iter()
+            .map(|row| {
+                let mut row_n_rows: Vec<_> = row.iter().map(|r| r.n_rows()).collect();
+                row_n_rows.dedup();
+                if row_n_rows.len() > 1 {
+                    panic!(
+                        "All calibrations in the same row must have the same number of rows: {:?}",
+                        row_n_rows
+                    );
+                } else {
+                    row_n_rows.pop().unwrap()
+                }
+            })
+            .sum::<usize>();
+
+        let mut mat = Mat::<f64>::zeros(n_rows, n_cols);
+        let mut ni: usize = 0;
+        let mut mj: usize;
+        let mut mask = vec![];
+        let mut mode = MixedMirrorMode::default();
+        for row in array.iter() {
+            mj = 0;
+
+            let mut row_mask: Vec<bool> = row[0].mask_as_slice().to_vec();
+            for calib in row.iter() {
+                // row_mask.extend(calib.mask_slice());
+
+                let elem = calib.mat_ref();
+                let mut dst = mat
+                    .as_mut()
+                    .submatrix_mut(ni, mj, elem.nrows(), elem.ncols());
+                dst.copy_from(elem);
+                mj += elem.ncols();
+                row_mask
+                    .iter_mut()
+                    .zip(calib.mask_as_slice().into_iter())
+                    .for_each(|(m, r)| {
+                        *m &= r;
+                    });
+                mode = calib.mode();
+            }
+            // mask.iter_mut()
+            //     .zip(row_mask.into_iter())
+            //     .for_each(|(m, r)| {
+            //         *m &= r;
+            //     });
+            mask.extend(row_mask);
+            ni += row[0].mat_ref().nrows();
+        }
+        Calib {
+            sid: 0,
+            n_mode: n_cols,
+            c: mat
+                .col_iter()
+                .flat_map(|x| x.iter().cloned().collect::<Vec<_>>())
+                .collect(),
+            mask,
+            mode,
             runtime: Default::default(),
             n_cols: Some(n_cols),
         }
@@ -476,12 +618,14 @@ impl SubAssign<Mat<f64>> for &mut Calib {
 
 #[cfg(test)]
 mod tests {
+    use crate::calibration::algebra::Merge;
+
     use super::*;
 
     #[test]
     fn block_ab() {
         // Create some sample Calib instances
-        let calib1 = Calib::builder()
+        let calib1: Calib = Calib::builder()
             .c(vec![1.0, 2.0, 3.0, 4.0, 9.0, 0.0])
             .n_mode(2)
             .n_cols(3)
@@ -504,7 +648,7 @@ mod tests {
     #[test]
     fn block() {
         // Create some sample Calib instances
-        let calib1 = Calib::builder()
+        let calib1: Calib = Calib::builder()
             .c(vec![1.0, 2.0, 3.0, 4.0, 9.0, 0.0])
             .n_mode(2)
             .n_cols(2)
@@ -531,11 +675,100 @@ mod tests {
         let block_calib = Calib::block(&[&[&calib1], &[&calib2]]);
         println!("{block_calib}");
         println!("{:?}", block_calib.mat_ref());
-        println!("{:?}", block_calib.mask_slice());
+        println!("{:?}", block_calib.mask_as_slice());
 
         let block_calib = Calib::block(&[&[&calib2, &calib3]]);
         println!("{block_calib}");
         println!("{:?}", block_calib.mat_ref());
-        println!("{:?}", block_calib.mask_slice());
+        println!("{:?}", block_calib.mask_as_slice());
+    }
+
+    #[test]
+    fn merge() {
+        let mut calib1: Calib = Calib::builder()
+            .c(vec![1.; 8])
+            .n_mode(6)
+            .mask(vec![true, true])
+            .mode(CalibrationMode::t_xy(1e-6))
+            .build();
+        println!("{calib1}");
+        let calib2: Calib = Calib::builder()
+            .c(vec![2.; 8])
+            .n_mode(6)
+            .mask(vec![true, true])
+            .mode(CalibrationMode::r_xy(1e-6))
+            .build();
+        println!("{calib2}");
+
+        calib1.merge(calib2);
+        println!("{calib1}");
+        println!("{:?}", calib1.mat_ref());
+    }
+
+    #[test]
+    fn merge_overwrite() {
+        let mut calib1: Calib = Calib::builder()
+            .c(vec![1.; 8])
+            .n_mode(6)
+            .mask(vec![true, true])
+            .mode(CalibrationMode::t_xy(1e-6))
+            .build();
+        println!("{calib1}");
+        let calib2: Calib = Calib::builder()
+            .c(vec![2.; 8])
+            .n_mode(6)
+            .mask(vec![true, true])
+            .mode(CalibrationMode::t_xy(1e-6))
+            .build();
+        println!("{calib2}");
+
+        calib1.merge(calib2);
+        println!("{calib1}");
+        println!("{:?}", calib1.mat_ref());
+    }
+
+    #[test]
+    fn merge_mixed() {
+        let mut calib1: Calib = Calib::builder()
+            .c(vec![1.; 8])
+            .n_mode(6)
+            .mask(vec![true, true])
+            .mode(CalibrationMode::t_xy(1e-6))
+            .build();
+        println!("{calib1}");
+        let calib2: Calib = Calib::builder()
+            .c(vec![2.; 4])
+            .n_mode(6)
+            .mask(vec![true, true])
+            .mode(CalibrationMode::t_z(1e-6))
+            .build();
+        println!("{calib2}");
+
+        calib1.merge(calib2);
+        println!("{calib1}");
+        println!("{:?}", calib1.mat_ref());
+
+        let mut calib3: Calib = Calib::builder()
+            .c(vec![3.; 8])
+            .n_mode(6)
+            .mask(vec![true, true])
+            .mode(CalibrationMode::r_xy(1e-6))
+            .build();
+        println!("{calib3}");
+        let calib4: Calib = Calib::builder()
+            .c(vec![4.; 4])
+            .n_mode(6)
+            .mask(vec![true, true])
+            .mode(CalibrationMode::t_z(1e-6))
+            .build();
+        println!("{calib4}");
+
+        calib3.merge(calib4);
+        println!("{calib3}");
+        println!("{:?}", calib3.mat_ref());
+
+        calib1.merge(calib3);
+        println!("{calib1}");
+        println!("{:?}", calib1.mat_ref());
     }
 }

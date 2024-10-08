@@ -8,9 +8,9 @@ use std::{
     sync::Arc,
 };
 
-use crate::calibration::mode::{MirrorMode, Modality};
+use crate::calibration::mode::{MirrorMode, MixedMirrorMode, Modality};
 
-use super::{Block, Calib, CalibPinv, CalibProps, CalibrationMode, ClosedLoopCalib};
+use super::{Block, Calib, CalibPinv, CalibProps, CalibrationMode, ClosedLoopCalib, Merge};
 
 /// Reconstructor from calibration matrices
 ///
@@ -57,6 +57,18 @@ where
     /// Computes the pseudo-inverse of the calibration matrices
     pub fn pseudoinverse(&mut self) -> &mut Self {
         self.pinv = self.calib.iter().map(|c| Some(c.pseudoinverse())).collect();
+        self
+    }
+    /// Returns the trucated pseudo-inverse of the calibration matrices
+    ///
+    /// The inverse of the last `n` eigen values are set to zero
+    pub fn truncated_pseudoinverse(&mut self, n: Vec<usize>) -> &mut Self {
+        self.pinv = self
+            .calib
+            .iter()
+            .zip(n.into_iter())
+            .map(|(c, n)| Some(c.truncated_pseudoinverse(n)))
+            .collect();
         self
     }
     /// Returns the total number of non-zero inputs
@@ -106,12 +118,12 @@ where
     }
     /// Returns the calibration matrices cross-talk vector
     pub fn cross_talks(&self) -> Vec<usize> {
-        let n = self.calib[0].mask_slice().len();
+        let n = self.calib[0].mask_as_slice().len();
         (0..n)
             .map(|i| {
                 self.calib
                     .iter()
-                    .fold(0usize, |m, c| m + if c.mask_slice()[i] { 1 } else { 0 })
+                    .fold(0usize, |m, c| m + if c.mask_as_slice()[i] { 1 } else { 0 })
             })
             .collect()
     }
@@ -174,7 +186,6 @@ impl Collapse for Reconstructor<CalibrationMode, ClosedLoopCalib> {
         let Calib {
             n_mode,
             mask,
-            mode,
             runtime,
             ..
         } = self.calib[0].m1_closed_loop_to_sensor.clone();
@@ -182,7 +193,7 @@ impl Collapse for Reconstructor<CalibrationMode, ClosedLoopCalib> {
             sid: 0,
             n_mode,
             mask,
-            n_cols: Some(mode.calibration_n_mode() * 6),
+            n_cols: Some(self.calib.iter().map(|calib| calib.n_cols()).sum()),
             mode: self
                 .calib
                 .iter()
@@ -232,7 +243,7 @@ impl<C: CalibProps<CalibrationMode>> Reconstructor<CalibrationMode, C> {
             dst.copy_from(mat);
 
             n_mode += calib.n_mode();
-            mask.extend(calib.mask_slice());
+            mask.extend(calib.mask_as_slice());
             *mode = Some(calib.mode());
 
             ni += mat.nrows();
@@ -253,9 +264,50 @@ impl<C: CalibProps<CalibrationMode>> Reconstructor<CalibrationMode, C> {
         Reconstructor::new(vec![calib])
     }
 }
+impl<C: CalibProps<CalibrationMode> + Merge> Reconstructor<CalibrationMode, C> {
+    /// Merge two [Reconstructor]s
+    ///
+    /// `other` overwrite `self`, when the mode of `other` is not [None]
+    pub fn merge<T: CalibProps<CalibrationMode>>(
+        &mut self,
+        other: Reconstructor<CalibrationMode, T>,
+    ) -> &mut Self {
+        self.calib.iter_mut().zip(other.calib).for_each(|(c, oc)| {
+            c.merge(oc);
+        });
+        self
+    }
+}
 
-impl<M: Modality + Default, C: CalibProps<M> + Block + Default> Block for Reconstructor<M, C> {
-    fn block(array: &[&[&Self]]) -> Self
+impl<C> Block for Reconstructor<MirrorMode, C>
+where
+    C: CalibProps<MirrorMode> + Block<Output = Calib<MixedMirrorMode>> + Default,
+{
+    type Output = Reconstructor<MixedMirrorMode, Calib<MixedMirrorMode>>;
+    fn block(array: &[&[&Self]]) -> Self::Output
+    where
+        Self: Sized,
+    {
+        let calib_array: Vec<Vec<&C>> = array
+            .iter()
+            .map(|row| {
+                row.iter()
+                    .flat_map(|r| r.calib_slice().iter().collect::<Vec<_>>())
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        let calib_array: Vec<&[&C]> = calib_array.iter().map(|c| c.as_slice()).collect();
+        let calib = <C as Block>::block(&calib_array);
+        Reconstructor::new(vec![calib])
+    }
+}
+
+impl<C> Block for Reconstructor<MixedMirrorMode, C>
+where
+    C: CalibProps<MixedMirrorMode> + Block<Output = Calib<MixedMirrorMode>> + Default,
+{
+    type Output = Reconstructor<MixedMirrorMode, Calib<MixedMirrorMode>>;
+    fn block(array: &[&[&Self]]) -> Self::Output
     where
         Self: Sized,
     {

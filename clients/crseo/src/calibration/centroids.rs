@@ -261,7 +261,9 @@ mod tests {
     use interface::{Read, Update, Write};
     use skyangle::Conversion;
 
-    use crate::{calibration::CalibProps, sensors::Camera, DeviceInitialize, OpticalModel};
+    use crate::{
+        calibration::algebra::CalibProps, sensors::Camera, DeviceInitialize, OpticalModel,
+    };
 
     use super::*;
 
