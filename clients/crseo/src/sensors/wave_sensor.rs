@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::OpticalModel;
 use crseo::{FromBuilder, Source};
-use gmt_dos_clients_io::optics::Wavefront;
+use gmt_dos_clients_io::optics::{SegmentPiston, Wavefront};
 use interface::{Data, Size, Update, Write};
 
 use super::{builders::WaveSensorBuilder, NoSensor, SensorPropagation};
@@ -23,11 +23,12 @@ use super::{builders::WaveSensorBuilder, NoSensor, SensorPropagation};
 ///
 /// let wave = WaveSensor::builder().build()?;
 /// # Ok::<(),Box<dyn std::error::Error>>(())
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct WaveSensor {
-    reference: Option<Box<WaveSensor>>,
-    amplitude: Vec<f64>,
-    phase: Vec<f64>,
+    pub(crate) reference: Option<Box<WaveSensor>>,
+    pub(crate) amplitude: Vec<f64>,
+    pub(crate) phase: Vec<f64>,
+    pub(crate) segment_piston: Option<Vec<f64>>,
 }
 
 impl Display for WaveSensor {
@@ -80,11 +81,13 @@ impl From<OpticalModel<NoSensor>> for WaveSensor {
             amplitude,
             phase,
             reference: None,
+            segment_piston: None,
         };
         Self {
             reference: Some(Box::new(reference)),
             amplitude: vec![0f64; n],
             phase: vec![0f64; n],
+            segment_piston: None,
         }
     }
 }
@@ -97,6 +100,16 @@ impl Write<Wavefront> for OpticalModel<WaveSensor> {
 impl Size<Wavefront> for OpticalModel<WaveSensor> {
     fn len(&self) -> usize {
         self.sensor.as_ref().unwrap().phase.len()
+    }
+}
+impl Write<SegmentPiston> for OpticalModel<WaveSensor> {
+    fn write(&mut self) -> Option<Data<SegmentPiston>> {
+        self.sensor
+            .as_ref()
+            .unwrap()
+            .segment_piston
+            .as_ref()
+            .map(|sp| sp.clone().into())
     }
 }
 
@@ -119,6 +132,15 @@ impl SensorPropagation for WaveSensor {
                     *p = 0.;
                 }
             });
+            if let Some(segment_piston) = reference.segment_piston.as_ref() {
+                self.segment_piston = Some(
+                    src.segment_piston()
+                        .into_iter()
+                        .zip(segment_piston)
+                        .map(|(x, y)| x - y)
+                        .collect(),
+                )
+            }
         }
     }
     // fn time_propagate(&mut self, _secs: f64, _src: &mut Source) {

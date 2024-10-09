@@ -46,7 +46,7 @@ pub trait Block {
     ///
     /// Creates a block matrix from a nested array such as
     /// `[[A,B];[C,D]]` becomes
-    /// ```
+    /// ```ignore
     /// | A B |
     /// | C D |
     /// ```

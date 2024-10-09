@@ -11,6 +11,8 @@ mod disperse_fringe_sensor;
 pub use disperse_fringe_sensor::DispersedFringeSensorBuilder;
 mod wave_sensor;
 pub use wave_sensor::WaveSensorBuilder;
+mod segment_piston;
+pub use segment_piston::SegmentPistonSensorBuilder;
 
 /// Common properties for all sensor builders
 pub trait SensorBuilderProperty {

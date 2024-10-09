@@ -1,5 +1,5 @@
 use faer::{Mat, MatRef};
-use interface::{Data, Read, UniqueIdentifier, Update, Write};
+use interface::{filing::Codec, Data, Read, UniqueIdentifier, Update, Write};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Display, Formatter},
@@ -26,6 +26,13 @@ where
     data: Arc<Vec<f64>>,
     estimate: Arc<Vec<f64>>,
     mode: PhantomData<M>,
+}
+
+impl<
+        M: Modality + Serialize + for<'de> Deserialize<'de>,
+        C: CalibProps<M> + Serialize + for<'de> Deserialize<'de>,
+    > Codec for Reconstructor<M, C>
+{
 }
 
 impl<M> From<Calib<M>> for Reconstructor<M, Calib<M>>

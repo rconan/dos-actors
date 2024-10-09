@@ -43,12 +43,16 @@ impl<T: SensorPropagation, const E: i32> Write<SegmentWfeRms<E>> for OpticalMode
     }
 }
 
-impl<T: SensorPropagation, const E: i32> Size<SegmentPiston<E>> for OpticalModel<T> {
+impl<T: SensorPropagation + SourceWavefront, const E: i32> Size<SegmentPiston<E>>
+    for OpticalModel<T>
+{
     fn len(&self) -> usize {
         (self.src.size as usize) * 7
     }
 }
-impl<T: SensorPropagation, const E: i32> Write<SegmentPiston<E>> for OpticalModel<T> {
+impl<T: SensorPropagation + SourceWavefront, const E: i32> Write<SegmentPiston<E>>
+    for OpticalModel<T>
+{
     fn write(&mut self) -> Option<Data<SegmentPiston<E>>> {
         Some(
             match E {

@@ -77,7 +77,7 @@ where
     /// Returns a reference to the calibration matrix
     /// Return the number of rows
     /// ```
-    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// # use gmt_dos_clients_crseo::calibration::{Calib, algebra::CalibProps, CalibrationMode};
     /// # use skyangle::Conversion;
     /// #
     /// # let calib = Calib::builder()
@@ -128,7 +128,7 @@ where
     }
     /// Returns the number of non-zero elements in the inputs mask
     /// ```
-    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// # use gmt_dos_clients_crseo::calibration::{Calib, algebra::CalibProps, CalibrationMode};
     /// # use skyangle::Conversion;
     /// #
     /// # let calib = Calib::builder()
@@ -208,7 +208,7 @@ where
     /// The mask is applied element-wise to the input data, returning a new
     /// vector with only the elements for which the mask is `true`.
     /// ```
-    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// # use gmt_dos_clients_crseo::calibration::{Calib, algebra::CalibProps, CalibrationMode};
     /// # use skyangle::Conversion;
     /// #
     /// # let calib = Calib::builder()
@@ -233,7 +233,7 @@ where
     }
     /// Return the number of columns
     /// ```
-    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// # use gmt_dos_clients_crseo::calibration::{Calib, algebra::CalibProps, CalibrationMode};
     /// # use skyangle::Conversion;
     /// #
     /// # let calib = Calib::builder()
@@ -256,7 +256,7 @@ where
     }
     /// Return the number of rows
     /// ```
-    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// # use gmt_dos_clients_crseo::calibration::{Calib, algebra::CalibProps, CalibrationMode};
     /// # use skyangle::Conversion;
     /// #
     /// # let calib = Calib::builder()
@@ -282,7 +282,7 @@ where
     /// Returns a reference to the calibration matrix
     /// Return the number of rows
     /// ```
-    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// # use gmt_dos_clients_crseo::calibration::{Calib, algebra::CalibProps, CalibrationMode};
     /// # use skyangle::Conversion;
     /// #
     /// # let calib = Calib::builder()
@@ -308,7 +308,7 @@ where
     /// associated with the probed property, e.g. calibrating Rx and Ry
     /// of M1 RBMS gives `n_mode=6` and `n_cols=2`
     /// ```
-    /// # use gmt_dos_clients_crseo::calibration::{Calib, CalibrationMode};
+    /// # use gmt_dos_clients_crseo::calibration::{Calib, algebra::CalibProps, CalibrationMode};
     /// # use skyangle::Conversion;
     /// #
     /// # let calib = Calib::builder()
@@ -625,11 +625,12 @@ mod tests {
     #[test]
     fn block_ab() {
         // Create some sample Calib instances
-        let calib1: Calib = Calib::builder()
+        let calib1 = Calib::builder()
             .c(vec![1.0, 2.0, 3.0, 4.0, 9.0, 0.0])
             .n_mode(2)
             .n_cols(3)
             .mask(vec![true, true])
+            .mode(MirrorMode::default())
             .build();
         println!("{calib1}");
 
@@ -638,6 +639,7 @@ mod tests {
             .n_mode(2)
             .n_cols(2)
             .mask(vec![true, false])
+            .mode(MirrorMode::default())
             .build();
         println!("{calib2}");
 
@@ -648,11 +650,12 @@ mod tests {
     #[test]
     fn block() {
         // Create some sample Calib instances
-        let calib1: Calib = Calib::builder()
+        let calib1 = Calib::builder()
             .c(vec![1.0, 2.0, 3.0, 4.0, 9.0, 0.0])
             .n_mode(2)
             .n_cols(2)
             .mask(vec![true, true])
+            .mode(MirrorMode::default())
             .build();
         println!("{calib1}");
 
@@ -661,6 +664,7 @@ mod tests {
             .n_mode(2)
             .n_cols(2)
             .mask(vec![true, false])
+            .mode(MirrorMode::default())
             .build();
         println!("{calib2}");
 
@@ -669,6 +673,7 @@ mod tests {
             .n_mode(2)
             .n_cols(3)
             .mask(vec![true, true, true])
+            .mode(MirrorMode::default())
             .build();
         println!("{calib3}");
 

@@ -169,6 +169,6 @@ where
     S: Builder<Component = T> + SensorBuilderProperty,
 {
     fn from(builder: &OpticalModelBuilder<S>) -> Self {
-        builder.clone_with_sensor(WaveSensorBuilder(builder.clone_with_sensor(NoSensor)))
+        builder.clone_with_sensor(WaveSensorBuilder::from(builder.clone_with_sensor(NoSensor)))
     }
 }

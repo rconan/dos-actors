@@ -9,7 +9,7 @@ use crate::{
         Reconstructor,
     },
     centroiding::CentroidKind,
-    sensors::WaveSensor,
+    sensors::{SegmentPistonSensor, WaveSensor},
     Centroids, OpticalModelBuilder,
 };
 
@@ -25,6 +25,10 @@ impl LinearModel for WaveSensor {
 
 impl<K: CentroidKind> LinearModel for Centroids<K> {
     type Sensor = Imaging;
+}
+
+impl LinearModel for SegmentPistonSensor {
+    type Sensor = SegmentPistonSensor;
 }
 
 impl<L: LinearModel, W: FromBuilder, const SID: u8> ClosedLoopCalibrateSegment<W, SID> for L
