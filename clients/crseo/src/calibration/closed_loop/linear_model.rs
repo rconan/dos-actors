@@ -8,9 +8,9 @@ use crate::{
         algebra::ClosedLoopCalib, CalibrateAssembly, CalibrateSegment, CalibrationMode,
         Reconstructor,
     },
-    centroiding::CentroidKind,
+    centroiding::{CentroidKind, CentroidsProcessing},
     sensors::{SegmentPistonSensor, WaveSensor},
-    Centroids, OpticalModelBuilder,
+    OpticalModelBuilder,
 };
 
 use super::{ClosedLoopCalibrate, ClosedLoopCalibrateSegment};
@@ -23,7 +23,7 @@ impl LinearModel for WaveSensor {
     type Sensor = WaveSensor;
 }
 
-impl<K: CentroidKind> LinearModel for Centroids<K> {
+impl<K: CentroidKind> LinearModel for CentroidsProcessing<K> {
     type Sensor = Imaging;
 }
 
@@ -198,7 +198,7 @@ mod tests {
             .n_sensor(n_gs)
             .lenslet_array(LensletArray::default().n_side_lenslet(48).n_px_lenslet(32))
             .lenslet_flux(0.75);
-        let mut sh48_centroids: Centroids = Centroids::try_from(&sh48)?;
+        let mut sh48_centroids: CentroidsProcessing = CentroidsProcessing::try_from(&sh48)?;
 
         let gmt = Gmt::builder()
             .m1("bending modes", m1_n_mode)
@@ -213,12 +213,13 @@ mod tests {
         dbg!(sh48_centroids.n_valid_lenslets());
 
         let closed_loop_optical_model = OpticalModel::<WaveSensor>::builder().gmt(gmt.clone());
-        let calib = <Centroids as ClosedLoopCalibrateSegment<WaveSensor, SID>>::calibrate(
-            optical_model.clone().into(),
-            CalibrationMode::modes(m1_n_mode, 1e-4),
-            closed_loop_optical_model,
-            CalibrationMode::modes(m2_n_mode, 1e-6).start_from(2),
-        )?;
+        let calib =
+            <CentroidsProcessing as ClosedLoopCalibrateSegment<WaveSensor, SID>>::calibrate(
+                optical_model.clone().into(),
+                CalibrationMode::modes(m1_n_mode, 1e-4),
+                closed_loop_optical_model,
+                CalibrationMode::modes(m2_n_mode, 1e-6).start_from(2),
+            )?;
         println!("{calib}");
         let calib_pinv = calib.pseudoinverse();
         dbg!(calib_pinv.cond());
@@ -252,9 +253,9 @@ mod tests {
         sh48_om.update();
 
         <OpticalModel<Camera<1>> as Write<Frame<Dev>>>::write(&mut sh48_om)
-            .map(|data| <Centroids as Read<Frame<Dev>>>::read(&mut sh48_centroids, data));
+            .map(|data| <CentroidsProcessing as Read<Frame<Dev>>>::read(&mut sh48_centroids, data));
         sh48_centroids.update();
-        let y = <Centroids as Write<SensorData>>::write(&mut sh48_centroids)
+        let y = <CentroidsProcessing as Write<SensorData>>::write(&mut sh48_centroids)
             .map(|data| calib.mask(&data))
             .unwrap();
         dbg!(y.len());
@@ -278,7 +279,7 @@ mod tests {
             .n_sensor(n_gs)
             .lenslet_array(LensletArray::default().n_side_lenslet(48).n_px_lenslet(32))
             .lenslet_flux(0.75);
-        let mut sh48_centroids: Centroids = Centroids::try_from(&sh48)?;
+        let mut sh48_centroids: CentroidsProcessing = CentroidsProcessing::try_from(&sh48)?;
 
         let gmt = Gmt::builder()
             .m1("bending modes", m1_n_mode)
@@ -293,7 +294,7 @@ mod tests {
         dbg!(sh48_centroids.n_valid_lenslets());
 
         let closed_loop_optical_model = OpticalModel::<WaveSensor>::builder().gmt(gmt.clone());
-        let mut calib = <Centroids as ClosedLoopCalibrate<WaveSensor>>::calibrate(
+        let mut calib = <CentroidsProcessing as ClosedLoopCalibrate<WaveSensor>>::calibrate(
             &(&optical_model).into(),
             CalibrationMode::modes(m1_n_mode, 1e-4),
             &closed_loop_optical_model,
@@ -344,9 +345,9 @@ mod tests {
         sh48_om.update();
 
         <OpticalModel<Camera<1>> as Write<Frame<Dev>>>::write(&mut sh48_om)
-            .map(|data| <Centroids as Read<Frame<Dev>>>::read(&mut sh48_centroids, data));
+            .map(|data| <CentroidsProcessing as Read<Frame<Dev>>>::read(&mut sh48_centroids, data));
         sh48_centroids.update();
-        let m1_bm_e = <Centroids as Write<SensorData>>::write(&mut sh48_centroids)
+        let m1_bm_e = <CentroidsProcessing as Write<SensorData>>::write(&mut sh48_centroids)
             .map(|data| {
                 <ClosedLoopReconstructor as Read<SensorData>>::read(&mut calib, data);
                 calib.update();

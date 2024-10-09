@@ -7,9 +7,6 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-mod processing;
-pub use processing::DispersedFringeSensorProcessing;
-
 use super::{builders::DispersedFringeSensorBuilder, SensorPropagation};
 
 /// GMT AGWS dispersed fringe sensor model

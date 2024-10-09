@@ -38,12 +38,9 @@ use interface::{Read, UniqueIdentifier, Update, Write};
 use std::{fmt::Debug, sync::Arc, thread};
 
 pub mod algebra;
-mod centroids;
 mod closed_loop;
-mod dispersed_fringe_sensor;
-mod mode;
-mod segment_piston;
-mod wave_sensor;
+pub mod mode;
+mod processing;
 
 pub use algebra::{Calib, ClosedLoopCalib, ClosedLoopReconstructor, Reconstructor};
 pub use closed_loop::ClosedLoopCalibrate;

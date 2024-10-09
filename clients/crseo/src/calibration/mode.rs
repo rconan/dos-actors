@@ -1,3 +1,7 @@
+//! # Calibration mode
+//!
+//! The mode of M1 or M2 that are calibrated.
+
 mod segment;
 
 pub use segment::CalibrationMode;
@@ -6,6 +10,7 @@ pub use mirror::MirrorMode;
 mod mixed;
 pub use mixed::MixedMirrorMode;
 
+/// Modes common interface
 pub trait Modality: std::fmt::Debug + Clone {
     fn n_cols(&self) -> usize;
     fn fill(&self, iter: impl Iterator<Item = f64>) -> Vec<f64>;
@@ -132,7 +137,7 @@ impl Modality for MixedMirrorMode {
     }
 }
 
-pub trait MirrorModality: Modality {}
+/* pub trait MirrorModality: Modality {}
 
 impl MirrorModality for MirrorMode {}
-impl MirrorModality for MixedMirrorMode {}
+impl MirrorModality for MixedMirrorMode {} */

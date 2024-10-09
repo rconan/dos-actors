@@ -10,11 +10,18 @@ use std::{
 
 use crate::calibration::mode::{MirrorMode, MixedMirrorMode, Modality};
 
-use super::{Block, Calib, CalibPinv, CalibProps, CalibrationMode, ClosedLoopCalib, Merge};
+use super::{
+    Block, Calib, CalibPinv, CalibProps, CalibrationMode, ClosedLoopReconstructor, Collapse, Merge,
+    MirrorReconstructor,
+};
 
 /// Reconstructor from calibration matrices
 ///
-/// A reconstructor is a collection of segment wise calibration matrices.
+/// A reconstructor is a collection of one of several  calibration matrices.
+/// The 1st generic parameter `M` indicates if the matrix correspond to a single segment ([CalibrationMode])
+/// or to a full mirror ([MirrorMode](super::MirrorMode),[MixedMirrorMode](crate::calibration::MixedMirrorMode)).
+/// The 2nd generic parameter `C` specifies the type of the calibration matrix either [Calib] or [ClosedLoopCalib](crate::calibration::ClosedLoopCalib).
+
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Reconstructor<M = CalibrationMode, C = Calib<M>>
 where
@@ -154,24 +161,8 @@ impl<M: Modality + Default, C: CalibProps<M> + Default + Display> Display for Re
     }
 }
 
-pub trait Collapse {
-    /// Collapses the calibration matrices into a single matrix
-    ///
-    /// The matrices are concatenated column wise.
-    fn collapse(self) -> Reconstructor<MirrorMode, Calib<MirrorMode>>;
-}
-
 impl Collapse for Reconstructor {
-    fn collapse(self) -> Reconstructor<MirrorMode, Calib<MirrorMode>> {
-        // let Calib {
-        //     sid,
-        //     n_mode,
-        //     c,
-        //     mask,
-        //     mode,
-        //     runtime,
-        //     n_cols,
-        // } = self;
+    fn collapse(self) -> MirrorReconstructor {
         let calib = Calib {
             sid: 0,
             n_mode: self.calib[0].n_mode,
@@ -188,8 +179,8 @@ impl Collapse for Reconstructor {
     }
 }
 
-impl Collapse for Reconstructor<CalibrationMode, ClosedLoopCalib> {
-    fn collapse(self) -> Reconstructor<MirrorMode, Calib<MirrorMode>> {
+impl Collapse for ClosedLoopReconstructor {
+    fn collapse(self) -> MirrorReconstructor {
         let Calib {
             n_mode,
             mask,
@@ -231,7 +222,7 @@ impl<C: CalibProps<CalibrationMode>> Reconstructor<CalibrationMode, C> {
     /// Collapses the calibration matrices into a single block-diagonal matrix
     ///
     /// The matrices are concatenated along the main diagonal.
-    pub fn diagonal(&self) -> Reconstructor<MirrorMode, Calib<MirrorMode>> {
+    pub fn diagonal(&self) -> MirrorReconstructor {
         let n_rows: usize = self.calib.iter().map(|c| c.n_rows()).sum();
         let n_cols: usize = self.calib.iter().map(|c| c.n_cols()).sum();
 

@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use super::MirrorMode;
 
+/// A set of [MirrorMode]s
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MixedMirrorMode(Vec<MirrorMode>);
 impl Deref for MixedMirrorMode {

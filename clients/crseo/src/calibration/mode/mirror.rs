@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use super::CalibrationMode;
 
+/// A full set of [segment mode](CalibrationMode)
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MirrorMode([Option<CalibrationMode>; 7]);
 impl Deref for MirrorMode {
@@ -23,7 +24,9 @@ impl DerefMut for MirrorMode {
 }
 
 impl MirrorMode {
-    /// Create a calibration mode for a GMT [mirror](CalibrationMode::Mirror)
+    /// Create a calibration mode for a GMT mirror
+    ///
+    /// A missing segment has is entry set to [None]
     pub fn new(mirror: [Option<CalibrationMode>; 7]) -> Self {
         Self(mirror)
     }

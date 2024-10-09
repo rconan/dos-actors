@@ -1,12 +1,16 @@
-use crate::{sensors::WaveSensor, OpticalModel, OpticalModelBuilder};
+use crate::{
+    calibration::{
+        Calib, Calibrate, CalibrateSegment, CalibrationMode, PushPull, SegmentSensorBuilder,
+    },
+    sensors::WaveSensor,
+    OpticalModel, OpticalModelBuilder,
+};
 use crseo::{
     gmt::{GmtBuilder, GmtMirror, GmtMirrorBuilder, GmtMx, MirrorGetSet},
     Gmt,
 };
 use interface::Update;
 use std::time::Instant;
-
-use super::{Calib, Calibrate, CalibrateSegment, CalibrationMode, PushPull, SegmentSensorBuilder};
 
 impl<const SID: u8> PushPull<SID> for WaveSensor {
     type Sensor = WaveSensor;

@@ -8,6 +8,10 @@ use crate::calibration::mode::Modality;
 use super::{Calib, CalibProps, CalibrationMode};
 
 /// Calibration matrix pseudo-inverse
+///
+/// The 1st generic parameter `T` is the type of the matrix values and the
+/// 2nd generic parameter `M` indicates if the matrix correspond to a single segment ([CalibrationMode])
+/// or to a full mirror ([MirrorMode](super::MirrorMode),[MixedMirrorMode](crate::calibration::MixedMirrorMode)).
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CalibPinv<T, M = CalibrationMode>
 where

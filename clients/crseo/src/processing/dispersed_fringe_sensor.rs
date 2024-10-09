@@ -8,7 +8,7 @@ use gmt_dos_clients_io::optics::{
 use interface::{Data, Read, Update, Write};
 use serde::{Deserialize, Serialize};
 
-use super::DispersedFringeSensor;
+use crate::sensors::DispersedFringeSensor;
 
 const O: [f32; 12] = [
     0.,
@@ -25,7 +25,8 @@ const O: [f32; 12] = [
     0.,
 ];
 
-#[derive(Debug, Clone, Serialize)]
+/// [Dispersed Fringe Sensor](DispersedFringeSensor) fftlet
+#[derive(Debug, Clone)]
 pub struct Fftlet {
     x: Vec<f32>,
     y: Vec<f32>,
@@ -33,6 +34,7 @@ pub struct Fftlet {
 }
 
 impl Fftlet {
+    /// Returns the intercept
     pub fn intercept(&self) -> Option<f64> {
         let (s, sy) = self
             .x
@@ -52,6 +54,7 @@ impl Fftlet {
     }
 }
 
+/// [Dispersed Fringe Sensor](DispersedFringeSensor) processing
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DispersedFringeSensorProcessing {
     data: Vec<Vec<f32>>,
@@ -63,6 +66,7 @@ pub struct DispersedFringeSensorProcessing {
 }
 
 impl DispersedFringeSensorProcessing {
+    /// Creates a new instance
     pub fn new() -> Self {
         Self {
             data: vec![],
@@ -76,16 +80,19 @@ impl DispersedFringeSensorProcessing {
 }
 
 impl DispersedFringeSensorProcessing {
+    /// Sets the reference intercepts
     pub fn set_reference(&mut self, dfs: &DispersedFringeSensorProcessing) -> &mut Self {
         self.reference = Some(dfs.intercept.clone());
         self
     }
+    /// Sets the frame relative theshold
     pub fn threshold(self, t: f64) -> Self {
         Self {
             threshold: Some(t as f32),
             ..self
         }
     }
+    /// Sets the radius of the imagelet mask
     pub fn mask_radius(self, r: f64) -> Self {
         Self {
             mask_radius: Some(r as f32),
@@ -114,6 +121,7 @@ impl<const C: usize, const F: usize> From<&mut crate::OpticalModel<DispersedFrin
 }
 
 impl DispersedFringeSensorProcessing {
+    /// Process a frame
     pub fn process(&mut self, frame: &imaging::Frame) -> &mut Self {
         let n = frame.resolution;
         let q = frame.n_px_camera;
@@ -143,10 +151,11 @@ impl DispersedFringeSensorProcessing {
         self.n = q;
         self
     }
+    /// Returns the flux
     pub fn flux(&self) -> Vec<f32> {
         self.data.iter().map(|data| data.iter().sum()).collect()
     }
-
+    /// Return an iterator over the FFTlet `(x,y)` coordinates
     pub fn xy(&self, o: f32) -> impl Iterator<Item = (f32, f32)> {
         let n = self.n;
 
@@ -163,6 +172,7 @@ impl DispersedFringeSensorProcessing {
             (co * x - so * y, so * x + co * y)
         })
     }
+    /// Returns an FFTlet
     pub fn fftlet(
         &self,
         angle: f32,
@@ -208,6 +218,7 @@ impl DispersedFringeSensorProcessing {
             Fftlet { x, y, image }
         }
     }
+    /// Computes the intercepts
     pub fn intercept(&mut self) -> &mut Self {
         let intercept: Option<Vec<f64>> = self
             .data
@@ -232,6 +243,7 @@ impl DispersedFringeSensorProcessing {
         }
         self
     }
+    /// Returns the FFTlets with optional radius and threshold filters
     pub fn fftlets(&self, radius: Option<f32>, threshold: Option<f32>) -> Vec<Fftlet> {
         self.data
             .iter()

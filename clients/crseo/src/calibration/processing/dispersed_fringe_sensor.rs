@@ -1,7 +1,9 @@
-use super::{Calib, Calibrate, CalibrateSegment, PushPull, SegmentSensorBuilder};
 use crate::{
-    sensors::{DispersedFringeSensor, DispersedFringeSensorProcessing},
-    DeviceInitialize,
+    calibration::{
+        Calib, Calibrate, CalibrateSegment, CalibrationMode, PushPull, SegmentSensorBuilder,
+    },
+    sensors::DispersedFringeSensor,
+    DeviceInitialize, DispersedFringeSensorProcessing,
 };
 use crseo::{
     gmt::{GmtBuilder, GmtMirror, GmtMirrorBuilder, GmtMx, MirrorGetSet},
@@ -58,7 +60,7 @@ where
 
     fn calibrate(
         builder: crate::OpticalModelBuilder<SegmentSensorBuilder<M, Self, SID>>,
-        calib_mode: super::CalibrationMode,
+        calib_mode: CalibrationMode,
     ) -> super::Result<Calib> {
         let mut dfs_processor = DispersedFringeSensorProcessing::new();
         builder.initialize(&mut dfs_processor);
@@ -69,7 +71,7 @@ where
         //     dfs_processor.set_reference(dfsp11.intercept());
         // }
         match calib_mode {
-            super::CalibrationMode::RBM(stroke) => {
+            CalibrationMode::RBM(stroke) => {
                 let mut optical_model = builder.build()?;
                 let mut tr_xyz = [0f64; 6];
                 let mut calib = vec![];
@@ -103,7 +105,7 @@ where
                     n_cols: None,
                 })
             }
-            super::CalibrationMode::Modes { n_mode, stroke, .. } => {
+            CalibrationMode::Modes { n_mode, stroke, .. } => {
                 let gmt = builder.clone().gmt.n_mode::<M>(n_mode);
                 let mut optical_model = builder.gmt(gmt).build()?;
 

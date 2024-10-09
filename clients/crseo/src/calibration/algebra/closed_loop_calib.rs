@@ -7,6 +7,9 @@ use super::{Calib, CalibPinv, CalibProps, CalibrationMode};
 use crate::calibration::{algebra::Reconstructor, mode::Modality};
 
 /// Closed-loop calibration matrix
+///
+/// The generic parameter indicates if the matrix correspond to a single segment ([CalibrationMode])
+/// or to a full mirror ([MirrorMode](crate::calibration::MirrorMode),[MixedMirrorMode](crate::calibration::MixedMirrorMode)).
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct ClosedLoopCalib<M = CalibrationMode>
 where

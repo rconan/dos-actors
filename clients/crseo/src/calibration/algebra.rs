@@ -1,16 +1,28 @@
+//! # Calibration algebraic module
+//!
+//! The module implements the components where the results from
+//! a calibration are saved.
+//! The main component is the [Reconstructor],
+//! every calibration return a [Reconstructor].
+//!
+//! A [Reconstructor] contains one or several calibration matrices stored in [Calib].
+//! Optionally, it will also have the calibration matrices pseudo-inverse in [CalibPinv].
+//!
+//! Algebraic and arithmetic operations can be performed on many components of the module.
+
 use faer::MatRef;
 
-use super::{mode::Modality, CalibrationMode};
+use super::{mode::Modality, CalibrationMode, MirrorMode};
 
-pub mod calib;
+mod calib;
 mod closed_loop_calib;
-pub mod pinv;
+mod pinv;
 mod reconstructor;
 
 pub use calib::{Calib, CalibBuilder};
 pub use closed_loop_calib::ClosedLoopCalib;
 pub use pinv::CalibPinv;
-pub use reconstructor::{Collapse, Reconstructor};
+pub use reconstructor::Reconstructor;
 
 /// Calibration matrix properties
 pub trait CalibProps<M = CalibrationMode>
@@ -40,23 +52,28 @@ where
     fn as_mut_slice(&mut self) -> &mut [f64];
     fn as_mut(&mut self) -> &mut Vec<f64>;
 }
+
+/// Matrix block-matrix
 pub trait Block {
     type Output;
-    /// Block matrix
-    ///
+
     /// Creates a block matrix from a nested array such as
-    /// `[[A,B];[C,D]]` becomes
-    /// ```ignore
-    /// | A B |
-    /// | C D |
-    /// ```
+    /// `[[A,B],[C,D]]` becomes
+    ///
+    /// |A|B |
+    /// |--|--|
+    /// |C| D|
     fn block(array: &[&[&Self]]) -> Self::Output
     where
         Self: Sized;
 }
 
+/// Segment wise closed-loop reconstructor
 pub type ClosedLoopReconstructor = Reconstructor<CalibrationMode, ClosedLoopCalib<CalibrationMode>>;
+/// Mirror reconstructor
+pub type MirrorReconstructor = Reconstructor<MirrorMode, Calib<MirrorMode>>;
 
+/// Merge two [Calib]s
 pub trait Merge {
     /// Merge two [Calib]s
     ///
@@ -83,4 +100,12 @@ impl<C: CalibProps<CalibrationMode>> Merge for C {
         *(self.as_mut()) = c.into_iter().flatten().collect::<Vec<_>>();
         self
     }
+}
+
+/// Collapses the calibration matrices into a single matrix
+pub trait Collapse {
+    /// Collapses the calibration matrices into a single matrix
+    ///
+    /// The matrices are concatenated column wise.
+    fn collapse(self) -> MirrorReconstructor;
 }

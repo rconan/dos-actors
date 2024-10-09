@@ -17,6 +17,9 @@ pub use builder::CalibBuilder;
 
 /// Calibration matrix
 ///
+/// The generic parameter indicates if the matrix correspond to a single segment ([CalibrationMode])
+/// or to a full mirror ([MirrorMode],[MixedMirrorMode]).
+///
 /// # Examples
 ///
 /// A fictitious identity calibration matrix that takes RBM Rx and Ry as inputs

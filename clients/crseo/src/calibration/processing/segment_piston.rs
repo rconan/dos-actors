@@ -1,4 +1,10 @@
-use crate::{sensors::SegmentPistonSensor, OpticalModel, OpticalModelBuilder};
+use crate::{
+    calibration::{
+        Calib, Calibrate, CalibrateSegment, CalibrationMode, PushPull, SegmentSensorBuilder,
+    },
+    sensors::SegmentPistonSensor,
+    OpticalModel, OpticalModelBuilder,
+};
 use crseo::{
     gmt::{GmtBuilder, GmtMirror, GmtMirrorBuilder, GmtMx, MirrorGetSet},
     Builder, FromBuilder, Gmt,
@@ -6,8 +12,6 @@ use crseo::{
 use gmt_dos_clients_io::optics::SegmentPiston;
 use interface::{Update, Write};
 use std::time::Instant;
-
-use super::{Calib, Calibrate, CalibrateSegment, CalibrationMode, PushPull, SegmentSensorBuilder};
 
 impl<const SID: u8> PushPull<SID> for SegmentPistonSensor {
     type Sensor = SegmentPistonSensor;

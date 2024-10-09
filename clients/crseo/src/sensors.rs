@@ -16,7 +16,7 @@ mod segment_piston;
 mod wave_sensor;
 
 pub use camera::Camera;
-pub use dispersed_fringe_sensor::{DispersedFringeSensor, DispersedFringeSensorProcessing};
+pub use dispersed_fringe_sensor::DispersedFringeSensor;
 pub use no_sensor::NoSensor;
 pub use segment_piston::SegmentPistonSensor;
 pub use wave_sensor::WaveSensor;

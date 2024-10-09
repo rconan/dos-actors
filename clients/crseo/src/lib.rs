@@ -47,16 +47,18 @@ pub use pyramid::{PyramidCalibrator, PyramidCommand, PyramidMeasurements, Pyrami
 // };
 
 pub mod calibration;
-pub mod centroiding;
 mod optical_model;
+pub mod processing;
 pub mod sensors;
 
-pub use centroiding::Centroids;
 pub use optical_model::{builder::OpticalModelBuilder, OpticalModel};
+pub use processing::{centroiding, DispersedFringeSensorProcessing};
 
 impl<T> TimerMarker for OpticalModel<T> {}
 
+/// Interface for initialization of data processing pipeline
 pub trait DeviceInitialize<D> {
+    /// Initialize a data processing pipeline `D`
     fn initialize(&self, device: &mut D);
 }
 

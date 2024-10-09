@@ -1,3 +1,5 @@
+//! # Centroids processing pipeline
+
 use crate::{
     sensors::builders::CameraBuilder, DeviceInitialize, OpticalModel, OpticalModelBuilder,
 };
@@ -16,13 +18,21 @@ pub enum CentroidsError {
 
 pub type Result<T> = std::result::Result<T, CentroidsError>;
 
+/// Full centroids
 pub struct Full;
+/// Mean centroids removed
 pub struct ZeroMean;
+/// Centroids marker
 pub trait CentroidKind {}
 impl CentroidKind for Full {}
 impl CentroidKind for ZeroMean {}
 
-pub struct Centroids<K = Full>
+/// Centroids processing
+///
+/// Compute the centroids for a Shack-Hartmann type of sensor.
+/// The generic parameter `K` allows to compute the centroids
+/// with ([ZeroMean]) or without ([Full])  mean subtraction.
+pub struct CentroidsProcessing<K = Full>
 where
     K: CentroidKind,
 {
@@ -32,10 +42,10 @@ where
     kind: PhantomData<K>,
 }
 
-unsafe impl<K: CentroidKind> Send for Centroids<K> {}
-unsafe impl<K: CentroidKind> Sync for Centroids<K> {}
+unsafe impl<K: CentroidKind> Send for CentroidsProcessing<K> {}
+unsafe impl<K: CentroidKind> Sync for CentroidsProcessing<K> {}
 
-impl<K: CentroidKind> TryFrom<&ImagingBuilder> for Centroids<K> {
+impl<K: CentroidKind> TryFrom<&ImagingBuilder> for CentroidsProcessing<K> {
     type Error = CentroidsError;
 
     fn try_from(imgr: &ImagingBuilder) -> Result<Self> {
@@ -48,7 +58,7 @@ impl<K: CentroidKind> TryFrom<&ImagingBuilder> for Centroids<K> {
     }
 }
 
-impl<K: CentroidKind, const I: usize> TryFrom<&CameraBuilder<I>> for Centroids<K> {
+impl<K: CentroidKind, const I: usize> TryFrom<&CameraBuilder<I>> for CentroidsProcessing<K> {
     type Error = CentroidsError;
 
     fn try_from(camera: &CameraBuilder<I>) -> Result<Self> {
@@ -84,10 +94,10 @@ impl<K: CentroidKind, const I: usize> TryFrom<&CameraBuilder<I>> for Centroids<K
 //     }
 // }
 
-impl<K: CentroidKind, const I: usize> DeviceInitialize<Centroids<K>>
+impl<K: CentroidKind, const I: usize> DeviceInitialize<CentroidsProcessing<K>>
     for OpticalModelBuilder<CameraBuilder<I>>
 {
-    fn initialize(&self, device: &mut Centroids<K>) {
+    fn initialize(&self, device: &mut CentroidsProcessing<K>) {
         let mut om = self.clone().build().unwrap();
         om.update();
         let imgr = om.sensor.as_mut().unwrap();
@@ -99,8 +109,10 @@ impl<K: CentroidKind, const I: usize> DeviceInitialize<Centroids<K>>
     }
 }
 
-impl<K: CentroidKind> DeviceInitialize<Centroids<K>> for OpticalModelBuilder<ImagingBuilder> {
-    fn initialize(&self, device: &mut Centroids<K>) {
+impl<K: CentroidKind> DeviceInitialize<CentroidsProcessing<K>>
+    for OpticalModelBuilder<ImagingBuilder>
+{
+    fn initialize(&self, device: &mut CentroidsProcessing<K>) {
         let mut om = self.clone().build().unwrap();
         om.update();
         let imgr = om.sensor.as_mut().unwrap();
@@ -112,7 +124,8 @@ impl<K: CentroidKind> DeviceInitialize<Centroids<K>> for OpticalModelBuilder<Ima
     }
 }
 
-impl<K: CentroidKind> Centroids<K> {
+impl<K: CentroidKind> CentroidsProcessing<K> {
+    /// Sets up centroiding for [OpticalModel]`<`[Imaging]`>`
     pub fn setup(&mut self, optical_model: &mut OpticalModel<Imaging>) {
         optical_model.update();
         let imgr = optical_model.sensor.as_mut().unwrap();
@@ -121,31 +134,34 @@ impl<K: CentroidKind> Centroids<K> {
             .valid_lenslets(Some(imgr.fluxlet_threshold), None);
         imgr.reset();
     }
+    /// Sets the valid lenslet mask
     pub fn set_valid_lenslets(&mut self, valid_mask: impl Into<Vec<i8>>) {
         self.reference.valid_lenslets(None, Some(valid_mask.into()));
     }
+    /// Returns the valid lenslet mask
     pub fn get_valid_lenslets(&self) -> &[i8] {
         &self.reference.valid_lenslets
     }
+    /// Returns the # of valid lenslets
     pub fn n_valid_lenslets(&self) -> &[usize] {
         &self.reference.n_valid_lenslet
     }
 }
 
-impl<K: CentroidKind> Update for Centroids<K> {
+impl<K: CentroidKind> Update for CentroidsProcessing<K> {
     fn update(&mut self) {
         self.centroids
             .process(self.frame.as_ref().unwrap(), Some(&self.reference));
     }
 }
 
-impl<K: CentroidKind> Read<Frame<Dev>> for Centroids<K> {
+impl<K: CentroidKind> Read<Frame<Dev>> for CentroidsProcessing<K> {
     fn read(&mut self, data: Data<Frame<Dev>>) {
         self.frame = Some(data.into_arc())
     }
 }
 
-impl<U> Write<U> for Centroids<Full>
+impl<U> Write<U> for CentroidsProcessing<Full>
 where
     U: UniqueIdentifier<DataType = Vec<f64>>,
 {
@@ -162,7 +178,7 @@ where
     }
 }
 
-impl<U> Write<U> for Centroids<ZeroMean>
+impl<U> Write<U> for CentroidsProcessing<ZeroMean>
 where
     U: UniqueIdentifier<DataType = Vec<f64>>,
 {
@@ -222,7 +238,7 @@ mod tests {
         };
 
         let cam = Camera::<1>::builder().n_sensor(n_gs);
-        let mut centroids: Centroids = Centroids::try_from(&cam)?;
+        let mut centroids: CentroidsProcessing = CentroidsProcessing::try_from(&cam)?;
 
         let mut om: OpticalModel<Camera> = OpticalModel::<Camera<1>>::builder()
             .source(
@@ -236,7 +252,7 @@ mod tests {
         println!("{om}");
 
         <OpticalModel<Camera<1>> as Write<Frame<Dev>>>::write(&mut om).map(|data| {
-            <Centroids as Read<Frame<Dev>>>::read(&mut centroids, data);
+            <CentroidsProcessing as Read<Frame<Dev>>>::read(&mut centroids, data);
             centroids.update();
             dbg!(centroids.centroids.lenslet_array_flux())
         });

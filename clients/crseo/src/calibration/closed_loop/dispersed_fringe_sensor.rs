@@ -17,8 +17,8 @@ use interface::{Read, Update, Write};
 
 use crate::{
     calibration::{CalibrateAssembly, CalibrateSegment, ClosedLoopCalib, Reconstructor},
-    sensors::{DispersedFringeSensor, DispersedFringeSensorProcessing},
-    DeviceInitialize, OpticalModel, OpticalModelBuilder,
+    sensors::DispersedFringeSensor,
+    DeviceInitialize, DispersedFringeSensorProcessing, OpticalModel, OpticalModelBuilder,
 };
 
 use super::{
