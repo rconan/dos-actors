@@ -56,8 +56,8 @@ impl SharedClient {
     }
     /// Creates a sampler client from [gmt_dos-clients_arrow](https://docs.rs/gmt_dos-clients_arrow)
     pub fn logger(model_name: &Ident, input_rate: usize, size: Option<Expr>) -> Self {
-        let name = format_ident!("logging_{}", input_rate);
-        let actor = format_ident!("data_{}", input_rate);
+        let name = format_ident!("{}_logging_{}", model_name, input_rate);
+        let actor = format_ident!("{}_data_{}", model_name, input_rate);
         Self(Rc::new(RefCell::new(Client {
             name,
             actor,

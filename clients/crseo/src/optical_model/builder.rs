@@ -1,178 +1,174 @@
-use crseo::{Builder, GmtBuilder, PSSnEstimates, SourceBuilder, WavefrontSensorBuilder};
-use gmt_dos_clients::interface::Size;
-use gmt_dos_clients_domeseeing::DomeSeeing;
-use gmt_dos_clients_io::domeseeing::DomeSeeingOpd;
+use super::{OpticalModel, OpticalModelError};
+use crate::sensors::{
+    builders::{SensorBuilderProperty, WaveSensorBuilder},
+    NoSensor,
+};
+use crseo::{atmosphere::AtmosphereBuilder, gmt::GmtBuilder, source::SourceBuilder, Builder};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    OpticalModel, OpticalModelOptions, PSSnOptions, Result, SensorBuilder, ShackHartmannOptions,
-};
-
-use super::SensorFn;
-
-/// GmtBuilder optical model builder
-#[derive(Debug, Serialize, Deserialize)]
-pub struct OpticalModelBuilder {
-    gmt: GmtBuilder,
-    src: SourceBuilder,
-    options: Option<Vec<OpticalModelOptions>>,
-    #[serde(skip)]
-    sensor_fn: SensorFn,
-}
-impl Default for OpticalModelBuilder {
-    fn default() -> Self {
-        Self {
-            gmt: GmtBuilder::default(),
-            src: SourceBuilder::default(),
-            options: None,
-            sensor_fn: SensorFn::None,
-        }
-    }
+/// GMT optical model builder
+///
+/// # Examples:
+///
+/// Build a optical model with the default values for [GmtBuilder](crseo::gmt::GmtBuilder)
+/// and for [SourceBuilder](crseo::source::SourceBuilder) and without sensor
+///
+/// ```
+/// use gmt_dos_clients_crseo::{OpticalModel, sensors::NoSensor};
+///
+/// let om = OpticalModel::<NoSensor>::builder().build()?;
+/// # Ok::<(),Box<dyn std::error::Error>>(())
+/// ```
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct OpticalModelBuilder<S = NoSensor> {
+    pub(crate) gmt: GmtBuilder,
+    pub(crate) src: SourceBuilder,
+    pub(crate) atm_builder: Option<AtmosphereBuilder>,
+    pub(crate) sensor: Option<S>,
+    pub(crate) sampling_frequency: Option<f64>,
 }
 
-impl OpticalModelBuilder {
-    /// Creates a new GmtBuilder optical model
+impl<T, S> OpticalModelBuilder<S>
+where
+    S: Builder<Component = T>,
+{
+    /// Sets the GMT builder
     ///
-    /// Creates a default builder based on the default parameters for [GmtBuilder] and [SourceBuilder]
-    pub fn new() -> Self {
-        Default::default()
+    /// ```
+    /// use gmt_dos_clients_crseo::{OpticalModel, sensors::NoSensor};
+    /// use crseo::{Gmt, FromBuilder};
+    ///
+    /// let om = OpticalModel::<NoSensor>::builder().gmt(Gmt::builder().m1_n_mode(21)).build()?;
+    /// # Ok::<(),Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn gmt(mut self, builder: GmtBuilder) -> Self {
+        self.gmt = builder;
+        self
     }
-    /// Sets the GmtBuilder builder
-    pub fn gmt(self, gmt: GmtBuilder) -> Self {
-        Self { gmt, ..self }
+    ///  Sets the source builder
+    ///
+    /// ```
+    /// use gmt_dos_clients_crseo::{OpticalModel, sensors::NoSensor};
+    /// use crseo::{Source, FromBuilder};
+    ///
+    /// let om = OpticalModel::<NoSensor>::builder().source(Source::builder().band("K")).build()?;
+    /// # Ok::<(),Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn source(mut self, builder: SourceBuilder) -> Self {
+        self.src = builder;
+        self
     }
-    /// Sets the `Source` builder
-    pub fn source(self, src: SourceBuilder) -> Self {
-        Self { src, ..self }
-    }
-    /// Sets [OpticalModel] [options](OpticalModelOptions)
-    pub fn options(self, options: Vec<OpticalModelOptions>) -> Self {
+    ///  Sets the atmosphere builder
+    ///
+    /// ```
+    /// use gmt_dos_clients_crseo::{OpticalModel, sensors::NoSensor};
+    /// use crseo::{Atmosphere, FromBuilder};
+    ///
+    /// let om = OpticalModel::<NoSensor>::builder()
+    ///     .sampling_frequency(1_000_f64) // 1kHz
+    ///     .atmosphere(Atmosphere::builder()).build()?;
+    /// # Ok::<(),Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn atmosphere(self, atm_builder: AtmosphereBuilder) -> Self {
         Self {
-            options: Some(options),
+            atm_builder: Some(atm_builder),
             ..self
         }
     }
-    /// Sets the sensor data transform operator
-    pub fn sensor_fn<T: Into<SensorFn>>(mut self, operator: T) -> Self {
-        self.sensor_fn = operator.into();
+    /// Sets the optical sensor
+    ///
+    /// ```
+    /// use gmt_dos_clients_crseo::{OpticalModel, sensors::WaveSensor};
+    /// use crseo::FromBuilder;
+    ///
+    /// let om = OpticalModel::<WaveSensor>::builder().sensor(WaveSensor::builder());
+    /// # Ok::<(),Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn sensor(mut self, builder: S) -> Self {
+        self.sensor = Some(builder);
         self
     }
-    /// Builds a new GmtBuilder optical model
+    /// Sets the sampling frequency in Hz
     ///
-    /// If there is `Some` sensor, it is initialized.
-
-    pub fn build(self) -> Result<OpticalModel> {
-        let gmt = self.gmt.clone().build()?;
-        let src = self.src.clone().build()?;
-        let mut optical_model = OpticalModel {
+    /// ```
+    /// use gmt_dos_clients_crseo::{OpticalModel, sensors::NoSensor};
+    /// use crseo::{Atmosphere, FromBuilder};
+    ///
+    /// let om = OpticalModel::<NoSensor>::builder()
+    ///     .sampling_frequency(1_000_f64) // 1kHz
+    ///     .atmosphere(Atmosphere::builder()).build()?;
+    /// # Ok::<(),Box<dyn std::error::Error>>(())
+    pub fn sampling_frequency(self, sampling_frequency: f64) -> Self {
+        Self {
+            sampling_frequency: Some(sampling_frequency),
+            ..self
+        }
+    }
+    /// Clones the builder with a new [sensor](crate::sensors) builder
+    /// ```
+    /// use gmt_dos_clients_crseo::{OpticalModel, sensors::{NoSensor, Camera}};
+    /// use crseo::FromBuilder;
+    ///
+    /// let omb = OpticalModel::<NoSensor>::builder();
+    /// let om_cam: OpticalModel<Camera> = omb.clone_with_sensor(Camera::builder()).build()?;
+    /// let om = omb.build()?;
+    /// # Ok::<(),Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn clone_with_sensor<W>(&self, sensor: W) -> OpticalModelBuilder<W> {
+        let Self {
             gmt,
             src,
-            sensor: None,
-            segment_wise_sensor: None,
-            atm: None,
-            dome_seeing: None,
-            static_aberration: None,
-            pssn: None,
-            sensor_fn: self.sensor_fn,
-            frame: None,
-            tau: 0f64,
-        };
-        if let Some(options) = self.options {
-            options.into_iter().for_each(|option| match option {
-                OpticalModelOptions::PSSn(PSSnOptions::Telescope(pssn_builder)) => {
-                    optical_model.pssn = pssn_builder
-                        .source(self.src.clone())
-                        .build()
-                        .ok()
-                        .map(|x| Box::new(x) as Box<dyn PSSnEstimates>);
-                }
-                OpticalModelOptions::PSSn(PSSnOptions::AtmosphereTelescope(pssn_builder)) => {
-                    optical_model.pssn = pssn_builder
-                        .source(self.src.clone())
-                        .build()
-                        .ok()
-                        .map(|x| Box::new(x) as Box<dyn PSSnEstimates>);
-                }
-                OpticalModelOptions::Atmosphere { builder, time_step } => {
-                    optical_model.atm = builder.build().ok();
-                    optical_model.tau = time_step;
-                }
-                OpticalModelOptions::ShackHartmann {
-                    options,
-                    flux_threshold,
-                } => match options {
-                    ShackHartmannOptions::Diffractive(sensor_builder) => {
-                        optical_model.src = sensor_builder
-                            .guide_stars(Some(self.src.clone()))
-                            .build()
-                            .unwrap();
-                        optical_model.sensor = SensorBuilder::build(
-                            sensor_builder,
-                            self.gmt.clone(),
-                            self.src.clone(),
-                            flux_threshold,
-                        )
-                        .ok();
+            atm_builder,
+            sampling_frequency,
+            ..
+        } = self;
+        OpticalModelBuilder {
+            gmt: gmt.clone(),
+            src: src.clone(),
+            atm_builder: atm_builder.clone(),
+            sensor: Some(sensor),
+            sampling_frequency: sampling_frequency.clone(),
+        }
+    }
+}
+
+impl<T, S> OpticalModelBuilder<S>
+where
+    S: Builder<Component = T> + SensorBuilderProperty,
+{
+    pub fn build(self) -> Result<OpticalModel<T>, OpticalModelError> {
+        Ok(OpticalModel {
+            gmt: self.gmt.build()?,
+            src: if let &Some(n) = &self
+                .sensor
+                .as_ref()
+                .and_then(|sensor| sensor.pupil_sampling())
+            {
+                self.src.pupil_sampling(n).build()?
+            } else {
+                self.src.build()?
+            },
+            atm: match self.atm_builder {
+                Some(atm) => {
+                    if self.sampling_frequency.is_some() {
+                        Some(atm.build()?)
+                    } else {
+                        return Err(OpticalModelError::AtmosphereWithoutSamplingFrequency);
                     }
-                    ShackHartmannOptions::Geometric(sensor_builder) => {
-                        optical_model.src = sensor_builder
-                            .guide_stars(Some(self.src.clone()))
-                            .build()
-                            .unwrap();
-                        optical_model.sensor = SensorBuilder::build(
-                            sensor_builder,
-                            self.gmt.clone(),
-                            self.src.clone(),
-                            flux_threshold,
-                        )
-                        .ok();
-                    }
-                },
-                OpticalModelOptions::DomeSeeing {
-                    cfd_case,
-                    upsampling_rate,
-                } => {
-                    optical_model.dome_seeing =
-                        DomeSeeing::new(cfd_case, upsampling_rate, None).ok();
                 }
-                OpticalModelOptions::StaticAberration(phase) => {
-                    optical_model.static_aberration = Some(phase.into());
-                }
-                OpticalModelOptions::SegmentWiseSensor(sensor_builder) => {
-                    optical_model.src = sensor_builder
-                        .guide_stars(Some(self.src.clone()))
-                        .build()
-                        .unwrap();
-                    optical_model.segment_wise_sensor = SensorBuilder::build(
-                        sensor_builder,
-                        self.gmt.clone(),
-                        self.src.clone(),
-                        0f64,
-                    )
-                    .map(|mut sensor| {
-                        (*sensor).reset();
-                        sensor
-                    })
-                    .ok();
-                }
-            });
-        }
-        if let Some(dome_seeing) = optical_model.dome_seeing.as_ref() {
-            let n_ds = <DomeSeeing as Size<DomeSeeingOpd>>::len(dome_seeing);
-            let n_src = optical_model.src.pupil_sampling.pow(2) as usize;
-            assert_eq!(
-                n_ds, n_src,
-                "the sizes of dome seeing and source wavefront do not match, {n_ds} versus {n_src}"
-            );
-        }
-        if let Some(static_aberration) = optical_model.static_aberration.as_ref() {
-            let n_sa = static_aberration.size();
-            let n_src = optical_model.src.pupil_sampling.pow(2) as usize;
-            assert_eq!(
-                n_sa, n_src,
-                "the sizes of static aberration and source wavefront do not match, {n_sa} versus {n_src}"
-            );
-        }
-        Ok(optical_model)
+                None => None,
+            },
+            sensor: self.sensor.map(|sensor| sensor.build()).transpose()?,
+            tau: self.sampling_frequency.map_or_else(|| 0f64, |x| x.recip()),
+        })
+    }
+}
+
+impl<T, S> From<&OpticalModelBuilder<S>> for OpticalModelBuilder<WaveSensorBuilder>
+where
+    S: Builder<Component = T> + SensorBuilderProperty,
+{
+    fn from(builder: &OpticalModelBuilder<S>) -> Self {
+        builder.clone_with_sensor(WaveSensorBuilder::from(builder.clone_with_sensor(NoSensor)))
     }
 }

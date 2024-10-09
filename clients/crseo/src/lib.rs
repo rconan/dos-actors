@@ -1,17 +1,13 @@
 /*!
-#  CEO Optical Model
+#  GMT Optical Model
 
-This module is a high-level interface to [crseo] and [crseo] is a Rust wrapper around CEO.
-CEO is a CUDA-based optical propagation model for the GMT.
+A [gmt_dos-actors] client for optical propagation through the GMT based on [crseo].
 
-Follow the instructions [here](https://github.com/rconan/crseo) to install and to setup CEO.
+The GMT optical model is represented with the [OpticalModel] and it is configured with [OpticalModelBuilder].
 
-A default optical model consists in the GMT and an on-axis source
-```no_run
-use gmt_dos_clients_crseo::OpticalModel;
-use crseo::wavefrontsensor::PhaseSensor;
-let optical_model = OpticalModel::<PhaseSensor>::builder().build().expect("Failed to build CEO optical model");
-```
+
+
+[gmt_dos-actors]: https://docs.rs/gmt_dos-actors
  */
 
 /* pub(crate) mod optical_model;
@@ -26,17 +22,16 @@ pub use sensor::SensorBuilder;
 
 use std::ops::{Deref, DerefMut};
 
-pub use crseo::{self, CrseoError};
-use interface::{Data, Read, UniqueIdentifier, Update, Write};
+use interface::{Data, TimerMarker, UniqueIdentifier, Update, Write};
 
 mod error;
 pub use error::{CeoError, Result};
 
-mod ngao;
-pub use ngao::{
-    DetectorFrame, GuideStar, OpticalModel, OpticalModelBuilder, ResidualM2modes,
-    ResidualPistonMode, WavefrontSensor,
-};
+pub mod ngao;
+// pub use ngao::{DetectorFrame, GuideStar, ResidualM2modes, ResidualPistonMode, WavefrontSensor};
+//     , , OpticalModel, OpticalModelBuilder, ,
+//     , WavefrontSensor,
+// };
 
 mod wavefront_stats;
 pub use wavefront_stats::WavefrontStats;
@@ -44,8 +39,28 @@ pub use wavefront_stats::WavefrontStats;
 mod pyramid;
 pub use pyramid::{PyramidCalibrator, PyramidCommand, PyramidMeasurements, PyramidProcessor};
 
-mod calibration;
-pub use calibration::{Calibrating, CalibratingError, Calibration};
+// mod ltao;
+// pub use ltao::{
+//     Calibrate, CalibrateSegment, CalibrationMode, Centroids, DispersedFringeSensor,
+//     DispersedFringeSensorBuidler, DispersedFringeSensorProcessing, NoSensor, OpticalModel,
+//     OpticalModelBuilder, Reconstructor, WaveSensor, WaveSensorBuilder,
+// };
+
+pub mod calibration;
+mod optical_model;
+pub mod processing;
+pub mod sensors;
+
+pub use optical_model::{builder::OpticalModelBuilder, OpticalModel};
+pub use processing::{centroiding, DispersedFringeSensorProcessing};
+
+impl<T> TimerMarker for OpticalModel<T> {}
+
+/// Interface for initialization of data processing pipeline
+pub trait DeviceInitialize<D> {
+    /// Initialize a data processing pipeline `D`
+    fn initialize(&self, device: &mut D);
+}
 
 pub trait Processing {
     type ProcessorData;
@@ -80,12 +95,6 @@ impl<P: Processing + Send + Sync> Update for Processor<P> {
     // fn update(&mut self) {
     //     self.processing();
     // }
-}
-
-impl Read<DetectorFrame> for Processor<PyramidProcessor> {
-    fn read(&mut self, data: Data<DetectorFrame>) {
-        self.frame = data.as_arc();
-    }
 }
 
 impl<P, T> Write<T> for Processor<P>

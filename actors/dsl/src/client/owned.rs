@@ -156,8 +156,8 @@ impl Expand for Client {
                     #name.set_label(format!("{}\n{}:{}",#sampler_type,#i,#o));
                 }
             }
-            ClientKind::Logger(model_name, _) => {
-                let filename = LitStr::new(&format!("{model_name}-{actor}"), Span::call_site());
+            ClientKind::Logger(_model_name, _) => {
+                let filename = LitStr::new(&format!("{actor}"), Span::call_site());
                 let buffer_size = LitInt::new(&format!("{LOG_BUFFER_SIZE}"), Span::call_site());
                 quote! {
                     let mut #name = ::gmt_dos_actors::client::Client::from(

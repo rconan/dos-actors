@@ -13,7 +13,7 @@ use crate::{
 
 mod arrow;
 mod builder;
-mod get;
+// mod get;
 mod iter;
 pub use builder::ArrowBuilder;
 

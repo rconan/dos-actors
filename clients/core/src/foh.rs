@@ -14,7 +14,6 @@ use interface::{Data, Read, UniqueIdentifier, Update, Write};
 #[derive(Default, Debug)]
 pub struct FirstOrderHold<T, const NI: usize, const NO: usize> {
     samples: (Option<Arc<Vec<T>>>, Option<Arc<Vec<T>>>),
-    n: usize,
     step: usize,
 }
 impl<T, const NI: usize, const NO: usize> FirstOrderHold<T, NI, NO>
@@ -33,13 +32,12 @@ where
     ///
     /// Panics if `NI` is less than `NO`
     #[must_use]
-    pub fn new(n: usize) -> Self {
+    pub fn new() -> Self {
         if NI < NO {
             panic!("NI={NI} must be greater than or equal to NO={NO}");
         }
         Self {
             samples: (None, None),
-            n,
             ..Default::default()
         }
     }

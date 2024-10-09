@@ -4,7 +4,8 @@ use std::{
 };
 
 use crseo::{
-    wavefrontsensor::{LensletArray, Pyramid, PyramidBuilder},
+    imaging::LensletArray,
+    wavefrontsensor::{Pyramid, PyramidBuilder},
     Builder,
 };
 use interface::UniqueIdentifier;

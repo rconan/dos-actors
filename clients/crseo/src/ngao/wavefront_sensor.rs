@@ -1,26 +1,24 @@
 use std::{
-    cell::RefCell,
     marker::PhantomData,
-    rc::Rc,
     sync::{Arc, Mutex},
 };
 
-use crseo::{Frame, Propagation, SegmentWiseSensor, Source};
-use interface::{Data, Read, UniqueIdentifier, Update, Write, UID};
+use crseo::{Frame, Propagation, Source};
+use interface::{Data, Read, UniqueIdentifier, Update};
 
 pub enum GuideStar {}
 impl UniqueIdentifier for GuideStar {
     type DataType = Arc<Mutex<Source>>;
 }
 
-#[derive(UID)]
-pub enum PistonMode {}
+// #[derive(UID)]
+// pub enum PistonMode {}
 
-#[derive(UID)]
-#[uid(data = Vec<f32>)]
-pub enum SensorData {}
+// #[derive(UID)]
+// #[uid(data = Vec<f32>)]
+// pub enum SensorData {}
 
-pub struct WavefrontSensor<T, const NO: usize = 1> {
+/* pub struct WavefrontSensor<T, const NO: usize = 1> {
     sensor: T,
     pub src: Rc<RefCell<Source>>,
     // calib: Calibration,
@@ -54,7 +52,7 @@ impl<T: SegmentWiseSensor, const NO: usize> Read<GuideStar> for WavefrontSensor<
         self.n += 1;
         self.sensor.propagate(src);
     }
-}
+} */
 
 /// Detector frame actor data type
 pub struct DetectorFrame<T = f32>(PhantomData<T>);
@@ -63,16 +61,16 @@ impl<T: Send + Sync> UniqueIdentifier for DetectorFrame<T> {
     type DataType = Frame<T>;
 }
 
-impl<S: SegmentWiseSensor, const NO: usize> Write<DetectorFrame<f32>> for WavefrontSensor<S, NO>
-where
-    DetectorFrame<f32>: UniqueIdentifier<DataType = Frame<f32>>,
-{
-    fn write(&mut self) -> Option<Data<DetectorFrame<f32>>> {
-        let frame = SegmentWiseSensor::frame(&self.sensor);
-        self.sensor.reset();
-        Some(Data::new(frame))
-    }
-}
+// impl<S: SegmentWiseSensor, const NO: usize> Write<DetectorFrame<f32>> for WavefrontSensor<S, NO>
+// where
+//     DetectorFrame<f32>: UniqueIdentifier<DataType = Frame<f32>>,
+// {
+//     fn write(&mut self) -> Option<Data<DetectorFrame<f32>>> {
+//         let frame = SegmentWiseSensor::frame(&self.sensor);
+//         self.sensor.reset();
+//         Some(Data::new(frame))
+//     }
+// }
 
 /* impl<T, U, const NO: usize> Write<U> for WavefrontSensor<T, NO>
 where

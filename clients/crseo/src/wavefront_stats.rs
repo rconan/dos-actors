@@ -1,4 +1,4 @@
-use crate::GuideStar;
+use crate::ngao::GuideStar;
 use gmt_dos_clients_io::optics::{
     SegmentD7Piston, SegmentDWfe, SegmentPiston, SegmentWfe, SegmentWfeRms, WfeRms,
 };
