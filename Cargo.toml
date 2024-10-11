@@ -74,5 +74,3 @@ proc-macro2 = "1.0"
 [profile.release]
 lto = "thin"
 
-[patch.crates-io]
-crseo = { path = "/home/rconan/projects/crseo" }

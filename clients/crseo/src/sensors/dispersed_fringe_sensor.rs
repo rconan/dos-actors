@@ -1,13 +1,13 @@
+use super::{builders::DispersedFringeSensorBuilder, SensorPropagation};
 use crate::OpticalModel;
 use crseo::{FromBuilder, SegmentPistonSensor};
 use gmt_dos_clients_io::optics::{dispersed_fringe_sensor::DfsFftFrame, Dev, Frame, Host};
 use interface::{Data, Size, Write};
+use skyangle::Conversion;
 use std::{
     fmt::Display,
     ops::{Deref, DerefMut},
 };
-
-use super::{builders::DispersedFringeSensorBuilder, SensorPropagation};
 
 /// GMT AGWS dispersed fringe sensor model
 ///
@@ -134,7 +134,14 @@ impl<const C: usize, const F: usize> Display for OpticalModel<DispersedFringeSen
         if let Some(atm) = &self.atm {
             atm.fmt(f)?;
         }
-        self.sensor.as_ref().unwrap().fmt(f)?;
+        let sensor = self.sensor.as_ref().unwrap();
+        sensor.fmt(f)?;
+        writeln!(
+            f,
+            r#"Pixel scale: {:.0}mas, Field-of-view: {:.3}""#,
+            sensor.0.pixel_scale().to_mas(),
+            sensor.0.field_of_view().to_arcsec()
+        )?;
         writeln!(f, "DFS camera reset @{C} & FFT reset @{F} in sample #")?;
         writeln!(f, "-----------------")?;
         Ok(())
