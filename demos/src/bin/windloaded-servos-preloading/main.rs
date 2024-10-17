@@ -162,7 +162,12 @@ async fn main() -> anyhow::Result<()> {
 
     }
 
-    let wfe_rms: Vec<f64> = logging_8.lock().await.iter("WfeRms")?.flatten().collect();
+    let wfe_rms: Vec<f64> = model_logging_8
+        .lock()
+        .await
+        .iter("WfeRms")?
+        .flatten()
+        .collect();
     let n = wfe_rms.len() as f64;
 
     let preload_err = (wfe_rms

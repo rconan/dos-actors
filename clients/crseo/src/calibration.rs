@@ -32,6 +32,7 @@ use crate::{
     centroiding::CentroidsError, optical_model::OpticalModelError, OpticalModel,
     OpticalModelBuilder,
 };
+use algebra::CalibProps;
 use crseo::{gmt::GmtMx, CrseoError, FromBuilder, Propagation};
 use gmt_dos_clients_io::gmt_m1::segment::{BendingModes, RBM};
 use interface::{Read, UniqueIdentifier, Update, Write};
@@ -39,6 +40,7 @@ use std::{fmt::Debug, sync::Arc, thread};
 
 pub mod algebra;
 mod closed_loop;
+pub mod estimation;
 pub mod mode;
 mod processing;
 
@@ -172,37 +174,86 @@ where
         let ci: Result<Vec<_>> = thread::scope(|s| {
             let c1 = mode_iter.next().unwrap().map(|calib_mode| {
                 s.spawn(move || {
-                    <Self as CalibrateSegment<M, 1>>::calibrate(optical_model.clone(), calib_mode)
+                    if calib_mode.is_empty() {
+                        Ok(Calib::empty(1, calib_mode.n_mode(), calib_mode))
+                    } else {
+                        <Self as CalibrateSegment<M, 1>>::calibrate(
+                            optical_model.clone(),
+                            calib_mode,
+                        )
+                    }
                 })
             });
             let c2 = mode_iter.next().unwrap().map(|calib_mode| {
                 s.spawn(move || {
-                    <Self as CalibrateSegment<M, 2>>::calibrate(optical_model.clone(), calib_mode)
+                    if calib_mode.is_empty() {
+                        Ok(Calib::empty(2, calib_mode.n_mode(), calib_mode))
+                    } else {
+                        <Self as CalibrateSegment<M, 2>>::calibrate(
+                            optical_model.clone(),
+                            calib_mode,
+                        )
+                    }
                 })
             });
             let c3 = mode_iter.next().unwrap().map(|calib_mode| {
                 s.spawn(move || {
-                    <Self as CalibrateSegment<M, 3>>::calibrate(optical_model.clone(), calib_mode)
+                    if calib_mode.is_empty() {
+                        Ok(Calib::empty(3, calib_mode.n_mode(), calib_mode))
+                    } else {
+                        <Self as CalibrateSegment<M, 3>>::calibrate(
+                            optical_model.clone(),
+                            calib_mode,
+                        )
+                    }
                 })
             });
             let c4 = mode_iter.next().unwrap().map(|calib_mode| {
                 s.spawn(move || {
-                    <Self as CalibrateSegment<M, 4>>::calibrate(optical_model.clone(), calib_mode)
+                    if calib_mode.is_empty() {
+                        Ok(Calib::empty(4, calib_mode.n_mode(), calib_mode))
+                    } else {
+                        <Self as CalibrateSegment<M, 4>>::calibrate(
+                            optical_model.clone(),
+                            calib_mode,
+                        )
+                    }
                 })
             });
             let c5 = mode_iter.next().unwrap().map(|calib_mode| {
                 s.spawn(move || {
-                    <Self as CalibrateSegment<M, 5>>::calibrate(optical_model.clone(), calib_mode)
+                    if calib_mode.is_empty() {
+                        Ok(Calib::empty(5, calib_mode.n_mode(), calib_mode))
+                    } else {
+                        <Self as CalibrateSegment<M, 5>>::calibrate(
+                            optical_model.clone(),
+                            calib_mode,
+                        )
+                    }
                 })
             });
             let c6 = mode_iter.next().unwrap().map(|calib_mode| {
                 s.spawn(move || {
-                    <Self as CalibrateSegment<M, 6>>::calibrate(optical_model.clone(), calib_mode)
+                    if calib_mode.is_empty() {
+                        Ok(Calib::empty(6, calib_mode.n_mode(), calib_mode))
+                    } else {
+                        <Self as CalibrateSegment<M, 6>>::calibrate(
+                            optical_model.clone(),
+                            calib_mode,
+                        )
+                    }
                 })
             });
             let c7 = mode_iter.next().unwrap().map(|calib_mode| {
                 s.spawn(move || {
-                    <Self as CalibrateSegment<M, 7>>::calibrate(optical_model.clone(), calib_mode)
+                    if calib_mode.is_empty() {
+                        Ok(Calib::empty(7, calib_mode.n_mode(), calib_mode))
+                    } else {
+                        <Self as CalibrateSegment<M, 7>>::calibrate(
+                            optical_model.clone(),
+                            calib_mode,
+                        )
+                    }
                 })
             }); // let mut ci = vec![];
                 // for c in [c1, c2, c3, c4, c5, c6, c7] {
@@ -234,25 +285,53 @@ where
     {
         let mut mode_iter = Into::<MirrorMode>::into(mirror_mode).into_iter();
         let c1 = mode_iter.next().unwrap().map(|calib_mode| {
-            <Self as CalibrateSegment<M, 1>>::calibrate(optical_model.clone(), calib_mode)
+            if calib_mode.is_empty() {
+                Ok(Calib::empty(1, calib_mode.n_mode(), calib_mode))
+            } else {
+                <Self as CalibrateSegment<M, 1>>::calibrate(optical_model.clone(), calib_mode)
+            }
         });
         let c2 = mode_iter.next().unwrap().map(|calib_mode| {
-            <Self as CalibrateSegment<M, 2>>::calibrate(optical_model.clone(), calib_mode)
+            if calib_mode.is_empty() {
+                Ok(Calib::empty(2, calib_mode.n_mode(), calib_mode))
+            } else {
+                <Self as CalibrateSegment<M, 2>>::calibrate(optical_model.clone(), calib_mode)
+            }
         });
         let c3 = mode_iter.next().unwrap().map(|calib_mode| {
-            <Self as CalibrateSegment<M, 3>>::calibrate(optical_model.clone(), calib_mode)
+            if calib_mode.is_empty() {
+                Ok(Calib::empty(3, calib_mode.n_mode(), calib_mode))
+            } else {
+                <Self as CalibrateSegment<M, 3>>::calibrate(optical_model.clone(), calib_mode)
+            }
         });
         let c4 = mode_iter.next().unwrap().map(|calib_mode| {
-            <Self as CalibrateSegment<M, 4>>::calibrate(optical_model.clone(), calib_mode)
+            if calib_mode.is_empty() {
+                Ok(Calib::empty(4, calib_mode.n_mode(), calib_mode))
+            } else {
+                <Self as CalibrateSegment<M, 4>>::calibrate(optical_model.clone(), calib_mode)
+            }
         });
         let c5 = mode_iter.next().unwrap().map(|calib_mode| {
-            <Self as CalibrateSegment<M, 5>>::calibrate(optical_model.clone(), calib_mode)
+            if calib_mode.is_empty() {
+                Ok(Calib::empty(5, calib_mode.n_mode(), calib_mode))
+            } else {
+                <Self as CalibrateSegment<M, 5>>::calibrate(optical_model.clone(), calib_mode)
+            }
         });
         let c6 = mode_iter.next().unwrap().map(|calib_mode| {
-            <Self as CalibrateSegment<M, 6>>::calibrate(optical_model.clone(), calib_mode)
+            if calib_mode.is_empty() {
+                Ok(Calib::empty(6, calib_mode.n_mode(), calib_mode))
+            } else {
+                <Self as CalibrateSegment<M, 6>>::calibrate(optical_model.clone(), calib_mode)
+            }
         });
         let c7 = mode_iter.next().unwrap().map(|calib_mode| {
-            <Self as CalibrateSegment<M, 7>>::calibrate(optical_model.clone(), calib_mode)
+            if calib_mode.is_empty() {
+                Ok(Calib::empty(7, calib_mode.n_mode(), calib_mode))
+            } else {
+                <Self as CalibrateSegment<M, 7>>::calibrate(optical_model.clone(), calib_mode)
+            }
         }); // let mut ci = vec![];
             // for c in [c1, c2, c3, c4, c5, c6, c7] {
             //     ci.push(c.join().unwrap().unwrap());

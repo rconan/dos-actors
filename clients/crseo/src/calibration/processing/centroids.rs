@@ -296,7 +296,7 @@ mod tests {
             CalibrationMode::modes(m1_n_mode, 1e-4),
         )?;
         println!("{calib}");
-        let calib_pinv = calib.pseudoinverse();
+        let calib_pinv = calib.pseudoinverse().unwrap();
         dbg!(calib_pinv.cond());
 
         // sh48_centroids.valid_lenslets(&calib);

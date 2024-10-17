@@ -106,6 +106,20 @@ impl CalibrationMode {
             (stroke.abs() > 0.).then_some(stroke),
         ])
     }
+    /// Empty [rigid body motions][CalibrationMode::RBM] calibration mode
+    ///
+    /// The associated calibration matrix won't be computed but set to empty instead
+    pub fn empty_rbm() -> Self {
+        Self::RBM([None; 6])
+    }
+    /// Checks if the [rigid body motions][CalibrationMode::RBM] calibration mode is empty
+    pub fn is_empty_rbm(&self) -> bool {
+        Self::RBM([None; 6]) == *self
+    }
+    /// Checks if the mode is empty
+    pub fn is_empty(&self) -> bool {
+        self.is_empty_rbm() || self.is_empty_modes()
+    }
     /// Sets the number of modes and the mode amplitude
     pub fn modes(n_mode: usize, stroke: f64) -> Self {
         Self::Modes {
@@ -113,6 +127,23 @@ impl CalibrationMode {
             stroke,
             start_idx: (stroke.abs() > 0.).then_some(0).unwrap_or(n_mode),
             end_id: None,
+        }
+    }
+    /// Empty [rigid body motions][CalibrationMode::Modes] calibration mode
+    ///
+    /// The associated calibration matrix won't be computed but set to empty instead
+    pub fn empty_modes(n_mode: usize) -> Self {
+        CalibrationMode::modes(n_mode, 0.)
+    }
+    /// Checks if the [modes][CalibrationMode::Modes] calibration mode is empty
+    pub fn is_empty_modes(&self) -> bool {
+        if let Self::Modes {
+            n_mode, start_idx, ..
+        } = self
+        {
+            start_idx == n_mode
+        } else {
+            false
         }
     }
     // /// Create a calibration mode for a GMT segment [mirror](CalibrationMode::Mirror)

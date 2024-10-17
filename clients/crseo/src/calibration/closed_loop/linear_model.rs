@@ -181,8 +181,12 @@ mod tests {
 
         om.update();
 
-        <OpticalModel<WaveSensor> as Write<Wavefront>>::write(&mut om)
-            .map(|data| println!("{:?}", &calib.pseudoinverse() * calib.mask(&data)));
+        <OpticalModel<WaveSensor> as Write<Wavefront>>::write(&mut om).map(|data| {
+            println!(
+                "{:?}",
+                calib.pseudoinverse().as_ref().unwrap() * calib.mask(&data)
+            )
+        });
 
         Ok(())
     }
@@ -221,7 +225,7 @@ mod tests {
                 CalibrationMode::modes(m2_n_mode, 1e-6).start_from(2),
             )?;
         println!("{calib}");
-        let calib_pinv = calib.pseudoinverse();
+        let calib_pinv = calib.pseudoinverse().unwrap();
         dbg!(calib_pinv.cond());
 
         let mut sh48_om = optical_model.build()?;

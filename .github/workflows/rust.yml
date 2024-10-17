@@ -13,16 +13,49 @@ env:
   GMT_MODES_PATH: /home/ubuntu/mnt/ceo
 
 jobs:
-  build:
-    name: Build & Tests
+  setup:
+    name: Setup
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
-    - run: cargo build --workspace --all-features --exclude tms --exclude "mechanics" --exclude "scopes" --exclude "edge-sensors" --exclude demos
-    - run: cargo build -p book-examples --examples
-    - run: cargo build --package demos --bins --features gmt_dos-clients_arrow
-    - run: cargo test --release --lib --all-features
-    - run: cargo test --doc --all-features
+
+  build-main:
+    name: Build Main Workspace
+    needs: setup
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Build workspace
+      run: cargo build --workspace --all-features --exclude tms --exclude "mechanics" --exclude "scopes" --exclude "edge-sensors" --exclude demos
+
+  build-examples:
+    name: Build Examples
+    needs: setup
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Build book examples
+      run: cargo build -p book-examples --examples
+    - name: Build demos
+      run: cargo build --package demos --bins --features gmt_dos-clients_arrow
+
+  test:
+    name: Run Tests
+    needs: [build-main, build-examples]
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Run library tests
+      run: cargo test --release --lib --all-features -- --test-threads 4
+    - name: Run doc tests
+      run: cargo test --doc --all-features
+
       
