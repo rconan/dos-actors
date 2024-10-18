@@ -5,7 +5,10 @@ use faer::ColRef;
 
 use crate::{OpticalModel, OpticalModelBuilder};
 
-use super::{Calib, CalibrationMode, ClosedLoopCalib, MirrorMode, PushPull, Reconstructor, Result};
+use super::{
+    algebra::CalibProps, Calib, CalibrationMode, ClosedLoopCalib, MirrorMode, PushPull,
+    Reconstructor, Result,
+};
 
 mod dispersed_fringe_sensor;
 mod linear_model;
@@ -100,72 +103,100 @@ where
         let mat_ci: Result<Vec<_>> = thread::scope(|s| {
             let h1 = mode_iter.next().unwrap().map(|calib_mode| {
                 s.spawn(move || {
-                    <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 1>>::calibrate(
-                        optical_model.clone(),
-                        calib_mode,
-                        closed_loop_optical_model.clone(),
-                        closed_loop_calib_mode,
-                    )
+                    if calib_mode.is_empty() {
+                        Ok(ClosedLoopCalib::empty(1, calib_mode.n_mode(), calib_mode))
+                    } else {
+                        <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 1>>::calibrate(
+                            optical_model.clone(),
+                            calib_mode,
+                            closed_loop_optical_model.clone(),
+                            closed_loop_calib_mode,
+                        )
+                    }
                 })
             });
             let h2 = mode_iter.next().unwrap().map(|calib_mode| {
                 s.spawn(move || {
-                    <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 2>>::calibrate(
-                        optical_model.clone(),
-                        calib_mode,
-                        closed_loop_optical_model.clone(),
-                        closed_loop_calib_mode,
-                    )
+                    if calib_mode.is_empty() {
+                        Ok(ClosedLoopCalib::empty(2, calib_mode.n_mode(), calib_mode))
+                    } else {
+                        <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 2>>::calibrate(
+                            optical_model.clone(),
+                            calib_mode,
+                            closed_loop_optical_model.clone(),
+                            closed_loop_calib_mode,
+                        )
+                    }
                 })
             });
             let h3 = mode_iter.next().unwrap().map(|calib_mode| {
                 s.spawn(move || {
-                    <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 3>>::calibrate(
-                        optical_model.clone(),
-                        calib_mode,
-                        closed_loop_optical_model.clone(),
-                        closed_loop_calib_mode,
-                    )
+                    if calib_mode.is_empty() {
+                        Ok(ClosedLoopCalib::empty(3, calib_mode.n_mode(), calib_mode))
+                    } else {
+                        <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 3>>::calibrate(
+                            optical_model.clone(),
+                            calib_mode,
+                            closed_loop_optical_model.clone(),
+                            closed_loop_calib_mode,
+                        )
+                    }
                 })
             });
             let h4 = mode_iter.next().unwrap().map(|calib_mode| {
                 s.spawn(move || {
-                    <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 4>>::calibrate(
-                        optical_model.clone(),
-                        calib_mode,
-                        closed_loop_optical_model.clone(),
-                        closed_loop_calib_mode,
-                    )
+                    if calib_mode.is_empty() {
+                        Ok(ClosedLoopCalib::empty(4, calib_mode.n_mode(), calib_mode))
+                    } else {
+                        <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 4>>::calibrate(
+                            optical_model.clone(),
+                            calib_mode,
+                            closed_loop_optical_model.clone(),
+                            closed_loop_calib_mode,
+                        )
+                    }
                 })
             });
             let h5 = mode_iter.next().unwrap().map(|calib_mode| {
                 s.spawn(move || {
-                    <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 5>>::calibrate(
-                        optical_model.clone(),
-                        calib_mode,
-                        closed_loop_optical_model.clone(),
-                        closed_loop_calib_mode,
-                    )
+                    if calib_mode.is_empty() {
+                        Ok(ClosedLoopCalib::empty(5, calib_mode.n_mode(), calib_mode))
+                    } else {
+                        <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 5>>::calibrate(
+                            optical_model.clone(),
+                            calib_mode,
+                            closed_loop_optical_model.clone(),
+                            closed_loop_calib_mode,
+                        )
+                    }
                 })
             });
             let h6 = mode_iter.next().unwrap().map(|calib_mode| {
                 s.spawn(move || {
-                    <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 6>>::calibrate(
-                        optical_model.clone(),
-                        calib_mode,
-                        closed_loop_optical_model.clone(),
-                        closed_loop_calib_mode,
-                    )
+                    if calib_mode.is_empty() {
+                        Ok(ClosedLoopCalib::empty(6, calib_mode.n_mode(), calib_mode))
+                    } else {
+                        <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 6>>::calibrate(
+                            optical_model.clone(),
+                            calib_mode,
+                            closed_loop_optical_model.clone(),
+                            closed_loop_calib_mode,
+                        )
+                    }
                 })
             });
             let h7 = mode_iter.next().unwrap().map(|calib_mode| {
                 s.spawn(move || {
-                    <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 7>>::calibrate(
-                        optical_model.clone(),
-                        calib_mode,
-                        closed_loop_optical_model.clone(),
-                        closed_loop_calib_mode,
-                    )
+                    if calib_mode.is_empty() {
+                        Ok(ClosedLoopCalib::empty(7, calib_mode.n_mode(), calib_mode))
+                    } else {
+                        <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 7>>::calibrate(
+                            optical_model.clone(),
+                            calib_mode,
+                            closed_loop_optical_model.clone(),
+                            closed_loop_calib_mode,
+                        )
+                    }
                 })
             }); // let mut ci = vec![];
                 // for c in [c1, c2, c3, c4, c5, c6, c7] {
@@ -205,60 +236,88 @@ where
         let mut mode_iter = Into::<MirrorMode>::into(mirror_mode).into_iter();
 
         let h1 = mode_iter.next().unwrap().map(|calib_mode| {
-            <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 1>>::calibrate(
-                optical_model.clone(),
-                calib_mode,
-                closed_loop_optical_model.clone(),
-                closed_loop_calib_mode,
-            )
+            if calib_mode.is_empty() {
+                Ok(ClosedLoopCalib::empty(1, calib_mode.n_mode(), calib_mode))
+            } else {
+                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 1>>::calibrate(
+                    optical_model.clone(),
+                    calib_mode,
+                    closed_loop_optical_model.clone(),
+                    closed_loop_calib_mode,
+                )
+            }
         });
         let h2 = mode_iter.next().unwrap().map(|calib_mode| {
-            <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 2>>::calibrate(
-                optical_model.clone(),
-                calib_mode,
-                closed_loop_optical_model.clone(),
-                closed_loop_calib_mode,
-            )
+            if calib_mode.is_empty() {
+                Ok(ClosedLoopCalib::empty(2, calib_mode.n_mode(), calib_mode))
+            } else {
+                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 2>>::calibrate(
+                    optical_model.clone(),
+                    calib_mode,
+                    closed_loop_optical_model.clone(),
+                    closed_loop_calib_mode,
+                )
+            }
         });
         let h3 = mode_iter.next().unwrap().map(|calib_mode| {
-            <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 3>>::calibrate(
-                optical_model.clone(),
-                calib_mode,
-                closed_loop_optical_model.clone(),
-                closed_loop_calib_mode,
-            )
+            if calib_mode.is_empty() {
+                Ok(ClosedLoopCalib::empty(3, calib_mode.n_mode(), calib_mode))
+            } else {
+                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 3>>::calibrate(
+                    optical_model.clone(),
+                    calib_mode,
+                    closed_loop_optical_model.clone(),
+                    closed_loop_calib_mode,
+                )
+            }
         });
         let h4 = mode_iter.next().unwrap().map(|calib_mode| {
-            <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 4>>::calibrate(
-                optical_model.clone(),
-                calib_mode,
-                closed_loop_optical_model.clone(),
-                closed_loop_calib_mode,
-            )
+            if calib_mode.is_empty() {
+                Ok(ClosedLoopCalib::empty(4, calib_mode.n_mode(), calib_mode))
+            } else {
+                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 4>>::calibrate(
+                    optical_model.clone(),
+                    calib_mode,
+                    closed_loop_optical_model.clone(),
+                    closed_loop_calib_mode,
+                )
+            }
         });
         let h5 = mode_iter.next().unwrap().map(|calib_mode| {
-            <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 5>>::calibrate(
-                optical_model.clone(),
-                calib_mode,
-                closed_loop_optical_model.clone(),
-                closed_loop_calib_mode,
-            )
+            if calib_mode.is_empty() {
+                Ok(ClosedLoopCalib::empty(5, calib_mode.n_mode(), calib_mode))
+            } else {
+                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 5>>::calibrate(
+                    optical_model.clone(),
+                    calib_mode,
+                    closed_loop_optical_model.clone(),
+                    closed_loop_calib_mode,
+                )
+            }
         });
         let h6 = mode_iter.next().unwrap().map(|calib_mode| {
-            <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 6>>::calibrate(
-                optical_model.clone(),
-                calib_mode,
-                closed_loop_optical_model.clone(),
-                closed_loop_calib_mode,
-            )
+            if calib_mode.is_empty() {
+                Ok(ClosedLoopCalib::empty(6, calib_mode.n_mode(), calib_mode))
+            } else {
+                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 6>>::calibrate(
+                    optical_model.clone(),
+                    calib_mode,
+                    closed_loop_optical_model.clone(),
+                    closed_loop_calib_mode,
+                )
+            }
         });
         let h7 = mode_iter.next().unwrap().map(|calib_mode| {
-            <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 7>>::calibrate(
-                optical_model.clone(),
-                calib_mode,
-                closed_loop_optical_model.clone(),
-                closed_loop_calib_mode,
-            )
+            if calib_mode.is_empty() {
+                Ok(ClosedLoopCalib::empty(7, calib_mode.n_mode(), calib_mode))
+            } else {
+                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 7>>::calibrate(
+                    optical_model.clone(),
+                    calib_mode,
+                    closed_loop_optical_model.clone(),
+                    closed_loop_calib_mode,
+                )
+            }
         });
         let mat_ci: Result<Vec<_>> = [h1, h2, h3, h4, h5, h6, h7]
             .into_iter()

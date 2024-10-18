@@ -119,6 +119,7 @@ impl Arrow {
         writer.write(&batch)?;
         writer.close()?;
         log::info!("Arrow data saved to {root:?}");
+        self.drop_option = DropOption::NoSave;
         Ok(())
     }
     /// Loads data from a [Parquet](https://docs.rs/parquet) data file
@@ -196,6 +197,7 @@ impl Arrow {
             mat_file.var("time", time.as_slice())?;
         }
         log::info!("Arrow data saved to {root:?}");
+        self.drop_option = DropOption::NoSave;
         Ok(())
     }
 }

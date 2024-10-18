@@ -92,23 +92,29 @@ where
     /// #    ]))
     /// #    .mask(vec![false, false, false, true, true, false])
     /// #    .build();
-    /// let pinv = calib.pseudoinverse();
+    /// let pinv = calib.pseudoinverse().unwrap();
     /// assert_eq!(pinv.cond(),1f64);
     /// ```
-    fn pseudoinverse(&self) -> CalibPinv<f64, M> {
+    fn pseudoinverse(&self) -> Option<CalibPinv<f64, M>> {
+        if self.is_empty() {
+            return None;
+        }
         let svd = self.mat_ref().svd();
         let s = svd.s_diagonal();
         let cond = s[0] / s[s.nrows() - 1];
-        CalibPinv {
+        Some(CalibPinv {
             mat: svd.pseudoinverse(),
             cond,
             mode: self.mode.clone(),
-        }
+        })
     }
     /// Returns the trucated pseudo-inverse of the calibration matrix
     ///
     /// The inverse of the last `n` eigen values are set to zero
-    fn truncated_pseudoinverse(&self, n: usize) -> CalibPinv<f64, M> {
+    fn truncated_pseudoinverse(&self, n: usize) -> Option<CalibPinv<f64, M>> {
+        if self.is_empty() {
+            return None;
+        }
         let svd = self.mat_ref().svd();
         let s = svd.s_diagonal();
         let n_s = s.nrows();
@@ -123,11 +129,11 @@ where
         let i_s_diag = from_column_major_slice::<f64>(&i_s, n_s, 1).column_vector_as_diagonal();
         let mat = v * i_s_diag * u.transpose();
         let cond = s[0] / s[n_s - n - 1];
-        CalibPinv {
+        Some(CalibPinv {
             mat,
             cond,
             mode: self.mode.clone(),
-        }
+        })
     }
     /// Returns the number of non-zero elements in the inputs mask
     /// ```
@@ -362,6 +368,18 @@ where
 
     fn as_mut(&mut self) -> &mut Vec<f64> {
         &mut self.c
+    }
+
+    fn empty(sid: u8, n_mode: usize, mode: M) -> Self {
+        Self {
+            sid,
+            n_mode,
+            mode,
+            c: Default::default(),
+            mask: Default::default(),
+            runtime: Default::default(),
+            n_cols: Default::default(),
+        }
     }
 }
 

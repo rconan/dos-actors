@@ -66,6 +66,16 @@ impl<K: CentroidKind, const I: usize> TryFrom<&CameraBuilder<I>> for CentroidsPr
     }
 }
 
+impl<K: CentroidKind, const I: usize> TryFrom<&OpticalModelBuilder<CameraBuilder<I>>>
+    for CentroidsProcessing<K>
+{
+    type Error = CentroidsError;
+
+    fn try_from(om: &OpticalModelBuilder<CameraBuilder<I>>) -> Result<Self> {
+        Self::try_from(om.sensor.as_ref().unwrap())
+    }
+}
+
 // impl DeviceInitialize for OpticalModel<Imaging> {
 //     type Device = Centroids<K>;
 

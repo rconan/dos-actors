@@ -40,6 +40,9 @@ impl MirrorMode {
         self
     }
     /// Remove segment # `sid`
+    ///
+    /// The segment is still there but the calibration mode
+    /// associated with it is set to [None]
     pub fn remove(mut self, sid: u8) -> Self {
         assert!(
             sid > 0 && sid <= 7,

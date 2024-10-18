@@ -28,12 +28,12 @@ impl ClosedLoopCalib {
         self.m1_to_m2.as_ref()
     }
 }
-impl<M: Modality + Display> CalibProps<M> for ClosedLoopCalib<M> {
-    fn pseudoinverse(&self) -> CalibPinv<f64, M> {
+impl<M: Modality + Display + Default> CalibProps<M> for ClosedLoopCalib<M> {
+    fn pseudoinverse(&self) -> Option<CalibPinv<f64, M>> {
         self.m1_closed_loop_to_sensor.pseudoinverse()
     }
 
-    fn truncated_pseudoinverse(&self, n: usize) -> CalibPinv<f64, M> {
+    fn truncated_pseudoinverse(&self, n: usize) -> Option<CalibPinv<f64, M>> {
         self.m1_closed_loop_to_sensor.truncated_pseudoinverse(n)
     }
 
@@ -103,6 +103,13 @@ impl<M: Modality + Display> CalibProps<M> for ClosedLoopCalib<M> {
 
     fn as_mut(&mut self) -> &mut Vec<f64> {
         &mut self.m1_closed_loop_to_sensor.c
+    }
+
+    fn empty(sid: u8, n_mode: usize, mode: M) -> Self {
+        Self {
+            m1_closed_loop_to_sensor: Calib::empty(sid, n_mode, mode),
+            ..Default::default()
+        }
     }
 }
 
