@@ -85,7 +85,7 @@ impl<const I: usize> Display for OpticalModel<Camera<I>> {
         self.sensor.as_ref().unwrap().fmt(f)?;
         writeln!(
             f,
-            r#"Pixel scale: {:.0}mas, Field-of-view: {:.3}""#,
+            r#"Pixel scale: {:.3}mas, Field-of-view: {:.3}""#,
             self.pixel_scale().to_mas(),
             self.field_of_view().to_arcsec()
         )?;

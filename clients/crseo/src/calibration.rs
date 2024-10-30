@@ -57,11 +57,13 @@ pub enum CalibrationError {
     Centroids(#[from] CentroidsError),
     #[error("failed to build optical model")]
     Crseo(#[from] CrseoError),
+    #[error("global calibration of {0} failed")]
+    GlobalCalibration(CalibrationMode),
 }
 
 type Result<T> = std::result::Result<T, CalibrationError>;
 
-/// Trait alias for M1 or M2 [CalibrateSegment]s
+/// Trait alias for M1 or M2 [CalibrationSegment]s
 pub trait CalibrateAssembly<M: GmtMx, S: FromBuilder>:
     CalibrationSegment<M, 1, Sensor = S>
     + CalibrationSegment<M, 2, Sensor = S>
@@ -129,7 +131,8 @@ where
                     optical_model,
                     cmd.to_vec().into(),
                 );
-            } // _ => unimplemented!(),
+            }
+            _ => unimplemented!(),
         }
         optical_model.update();
         <OpticalModel<Self::Sensor> as Write<Self::Input>>::write(optical_model)
@@ -160,7 +163,7 @@ where
 /// Mirror calibration
 pub trait Calibration<M: GmtMx>
 where
-    <<Self as Calibration<M>>::Sensor as FromBuilder>::ComponentBuilder: Clone + Send + 'static,
+    <<Self as Calibration<M>>::Sensor as FromBuilder>::ComponentBuilder: Clone + Send + Sync,
     Self: CalibrateAssembly<M, <Self as Calibration<M>>::Sensor>,
 {
     type Sensor: FromBuilder;
@@ -168,8 +171,8 @@ where
         optical_model: &OpticalModelBuilder<SensorBuilder<M, Self>>,
         mirror_mode: impl Into<MirrorMode>,
     ) -> Result<Reconstructor>
-    where
-        <<Self as Calibration<M>>::Sensor as FromBuilder>::ComponentBuilder: Clone + Send + Sync,
+// where
+        // <<Self as Calibration<M>>::Sensor as FromBuilder>::ComponentBuilder: Clone + Send + Sync,
     {
         let mut mode_iter = Into::<MirrorMode>::into(mirror_mode).into_iter();
         let ci: Result<Vec<_>> = thread::scope(|s| {
@@ -345,3 +348,6 @@ where
         Ok(Reconstructor::new(ci?))
     }
 }
+
+mod global;
+pub use global::GlobalCalibration;

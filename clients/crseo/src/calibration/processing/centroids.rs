@@ -192,7 +192,8 @@ where
                     runtime: now.elapsed(),
                     n_cols: None,
                 })
-            } // _ => unimplemented!(),
+            }
+            _ => unimplemented!(),
         }
     }
 }
@@ -204,51 +205,6 @@ where
     CentroidsProcessing<K>: ValidCentroids,
 {
     type Sensor = Imaging;
-    /*
-       fn calibrate(
-           optical_model: OpticalModelBuilder<SensorBuilder<M, Self>>,
-           calib_mode: CalibrationMode,
-       ) -> super::Result<Reconstructor> {
-           let om = optical_model.clone();
-           let cm = calib_mode.clone();
-           let c1 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 1>>::calibrate(om, cm));
-           let om = optical_model.clone();
-           let cm = calib_mode.clone();
-           let c2 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 2>>::calibrate(om, cm));
-           let om = optical_model.clone();
-           let cm = calib_mode.clone();
-           let c3 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 3>>::calibrate(om, cm));
-           let om = optical_model.clone();
-           let cm = calib_mode.clone();
-           let c4 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 4>>::calibrate(om, cm));
-           let om = optical_model.clone();
-           let cm = calib_mode.clone();
-           let c5 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 5>>::calibrate(om, cm));
-           let om = optical_model.clone();
-           let cm = calib_mode.clone();
-           let c6 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 6>>::calibrate(om, cm));
-           let om = optical_model.clone();
-           let cm = calib_mode.clone();
-           let c7 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 7>>::calibrate(om, cm));
-           // let c2 =
-           //     <Centroids as CalibrateSegment<M, 2>>::calibrate(optical_model.clone(), calib_mode)?;
-           // let c3 =
-           //     <Centroids as CalibrateSegment<M, 3>>::calibrate(optical_model.clone(), calib_mode)?;
-           // let c4 =
-           //     <Centroids as CalibrateSegment<M, 4>>::calibrate(optical_model.clone(), calib_mode)?;
-           // let c5 =
-           //     <Centroids as CalibrateSegment<M, 5>>::calibrate(optical_model.clone(), calib_mode)?;
-           // let c6 =
-           //     <Centroids as CalibrateSegment<M, 6>>::calibrate(optical_model.clone(), calib_mode)?;
-           // let c7 =
-           //     <Centroids as CalibrateSegment<M, 7>>::calibrate(optical_model.clone(), calib_mode)?;
-           let mut ci = vec![];
-           for c in [c1, c2, c3, c4, c5, c6, c7] {
-               ci.push(c.join().unwrap().unwrap());
-           }
-           Ok(Reconstructor::new(ci))
-       }
-    */
 }
 
 #[cfg(test)]
