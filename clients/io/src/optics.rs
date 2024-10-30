@@ -20,6 +20,20 @@ pub enum Wavefront {}
 #[uid(port = 55_002)]
 pub enum TipTilt {}
 
+/// M1 global tip-tilt
+pub enum M1GlobalTipTilt {}
+impl UniqueIdentifier for M1GlobalTipTilt {
+    type DataType = [f64; 2];
+    const PORT: u16 = 55_101;
+}
+
+/// M2 global tip-tilt
+pub enum M2GlobalTipTilt {}
+impl UniqueIdentifier for M2GlobalTipTilt {
+    type DataType = [f64; 2];
+    const PORT: u16 = 55_102;
+}
+
 /// Source segment wavefront piston and standard deviation `([m],[m])x7`
 pub enum SegmentWfe<const E: i32 = 0> {}
 impl<const E: i32> UniqueIdentifier for SegmentWfe<E> {
