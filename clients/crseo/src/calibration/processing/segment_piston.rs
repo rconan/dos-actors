@@ -118,7 +118,8 @@ where
                     ));
                 }
                 (calib, n_mode)
-            } // _ => unimplemented!(),
+            }
+            _ => unimplemented!(),
         };
         let mut mask = vec![false; 7];
         mask[SID as usize - 1] = true;

@@ -26,7 +26,7 @@ impl Modality for CalibrationMode {
                 end_id,
                 ..
             } => end_id.unwrap_or(n_mode) - start_idx,
-            // _ => unimplemented!(),
+            CalibrationMode::GlobalTipTilt(_) => 2,
         }
     }
     fn fill(&self, iter: impl Iterator<Item = f64>) -> Vec<f64> {
@@ -52,37 +52,8 @@ impl Modality for CalibrationMode {
                     .chain(iter.take(end - start_idx))
                     .chain(vec![0.; n_mode - end])
                     .collect()
-            } /*             CalibrationMode::Mirror(segments) => segments
-              .iter()
-              .filter_map(|segment| {
-                  segment.as_ref().map(|s| match s.deref() {
-                      CalibrationMode::RBM(tr_xyz) => {
-                          let mut out = vec![0.; 6];
-                          out.iter_mut()
-                              .zip(tr_xyz)
-                              .filter_map(|(out, v)| v.and_then(|_| Some(out)))
-                              .zip(iter.by_ref())
-                              .for_each(|(out, e)| *out = e);
-                          out
-                      }
-                      &CalibrationMode::Modes {
-                          n_mode,
-                          start_idx,
-                          end_id,
-                          ..
-                      } => {
-                          let end = end_id.unwrap_or(n_mode);
-                          vec![0.; start_idx]
-                              .into_iter()
-                              .chain(iter.by_ref().take(end - start_idx))
-                              .chain(vec![0.; n_mode - end])
-                              .collect()
-                      }
-                      _ => unimplemented!(),
-                  })
-              })
-              .flatten()
-              .collect(), */
+            }
+            CalibrationMode::GlobalTipTilt(_) => iter.collect(),
         }
     }
 }
@@ -118,7 +89,8 @@ impl Modality for MirrorMode {
                             .chain(iter.by_ref().take(end - start_idx))
                             .chain(vec![0.; n_mode - end])
                             .collect()
-                    } // _ => unimplemented!(),
+                    }
+                    CalibrationMode::GlobalTipTilt(_) => iter.by_ref().collect(),
                 })
             })
             .flatten()
