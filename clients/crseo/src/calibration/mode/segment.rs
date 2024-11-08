@@ -216,7 +216,7 @@ impl CalibrationMode {
     /// Returns the indices as the range of modes to calibrate
     pub fn range(&self) -> Range<usize> {
         match self {
-            Self::RBM(_) => 0..7,
+            Self::RBM(_) => 0..6,
             Self::Modes {
                 n_mode,
                 start_idx,
