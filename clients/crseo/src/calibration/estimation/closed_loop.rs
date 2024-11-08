@@ -117,6 +117,7 @@ where
     }
 }
 mod centroids;
+mod dispersed_fringe_sensor;
 mod wave_sensor;
 
 #[cfg(test)]

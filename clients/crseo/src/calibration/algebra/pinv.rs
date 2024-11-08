@@ -33,6 +33,9 @@ impl<M: Modality, T: faer::Entity> CalibPinv<T, M> {
     pub fn transform<F: Fn(MatRef<'_, T>) -> Mat<T>>(&mut self, fun: F) {
         self.mat = fun(self.mat.as_ref());
     }
+    pub fn mat_ref(&self) -> MatRef<'_, T> {
+        self.mat.as_ref()
+    }
 }
 
 impl<M: Modality> Mul<Vec<f64>> for &CalibPinv<f64, M> {

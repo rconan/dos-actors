@@ -1,9 +1,11 @@
 use super::{OpticalModel, OpticalModelError};
 use crate::sensors::{
     builders::{SensorBuilderProperty, WaveSensorBuilder},
-    NoSensor,
+    NoSensor, SensorPropagation,
 };
-use crseo::{atmosphere::AtmosphereBuilder, gmt::GmtBuilder, source::SourceBuilder, Builder};
+use crseo::{
+    atmosphere::AtmosphereBuilder, gmt::GmtBuilder, source::SourceBuilder, Builder, Propagation,
+};
 use serde::{Deserialize, Serialize};
 
 /// GMT optical model builder
@@ -138,9 +140,10 @@ where
 impl<T, S> OpticalModelBuilder<S>
 where
     S: Builder<Component = T> + SensorBuilderProperty,
+    T: SensorPropagation,
 {
     pub fn build(self) -> Result<OpticalModel<T>, OpticalModelError> {
-        Ok(OpticalModel {
+        let mut om = OpticalModel {
             gmt: self.gmt.build()?,
             src: if let &Some(n) = &self
                 .sensor
@@ -163,7 +166,10 @@ where
             },
             sensor: self.sensor.map(|sensor| sensor.build()).transpose()?,
             tau: self.sampling_frequency.map_or_else(|| 0f64, |x| x.recip()),
-        })
+        };
+        // Propagation to initialize the detector frame in case of bootstrapping
+        <OpticalModel<_> as interface::Update>::update(&mut om);
+        Ok(om)
     }
 }
 

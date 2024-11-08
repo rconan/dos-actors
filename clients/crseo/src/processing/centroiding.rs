@@ -23,9 +23,17 @@ pub struct Full;
 /// Mean centroids removed
 pub struct ZeroMean;
 /// Centroids marker
-pub trait CentroidKind {}
+pub trait CentroidKind {
+    fn is_full() -> bool {
+        true
+    }
+}
 impl CentroidKind for Full {}
-impl CentroidKind for ZeroMean {}
+impl CentroidKind for ZeroMean {
+    fn is_full() -> bool {
+        false
+    }
+}
 
 /// Centroids processing
 ///
@@ -108,7 +116,7 @@ impl<K: CentroidKind, const I: usize> DeviceInitialize<CentroidsProcessing<K>>
     for OpticalModelBuilder<CameraBuilder<I>>
 {
     fn initialize(&self, device: &mut CentroidsProcessing<K>) {
-        let mut om = self.clone().build().unwrap();
+        let mut om = self.clone_into::<1>().build().unwrap();
         om.update();
         let imgr = om.sensor.as_mut().unwrap();
         device.reference.process(&mut imgr.frame(), None);

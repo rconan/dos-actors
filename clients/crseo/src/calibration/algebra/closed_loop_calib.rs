@@ -111,6 +111,10 @@ impl<M: Modality + Display + Default> CalibProps<M> for ClosedLoopCalib<M> {
             ..Default::default()
         }
     }
+
+    fn filter(&mut self, filter: &[bool]) {
+        self.m1_closed_loop_to_sensor.filter(filter);
+    }
 }
 
 impl<M: Modality + Display> Display for ClosedLoopCalib<M> {
