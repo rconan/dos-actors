@@ -26,7 +26,7 @@ impl ValidCentroids for CentroidsProcessing<ZeroMean> {
     fn get(&mut self) -> Vec<Vec<f32>> {
         self.centroids
             .grab()
-            // .remove_mean(Some(&self.reference.valid_lenslets))
+            .remove_mean(Some(&self.reference.valid_lenslets))
             .valids(Some(&self.reference.valid_lenslets))
     }
 }
@@ -84,11 +84,13 @@ where
     }
 }
 
-impl<K: CentroidKind, M: GmtMx, const SID: u8> CalibrationSegment<M, SID> for CentroidsProcessing<K>
+impl<K, M, const SID: u8> CalibrationSegment<M, SID> for CentroidsProcessing<K>
 where
     Gmt: GmtMirror<M>,
     GmtBuilder: GmtMirrorBuilder<M>,
     CentroidsProcessing<K>: ValidCentroids,
+    K: CentroidKind,
+    M: GmtMx,
 {
     type Sensor = Imaging;
 
@@ -107,7 +109,9 @@ where
 
         match calib_mode {
             CalibrationMode::RBM(stroke) => {
-                optical_model.gmt.keep(&[SID as i32]);
+                if <K as CentroidKind>::is_full() {
+                    optical_model.gmt.keep(&[SID as i32]);
+                }
                 centroids.setup(&mut optical_model);
 
                 let mut tr_xyz = [0f64; 6];
@@ -152,7 +156,9 @@ where
                 })
             }
             CalibrationMode::Modes { n_mode, stroke, .. } => {
-                optical_model.gmt.keep(&[SID as i32]);
+                if <K as CentroidKind>::is_full() {
+                    optical_model.gmt.keep(&[SID as i32]);
+                }
                 centroids.setup(&mut optical_model);
 
                 let mut a = vec![0f64; n_mode];
@@ -192,7 +198,8 @@ where
                     runtime: now.elapsed(),
                     n_cols: None,
                 })
-            } // _ => unimplemented!(),
+            }
+            _ => unimplemented!(),
         }
     }
 }
@@ -204,51 +211,6 @@ where
     CentroidsProcessing<K>: ValidCentroids,
 {
     type Sensor = Imaging;
-    /*
-       fn calibrate(
-           optical_model: OpticalModelBuilder<SensorBuilder<M, Self>>,
-           calib_mode: CalibrationMode,
-       ) -> super::Result<Reconstructor> {
-           let om = optical_model.clone();
-           let cm = calib_mode.clone();
-           let c1 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 1>>::calibrate(om, cm));
-           let om = optical_model.clone();
-           let cm = calib_mode.clone();
-           let c2 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 2>>::calibrate(om, cm));
-           let om = optical_model.clone();
-           let cm = calib_mode.clone();
-           let c3 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 3>>::calibrate(om, cm));
-           let om = optical_model.clone();
-           let cm = calib_mode.clone();
-           let c4 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 4>>::calibrate(om, cm));
-           let om = optical_model.clone();
-           let cm = calib_mode.clone();
-           let c5 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 5>>::calibrate(om, cm));
-           let om = optical_model.clone();
-           let cm = calib_mode.clone();
-           let c6 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 6>>::calibrate(om, cm));
-           let om = optical_model.clone();
-           let cm = calib_mode.clone();
-           let c7 = thread::spawn(move || <Centroids<K> as CalibrateSegment<M, 7>>::calibrate(om, cm));
-           // let c2 =
-           //     <Centroids as CalibrateSegment<M, 2>>::calibrate(optical_model.clone(), calib_mode)?;
-           // let c3 =
-           //     <Centroids as CalibrateSegment<M, 3>>::calibrate(optical_model.clone(), calib_mode)?;
-           // let c4 =
-           //     <Centroids as CalibrateSegment<M, 4>>::calibrate(optical_model.clone(), calib_mode)?;
-           // let c5 =
-           //     <Centroids as CalibrateSegment<M, 5>>::calibrate(optical_model.clone(), calib_mode)?;
-           // let c6 =
-           //     <Centroids as CalibrateSegment<M, 6>>::calibrate(optical_model.clone(), calib_mode)?;
-           // let c7 =
-           //     <Centroids as CalibrateSegment<M, 7>>::calibrate(optical_model.clone(), calib_mode)?;
-           let mut ci = vec![];
-           for c in [c1, c2, c3, c4, c5, c6, c7] {
-               ci.push(c.join().unwrap().unwrap());
-           }
-           Ok(Reconstructor::new(ci))
-       }
-    */
 }
 
 #[cfg(test)]
@@ -318,6 +280,77 @@ mod tests {
             .map(|data| <CentroidsProcessing as Read<Frame<Dev>>>::read(&mut sh48_centroids, data));
         sh48_centroids.update();
         let y = <CentroidsProcessing as Write<SensorData>>::write(&mut sh48_centroids)
+            .map(|data| {
+                let s = data.as_arc();
+                // serde_pickle::to_writer(
+                //     &mut File::create("3gs-offaxis.pkl").unwrap(),
+                //     &(s.as_ref(), &calib, sh48_centroids.get_valid_lenslets()),
+                //     Default::default(),
+                // )
+                // .unwrap();
+                calib.mask(&s)
+            })
+            .unwrap();
+        dbg!(y.len());
+
+        let m1_bm_e = &calib_pinv * y;
+        println!("{:?}", m1_bm_e);
+
+        assert!((m1_bm_e[3] - m1_bm[3]).abs() * 1e4 < 1e-3);
+
+        Ok(())
+    }
+    #[test]
+    fn zero_mean_centroids() -> Result<(), Box<dyn Error>> {
+        let m1_n_mode = 6;
+        let n_gs = 3;
+
+        let agws_gs = Source::builder().size(n_gs).on_ring(6f32.from_arcmin());
+        let sh48 = Camera::builder()
+            .n_sensor(n_gs)
+            .lenslet_array(LensletArray::default().n_side_lenslet(48).n_px_lenslet(32))
+            .lenslet_flux(0.75);
+        let mut sh48_centroids: CentroidsProcessing<ZeroMean> =
+            CentroidsProcessing::try_from(&sh48)?;
+
+        let gmt = Gmt::builder().m1("bending modes", m1_n_mode);
+
+        let optical_model = OpticalModel::<Camera<1>>::builder()
+            .gmt(gmt.clone())
+            .source(agws_gs.clone())
+            .sensor(sh48);
+
+        optical_model.initialize(&mut sh48_centroids);
+        dbg!(sh48_centroids.n_valid_lenslets());
+
+        let calib = <CentroidsProcessing<ZeroMean> as CalibrationSegment<GmtM1, 1>>::calibrate(
+            optical_model.clone().into(),
+            CalibrationMode::modes(m1_n_mode, 1e-4),
+        )?;
+        println!("{calib}");
+        let calib_pinv = calib.pseudoinverse().unwrap();
+        dbg!(calib_pinv.cond());
+
+        // sh48_centroids.valid_lenslets(&calib);
+
+        let mut sh48_om = optical_model.build()?;
+        println!("{sh48_om}");
+
+        let mut m1_bm = vec![0f64; m1_n_mode];
+        m1_bm[3] = 1e-4;
+
+        <OpticalModel<Camera<1>> as Read<BendingModes<1>>>::read(
+            &mut sh48_om,
+            m1_bm.clone().into(),
+        );
+
+        sh48_om.update();
+
+        <OpticalModel<Camera<1>> as Write<Frame<Dev>>>::write(&mut sh48_om).map(|data| {
+            <CentroidsProcessing<_> as Read<Frame<Dev>>>::read(&mut sh48_centroids, data)
+        });
+        sh48_centroids.update();
+        let y = <CentroidsProcessing<_> as Write<SensorData>>::write(&mut sh48_centroids)
             .map(|data| {
                 let s = data.as_arc();
                 // serde_pickle::to_writer(

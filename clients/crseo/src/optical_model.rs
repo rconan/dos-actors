@@ -13,7 +13,7 @@ use gmt_dos_clients_io::{
         asm::{segment::AsmCommand, M2ASMAsmCommand},
         M2RigidBodyMotions,
     },
-    optics::{M2modes, SegmentD7Piston},
+    optics::{M1GlobalTipTilt, M2GlobalTipTilt, M2modes, SegmentD7Piston},
 };
 use interface::{Data, Read, UniqueIdentifier, Update, Write};
 
@@ -57,6 +57,13 @@ impl<T> OpticalModel<T> {
     /// Returns an immutable reference to the sensor
     pub fn sensor(&self) -> Option<&T> {
         self.sensor.as_ref()
+    }
+
+    pub fn source(&self) -> &Source {
+        &self.src
+    }
+    pub fn source_mut(&mut self) -> &mut Source {
+        &mut self.src
     }
 }
 unsafe impl<T> Send for OpticalModel<T> {}
@@ -143,6 +150,27 @@ impl<T: SensorPropagation, const SID: u8> Read<AsmCommand<SID>> for OpticalModel
 impl<T: SensorPropagation> Read<M2ASMAsmCommand> for OpticalModel<T> {
     fn read(&mut self, data: Data<M2ASMAsmCommand>) {
         self.gmt.m2_modes(&data);
+    }
+}
+
+impl<T: SensorPropagation> Read<M1GlobalTipTilt> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M1GlobalTipTilt>) {
+        let rbms = geotrans::Mirror::<geotrans::M1>::tiptilt_2_rigidbodymotions((data[0], data[1]));
+        <OpticalModel<T> as Read<M1RigidBodyMotions>>::read(self, rbms.into())
+    }
+}
+impl<T: SensorPropagation> Read<M2GlobalTipTilt> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M2GlobalTipTilt>) {
+        let rbms = geotrans::Mirror::<geotrans::M2>::tiptilt_2_rigidbodymotions((data[0], data[1]));
+        /* rbms.chunks(6).enumerate().for_each(|(i, c)| {
+            println!(
+                "S{}, {:+7.0?} {:+7.0?}",
+                i + 1,
+                c[..3].iter().map(|x| x * 1e9).collect::<Vec<_>>(),
+                c[3..].iter().map(|x| x.to_mas()).collect::<Vec<_>>()
+            )
+        }); */
+        <OpticalModel<T> as Read<M2RigidBodyMotions>>::read(self, rbms.into())
     }
 }
 
