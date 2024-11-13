@@ -52,6 +52,7 @@ impl<const I: usize> SensorPropagation for Camera<I> {
     fn propagate(&mut self, src: &mut crseo::Source) {
         if self.n_frame() as usize == I {
             self.reset();
+            // println!("resetting ({})", self.n_frame());
         }
         src.through(&mut self.0);
     }

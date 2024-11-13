@@ -3,9 +3,7 @@ use crate::sensors::{
     builders::{SensorBuilderProperty, WaveSensorBuilder},
     NoSensor, SensorPropagation,
 };
-use crseo::{
-    atmosphere::AtmosphereBuilder, gmt::GmtBuilder, source::SourceBuilder, Builder, Propagation,
-};
+use crseo::{atmosphere::AtmosphereBuilder, gmt::GmtBuilder, source::SourceBuilder, Builder};
 use serde::{Deserialize, Serialize};
 
 /// GMT optical model builder
@@ -168,7 +166,7 @@ where
             tau: self.sampling_frequency.map_or_else(|| 0f64, |x| x.recip()),
         };
         // Propagation to initialize the detector frame in case of bootstrapping
-        <OpticalModel<_> as interface::Update>::update(&mut om);
+        // <OpticalModel<_> as interface::Update>::update(&mut om);
         Ok(om)
     }
 }

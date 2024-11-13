@@ -55,15 +55,18 @@ impl<const C: usize, const F: usize> SensorPropagation for DispersedFringeSensor
     fn propagate(&mut self, src: &mut crseo::Source) {
         if self.n_camera_frame() == C {
             self.camera_reset();
+            log::info!("resetting camera({})", self.n_camera_frame());
         }
         if self.n_fft_frame() == F {
             self.fft_reset();
+            log::info!("resetting fft ({})", self.n_fft_frame());
         }
         src.through(&mut self.0);
         // let q: Vec<f32> = self.frame().into();
         // dbg!(q.len());
         if self.n_camera_frame() == C {
             self.fft();
+            log::info!("integrating fft ({})", self.n_fft_frame());
         }
     }
 }
@@ -100,6 +103,7 @@ impl<const C: usize, const F: usize> Write<DfsFftFrame<Dev>>
     for OpticalModel<DispersedFringeSensor<C, F>>
 {
     fn write(&mut self) -> Option<Data<DfsFftFrame<Dev>>> {
+        log::info!("writing fft frame");
         self.sensor
             .as_mut()
             .map(|sensor| Data::new(sensor.fft_frame().clone()))
