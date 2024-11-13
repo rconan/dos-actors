@@ -138,6 +138,17 @@ where
                 c
             })
             .collect();
+        let n = self.height;
+        let pixels: Vec<_> = (0..n)
+            .flat_map(|i| {
+                pixels
+                    .chunks(n * 4)
+                    .skip(i)
+                    .step_by(n)
+                    .flat_map(|c| c.to_vec())
+                    .collect::<Vec<_>>()
+            })
+            .collect();
 
         let mut image = RgbaImage::from_vec(self.width as u32, self.height as u32, pixels)
             .expect("failed to create a RGB image");
@@ -179,6 +190,7 @@ where
             .iter()
             .max_by(|&a, &b| a.partial_cmp(b).unwrap())
             .unwrap();
+        // dbg!(max_px);
         let min_px = *self
             .frame
             .iter()
