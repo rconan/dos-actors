@@ -1,3 +1,4 @@
+use gmt_dos_actors::{prelude::Actor, ArcMutex};
 use gmt_dos_clients_fem::{DiscreteModalSolver, ExponentialMatrix, StateSpaceError};
 use gmt_dos_clients_io::gmt_fem::{
     inputs::MCM2SmHexF,
@@ -15,7 +16,8 @@ mod wind_loads;
 pub use wind_loads::WindLoads;
 mod edge_sensors;
 pub use edge_sensors::EdgeSensors;
-use gmt_dos_actors::{prelude::Actor, ArcMutex};
+mod m1_segment_figure;
+pub use m1_segment_figure::M1SegmentFigure;
 
 /// [GmtServoMechanisms](crate::GmtServoMechanisms) builder
 #[derive(Debug, Clone, Default)]
@@ -25,6 +27,7 @@ pub struct ServosBuilder<const M1_RATE: usize, const M2_RATE: usize> {
     pub(crate) asms_servo: Option<AsmsServo>,
     pub(crate) wind_loads: Option<WindLoads>,
     pub(crate) edge_sensors: Option<EdgeSensors>,
+    pub(crate) m1_segment_figure: Option<M1SegmentFigure>,
 }
 
 impl<const M1_RATE: usize, const M2_RATE: usize> ServosBuilder<M1_RATE, M2_RATE> {
@@ -39,8 +42,13 @@ impl<const M1_RATE: usize, const M2_RATE: usize> ServosBuilder<M1_RATE, M2_RATE>
         self
     }
     /// Sets the [EdgeSensors] builder
-    pub fn edge_sensors(mut self, edge_ensors: EdgeSensors) -> Self {
-        self.edge_sensors = Some(edge_ensors);
+    pub fn edge_sensors(mut self, edge_sensors: EdgeSensors) -> Self {
+        self.edge_sensors = Some(edge_sensors);
+        self
+    }
+    /// Sets the [M1SegmentFigure] builder
+    pub fn m1_segment_figure(mut self, m1_segment_figure: M1SegmentFigure) -> Self {
+        self.m1_segment_figure = Some(m1_segment_figure);
         self
     }
 }
@@ -96,6 +104,7 @@ impl<'a, const M1_RATE: usize, const M2_RATE: usize> TryFrom<ServosBuilder<M1_RA
             .outs::<MCM2Lcl6D>()
             .ins::<MCM2SmHexF>()
             .outs::<MCM2SmHexD>()
+            .including(builder.m1_segment_figure.as_mut())?
             .including(builder.asms_servo.as_mut())?
             .including(builder.wind_loads.as_mut())?
             .including(builder.edge_sensors.as_mut())?

@@ -1,4 +1,7 @@
-use crate::fem_io::{FemIo, GetIn, GetOut, SplitFem};
+use crate::{
+    actors_interface::RbmRemoval,
+    fem_io::{FemIo, GetIn, GetOut, SplitFem},
+};
 
 use super::{DiscreteModalSolver, Solver};
 use gmt_fem::{fem_io::Inputs, fem_io::Outputs, FEM};
@@ -8,7 +11,7 @@ use nalgebra as na;
 use nalgebra::DMatrix;
 use rayon::prelude::*;
 use serde_pickle as pickle;
-use std::{collections::HashMap, f64::consts::PI, fs::File, marker::PhantomData, path::Path};
+use std::{f64::consts::PI, fs::File, marker::PhantomData, path::Path};
 
 #[derive(Debug, thiserror::Error)]
 pub enum StateSpaceError {
@@ -51,7 +54,8 @@ pub struct DiscreteStateSpace<'a, T: Solver + Default> {
     outs: Vec<Box<dyn GetOut>>,
     ins_transform: Vec<Option<DMatrixView<'a, f64>>>,
     outs_transform: Vec<Option<DMatrixView<'a, f64>>>,
-    pub facesheet_nodes: Option<HashMap<u8, Vec<f64>>>,
+    pub facesheet_nodes: Option<RbmRemoval>,
+    pub m1_figure_nodes: Option<RbmRemoval>,
 }
 impl<'a, T: Solver + Default> From<FEM> for DiscreteStateSpace<'a, T> {
     /// Creates a state space model builder from a FEM structure
@@ -64,29 +68,15 @@ impl<'a, T: Solver + Default> From<FEM> for DiscreteStateSpace<'a, T> {
 }
 impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
     pub fn set_facesheet_nodes(mut self) -> Result<Self> {
+        log::info!("setting facesheet nodes");
         let fem = self.fem.as_ref().unwrap();
-        for i in 1..=7 {
-            // let output_name = format!("M2_segment_{i}_axial_d");
-            let output_name = format!("M2_segment_{i}_axial_d");
-            // println!("Loading nodes from {output_name}");
-            let idx =
-                Box::<dyn crate::fem_io::GetOut>::try_from(output_name.clone()).map(|x| {
-                    x.position(&fem.outputs)
-                        .ok_or(StateSpaceError::IndexNotFound(output_name.clone()))
-                })??;
-            let xyz = fem.outputs[idx]
-                .as_ref()
-                .map(|i| i.get_by(|i| i.properties.location.clone()))
-                .expect(&format!(
-                    "failed to read nodes locations from {output_name}"
-                ))
-                .into_iter()
-                .flatten()
-                .collect();
-            self.facesheet_nodes
-                .get_or_insert(HashMap::new())
-                .insert(i as u8, xyz);
-        }
+        self.facesheet_nodes = Some(RbmRemoval::new(fem, "M2_segment_#_axial_d")?);
+        Ok(self)
+    }
+    pub fn set_m1_figure_nodes(mut self) -> Result<Self> {
+        log::info!("setting m1 figure nodes");
+        let fem = self.fem.as_ref().unwrap();
+        self.m1_figure_nodes = Some(RbmRemoval::new(fem, "M1_segment_#_axial_d")?);
         Ok(self)
     }
     /// Prints information about the FEM
@@ -780,6 +770,7 @@ are set to zero."
                     outs: self.outs,
                     psi_dcg: psi_dcg.map(|psi_dcg| Arc::new(psi_dcg)),
                     facesheet_nodes: self.facesheet_nodes,
+                    m1_figure_nodes: self.m1_figure_nodes,
                     ..Default::default()
                 })
             }

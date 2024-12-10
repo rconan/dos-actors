@@ -27,13 +27,19 @@ plt.figure();plt.plot(np.vstack(df["FaceSheetFigure#1"])[-1,:],'.');
 
 use std::{env, path::Path};
 
-use gmt_dos_actors::actorscript;
-use gmt_dos_clients::Tick;
-use gmt_dos_clients::{Signals, Timer};
-use gmt_dos_clients_io::gmt_m2::{asm::segment::FaceSheetFigure, M2RigidBodyMotions};
-use gmt_dos_clients_servos::{asms_servo, AsmsServo, GmtFem}; //asms_servo
-use gmt_dos_clients_servos::{GmtM2Hex, GmtServoMechanisms};
+use gmt_dos_actors::{actorscript, framework::model::SystemFlowChart, system::Sys};
+use gmt_dos_clients::{Signal, Signals, Tick, Timer};
+use gmt_dos_clients_io::{
+    gmt_fem::outputs::{
+        M1Segment1AxialD, M1Segment2AxialD, M1Segment3AxialD, M1Segment4AxialD, M1Segment5AxialD,
+        M1Segment6AxialD, M1Segment7AxialD,
+    },
+    gmt_m1::{assembly, segment::ModeShapes, M1RigidBodyMotions},
+};
+use gmt_dos_clients_servos::{asms_servo, GmtFem, GmtM1, GmtServoMechanisms, M1SegmentFigure};
+//asms_servo
 use gmt_fem::FEM;
+use interface::filing::Filing;
 use nanorand::{Rng, WyRand};
 
 const ACTUATOR_RATE: usize = 80; //100Hz
@@ -54,30 +60,40 @@ async fn main() -> anyhow::Result<()> {
         "DATA_REPO",
         Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("examples")
-            .join("m2-rbms"),
+            .join("m1-rbms"),
     );
 
     let mut rng = WyRand::new();
 
     let sim_sampling_frequency = 8000;
-    let n_step = 4000;
+    let n_step = sim_sampling_frequency * 3;
 
     let fem = FEM::from_env()?;
 
     // M2 S1
-    let m2_rbm: Signals = (0..42).fold(Signals::new(42, n_step), |signals, i| {
+    let m1_rbm: Signals = (0..42).fold(Signals::new(42, n_step), |signals, i| {
         signals.channel(
             i,
-            gmt_dos_clients::Signal::Constant(1e-6 * (rng.generate::<f64>() * 2. - 1.)),
+            Signal::Sigmoid {
+                amplitude: 1e-6 * (rng.generate::<f64>() * 2. - 1.),
+                sampling_frequency_hz: sim_sampling_frequency as f64,
+            },
         )
     });
+    // let sigmoid = Signal::Sigmoid {
+    //     amplitude: 1e-6,
+    //     sampling_frequency_hz: sim_sampling_frequency as f64,
+    // };
+    // let m1_rbm = Signals::new(42, n_step).channel(2, sigmoid);
 
     // GMT Servo-mechanisms system
 
     let gmt_servos =
-        GmtServoMechanisms::<ACTUATOR_RATE, 1>::new(sim_sampling_frequency as f64, fem)
-            .asms_servo(AsmsServo::new().facesheet(Default::default()))
-            .build()?;
+        Sys::<GmtServoMechanisms<ACTUATOR_RATE, 1>>::from_path_or_else("servos.bin", || {
+            GmtServoMechanisms::<ACTUATOR_RATE, 1>::new(sim_sampling_frequency as f64, fem)
+                // .asms_servo(AsmsServo::new().facesheet(Default::default()))
+                .m1_segment_figure(M1SegmentFigure::new())
+        })?;
 
     // let gmt_servos =
     //     GmtServoMechanisms::<ACTUATOR_RATE, 1>::new(sim_sampling_frequency as f64, fem)
@@ -88,25 +104,29 @@ async fn main() -> anyhow::Result<()> {
     //         .build()?;
 
     actorscript! {
-        1: m2_rbm[M2RigidBodyMotions] -> {gmt_servos::GmtM2Hex}
-    }
+        1: m1_rbm[assembly::M1RigidBodyMotions] -> {gmt_servos::GmtM1}
+    };
+
+    // gmt_servos.to_path("servos.bin")?;
+    // let gmt_servos = Sys::<GmtServoMechanisms<ACTUATOR_RATE, 1>>::from_path("servos.bin")?;
 
     let nope: Timer = Timer::new(0);
     actorscript! {
-        #[model(name=m2_rbms)]
-        1: nope[Tick] -> {gmt_servos::GmtFem}[M2RigidBodyMotions]!$
-        1: nope[Tick] -> {gmt_servos::GmtFem}[FaceSheetFigure<1>]!${675}
-        1: nope[Tick] -> {gmt_servos::GmtFem}[FaceSheetFigure<2>]!${675}
-        1: nope[Tick] -> {gmt_servos::GmtFem}[FaceSheetFigure<3>]!${675}
-        1: nope[Tick] -> {gmt_servos::GmtFem}[FaceSheetFigure<4>]!${675}
-        1: nope[Tick] -> {gmt_servos::GmtFem}[FaceSheetFigure<5>]!${675}
-        1: nope[Tick] -> {gmt_servos::GmtFem}[FaceSheetFigure<6>]!${675}
-        1: nope[Tick] -> {gmt_servos::GmtFem}[FaceSheetFigure<7>]!${675}
+        #[model(name=m1_rbms)]
+        1: nope[Tick] -> {gmt_servos::GmtFem}[M1RigidBodyMotions]!$
+        1: nope[Tick] -> {gmt_servos::GmtFem}[ModeShapes<1>]!${602}
+        1: nope[Tick] -> {gmt_servos::GmtFem}[ModeShapes<2>]!${602}
+        1: nope[Tick] -> {gmt_servos::GmtFem}[ModeShapes<3>]!${602}
+        1: nope[Tick] -> {gmt_servos::GmtFem}[ModeShapes<4>]!${602}
+        1: nope[Tick] -> {gmt_servos::GmtFem}[ModeShapes<5>]!${602}
+        1: nope[Tick] -> {gmt_servos::GmtFem}[ModeShapes<6>]!${602}
+        1: nope[Tick] -> {gmt_servos::GmtFem}[ModeShapes<7>]!${579}
     }
 
-    let mut logs = m2_rbms_logging_1.lock().await;
+    let mut logs = m1_rbms_logging_1.lock().await;
+    println!("{logs}");
     for i in 1..=7 {
-        let data: Vec<f64> = logs.iter(format!("FaceSheetFigure<{i}>"))?.last().unwrap();
+        let data: Vec<f64> = logs.iter(format!("ModeShapes<{i}>"))?.last().unwrap();
         let n = data.len() as f64;
         let (mut var, mut mean) = data
             .into_iter()

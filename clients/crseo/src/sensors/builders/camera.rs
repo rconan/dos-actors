@@ -104,4 +104,13 @@ impl<const I: usize> CameraBuilder<I> {
         self.0 = ImagingBuilder::lenslet_flux(self.0, threshold);
         self
     }
+    pub fn clone_into<const CO: usize>(&self) -> CameraBuilder<CO> {
+        CameraBuilder(self.0.clone())
+    }
+}
+
+impl<const CI: usize> OpticalModelBuilder<CameraBuilder<CI>> {
+    pub fn clone_into<const CO: usize>(&self) -> OpticalModelBuilder<CameraBuilder<CO>> {
+        self.clone_with_sensor(self.sensor.as_ref().unwrap().clone_into::<CO>())
+    }
 }

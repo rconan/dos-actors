@@ -90,6 +90,11 @@ impl<T, U: UniqueIdentifier<DataType = Vec<T>>> From<Vec<T>> for Data<U> {
         Data(Arc::new(u), PhantomData)
     }
 }
+impl<T, U: UniqueIdentifier<DataType = [T; N]>, const N: usize> From<[T; N]> for Data<U> {
+    fn from(u: [T; N]) -> Self {
+        Data(Arc::new(u), PhantomData)
+    }
+}
 impl<'a, T: Clone, U: UniqueIdentifier<DataType = Vec<T>>> From<&'a [T]> for Data<U> {
     fn from(u: &'a [T]) -> Self {
         Data(Arc::new(u.to_vec()), PhantomData)

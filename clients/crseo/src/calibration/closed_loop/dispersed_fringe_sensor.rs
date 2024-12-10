@@ -1,3 +1,4 @@
+use crate::calibration::{CalibProps, Modality};
 use std::sync::Arc;
 
 use crseo::{
@@ -18,7 +19,7 @@ use interface::{Read, UniqueIdentifier, Update, Write};
 use crate::{
     calibration::{
         algebra::Collapse, estimation::closed_loop::ClosedLoopEstimation, CalibrateAssembly,
-        CalibrationError, CalibrationSegment, ClosedLoopCalib, MirrorMode, Reconstructor,
+        CalibrationError, CalibrationSegment, ClosedLoopCalib, Reconstructor,
     },
     sensors::{DispersedFringeSensor, NoSensor, WaveSensor},
     DeviceInitialize, DispersedFringeSensorProcessing, OpticalModel, OpticalModelBuilder,
@@ -49,7 +50,8 @@ impl<const SID: u8> ClosedLoopPushPull<SID> for DispersedFringeSensorProcessing 
                     om,
                     cmd.to_vec().into(),
                 );
-            } // _ => unimplemented!(),
+            }
+            _ => unimplemented!(),
         }
         let m2_cmd = c.iter().map(|x| x * -s).collect::<Vec<_>>();
         <OpticalModel<Self::Sensor> as Read<AsmCommand<SID>>>::read(om, m2_cmd.into());
@@ -424,17 +426,19 @@ where
 
     /// Applies the command to the [OpticalModel] and estimates it using the [Reconstructor]
     /// after applying a correction with the closed-loop [OpticalModel]
-    fn estimate_with_closed_loop_reconstructor(
+    fn estimate_with_closed_loop_reconstructor<M, C>(
         optical_model: &OpticalModelBuilder<<Self::Sensor as FromBuilder>::ComponentBuilder>,
         closed_loop_optical_model: &OpticalModelBuilder<
             <WaveSensor as FromBuilder>::ComponentBuilder,
         >,
-        recon: &mut Reconstructor<CalibrationMode, ClosedLoopCalib<CalibrationMode>>,
+        recon: &mut Reconstructor<M, C>,
         cmd: &[f64],
-        m2_to_closed_loop_sensor: Reconstructor,
+        m2_to_closed_loop_sensor: &mut Reconstructor,
     ) -> std::result::Result<std::sync::Arc<Vec<f64>>, CalibrationError>
     where
-        Reconstructor<CalibrationMode, ClosedLoopCalib<CalibrationMode>>: Collapse,
+        M: Modality + Default + Send + Sync,
+        C: CalibProps<M> + Default + Send + Sync + Clone,
+        // Reconstructor<CalibrationMode, C>: Collapse,
     {
         let mut dfs_processor = <Self as ClosedLoopEstimation<WaveSensor, U>>::processor(
             optical_model,
@@ -443,20 +447,24 @@ where
             m2_to_closed_loop_sensor,
         )?;
 
-        let mut recon = recon.clone().collapse();
-        recon.pseudoinverse();
+        // let mut recon = recon.clone().collapse();
+        // recon.pseudoinverse();
 
         <DispersedFringeSensorProcessing as ClosedLoopEstimation<WaveSensor, U>>::recon(
             &mut dfs_processor,
-            &mut recon,
+            recon,
         )
     }
-    fn recon(
+    fn recon<M, C>(
         &mut self,
-        recon: &mut Reconstructor<MirrorMode>,
-    ) -> std::result::Result<std::sync::Arc<Vec<f64>>, CalibrationError> {
+        recon: &mut Reconstructor<M, C>,
+    ) -> std::result::Result<std::sync::Arc<Vec<f64>>, CalibrationError>
+    where
+        M: Modality + Default + Send + Sync,
+        C: CalibProps<M> + Default + Send + Sync + Clone,
+    {
         <DispersedFringeSensorProcessing as Write<Intercepts>>::write(self)
-            .map(|data| <Reconstructor<MirrorMode> as Read<Intercepts>>::read(recon, data));
+            .map(|data| <Reconstructor<M, C> as Read<Intercepts>>::read(recon, data));
         recon.update();
         Ok(recon.estimate.clone())
     }
@@ -466,7 +474,7 @@ where
             <WaveSensor as FromBuilder>::ComponentBuilder,
         >,
         cmd: &[f64],
-        mut m2_to_closed_loop_sensor: Reconstructor,
+        m2_to_closed_loop_sensor: &mut Reconstructor,
     ) -> std::result::Result<Self, CalibrationError>
     where
         Reconstructor<CalibrationMode, ClosedLoopCalib<CalibrationMode>>: Collapse,
@@ -474,13 +482,12 @@ where
         let mut com = closed_loop_optical_model.clone().build()?;
         <OpticalModel<_> as Read<U>>::read(&mut com, cmd.into());
         com.update();
-        <OpticalModel<_> as Write<Wavefront>>::write(&mut com).map(|cmd| {
-            <Reconstructor as Read<Wavefront>>::read(&mut m2_to_closed_loop_sensor, cmd)
-        });
+        <OpticalModel<_> as Write<Wavefront>>::write(&mut com)
+            .map(|cmd| <Reconstructor as Read<Wavefront>>::read(m2_to_closed_loop_sensor, cmd));
         m2_to_closed_loop_sensor.update();
 
         let m2_command: Vec<_> =
-            <Reconstructor as Write<M2ASMAsmCommand>>::write(&mut m2_to_closed_loop_sensor)
+            <Reconstructor as Write<M2ASMAsmCommand>>::write(m2_to_closed_loop_sensor)
                 .unwrap()
                 .into_arc()
                 .iter()
@@ -532,7 +539,10 @@ mod tests {
     use gmt_dos_clients_io::gmt_m1::M1RigidBodyMotions;
     use skyangle::Conversion;
 
-    use crate::{calibration::Calibration, sensors::WaveSensor};
+    use crate::{
+        calibration::{Calibration, MirrorMode},
+        sensors::WaveSensor,
+    };
 
     use super::*;
 
@@ -700,7 +710,7 @@ mod tests {
             &closed_loop_optical_model,
             &mut recon,
             &data,
-            m2_to_closed_loop_sensor,
+            &mut m2_to_closed_loop_sensor,
         )?;
         estimate
             .chunks(6)
