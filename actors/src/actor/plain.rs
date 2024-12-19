@@ -1,3 +1,5 @@
+use std::{iter::empty, vec};
+
 use interface::{Update, Who};
 
 use crate::{
@@ -222,6 +224,12 @@ impl VecIO {
                 .cloned()
         } else {
             None
+        }
+    }
+    pub fn into_iter(self) -> Box<dyn Iterator<Item = IO>> {
+        match self.0 {
+            Some(data) => Box::new(data.into_iter()),
+            None => Box::new(empty::<IO>()),
         }
     }
 }
