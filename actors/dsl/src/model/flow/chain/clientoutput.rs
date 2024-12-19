@@ -84,13 +84,15 @@ impl TryExpand for ClientOutputPair {
                     // .add_output()
                     // .build::<#name>()
                     if let ClientKind::SubSystem(System{  io: Some(io),.. }) = &self.client.borrow().kind {
+                        let i = self.client.borrow().input_rate.max(1);
+                        let o = self.client.borrow().output_rate;
                         quote! {
-                            let actor_output = ::gmt_dos_actors::framework::network::AddActorOutput::<#io,1,1>::add_output(&mut # actor);
+                            let actor_output = ::gmt_dos_actors::framework::network::AddActorOutput::<#io,#i,#o>::add_output(&mut # actor);
                             let output = ::gmt_dos_actors::framework::network::AddOuput::build::<#name>(actor_output);
                         }
                     } else {
                         quote!{
-                            let actor_output = ::gmt_dos_actors::framework::network::AddActorOutput::add_output(&mut # actor);
+                            let actor_output = ::gmt_dos_actors::framework::network::AddActorOutput::add_output(&mut #actor);
                             let output = ::gmt_dos_actors::framework::network::AddOuput::build::<#name>(actor_output);
                         }
                     }
@@ -121,14 +123,16 @@ impl TryExpand for ClientOutputPair {
                     // #(.#options())*
                     // .build::<#name>()
                     if let ClientKind::SubSystem(System{  io: Some(io),.. }) = &self.client.borrow().kind {
+                        let i = self.client.borrow().input_rate.max(1);
+                        let o = self.client.borrow().output_rate;
                         quote! {
-                            let actor_output = ::gmt_dos_actors::framework::network::AddActorOutput::<#io,1,1>::add_output(&mut # actor);
+                            let actor_output = ::gmt_dos_actors::framework::network::AddActorOutput::<#io,#i,#o>::add_output(&mut # actor);
                             #(let actor_output = ::gmt_dos_actors::framework::network::AddOuput::#options(actor_output);)*
                             let output = ::gmt_dos_actors::framework::network::AddOuput::build::<#name>(actor_output);
                         }
                     } else {
                         quote!{
-                            let actor_output = ::gmt_dos_actors::framework::network::AddActorOutput::add_output(&mut # actor);
+                            let actor_output = ::gmt_dos_actors::framework::network::AddActorOutput::add_output(&mut #actor);
                             #(let actor_output = ::gmt_dos_actors::framework::network::AddOuput::#options(actor_output);)*
                             let output = ::gmt_dos_actors::framework::network::AddOuput::build::<#name>(actor_output);
                         }
@@ -145,7 +149,7 @@ impl TryExpand for ClientOutputPair {
                         // #sampler
                         // .add_output()
                         // .build::<#name>()
-                        let actor_output = ::gmt_dos_actors::framework::network::AddActorOutput::add_output(&mut # actor);
+                        let actor_output = ::gmt_dos_actors::framework::network::AddActorOutput::add_output(&mut #actor);
                         #(let actor_output = ::gmt_dos_actors::framework::network::AddOuput::#options(actor_output);)*
                         let output = ::gmt_dos_actors::framework::network::AddOuput::build::<#name>(actor_output); 
                         ::gmt_dos_actors::framework::network::TryIntoInputs::into_input(
