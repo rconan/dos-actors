@@ -22,7 +22,8 @@ pub enum CalibrationMode {
         /// last mode to calibrate
         end_id: Option<usize>,
     },
-    // Mirror([Option<Box<CalibrationMode>>; 7]),
+    /// Mirror global tip-tilt
+    GlobalTipTilt(f64),
 }
 
 impl Default for CalibrationMode {
@@ -43,21 +44,8 @@ impl Display for CalibrationMode {
                     .join(",")
             )?,
             CalibrationMode::Modes { .. } => write!(f, "{:?}", self.mode_range())?,
-            // CalibrationMode::Mirror(segments) => write!(
-            //     f,
-            //     "{:}",
-            //     segments
-            //         .iter()
-            //         .enumerate()
-            //         .filter_map(|(i, segment)| segment.as_ref().map(|s| format!(
-            //             "S{}[{}]",
-            //             i + 1,
-            //             s
-            //         )))
-            //         .collect::<Vec<_>>()
-            //         .join(",")
-            // )?,
-        };
+            CalibrationMode::GlobalTipTilt(_) => write!(f, "global tip-tilt")?,
+        }
         Ok(())
     }
 }
@@ -206,7 +194,7 @@ impl CalibrationMode {
         match self {
             Self::RBM(_) => 6,
             Self::Modes { n_mode, .. } => *n_mode,
-            // &Self::Mirror(_) => todo!(),
+            Self::GlobalTipTilt(_) => 2,
         }
     }
     /// Returns the number of modes that are used for calibration
@@ -222,6 +210,7 @@ impl CalibrationMode {
                 let end = end_id.unwrap_or(*n_mode);
                 end - start_idx
             } // &Self::Mirror(_) => todo!(),
+            Self::GlobalTipTilt(_) => 2,
         }
     }
     /// Returns the indices as the range of modes to calibrate
@@ -237,6 +226,7 @@ impl CalibrationMode {
                 let end = end_id.unwrap_or(*n_mode);
                 *start_idx..end
             } // &Self::Mirror(_) => todo!(),
+            Self::GlobalTipTilt(_) => 0..2,
         }
     }
     /// Returns the mode number as the range of modes to calibrate
@@ -252,7 +242,8 @@ impl CalibrationMode {
                 let start = *start_idx + 1;
                 let end = end_id.unwrap_or(*n_mode);
                 start..=end
-            } // &Self::Mirror(_) => todo!(),
+            }
+            Self::GlobalTipTilt(_) => 1..=2,
         }
     }
     /// Returns an iterator over the command vector
@@ -270,7 +261,7 @@ impl CalibrationMode {
                 cmd[i] = *stroke;
                 cmd
             })),
-            // &Self::Mirror(_) => todo!(),
+            Self::GlobalTipTilt(_) => unimplemented!(),
         }
     }
     /// Returns an iterator over both the stroke and the command vector
@@ -288,7 +279,7 @@ impl CalibrationMode {
                 cmd[i] = *stroke;
                 (*stroke, cmd)
             })),
-            // &Self::Mirror(_) => todo!(),
+            Self::GlobalTipTilt(_) => unimplemented!(),
         }
     }
     /// Merge two [CalibrationMode]s

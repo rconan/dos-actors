@@ -26,6 +26,12 @@ impl AsmsToHexOffload {
             control: Integrator::new(42).gain(lag).into(),
         })
     }
+    pub fn leaky(lag: f64, leak: f64) -> anyhow::Result<Self> {
+        Ok(Self {
+            voice_coil_to_rbm: VoiceCoilToRbm::new()?.into(),
+            control: Integrator::new(42).gain(lag).forgetting_factor(leak).into(),
+        })
+    }
 }
 
 impl Display for AsmsToHexOffload {

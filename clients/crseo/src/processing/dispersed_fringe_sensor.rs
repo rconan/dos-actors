@@ -1,4 +1,4 @@
-use std::{f32::consts::PI, iter::repeat};
+use std::{f32::consts::PI, fmt::Display, iter::repeat};
 
 use crseo::imaging;
 use gmt_dos_clients_io::optics::{
@@ -63,6 +63,17 @@ pub struct DispersedFringeSensorProcessing {
     mask_radius: Option<f32>,
     pub intercept: Vec<f64>,
     reference: Option<Vec<f64>>,
+}
+
+impl Display for DispersedFringeSensorProcessing {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "dispersed fringe sensor processor (threshold={:?},mask_radius={:?})",
+            self.threshold, self.mask_radius
+        )?;
+        Ok(())
+    }
 }
 
 impl DispersedFringeSensorProcessing {

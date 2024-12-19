@@ -1,5 +1,5 @@
 use interface::{UniqueIdentifier, UID};
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::Arc};
 
 /// Source wavefront error RMS `[m]`
 #[derive(UID)]
@@ -19,6 +19,16 @@ pub enum Wavefront {}
 #[derive(UID)]
 #[uid(port = 55_002)]
 pub enum TipTilt {}
+
+/// M1 global tip-tilt
+#[derive(UID)]
+#[uid(port = 55_101)]
+pub enum M1GlobalTipTilt {}
+
+/// M2 global tip-tilt
+#[derive(UID)]
+#[uid(port = 55_102)]
+pub enum M2GlobalTipTilt {}
 
 /// Source segment wavefront piston and standard deviation `([m],[m])x7`
 pub enum SegmentWfe<const E: i32 = 0> {}
@@ -63,10 +73,52 @@ pub enum SensorData {}
 #[uid(data = Vec<f32>, port = 55_008)]
 pub enum DetectorFrame {}
 
+/// M1 mode coefficients
+#[deprecated = "use M1Modes instead"]
+#[derive(UID)]
+#[uid(port = 55_011)]
+pub enum M1modes {}
 /// M2 mode coefficients
+#[deprecated = "use M2Modes instead"]
 #[derive(UID)]
 #[uid(port = 55_009)]
 pub enum M2modes {}
+/// M1 mode coefficients
+#[derive(UID)]
+#[uid(port = 55_011)]
+pub enum M1Modes {}
+/// M2 mode coefficients
+#[derive(UID)]
+#[uid(port = 55_009)]
+pub enum M2Modes {}
+
+/// GMT mirror optical state (rigid body motion and surface figure)
+#[derive(Debug, Default, Clone)]
+pub struct MirrorState {
+    pub rbms: Arc<Vec<f64>>,
+    pub modes: Arc<Vec<f64>>,
+}
+impl MirrorState {
+    pub fn new(rbms: Vec<f64>, modes: Vec<f64>) -> Self {
+        Self {
+            rbms: Arc::new(rbms),
+            modes: Arc::new(modes),
+        }
+    }
+}
+
+/// M1 optics state
+pub enum M1State {}
+impl UniqueIdentifier for M1State {
+    type DataType = MirrorState;
+    const PORT: u16 = 50_012;
+}
+/// M2 optics state
+pub enum M2State {}
+impl UniqueIdentifier for M2State {
+    type DataType = MirrorState;
+    const PORT: u16 = 50_013;
+}
 
 /// M2 Rx and Ry rigid body motions
 #[derive(UID)]

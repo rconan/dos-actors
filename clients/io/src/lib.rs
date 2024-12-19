@@ -19,6 +19,10 @@ pub use assembly::Assembly;
 #[uid(port = 56_012)]
 pub enum M12RigidBodyMotions {}
 
+#[derive(UID)]
+#[uid(port = 56_666)]
+pub enum Estimate {}
+
 /// Mount
 pub mod mount {
     use super::UID;

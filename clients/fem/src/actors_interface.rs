@@ -24,13 +24,15 @@ use interface::Units;
 use prelude::*;
 
 #[cfg(fem)]
-pub mod cfd;
+mod cfd;
 #[cfg(fem)]
-pub mod m1;
+mod m1;
 #[cfg(fem)]
-pub mod m2;
+mod m2;
 #[cfg(fem)]
-pub mod mount;
+mod mount;
+mod rbm_removal;
+pub use rbm_removal::RbmRemoval;
 
 impl<S> Units for DiscreteModalSolver<S> where S: Solver + Default {}
 

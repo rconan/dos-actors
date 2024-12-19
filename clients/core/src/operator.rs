@@ -58,8 +58,12 @@ where
             }
             (false, false) => (),
         };
+        let mut buffer = self.left.as_slice().to_vec();
+        if self.left.len() < self.right.len() {
+            buffer.extend(vec![T::default(); self.right.len() - self.left.len()]);
+        }
         self.output = Arc::new(
-            self.left
+            buffer
                 .iter()
                 .zip(&*self.right)
                 .map(|(left, right)| match self.kind {

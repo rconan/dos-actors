@@ -1,6 +1,6 @@
 [package]
 name = "gmt_dos-clients_servos"
-version = "2.1.1"
+version = "2.2.0"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -32,6 +32,7 @@ thiserror.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread"] }
 crseo = { workspace = true, optional = true }
 gmt_dos-clients_crseo = { workspace = true, optional = true }
+serde-pickle = "1.2.0"
 
 [dev-dependencies]
 complot = "0.3.4"
@@ -41,6 +42,7 @@ gmt_dos-clients = { workspace = true, features = ["nalgebra"] }
 gmt_dos-clients_lom.workspace = true
 gmt_dos-clients_scope = { workspace = true, features = ["server"] }
 gmt_dos-clients_scope-client.workspace = true
+nanorand.workspace = true
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fem)'] }
