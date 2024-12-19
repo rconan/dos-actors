@@ -130,7 +130,7 @@ impl<const C: usize, const F: usize> Size<DfsFftFrame<Host>>
     }
 }
 
-impl<const C: usize, const F: usize> Display for OpticalModel<DispersedFringeSensor<F, C>> {
+impl<const C: usize, const F: usize> Display for OpticalModel<DispersedFringeSensor<C, F>> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "- OPTICAL MODEL -")?;
         self.gmt.fmt(f)?;
@@ -146,7 +146,7 @@ impl<const C: usize, const F: usize> Display for OpticalModel<DispersedFringeSen
             sensor.0.pixel_scale().to_mas(),
             sensor.0.field_of_view().to_arcsec()
         )?;
-        writeln!(f, "DFS camera reset @{C} & FFT reset @{F} in sample #")?;
+        writeln!(f, "DFS camera reset @{C} sample & FFT reset @{F} frame")?;
         writeln!(f, "-----------------")?;
         Ok(())
     }

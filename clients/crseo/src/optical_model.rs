@@ -17,7 +17,10 @@ use gmt_dos_clients_io::{
         },
         M2RigidBodyMotions,
     },
-    optics::{M1GlobalTipTilt, M2GlobalTipTilt, M2modes, SegmentD7Piston},
+    optics::{
+        M1GlobalTipTilt, M1Modes, M1State, M2GlobalTipTilt, M2Modes, M2State, M2modes,
+        SegmentD7Piston,
+    },
 };
 use interface::{Data, Read, UniqueIdentifier, Units, Update, Write};
 
@@ -132,6 +135,19 @@ impl<T: SensorPropagation, const SID: u8> Read<BendingModes<SID>> for OpticalMod
     }
 }
 
+impl<T: SensorPropagation> Read<M1Modes> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M1Modes>) {
+        assert_eq!(7 * self.gmt.m1.n_mode, data.len());
+        self.gmt.m1_modes(&data);
+    }
+}
+impl<T: SensorPropagation> Read<M1State> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M1State>) {
+        let state = data.into_arc();
+        <Self as Read<M1RigidBodyMotions>>::read(self, state.rbms.clone().into());
+        <Self as Read<M1Modes>>::read(self, state.modes.clone().into());
+    }
+}
 impl<T: SensorPropagation> Read<M1ModeShapes> for OpticalModel<T> {
     fn read(&mut self, data: Data<M1ModeShapes>) {
         self.gmt.m1_modes(&data);
@@ -185,8 +201,28 @@ impl<T: SensorPropagation> Read<M2GlobalTipTilt> for OpticalModel<T> {
     }
 }
 
+impl<T: SensorPropagation> Read<M2Modes> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M2Modes>) {
+        assert_eq!(7 * self.gmt.m2.n_mode, data.len());
+        // if 7 * self.gmt.m2.n_mode > data.len() {
+        //     let augmented_data: Vec<_> = data
+        //         .chunks(data.len() / 7)
+        //         .flat_map(|data| {
+        //             let mut v = vec![0f64];
+        //             v.extend_from_slice(data);
+        //             v
+        //         })
+        //         .collect();
+        //     assert_eq!(augmented_data.len(), self.gmt.m2.n_mode * 7);
+        //     self.gmt.m2_modes(&augmented_data);
+        // } else {
+        self.gmt.m2_modes(&data);
+        // }
+    }
+}
 impl<T: SensorPropagation> Read<M2modes> for OpticalModel<T> {
     fn read(&mut self, data: Data<M2modes>) {
+        assert_eq!(7 * self.gmt.m2.n_mode, data.len());
         if 7 * self.gmt.m2.n_mode > data.len() {
             let augmented_data: Vec<_> = data
                 .chunks(data.len() / 7)
@@ -201,6 +237,14 @@ impl<T: SensorPropagation> Read<M2modes> for OpticalModel<T> {
         } else {
             self.gmt.m2_modes(&data);
         }
+    }
+}
+
+impl<T: SensorPropagation> Read<M2State> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M2State>) {
+        let state = data.into_arc();
+        <Self as Read<M2RigidBodyMotions>>::read(self, state.rbms.clone().into());
+        <Self as Read<M2Modes>>::read(self, state.modes.clone().into());
     }
 }
 
