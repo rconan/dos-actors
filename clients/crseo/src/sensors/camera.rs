@@ -14,7 +14,7 @@ mod interface;
 
 /// Optical model camera
 ///
-/// [Camera] is a newtype around [crseo::Imaging].
+/// [Camera] is a newtype around [crseo Imaging](https://docs.rs/crseo/latest/crseo/imaging).
 ///
 /// The number of frames that are co-added before resetting the camera is given by `I`.
 ///

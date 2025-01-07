@@ -40,6 +40,20 @@ impl CentroidKind for ZeroMean {
 /// Compute the centroids for a Shack-Hartmann type of sensor.
 /// The generic parameter `K` allows to compute the centroids
 /// with ([ZeroMean]) or without ([Full])  mean subtraction.
+///
+/// # Example
+///
+/// A [CentroidsProcessing] is created from a default [OpticalModelBuilder] with the [Camera](crate::sensors::Camera) sensor
+/// using the [DeviceInitialize] trait for [OpticalModelBuilder] to set the reference centroids
+/// ```
+/// use gmt_dos_clients_crseo::{OpticalModel, sensors::Camera,
+///      centroiding::CentroidsProcessing, DeviceInitialize};
+///
+/// let omb = OpticalModel::<Camera>::builder();
+/// let mut centroids: CentroidsProcessing = CentroidsProcessing::try_from(&omb)?;
+/// omb.initialize(&mut centroids);
+/// # Ok::<(),Box<dyn std::error::Error>>(())
+/// ```
 pub struct CentroidsProcessing<K = Full>
 where
     K: CentroidKind,

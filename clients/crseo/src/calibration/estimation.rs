@@ -6,7 +6,7 @@
 
 Calibration and estimation of M1 rigid body motion `Tz`
 
-```
+```no_run
  use crseo::gmt::GmtM1;
  use gmt_dos_clients_io::gmt_m1::M1RigidBodyMotions;
  use gmt_dos_clients_crseo::{OpticalModel,

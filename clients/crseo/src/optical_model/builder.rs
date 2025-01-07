@@ -8,10 +8,11 @@ use serde::{Deserialize, Serialize};
 
 /// GMT optical model builder
 ///
-/// # Examples:
+/// # Examples
 ///
-/// Build a optical model with the default values for [GmtBuilder](crseo::gmt::GmtBuilder)
-/// and for [SourceBuilder](crseo::source::SourceBuilder) and without sensor
+/// Build a optical model with the default values for [GmtBuilder](https://docs.rs/crseo/latest/crseo/gmt)
+/// and for [SourceBuilder](https://docs.rs/crseo/latest/crseo/source) and without sensor
+
 ///
 /// ```
 /// use gmt_dos_clients_crseo::{OpticalModel, sensors::NoSensor};
@@ -38,7 +39,9 @@ where
     /// use gmt_dos_clients_crseo::{OpticalModel, sensors::NoSensor};
     /// use crseo::{Gmt, FromBuilder};
     ///
-    /// let om = OpticalModel::<NoSensor>::builder().gmt(Gmt::builder().m1_n_mode(21)).build()?;
+    /// let om = OpticalModel::<NoSensor>::builder()
+    ///     .gmt(Gmt::builder().m1_n_mode(21))
+    ///     .build()?;
     /// # Ok::<(),Box<dyn std::error::Error>>(())
     /// ```
     pub fn gmt(mut self, builder: GmtBuilder) -> Self {
@@ -51,7 +54,9 @@ where
     /// use gmt_dos_clients_crseo::{OpticalModel, sensors::NoSensor};
     /// use crseo::{Source, FromBuilder};
     ///
-    /// let om = OpticalModel::<NoSensor>::builder().source(Source::builder().band("K")).build()?;
+    /// let om = OpticalModel::<NoSensor>::builder()
+    ///     .source(Source::builder().band("K"))
+    ///     .build()?;
     /// # Ok::<(),Box<dyn std::error::Error>>(())
     /// ```
     pub fn source(mut self, builder: SourceBuilder) -> Self {
@@ -66,7 +71,8 @@ where
     ///
     /// let om = OpticalModel::<NoSensor>::builder()
     ///     .sampling_frequency(1_000_f64) // 1kHz
-    ///     .atmosphere(Atmosphere::builder()).build()?;
+    ///     .atmosphere(Atmosphere::builder())
+    ///     .build()?;
     /// # Ok::<(),Box<dyn std::error::Error>>(())
     /// ```
     pub fn atmosphere(self, atm_builder: AtmosphereBuilder) -> Self {
@@ -81,7 +87,9 @@ where
     /// use gmt_dos_clients_crseo::{OpticalModel, sensors::WaveSensor};
     /// use crseo::FromBuilder;
     ///
-    /// let om = OpticalModel::<WaveSensor>::builder().sensor(WaveSensor::builder());
+    /// let om = OpticalModel::<WaveSensor>::builder()
+    ///     .sensor(WaveSensor::builder())
+    ///     .build()?;
     /// # Ok::<(),Box<dyn std::error::Error>>(())
     /// ```
     pub fn sensor(mut self, builder: S) -> Self {
@@ -96,7 +104,8 @@ where
     ///
     /// let om = OpticalModel::<NoSensor>::builder()
     ///     .sampling_frequency(1_000_f64) // 1kHz
-    ///     .atmosphere(Atmosphere::builder()).build()?;
+    ///     .atmosphere(Atmosphere::builder())
+    ///     .build()?;
     /// # Ok::<(),Box<dyn std::error::Error>>(())
     pub fn sampling_frequency(self, sampling_frequency: f64) -> Self {
         Self {

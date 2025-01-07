@@ -47,18 +47,22 @@ impl From<&OpticalModelBuilder<NoSensor>> for WaveSensorBuilder {
 }
 
 impl WaveSensorBuilder {
+    /// Sets the GMT builder
     pub fn gmt(mut self, gmt: GmtBuilder) -> Self {
         self.omb = self.omb.gmt(gmt);
         self
     }
+    ///  Sets the source builder
     pub fn source(mut self, source: SourceBuilder) -> Self {
         self.omb = self.omb.source(source);
         self
     }
+    /// Computes the segment piston from the wavefront
     pub fn with_segment_piston(mut self) -> Self {
         self.segment_piston = true;
         self
     }
+    /// Computes the segment average gradient from the wavefront
     pub fn with_segment_gradient(mut self) -> Self {
         self.segment_gradient = true;
         self

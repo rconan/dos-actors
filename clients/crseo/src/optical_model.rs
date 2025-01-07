@@ -39,7 +39,10 @@ pub enum OpticalModelError {
 
 /// GMT optical model
 ///
-/// # Examples:
+/// GMT M1 and M2 optical prescriptions.
+/// May as well include a [sensor](crate::sensors) and a model of the [atmospheric turbulence](https://docs.rs/crseo/latest/crseo/atmosphere).
+///
+/// ## Example
 ///
 /// Build a optical model with the default [OpticalModelBuilder]
 /// ```
@@ -65,10 +68,11 @@ impl<T> OpticalModel<T> {
     pub fn sensor(&self) -> Option<&T> {
         self.sensor.as_ref()
     }
-
+    /// Returns a mutable reference to the source
     pub fn source(&self) -> &Source {
         &self.src
     }
+    /// Returns a immutable reference to the source
     pub fn source_mut(&mut self) -> &mut Source {
         &mut self.src
     }
@@ -82,6 +86,7 @@ impl<T> OpticalModel<T>
 where
     T: FromBuilder,
 {
+    /// Creates an optical model builder
     pub fn builder() -> OpticalModelBuilder<<T as FromBuilder>::ComponentBuilder> {
         let OpticalModelBuilder {
             gmt,

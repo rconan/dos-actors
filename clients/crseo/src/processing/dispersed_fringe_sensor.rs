@@ -25,7 +25,7 @@ const O: [f32; 12] = [
     0.,
 ];
 
-/// [Dispersed Fringe Sensor](DispersedFringeSensor) fftlet
+/// [Dispersed Fringe Sensor](DispersedFringeSensor) image FFT
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Fftlet {
     x: Vec<f32>,
@@ -54,7 +54,25 @@ impl Fftlet {
     }
 }
 
-/// [Dispersed Fringe Sensor](DispersedFringeSensor) processing
+/// [DispersedFringeSensor] data processing pipeline
+///
+/// Computes the y-axis coordinates (a.k.a intercepts) of the side-lobes of the FFT of the dispersed images
+///
+/// # Example
+///
+/// A [DispersedFringeSensorProcessing] is created from a default [OpticalModelBuilder](crate::OpticalModelBuilder) with the [DispersedFringeSensor](crate::sensors::DispersedFringeSensor) sensor and
+/// using the [DeviceInitialize](crate::DeviceInitialize) trait for [OpticalModelBuilder](crate::OpticalModelBuilder) to initialize the data processing pipeline
+/// ```
+/// use crseo::FromBuilder;
+/// use gmt_dos_clients_crseo::{OpticalModel, sensors::DispersedFringeSensor,
+///      DispersedFringeSensorProcessing, DeviceInitialize};
+///
+/// let mut dfs_processor = DispersedFringeSensorProcessing::new();
+/// let omb = OpticalModel::<DispersedFringeSensor>::builder()
+///     .sensor(DispersedFringeSensor::builder());
+/// omb.initialize(&mut dfs_processor );
+/// # Ok::<(),Box<dyn std::error::Error>>(())
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DispersedFringeSensorProcessing {
     data: Vec<Vec<f32>>,
@@ -78,6 +96,9 @@ impl Display for DispersedFringeSensorProcessing {
 
 impl DispersedFringeSensorProcessing {
     /// Creates a new instance
+    ///
+    /// The relative intensity threshold is set to 20%
+    /// and the image mask radius is set to 13px
     pub fn new() -> Self {
         Self {
             data: vec![],
@@ -96,14 +117,14 @@ impl DispersedFringeSensorProcessing {
         self.reference = Some(dfs.intercept.clone());
         self
     }
-    /// Sets the frame relative theshold
+    /// Sets the relative intensity threshold (<1) of the [Fftlet] image
     pub fn threshold(self, t: f64) -> Self {
         Self {
             threshold: Some(t as f32),
             ..self
         }
     }
-    /// Sets the radius of the imagelet mask
+    /// Sets the radius `[px]` of the circular mask of the [Fftlet] image
     pub fn mask_radius(self, r: f64) -> Self {
         Self {
             mask_radius: Some(r as f32),
@@ -132,7 +153,7 @@ impl<const C: usize, const F: usize> From<&mut crate::OpticalModel<DispersedFrin
 }
 
 impl DispersedFringeSensorProcessing {
-    /// Process a frame
+    /// Process a FFT frame
     pub fn process(&mut self, frame: &imaging::Frame) -> &mut Self {
         let n = frame.resolution;
         let q = frame.n_px_camera;
@@ -162,11 +183,13 @@ impl DispersedFringeSensorProcessing {
         self.n = q;
         self
     }
-    /// Returns the flux
+    /// Returns the flux of each FFT image
     pub fn flux(&self) -> Vec<f32> {
         self.data.iter().map(|data| data.iter().sum()).collect()
     }
-    /// Return an iterator over the FFTlet `(x,y)` coordinates
+    /// Return an iterator over the [Fftlet] `(x,y)` coordinates
+    ///
+    /// The coordinates axis are matched to the direction of dispersion
     pub fn xy(&self, o: f32) -> impl Iterator<Item = (f32, f32)> {
         let n = self.n;
 
@@ -183,7 +206,7 @@ impl DispersedFringeSensorProcessing {
             (co * x - so * y, so * x + co * y)
         })
     }
-    /// Returns an FFTlet
+    /// Returns the [Fftlet] associated with a dispersed image
     pub fn fftlet(
         &self,
         angle: f32,
