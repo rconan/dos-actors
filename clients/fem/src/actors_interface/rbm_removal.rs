@@ -2,11 +2,11 @@ use std::collections::HashMap;
 
 use geotrans::{Quaternion, Vector};
 use gmt_fem::FEM;
-use serde::{Deserialize, Serialize};
 
 use crate::StateSpaceError;
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, Default)]
 pub struct RbmRemoval(HashMap<u8, Vec<f64>>);
 
 impl RbmRemoval {
