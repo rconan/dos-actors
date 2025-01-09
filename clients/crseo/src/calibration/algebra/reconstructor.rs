@@ -345,6 +345,10 @@ impl<C: CalibProps<CalibrationMode> + Merge> Reconstructor<CalibrationMode, C> {
 }
 
 impl<C: CalibProps<MirrorMode> + Expand> Reconstructor<MirrorMode, C> {
+    /// Returns the # of calibration matrix
+    pub fn len(&self) -> usize {
+        1
+    }
     /// Splits a [MirrorMode] [Reconstructor]
     ///
     /// Returns a [Reconstructor] with [Vec] of [CalibrationMode] [Calib]
