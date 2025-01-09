@@ -39,6 +39,9 @@ where
     fn mask(&self, data: &[f64]) -> Vec<f64>;
     fn n_cols(&self) -> usize;
     fn n_rows(&self) -> usize;
+    fn shape(&self) -> (usize, usize) {
+        (self.n_rows(), self.n_cols())
+    }
     fn mat_ref(&self) -> MatRef<'_, f64>;
     fn n_mode(&self) -> usize;
     fn mode(&self) -> M;
