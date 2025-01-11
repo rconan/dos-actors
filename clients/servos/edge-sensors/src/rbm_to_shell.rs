@@ -25,7 +25,7 @@ const N: usize = 84;
 
 impl RbmToShell {
     pub fn new() -> Result<Self> {
-        let data_repo = env::var("DATA_REPO").context("`DATA_REPO` is not set")?;
+        let data_repo = env::var("EDGE_SENSORS_DATA").context("`EDGE_SENSORS_DATA` is not set")?;
         let mat_file = MatFile::load(Path::new(&data_repo).join("rbm_2_faceheet.mat"))?;
         let mut rbm_2_shell = Vec::<DMatrix<f64>>::new();
         for i in 1..=7 {
