@@ -1,6 +1,7 @@
 use std::{env, marker::PhantomData};
 
-use eframe::egui::{self, plot::Legend};
+use eframe::egui;
+use egui_plot::{Corner, Legend, Plot, PlotUi};
 use gmt_dos_clients_transceiver::{CompactRecvr, Monitor, Transceiver, TransceiverError};
 use interface::UniqueIdentifier;
 use tokio::task::JoinError;
@@ -137,17 +138,18 @@ where
             }
         });
         let native_options = eframe::NativeOptions {
-            initial_window_size: Some(egui::Vec2::from(<K as ScopeKind>::window_size())),
+            viewport: egui::ViewportBuilder::default()
+                .with_inner_size(egui::Vec2::from(<K as ScopeKind>::window_size())),
             ..Default::default()
         };
         let _ = eframe::run_native(
             &self.name.clone(),
             native_options,
             Box::new(|cc| {
-                Box::new({
+                Ok(Box::new({
                     self.run(cc.egui_ctx.clone());
                     self
-                })
+                }))
             }),
         );
     }
@@ -159,9 +161,8 @@ pub type Scope = XScope<PlotScope>;
 impl eframe::App for Scope {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            let plot = egui::plot::Plot::new("Scope")
-                .legend(Legend::default().position(egui::plot::Corner::LeftTop));
-            plot.show(ui, |plot_ui: &mut egui::plot::PlotUi| {
+            let plot = Plot::new("Scope").legend(Legend::default().position(Corner::LeftTop));
+            plot.show(ui, |plot_ui: &mut PlotUi| {
                 for signal in &mut self.signals {
                     // plot_ui.line(signal.line());
                     signal.plot_ui(plot_ui, self.n_sample)
@@ -177,13 +178,13 @@ pub type Shot = XScope<ImageScope>;
 impl eframe::App for Shot {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            let plot = egui::plot::Plot::new("Scope")
+            let plot = Plot::new("Scope")
                 //.show_axes([false; 2])
                 .show_x(false)
                 .show_y(false)
                 .allow_scroll(false)
                 .data_aspect(1f32);
-            plot.show(ui, |plot_ui: &mut egui::plot::PlotUi| {
+            plot.show(ui, |plot_ui: &mut PlotUi| {
                 for signal in &mut self.signals {
                     // plot_ui.line(signal.line());
                     signal.plot_ui(plot_ui, None)
@@ -205,7 +206,7 @@ impl eframe::App for GmtShot {
             signal.plot_stats_ui(ctx)
         }
         egui::CentralPanel::default().show(ctx, |ui| {
-            let plot = egui::plot::Plot::new("Scope")
+            let plot = Plot::new("Scope")
                 // .show_axes([false; 2])
                 .show_x(false)
                 .show_y(false)
@@ -213,7 +214,7 @@ impl eframe::App for GmtShot {
                 .allow_scroll(false)
                 .data_aspect(1f32);
             // .view_aspect(1f32);
-            plot.show(ui, |plot_ui: &mut egui::plot::PlotUi| {
+            plot.show(ui, |plot_ui: &mut PlotUi| {
                 for signal in &mut self.signals {
                     // plot_ui.line(signal.line());
                     signal.plot_ui(plot_ui, None)

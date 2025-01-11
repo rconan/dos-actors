@@ -12,7 +12,7 @@ categories.workspace = true
 keywords.workspace = true
 
 [dependencies]
-eframe = { version = "0.22.0", optional = true }
+eframe = { version = "0.30.0", optional = true }
 flume = { workspace = true, optional = true }
 gmt_dos-actors = { workspace = true, optional = true }
 interface.workspace = true
@@ -22,6 +22,8 @@ thiserror.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread"], optional = true }
 tracing.workspace = true
 colorous = { version = "1.0.12", optional = true }
+egui_plot = {version = "0.30.0", optional = true }
+epaint = { version = "0.30.0", features = ["serde"], optional = true }
 
 [dev-dependencies]
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
@@ -33,9 +35,10 @@ gmt_dos-clients_io.workspace = true
 
 [features]
 # default = ["client"]
-client = ["eframe", "flume", "gmt_dos-actors", "tokio", "colorous"]
+client = ["eframe", "egui_plot", "epaint", "flume", "gmt_dos-actors", "tokio", "colorous"]
 server = []
 compress = ["gmt_dos-clients_transceiver/flate2"]
+# eframe = ["dep:eframe"]
 
 [[example]]
 name = "tx"

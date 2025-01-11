@@ -1,10 +1,9 @@
-use eframe::{
-    egui::Context,
-    epaint::{Color32, ColorImage, TextureHandle},
-};
+use epaint::{Color32, ColorImage};
+use serde::{Deserialize, Serialize};
 
 use crate::payload::Payload;
 
+#[derive(Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub(crate) enum SignalData {
     Signal {
@@ -17,7 +16,7 @@ pub(crate) enum SignalData {
         tag: String,
         time: f64,
         size: [usize; 2],
-        texture: Option<TextureHandle>,
+        image: Option<ColorImage>,
         quantiles: Option<Quantiles>,
     },
 }
@@ -34,7 +33,7 @@ impl From<&Payload> for SignalData {
                 tag: tag.clone(),
                 time: 0f64,
                 size: *size,
-                texture: None,
+                image: None,
                 quantiles: None,
             },
             Payload::Signals { tag, tau, value } => Self::Signals(
@@ -51,7 +50,7 @@ impl From<&Payload> for SignalData {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Quantiles {
     pub minimum: f64,
     pub lower_whisker: f64,
@@ -99,7 +98,7 @@ impl Quantiles {
 }
 
 impl SignalData {
-    pub fn add_payload(&mut self, ctx: &mut Context, payload: &Payload) {
+    pub fn add_payload(&mut self, payload: &Payload) {
         match (payload, self) {
             (Payload::Signal { value, .. }, SignalData::Signal { tau, points, .. }) => {
                 let &[x, _y] = points.last().unwrap();
@@ -129,9 +128,8 @@ impl SignalData {
                     ..
                 },
                 SignalData::Image {
-                    tag,
                     time,
-                    texture,
+                    image: texture,
                     quantiles,
                     ..
                 },
@@ -178,7 +176,7 @@ impl SignalData {
                     }
                 };
                 *time += tau;
-                texture.replace(ctx.load_texture(tag.as_str(), img, Default::default()));
+                texture.replace(img);
             }
             _ => todo!(),
         };

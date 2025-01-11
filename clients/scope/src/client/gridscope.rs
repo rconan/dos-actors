@@ -2,6 +2,7 @@ use std::env;
 
 use super::{ClientError, Scope};
 use eframe::egui;
+use egui_plot::{Plot, PlotUi};
 use interface::UniqueIdentifier;
 
 const PLOT_SIZE: (f32, f32) = (600f32, 500f32);
@@ -108,7 +109,8 @@ impl GridScope {
             });
         }
         let native_options = eframe::NativeOptions {
-            initial_window_size: Some(egui::Vec2::from(self.window_size())),
+            viewport: egui::ViewportBuilder::default()
+                .with_inner_size(egui::Vec2::from(self.window_size())),
             ..Default::default()
         };
         let _ = eframe::run_native(
@@ -119,7 +121,7 @@ impl GridScope {
                     let scope = &mut node.scope;
                     scope.run(cc.egui_ctx.clone());
                 }
-                Box::new(self)
+                Ok(Box::new(self))
             }),
         );
     }
@@ -138,12 +140,12 @@ impl eframe::App for GridScope {
                             .iter_mut()
                             .find(|node| node.indices == (row, col))
                             .map(|node| {
-                                let plot = egui::plot::Plot::new("Scope")
+                                let plot = Plot::new("Scope")
                                     .legend(Default::default())
                                     .width(self.plot_size.0)
                                     .height(self.plot_size.1)
                                     .set_margin_fraction(egui::Vec2::from((0.05, 0.05)));
-                                plot.show(ui, |plot_ui: &mut egui::plot::PlotUi| {
+                                plot.show(ui, |plot_ui: &mut PlotUi| {
                                     for signal in &mut node.scope.signals {
                                         signal.plot_ui(plot_ui, node.scope.n_sample)
                                     }
