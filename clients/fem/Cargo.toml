@@ -27,6 +27,7 @@ serde = { workspace = true, optional = true }
 bincode = { workspace = true, optional = true }
 anyhow.workspace = true
 geotrans = "0.2.2"
+toml = {version = "0.8.19", optional = true}
 
 [build-dependencies]
 anyhow.workspace = true
@@ -63,7 +64,7 @@ required-features = ["clap"]
 [[bin]]
 name = "static_gain"
 path = "src/bin/static_gain.rs"
-required-features = ["serde", "clap"]
+required-features = ["serde", "clap", "toml"]
 
 [package.metadata.docs.rs]
 all-features = true
