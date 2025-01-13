@@ -26,7 +26,7 @@ async fn main() -> anyhow::Result<()> {
     let fem = FEM::from_env()?;
 
     let mut modes = vec![vec![0f64; N_MODE]; 7];
-    [3, 27, 75, 147, 243, 383, 507, 675]
+    [3, 27, 75, 147, 243, 363, 507, 675]
         .into_iter()
         .for_each(|i| {
             modes[0][i - 1] = 1e-6;

@@ -41,6 +41,7 @@ gmt_dos-clients = { workspace = true, features = ["nalgebra"] }
 gmt_dos-clients_lom.workspace = true
 gmt_dos-clients_scope = { workspace = true, features = ["server"] }
 gmt_dos-clients_scope-client.workspace = true
+nanorand.workspace = true
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fem)'] }

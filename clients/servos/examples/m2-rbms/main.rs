@@ -75,7 +75,7 @@ async fn main() -> anyhow::Result<()> {
     });
 
     // GMT Servo-mechanisms system
-    
+
     let gmt_servos =
         GmtServoMechanisms::<ACTUATOR_RATE, 1>::new(sim_sampling_frequency as f64, fem)
             .asms_servo(AsmsServo::new().facesheet(Default::default()))
@@ -106,7 +106,7 @@ async fn main() -> anyhow::Result<()> {
         1: nope[Tick] -> {gmt_servos::GmtFem}[FaceSheetFigure<7>]!${675}
     }
 
-    let mut logs = logging_1.lock().await;
+    let mut logs = m2_rbms_logging_1.lock().await;
     for i in 1..=7 {
         let data: Vec<f64> = logs.iter(format!("FaceSheetFigure#{i}"))?.last().unwrap();
         let n = data.len() as f64;
