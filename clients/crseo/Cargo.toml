@@ -24,9 +24,9 @@ anyhow.workspace = true
 toml = "0.8.8"
 indicatif = { workspace = true, features = ["rayon"] }
 rayon.workspace = true
-faer = { version = "0.19.1", optional = true }
+faer = { version = "0.20.2", optional = true }
 bincode = { workspace = true, features = ["serde"] }
-faer-ext = { version = "0.2.0", features = ["nalgebra"] }
+faer-ext = { version = "0.4.1", features = ["nalgebra"] }
 skyangle = "0.2.2"
 geotrans = {git = "https://github.com/rconan/geotrans.git", branch = "main"}
 
