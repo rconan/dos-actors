@@ -2,14 +2,16 @@
 
 use interface::UID;
 
-/// M1 Rigid Body Motions
-#[derive(UID)]
-#[uid(port = 56_001)]
-pub enum M1RigidBodyMotions {}
-/// M1 Mode Shapes
-#[derive(UID)]
-#[uid(port = 56_002)]
-pub enum M1ModeShapes {}
+// M1 Rigid Body Motions
+// #[derive(UID)]
+// #[uid(port = 56_001)]
+// pub enum M1RigidBodyMotions {}
+pub type M1RigidBodyMotions = assembly::M1RigidBodyMotions;
+// M1 Mode Shapes
+// #[derive(UID)]
+// #[uid(port = 56_002)]
+// pub enum M1ModeShapes {}
+pub type M1ModeShapes = assembly::M1ModeShapes;
 /// M1 edge sensors
 #[derive(UID, Debug)]
 #[uid(port = 56_003)]
@@ -61,6 +63,20 @@ pub mod assembly {
         type DataType = Vec<Arc<Vec<f64>>>;
         const PORT: u16 = 50_008;
     }
+    /// M1 Mode Shapes
+    pub enum M1ModeShapes {}
+    impl Assembly for M1ModeShapes {}
+    impl UniqueIdentifier for M1ModeShapes {
+        type DataType = Vec<f64>;
+        const PORT: u16 = 50_008;
+    }
+    /// M1 Mode Coefficients
+    pub enum M1ModeCoefficients {}
+    impl Assembly for M1ModeCoefficients {}
+    impl UniqueIdentifier for M1ModeCoefficients {
+        type DataType = Vec<f64>;
+        const PORT: u16 = 50_009;
+    }
 }
 
 /// Segment IO
@@ -108,9 +124,17 @@ pub mod segment {
         const PORT: u16 = 56_001 + 10 * (1 + DOF) as u16 + 100 * ID as u16;
         type DataType = Vec<f64>;
     }
+    #[deprecated = r#"Deprecated UID in favor of "ModesShape""#]
     /// BendingModes
     pub enum BendingModes<const ID: u8> {}
+    #[allow(deprecated)]
     impl<const ID: u8> UniqueIdentifier for BendingModes<ID> {
+        const PORT: u16 = 56_007 + 100 * ID as u16;
+        type DataType = Vec<f64>;
+    }
+    /// Mode shapes
+    pub enum ModeShapes<const ID: u8> {}
+    impl<const ID: u8> UniqueIdentifier for ModeShapes<ID> {
         const PORT: u16 = 56_007 + 100 * ID as u16;
         type DataType = Vec<f64>;
     }

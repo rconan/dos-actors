@@ -234,6 +234,10 @@ pub fn generate_interface(from_crate: &str) -> anyhow::Result<()> {
             println!("cargo:warning={}: FSM top-end", from_crate);
             println!(r#"cargo:rustc-cfg=topend="FSM""#);
         }
+        if input_names.find("OSS00GroundAcc").is_some() {
+            println!("cargo:warning={}: OSS00GroundAcc input", from_crate);
+            println!(r#"cargo:rustc-cfg=ground_acceleration"#)
+        }
         if output_names.find("MCM2Lcl6D").is_some() {
             println!("cargo:warning={}: MCM2Lcl6D as M2 RBM output", from_crate);
             println!(r#"cargo:rustc-cfg=m2_rbm="MCM2Lcl6D""#)

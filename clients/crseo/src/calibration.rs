@@ -9,20 +9,93 @@ corresponding to a particular sensor.
 The calibration is performed segment wise leading to 7 calibration matrices, each one saved in [Calib]
 and the 7 [Calib]s are saved in [Reconstructor].
 
-# Examples
+## Examples
 
 Calibration of the 6 rigid body motions of all M1 segments with the [WaveSensor](crate::sensors::WaveSensor)
 
-```
+```no_run
 use gmt_dos_clients_crseo::{OpticalModel,
-    sensors::WaveSensor, calibration::{Calibration, CalibrationMode}};
+    sensors::WaveSensor,
+    calibration::{algebra::CalibProps, Calibration, CalibrationMode}};
 use crseo::{gmt::GmtM1, Source, FromBuilder};
 
 let omb = OpticalModel::<WaveSensor>::builder()
-    .source(Source::builder().pupil_sampling(256));
-let calib = <WaveSensor as Calibration<GmtM1>>::calibrate(&omb,
-    CalibrationMode::RBM([Some(1e-6);6]));
+    .source(Source::builder());
+let mut recon = <WaveSensor as Calibration<GmtM1>>::calibrate(&omb,
+    CalibrationMode::RBM([Some(1e-6);6]))?;
+assert_eq!(recon.len(),7);
+recon.calib_slice().iter().for_each(|c| assert_eq!(c.n_cols(),6));
+# Ok::<(),Box<dyn std::error::Error>>(())
+```
 
+Calibration of M2 segment tip and tilt with a 48x48 Shack-Hartmann WFS
+
+```no_run
+use gmt_dos_clients_crseo::{OpticalModel, sensors::Camera,
+    centroiding::CentroidsProcessing,
+    calibration::{algebra::CalibProps, Calibration, CalibrationMode}};
+use crseo::{gmt::GmtM2, FromBuilder, imaging::LensletArray};
+use skyangle::Conversion;
+
+let omb = OpticalModel::<Camera>::builder()
+    .sensor(Camera::builder().lenslet_array(
+         LensletArray::default().n_side_lenslet(48).n_px_lenslet(16)));
+let mut recon = <CentroidsProcessing as Calibration<GmtM2>>::calibrate(&(omb.into()),
+    CalibrationMode::r_xy(100f64.from_mas()))?;
+assert_eq!(recon.len(),7);
+recon.calib_slice().iter().for_each(|c| assert_eq!(c.n_cols(),2));
+recon.pseudoinverse();
+recon.pinv().for_each(|c| assert_eq!(c.mat_ref().nrows(),2));
+# Ok::<(),Box<dyn std::error::Error>>(())
+```
+
+# Closed-loop calibration
+
+Sensors can be calibrated with respect to M1 while closing the loop with another sensor on M2.
+This is done with the [ClosedLoopCalibration] trait.
+
+## Example
+
+Calibration of M1 segment tip and tilt with the [DispersedFringeSensor](crate::sensors::DispersedFringeSensor) with 3 guide stars while closing the loop on-axis with the ASM using the [WaveSensor](crate::sensors::WaveSensor).
+
+The 7 matrices are collapsed horizontally (column-wise concatenation) into a single matrix using the implementation of the [Collapse](crate::calibration::algebra::Collapse) trait.
+
+```
+use crseo::{FromBuilder, Gmt, Source};
+use skyangle::Conversion;
+use gmt_dos_clients_crseo::{
+    calibration::{ClosedLoopCalibration, CalibrationMode,
+        algebra::{CalibProps, Collapse}},
+    DispersedFringeSensorProcessing,
+    sensors::{DispersedFringeSensor, WaveSensor},
+    OpticalModel,
+};
+
+type DFS = DispersedFringeSensor<1, 1>;
+let m2_n_mode = 66;
+let agws_gs = Source::builder().size(3).on_ring(6f32.from_arcmin());
+let gmt = Gmt::builder().m2("Karhunen-Loeve", m2_n_mode);
+let omb = OpticalModel::<DFS>::builder()
+    .gmt(gmt.clone())
+    .source(agws_gs.clone())
+    .sensor(DFS::builder().source(agws_gs.clone().band("J")));
+let closed_loop_omb = OpticalModel::<WaveSensor>::builder().gmt(gmt.clone());
+let mut recon =
+    <DispersedFringeSensorProcessing as ClosedLoopCalibration<WaveSensor>>::calibrate_serial(
+        &omb,
+        CalibrationMode::r_xy(100f64.from_mas()),
+        &closed_loop_omb,
+        CalibrationMode::modes(m2_n_mode, 1e-6),
+    )?;
+assert_eq!(recon.len(),7);
+recon.calib_slice().iter().for_each(|c| assert_eq!(c.shape(),(36,2)));
+
+let mut recon = recon.collapse();
+assert_eq!(recon.len(),1);
+assert_eq!(recon.calib_slice()[0].shape(),(36,14));
+
+recon.pseudoinverse();
+assert_eq!(recon.pinv().last().unwrap().mat_ref().shape(),(14,36));
 # Ok::<(),Box<dyn std::error::Error>>(())
 ```
 

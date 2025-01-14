@@ -1,13 +1,17 @@
 /*!
 #  GMT Optical Model
 
-A [gmt_dos-actors] client for optical propagation through the GMT based on [crseo].
+A [gmt_dos-actors] client for optical propagation through the GMT using [crseo].
 
-The GMT optical model is represented with the [OpticalModel] and it is configured with [OpticalModelBuilder].
-
+[OpticalModel] represents the GMT optics model with M1 and M2 segmented optical prescriptions.
+An optical sensor may be added to [OpticalModel], available sensors are listed in the [sensors] module.
+The data processing algorithms applied to the [sensors] output are defined in the [processing] module.
+The [calibration] module contains the traits and types used for the calibration of the sensors with respect to either
+the rigid body motion or the shapes of M1 and M2.
 
 
 [gmt_dos-actors]: https://docs.rs/gmt_dos-actors
+[crseo]: https://docs.rs/crseo
  */
 
 /* pub(crate) mod optical_model;

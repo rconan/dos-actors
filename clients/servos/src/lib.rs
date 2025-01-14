@@ -77,7 +77,9 @@ mod builder;
 mod servos;
 #[cfg(fem)]
 mod fem {
-    pub use crate::builder::{asms_servo, AsmsServo, EdgeSensors, ServosBuilder, WindLoads};
+    pub use crate::builder::{
+        asms_servo, AsmsServo, EdgeSensors, M1SegmentFigure, ServosBuilder, WindLoads,
+    };
     pub use crate::servos::GmtServoMechanisms;
     use gmt_dos_actors::system::Sys;
 

@@ -14,11 +14,15 @@ impl M1SegmentFigure {
 impl<'a> Include<'a, M1SegmentFigure> for DiscreteStateSpace<'a, ExponentialMatrix> {
     fn including(
         self,
-        component: Option<&'a mut M1SegmentFigure>,
+        m1_segment_figure: Option<&'a mut M1SegmentFigure>,
     ) -> Result<Self, gmt_dos_clients_fem::StateSpaceError>
     where
         Self: 'a + Sized,
     {
-        self.outs_by_name((1..=7).map(|i| format!("M2_segment_{i}_axial_d")).collect())
+        if m1_segment_figure.is_none() {
+            return Ok(self);
+        }
+        self.set_m1_figure_nodes()?
+            .outs_by_name((1..=7).map(|i| format!("M1_segment_{i}_axial_d")).collect())
     }
 }

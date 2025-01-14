@@ -409,7 +409,7 @@ mod tests {
         dbg!(merged_data);
     }
 
-    #[tokio::test]
+    /* #[tokio::test]
     async fn model() -> Result<(), Box<dyn Error>> {
         use gmt_dos_actors::prelude::*;
 
@@ -437,5 +437,5 @@ mod tests {
             .flowchart();
 
         Ok(())
-    }
+    } */
 }

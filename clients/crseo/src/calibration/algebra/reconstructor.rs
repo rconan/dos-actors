@@ -345,6 +345,10 @@ impl<C: CalibProps<CalibrationMode> + Merge> Reconstructor<CalibrationMode, C> {
 }
 
 impl<C: CalibProps<MirrorMode> + Expand> Reconstructor<MirrorMode, C> {
+    /// Returns the # of calibration matrix
+    pub fn len(&self) -> usize {
+        1
+    }
     /// Splits a [MirrorMode] [Reconstructor]
     ///
     /// Returns a [Reconstructor] with [Vec] of [CalibrationMode] [Calib]
@@ -414,7 +418,7 @@ where
                     if c.is_empty() {
                         vec![0.; c.n_mode()]
                     } else {
-                        ic.as_ref().unwrap() * c.mask(&data)
+                        ic.as_ref().expect("no pseudo-inverse found") * c.mask(&data)
                     }
                 })
                 .collect(),

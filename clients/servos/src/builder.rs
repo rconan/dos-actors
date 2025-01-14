@@ -42,8 +42,13 @@ impl<const M1_RATE: usize, const M2_RATE: usize> ServosBuilder<M1_RATE, M2_RATE>
         self
     }
     /// Sets the [EdgeSensors] builder
-    pub fn edge_sensors(mut self, edge_ensors: EdgeSensors) -> Self {
-        self.edge_sensors = Some(edge_ensors);
+    pub fn edge_sensors(mut self, edge_sensors: EdgeSensors) -> Self {
+        self.edge_sensors = Some(edge_sensors);
+        self
+    }
+    /// Sets the [M1SegmentFigure] builder
+    pub fn m1_segment_figure(mut self, m1_segment_figure: M1SegmentFigure) -> Self {
+        self.m1_segment_figure = Some(m1_segment_figure);
         self
     }
     /// Sets the [M1SegmentFigure] builder
@@ -104,6 +109,7 @@ impl<'a, const M1_RATE: usize, const M2_RATE: usize> TryFrom<ServosBuilder<M1_RA
             .outs::<MCM2Lcl6D>()
             .ins::<MCM2SmHexF>()
             .outs::<MCM2SmHexD>()
+            .including(builder.m1_segment_figure.as_mut())?
             .including(builder.asms_servo.as_mut())?
             .including(builder.wind_loads.as_mut())?
             .including(builder.edge_sensors.as_mut())?

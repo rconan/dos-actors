@@ -1,4 +1,7 @@
-use crate::fem_io::{GetIn, GetOut};
+use crate::{
+    actors_interface::RbmRemoval,
+    fem_io::{GetIn, GetOut},
+};
 
 use super::{DiscreteStateSpace, Exponential, ExponentialMatrix, Solver};
 use gmt_fem::{Result, FEM};
@@ -6,7 +9,6 @@ use interface::TimerMarker;
 use nalgebra as na;
 use rayon::prelude::*;
 use std::{
-    collections::HashMap,
     fmt,
     sync::Arc,
     thread::{self, JoinHandle},
@@ -59,7 +61,8 @@ pub struct DiscreteModalSolver<T: Solver + Default> {
     pub psi_times_u: PsiTimesU,
     pub ins: Vec<Box<dyn GetIn>>,
     pub outs: Vec<Box<dyn GetOut>>,
-    pub facesheet_nodes: Option<HashMap<u8, Vec<f64>>>,
+    pub facesheet_nodes: Option<RbmRemoval>,
+    pub m1_figure_nodes: Option<RbmRemoval>,
 }
 impl<T: Solver + Default> DiscreteModalSolver<T> {
     /*

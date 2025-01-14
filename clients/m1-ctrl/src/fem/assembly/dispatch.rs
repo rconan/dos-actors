@@ -108,6 +108,11 @@ impl Read<M1ActuatorCommandForces> for DispatchIn {
             });
     }
 }
+impl<const ID: u8> Read<ActuatorCommandForces<ID>> for DispatchIn {
+    fn read(&mut self, data: Data<ActuatorCommandForces<ID>>) {
+        self.m1_actuator_command_forces[ID as usize - 1] = data.into_arc();
+    }
+}
 impl<const ID: u8> Write<ActuatorCommandForces<ID>> for DispatchIn {
     fn write(&mut self) -> Option<Data<ActuatorCommandForces<ID>>> {
         Some(

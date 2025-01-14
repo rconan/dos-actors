@@ -55,15 +55,18 @@ impl<const C: usize, const F: usize> SensorPropagation for DispersedFringeSensor
     fn propagate(&mut self, src: &mut crseo::Source) {
         if self.n_camera_frame() == C {
             self.camera_reset();
+            log::info!("resetting camera({})", self.n_camera_frame());
         }
         if self.n_fft_frame() == F {
             self.fft_reset();
+            log::info!("resetting fft ({})", self.n_fft_frame());
         }
         src.through(&mut self.0);
         // let q: Vec<f32> = self.frame().into();
         // dbg!(q.len());
         if self.n_camera_frame() == C {
             self.fft();
+            log::info!("integrating fft ({})", self.n_fft_frame());
         }
     }
 }
@@ -100,6 +103,7 @@ impl<const C: usize, const F: usize> Write<DfsFftFrame<Dev>>
     for OpticalModel<DispersedFringeSensor<C, F>>
 {
     fn write(&mut self) -> Option<Data<DfsFftFrame<Dev>>> {
+        log::info!("writing fft frame");
         self.sensor
             .as_mut()
             .map(|sensor| Data::new(sensor.fft_frame().clone()))
@@ -126,7 +130,7 @@ impl<const C: usize, const F: usize> Size<DfsFftFrame<Host>>
     }
 }
 
-impl<const C: usize, const F: usize> Display for OpticalModel<DispersedFringeSensor<F, C>> {
+impl<const C: usize, const F: usize> Display for OpticalModel<DispersedFringeSensor<C, F>> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "- OPTICAL MODEL -")?;
         self.gmt.fmt(f)?;
@@ -142,7 +146,7 @@ impl<const C: usize, const F: usize> Display for OpticalModel<DispersedFringeSen
             sensor.0.pixel_scale().to_mas(),
             sensor.0.field_of_view().to_arcsec()
         )?;
-        writeln!(f, "DFS camera reset @{C} & FFT reset @{F} in sample #")?;
+        writeln!(f, "DFS camera reset @{C} sample & FFT reset @{F} frame")?;
         writeln!(f, "-----------------")?;
         Ok(())
     }

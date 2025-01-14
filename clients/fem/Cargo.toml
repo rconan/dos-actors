@@ -1,6 +1,6 @@
 [package]
 name = "gmt_dos-clients_fem"
-version = "4.4.0"
+version = "5.1.0"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -28,6 +28,8 @@ bincode = { workspace = true, optional = true }
 anyhow.workspace = true
 geotrans = "0.2.2"
 toml = {version = "0.8.19", optional = true}
+faer = "0.19.4"
+faer-ext = { version = "0.3.0", features = ["nalgebra"] }
 
 [build-dependencies]
 anyhow.workspace = true
@@ -74,4 +76,5 @@ unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(fem)',
     'cfg(topend,values("FSM","ASM"))',
     'cfg(m2_rbm,values("MCM2Lcl","MCM2Lcl6D"))',
+    'cfg(ground_acceleration)'
 ] }

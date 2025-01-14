@@ -21,7 +21,7 @@ log.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
 gmt_mount-ctrl_driver = { version = "1.0.0" }
-gmt_mount-ctrl_controller = { version = "1.0.0" }
+gmt_mount-ctrl_controller = { version = "1.1.0" }
 serde.workspace = true
 
 
