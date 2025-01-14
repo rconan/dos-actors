@@ -126,7 +126,8 @@ where
             .map(|x| x.recip())
             .chain(vec![0.; n])
             .collect();
-        let i_s_diag = from_column_major_slice::<f64>(&i_s, n_s, 1).column_vector_as_diagonal();
+        let i_s_diag =
+            from_column_major_slice::<f64, _, _>(&i_s, n_s, 1).column_vector_as_diagonal();
         let mat = v * i_s_diag * u.transpose();
         let cond = s[0] / s[n_s - n - 1];
         Some(CalibPinv {
@@ -310,7 +311,7 @@ where
     /// ```
     #[inline]
     fn mat_ref(&self) -> MatRef<'_, f64> {
-        from_column_major_slice::<f64>(&self.c, self.n_rows(), self.n_cols())
+        from_column_major_slice::<f64, _, _>(&self.c, self.n_rows(), self.n_cols())
     }
     /// Return the number of modes
     ///

@@ -41,7 +41,8 @@ impl<M: Modality, T: faer::Entity> CalibPinv<T, M> {
 impl<M: Modality> Mul<Vec<f64>> for &CalibPinv<f64, M> {
     type Output = Vec<f64>;
     fn mul(self, rhs: Vec<f64>) -> Self::Output {
-        let e = self.mat.as_ref() * from_column_major_slice::<f64>(rhs.as_slice(), rhs.len(), 1);
+        let e =
+            self.mat.as_ref() * from_column_major_slice::<f64, _, _>(rhs.as_slice(), rhs.len(), 1);
         let iter = e
             .row_iter()
             .flat_map(|r| r.iter().cloned().collect::<Vec<_>>());
