@@ -28,8 +28,8 @@ bincode = { workspace = true, optional = true }
 anyhow.workspace = true
 geotrans = "0.2.2"
 toml = {version = "0.8.19", optional = true}
-faer = "0.19.4"
-faer-ext = { version = "0.3.0", features = ["nalgebra"] }
+faer.workspace = true
+faer-ext.workspace = true
 
 [build-dependencies]
 anyhow.workspace = true
