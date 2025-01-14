@@ -227,7 +227,7 @@ impl<T: SensorPropagation> Read<M2Modes> for OpticalModel<T> {
 }
 impl<T: SensorPropagation> Read<M2modes> for OpticalModel<T> {
     fn read(&mut self, data: Data<M2modes>) {
-        assert_eq!(7 * self.gmt.m2.n_mode, data.len());
+        // assert_eq!(7 * self.gmt.m2.n_mode, data.len());
         if 7 * self.gmt.m2.n_mode > data.len() {
             let augmented_data: Vec<_> = data
                 .chunks(data.len() / 7)
