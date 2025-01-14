@@ -1,21 +1,4 @@
-//! FEM STATIC GAIN
-//!
-//! Computes the FEM static gain between given inputs and outputs.
-//!
-//! M2 S7 gain matrix for the voice coils:
-//! ```shell
-//! cargo run -r -p gmt_dos-clients_fem --bin static_gain --features="serde clap" -- \
-//!     -i MC_M2_S7_VC_delta_F -o MC_M2_S7_VC_delta_D \
-//!     -f m2s7_vc_gain.pkl
-//! ```
-//!
-//! M2 S1 & S7 gain matrix for the voice coils:
-//! ```shell
-//! cargo run -r -p gmt_dos-clients_fem --bin static_gain --features="serde clap" -- \
-//!     -i MC_M2_S1_VC_delta_F -i MC_M2_S7_VC_delta_F \
-//!     -o MC_M2_S1_VC_delta_D -o MC_M2_S7_VC_delta_D \
-//!     -f m2s1-7_vc_gain.pkl
-//! ```
+//! M1 OR M2 SINGULAR MODES DERIVATION
 
 use std::{fs::File, time::Instant};
 

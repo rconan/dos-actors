@@ -68,6 +68,11 @@ name = "static_gain"
 path = "src/bin/static_gain.rs"
 required-features = ["serde", "clap", "toml"]
 
+[[bin]]
+name = "mirror_singular_modes"
+path = "src/bin/mirror_singular_modes.rs"
+required-features = ["serde", "clap"]
+
 [package.metadata.docs.rs]
 all-features = true
 

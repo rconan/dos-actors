@@ -49,7 +49,7 @@ gmt_dos-clients_scope-client = { path = "clients/scope/client" }
 log = "0.4.17"
 thiserror = "1.0"
 tokio-test = "0.4"
-nalgebra = "0.32.6"
+nalgebra = "0.33"
 tokio = { version = "1.25.0" }
 anyhow = "1.0.68"
 crseo = { version = "1.0" }
