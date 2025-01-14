@@ -51,11 +51,6 @@ impl<const M1_RATE: usize, const M2_RATE: usize> ServosBuilder<M1_RATE, M2_RATE>
         self.m1_segment_figure = Some(m1_segment_figure);
         self
     }
-    /// Sets the [M1SegmentFigure] builder
-    pub fn m1_segment_figure(mut self, m1_segment_figure: M1SegmentFigure) -> Self {
-        self.m1_segment_figure = Some(m1_segment_figure);
-        self
-    }
 }
 
 pub trait Include<'a, C> {
