@@ -90,7 +90,7 @@ fn main() -> anyhow::Result<()> {
 
     // Filtering out piston, tip * tilt
     let svd_k = k.svd();
-    let z_123 = faer::mat::from_column_major_slice::<f64>(&z123, n, 3);
+    let z_123 = faer::mat::from_column_major_slice::<f64, _, _>(&z123, n, 3);
     // fitting of bending modes
     let q_123 = z_123.svd().pseudoinverse() * svd_k.u().subcols(0, na);
     // removing piston, tip & tilt
