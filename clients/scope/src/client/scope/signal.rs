@@ -4,13 +4,10 @@ use std::{
 };
 
 use eframe::{
-    egui::{
-        self,
-        plot::{BoxElem, BoxPlot, BoxSpread, Line, Plot, PlotImage, PlotPoint, PlotUi, Text},
-        RichText,
-    },
+    egui::{self, RichText},
     emath::Align2,
 };
+use egui_plot::{BoxElem, BoxPlot, BoxSpread, Line, Plot, PlotImage, PlotPoint, PlotUi, Text};
 use interface::{Data, UniqueIdentifier};
 // use tracing::warn;
 
@@ -50,7 +47,7 @@ impl<U> SignalProcessing for Signal<U>
 where
     U: UniqueIdentifier + 'static,
 {
-    fn run(&mut self, mut ctx: egui::Context) {
+    fn run(&mut self, ctx: egui::Context) {
         let rx = self.rx.take().unwrap();
         let data = self.data.clone();
         tokio::spawn(async move {
@@ -59,7 +56,7 @@ where
                 data.write()
                     .unwrap()
                     .get_or_insert(SignalData::from(payload))
-                    .add_payload(&mut ctx, payload);
+                    .add_payload(payload);
                 ctx.request_repaint();
             }
             // println!("{}: stream ended", std::any::type_name::<U>());
@@ -79,14 +76,19 @@ where
                     ui.line(line);
                 }
                 SignalData::Image {
+                    tag,
                     size,
                     time,
-                    texture,
+                    image: texture,
                     ..
                 } => {
                     texture.as_ref().map(|texture| {
                         let image = PlotImage::new(
-                            texture,
+                            &ui.ctx().load_texture(
+                                tag.as_str(),
+                                texture.to_owned(),
+                                Default::default(),
+                            ),
                             PlotPoint::new(0., 0.),
                             (2f32 * size[0] as f32 / size[1] as f32, 2f32),
                         );

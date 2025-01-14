@@ -51,6 +51,9 @@ impl MirrorMode {
         self[sid as usize - 1] = None;
         self
     }
+    pub fn iter(&self) -> impl Iterator<Item = &Option<CalibrationMode>> {
+        self.0.iter()
+    }
 }
 
 impl Display for MirrorMode {

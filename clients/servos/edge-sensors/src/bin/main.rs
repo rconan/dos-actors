@@ -49,6 +49,9 @@ async fn main() -> Result<()> {
 
     let data_repo = Path::new(&env::var("CARGO_MANIFEST_DIR").unwrap()).join("data");
     env::set_var("DATA_REPO", &data_repo);
+    if env::var("EDGE_SENSORS_DATA").is_err() {
+        env::set_var("EDGE_SENSORS_DATA", &data_repo);
+    };
 
     let sim_sampling_frequency = 8000;
     let m1_freq = 100; // Hz

@@ -96,7 +96,7 @@ impl SourceWavefront for NoSensor {}
 impl SourceWavefront for Imaging {}
 impl<const I: usize> SourceWavefront for Camera<I> {}
 impl SourceWavefront for Pyramid {}
-impl SourceWavefront for DispersedFringeSensor {}
+impl<const C: usize, const F: usize> SourceWavefront for DispersedFringeSensor<C, F> {}
 
 impl<T: SensorPropagation + SourceWavefront> Size<Wavefront> for OpticalModel<T> {
     fn len(&self) -> usize {

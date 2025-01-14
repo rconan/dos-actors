@@ -12,10 +12,13 @@ use std::{
 
 use ab_glyph::{FontArc, FontRef, PxScale};
 use colorous::CIVIDIS;
-use gif::{Encoder, EncodingError, Frame, Repeat};
-use image::{Rgb, RgbImage, Rgba, RgbaImage};
+use gif::{Encoder, EncodingError, Frame as GifFrame, Repeat};
+use image::{Rgba, RgbaImage};
 use imageproc::drawing::draw_text_mut;
 use interface::{Read, UniqueIdentifier, Update};
+
+mod frame;
+pub use frame::Frame;
 
 pub struct Gif<T> {
     frame: Arc<Vec<T>>,
@@ -34,6 +37,8 @@ pub enum GifError {
     Gif(#[from] EncodingError),
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
+    #[error("image error")]
+    Image(#[from] image::error::ImageError),
 }
 
 type Result<T> = std::result::Result<T, GifError>;
@@ -96,6 +101,17 @@ where
                 c
             })
             .collect();
+        let n = self.height;
+        let pixels: Vec<_> = (0..n)
+            .flat_map(|i| {
+                pixels
+                    .chunks(n * 4)
+                    .skip(i)
+                    .step_by(n)
+                    .flat_map(|c| c.to_vec())
+                    .collect::<Vec<_>>()
+            })
+            .collect();
 
         let mut image = RgbaImage::from_vec(self.width as u32, self.height as u32, pixels)
             .expect("failed to create a RGB image");
@@ -110,7 +126,7 @@ where
         );
         // draw_guide_lines(&mut image, self.width as u32, self.height as u32);
 
-        let mut frame = Frame::from_rgba_speed(
+        let mut frame = GifFrame::from_rgba_speed(
             self.width as u16,
             self.height as u16,
             &mut image.into_raw(),
@@ -122,11 +138,9 @@ where
             .expect("failed to write frame to GIF encoder");
     }
 }
-
-// Helper function to draw semi-transparent guide lines
-fn draw_guide_lines(image: &mut RgbaImage, width: u32, height: u32) {
+/* fn draw_guide_lines(image: &mut RgbaImage, width: u32, height: u32) {
     // Semi-transparent gray color (RGB: 128,128,128, Alpha: 128)
-    let line_color = Rgba([128u8, 128u8, 128u8, 0u8]);
+    let line_color = Rgba([128u8, 128u8, 128u8, 128u8]);
 
     // Draw horizontal line
     for x in 0..width {
@@ -149,7 +163,7 @@ fn draw_guide_lines(image: &mut RgbaImage, width: u32, height: u32) {
             image.put_pixel(x + 1, y, line_color);
         }
     }
-}
+} */
 
 impl<T, U> Read<U> for Gif<T>
 where

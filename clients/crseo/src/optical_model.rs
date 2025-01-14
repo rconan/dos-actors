@@ -6,16 +6,23 @@ use crate::{
 use crseo::{Atmosphere, FromBuilder, Gmt, SegmentWiseSensor, Source};
 use gmt_dos_clients_io::{
     gmt_m1::{
+        assembly::M1ModeCoefficients,
         segment::{BendingModes, RBM},
         M1ModeShapes, M1RigidBodyMotions,
     },
     gmt_m2::{
-        asm::{segment::AsmCommand, M2ASMAsmCommand},
+        asm::{
+            segment::{AsmCommand, FaceSheetFigure},
+            M2ASMAsmCommand, M2ASMFaceSheetFigure,
+        },
         M2RigidBodyMotions,
     },
-    optics::{M2modes, SegmentD7Piston},
+    optics::{
+        M1GlobalTipTilt, M1Modes, M1State, M2GlobalTipTilt, M2Modes, M2State, M2modes,
+        SegmentD7Piston,
+    },
 };
-use interface::{Data, Read, UniqueIdentifier, Update, Write};
+use interface::{Data, Read, UniqueIdentifier, Units, Update, Write};
 
 pub mod builder;
 mod imaging;
@@ -32,7 +39,10 @@ pub enum OpticalModelError {
 
 /// GMT optical model
 ///
-/// # Examples:
+/// GMT M1 and M2 optical prescriptions.
+/// May as well include a [sensor](crate::sensors) and a model of the [atmospheric turbulence](https://docs.rs/crseo/latest/crseo/atmosphere).
+///
+/// ## Example
 ///
 /// Build a optical model with the default [OpticalModelBuilder]
 /// ```
@@ -58,14 +68,25 @@ impl<T> OpticalModel<T> {
     pub fn sensor(&self) -> Option<&T> {
         self.sensor.as_ref()
     }
+    /// Returns a mutable reference to the source
+    pub fn source(&self) -> &Source {
+        &self.src
+    }
+    /// Returns a immutable reference to the source
+    pub fn source_mut(&mut self) -> &mut Source {
+        &mut self.src
+    }
 }
 unsafe impl<T> Send for OpticalModel<T> {}
 unsafe impl<T> Sync for OpticalModel<T> {}
+
+impl<T> Units for OpticalModel<T> {}
 
 impl<T> OpticalModel<T>
 where
     T: FromBuilder,
 {
+    /// Creates an optical model builder
     pub fn builder() -> OpticalModelBuilder<<T as FromBuilder>::ComponentBuilder> {
         let OpticalModelBuilder {
             gmt,
@@ -119,8 +140,26 @@ impl<T: SensorPropagation, const SID: u8> Read<BendingModes<SID>> for OpticalMod
     }
 }
 
+impl<T: SensorPropagation> Read<M1Modes> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M1Modes>) {
+        assert_eq!(7 * self.gmt.m1.n_mode, data.len());
+        self.gmt.m1_modes(&data);
+    }
+}
+impl<T: SensorPropagation> Read<M1State> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M1State>) {
+        let state = data.into_arc();
+        <Self as Read<M1RigidBodyMotions>>::read(self, state.rbms.clone().into());
+        <Self as Read<M1Modes>>::read(self, state.modes.clone().into());
+    }
+}
 impl<T: SensorPropagation> Read<M1ModeShapes> for OpticalModel<T> {
     fn read(&mut self, data: Data<M1ModeShapes>) {
+        self.gmt.m1_modes(&data);
+    }
+}
+impl<T: SensorPropagation> Read<M1ModeCoefficients> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M1ModeCoefficients>) {
         self.gmt.m1_modes(&data);
     }
 }
@@ -146,8 +185,49 @@ impl<T: SensorPropagation> Read<M2ASMAsmCommand> for OpticalModel<T> {
     }
 }
 
+impl<T: SensorPropagation> Read<M1GlobalTipTilt> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M1GlobalTipTilt>) {
+        let rbms = geotrans::Mirror::<geotrans::M1>::tiptilt_2_rigidbodymotions((data[0], data[1]));
+        <OpticalModel<T> as Read<M1RigidBodyMotions>>::read(self, rbms.into())
+    }
+}
+impl<T: SensorPropagation> Read<M2GlobalTipTilt> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M2GlobalTipTilt>) {
+        let rbms = geotrans::Mirror::<geotrans::M2>::tiptilt_2_rigidbodymotions((data[0], data[1]));
+        /* rbms.chunks(6).enumerate().for_each(|(i, c)| {
+            println!(
+                "S{}, {:+7.0?} {:+7.0?}",
+                i + 1,
+                c[..3].iter().map(|x| x * 1e9).collect::<Vec<_>>(),
+                c[3..].iter().map(|x| x.to_mas()).collect::<Vec<_>>()
+            )
+        }); */
+        <OpticalModel<T> as Read<M2RigidBodyMotions>>::read(self, rbms.into())
+    }
+}
+
+impl<T: SensorPropagation> Read<M2Modes> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M2Modes>) {
+        assert_eq!(7 * self.gmt.m2.n_mode, data.len());
+        // if 7 * self.gmt.m2.n_mode > data.len() {
+        //     let augmented_data: Vec<_> = data
+        //         .chunks(data.len() / 7)
+        //         .flat_map(|data| {
+        //             let mut v = vec![0f64];
+        //             v.extend_from_slice(data);
+        //             v
+        //         })
+        //         .collect();
+        //     assert_eq!(augmented_data.len(), self.gmt.m2.n_mode * 7);
+        //     self.gmt.m2_modes(&augmented_data);
+        // } else {
+        self.gmt.m2_modes(&data);
+        // }
+    }
+}
 impl<T: SensorPropagation> Read<M2modes> for OpticalModel<T> {
     fn read(&mut self, data: Data<M2modes>) {
+        // assert_eq!(7 * self.gmt.m2.n_mode, data.len());
         if 7 * self.gmt.m2.n_mode > data.len() {
             let augmented_data: Vec<_> = data
                 .chunks(data.len() / 7)
@@ -162,6 +242,14 @@ impl<T: SensorPropagation> Read<M2modes> for OpticalModel<T> {
         } else {
             self.gmt.m2_modes(&data);
         }
+    }
+}
+
+impl<T: SensorPropagation> Read<M2State> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M2State>) {
+        let state = data.into_arc();
+        <Self as Read<M2RigidBodyMotions>>::read(self, state.rbms.clone().into());
+        <Self as Read<M2Modes>>::read(self, state.modes.clone().into());
     }
 }
 
@@ -190,5 +278,17 @@ impl<T: SegmentWiseSensor, const E: i32> Write<SegmentD7Piston<E>> for OpticalMo
                 .collect::<Vec<_>>()
                 .into(),
         )
+    }
+}
+
+impl<T: SensorPropagation, const ID: u8> Read<FaceSheetFigure<ID>> for OpticalModel<T> {
+    fn read(&mut self, data: Data<FaceSheetFigure<ID>>) {
+        self.gmt.m2_segment_modes(ID, &data);
+    }
+}
+impl<T: SensorPropagation> Read<M2ASMFaceSheetFigure> for OpticalModel<T> {
+    fn read(&mut self, data: Data<M2ASMFaceSheetFigure>) {
+        let q: Vec<_> = data.iter().flatten().cloned().collect();
+        self.gmt.m2_modes(q.as_slice());
     }
 }

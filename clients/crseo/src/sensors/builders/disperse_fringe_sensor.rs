@@ -14,7 +14,7 @@ use super::SensorBuilderProperty;
 ///
 /// # Examples:
 ///
-/// Build a dispersed fringe sensor with the default values for [SegmentPistonSensorBuilder]
+/// Build a dispersed fringe sensor with the default values for [crseo SegmentPistonSensorBuilder](https://docs.rs/crseo/latest/crseo/segment_piston_sensor)
 ///
 /// ```no_run
 /// use gmt_dos_clients_crseo::sensors::DispersedFringeSensor;

@@ -3,7 +3,7 @@
 
 A sensor is defined as an entity that implements the [SensorPropagation] trait.
 
-Every entity that implements the [crseo::Propagation] trait is also as sensor.
+Every entity that implements [crseo](https://docs.rs/crseo/latest/crseo) `Propagation` trait is also as sensor.
 */
 
 use crseo::{Propagation, Source};

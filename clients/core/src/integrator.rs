@@ -10,7 +10,7 @@
 
 use super::{Data, Read, UniqueIdentifier, Update, Write};
 use std::{
-    fmt::Debug,
+    fmt::{Debug, Display},
     marker::PhantomData,
     ops::{Add, AddAssign, Mul, Sub, SubAssign},
     sync::Arc,
@@ -27,6 +27,22 @@ pub struct Integrator<U: UniqueIdentifier> {
     chunks: Option<usize>,
     uid: PhantomData<U>,
     leak: Option<U::DataType>,
+}
+impl<U, T> Display for Integrator<U>
+where
+    U: UniqueIdentifier<DataType = Vec<T>>,
+    T: Display + Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "integral controller (gain={},leak={:?})",
+            self.gain[0],
+            self.leak.as_ref().map(|l| &l[0])
+        )?;
+
+        Ok(())
+    }
 }
 impl<T, U> Integrator<U>
 where

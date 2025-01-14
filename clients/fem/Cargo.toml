@@ -1,6 +1,6 @@
 [package]
 name = "gmt_dos-clients_fem"
-version = "5.0.0"
+version = "5.1.0"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -27,6 +27,9 @@ serde = { workspace = true, optional = true }
 bincode = { workspace = true, optional = true }
 anyhow.workspace = true
 geotrans = "0.2.2"
+toml = {version = "0.8.19", optional = true}
+faer.workspace = true
+faer-ext.workspace = true
 
 [build-dependencies]
 anyhow.workspace = true
@@ -63,6 +66,11 @@ required-features = ["clap"]
 [[bin]]
 name = "static_gain"
 path = "src/bin/static_gain.rs"
+required-features = ["serde", "clap", "toml"]
+
+[[bin]]
+name = "mirror_singular_modes"
+path = "src/bin/mirror_singular_modes.rs"
 required-features = ["serde", "clap"]
 
 [package.metadata.docs.rs]

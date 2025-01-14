@@ -14,7 +14,7 @@ mod interface;
 
 /// Optical model camera
 ///
-/// [Camera] is a newtype around [crseo::Imaging].
+/// [Camera] is a newtype around [crseo Imaging](https://docs.rs/crseo/latest/crseo/imaging).
 ///
 /// The number of frames that are co-added before resetting the camera is given by `I`.
 ///
@@ -52,6 +52,7 @@ impl<const I: usize> SensorPropagation for Camera<I> {
     fn propagate(&mut self, src: &mut crseo::Source) {
         if self.n_frame() as usize == I {
             self.reset();
+            // println!("resetting ({})", self.n_frame());
         }
         src.through(&mut self.0);
     }
@@ -85,7 +86,7 @@ impl<const I: usize> Display for OpticalModel<Camera<I>> {
         self.sensor.as_ref().unwrap().fmt(f)?;
         writeln!(
             f,
-            r#"Pixel scale: {:.0}mas, Field-of-view: {:.3}""#,
+            r#"Pixel scale: {:.3}mas, Field-of-view: {:.3}""#,
             self.pixel_scale().to_mas(),
             self.field_of_view().to_arcsec()
         )?;

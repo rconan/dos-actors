@@ -31,14 +31,13 @@ use gmt_dos_actors::actorscript;
 use gmt_dos_clients::Tick;
 use gmt_dos_clients::{Signals, Timer};
 use gmt_dos_clients_io::gmt_m2::{asm::segment::FaceSheetFigure, M2RigidBodyMotions};
-use gmt_dos_clients_servos::{AsmsServo, GmtFem}; //asms_servo
+use gmt_dos_clients_servos::{asms_servo, AsmsServo, GmtFem}; //asms_servo
 use gmt_dos_clients_servos::{GmtM2Hex, GmtServoMechanisms};
 use gmt_fem::FEM;
 use nanorand::{Rng, WyRand};
 
 const ACTUATOR_RATE: usize = 80; //100Hz
 
-/*
 #[derive(Debug, Clone)]
 struct MyFacesheet;
 impl asms_servo::FacesheetOptions for MyFacesheet {
@@ -46,7 +45,6 @@ impl asms_servo::FacesheetOptions for MyFacesheet {
         false
     }
 }
-*/
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -75,20 +73,20 @@ async fn main() -> anyhow::Result<()> {
     });
 
     // GMT Servo-mechanisms system
-    
+
     let gmt_servos =
         GmtServoMechanisms::<ACTUATOR_RATE, 1>::new(sim_sampling_frequency as f64, fem)
             .asms_servo(AsmsServo::new().facesheet(Default::default()))
             .build()?;
-    /*
-    let gmt_servos = GmtServoMechanisms::<ACTUATOR_RATE, 1>::new(sim_sampling_frequency as f64, fem)
-            .asms_servo(AsmsServo::new().facesheet(
-                    asms_servo::Facesheet::new()
-                        .options(Box::new(MyFacesheet))
-                ),
-            )
-            .build()?;
-    */
+
+    // let gmt_servos =
+    //     GmtServoMechanisms::<ACTUATOR_RATE, 1>::new(sim_sampling_frequency as f64, fem)
+    //         .asms_servo(
+    //             AsmsServo::new()
+    //                 .facesheet(asms_servo::Facesheet::new().options(Box::new(MyFacesheet))),
+    //         )
+    //         .build()?;
+
     actorscript! {
         1: m2_rbm[M2RigidBodyMotions] -> {gmt_servos::GmtM2Hex}
     }
@@ -106,9 +104,9 @@ async fn main() -> anyhow::Result<()> {
         1: nope[Tick] -> {gmt_servos::GmtFem}[FaceSheetFigure<7>]!${675}
     }
 
-    let mut logs = logging_1.lock().await;
+    let mut logs = m2_rbms_logging_1.lock().await;
     for i in 1..=7 {
-        let data: Vec<f64> = logs.iter(format!("FaceSheetFigure#{i}"))?.last().unwrap();
+        let data: Vec<f64> = logs.iter(format!("FaceSheetFigure<{i}>"))?.last().unwrap();
         let n = data.len() as f64;
         let (mut var, mut mean) = data
             .into_iter()

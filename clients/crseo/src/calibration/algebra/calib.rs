@@ -66,7 +66,7 @@ impl From<&Calib> for Vec<i8> {
 
 impl<M> CalibProps<M> for Calib<M>
 where
-    M: Modality,
+    M: Modality + Display,
     Calib<M>: Display,
 {
     /// Returns the segment ID
@@ -126,7 +126,8 @@ where
             .map(|x| x.recip())
             .chain(vec![0.; n])
             .collect();
-        let i_s_diag = from_column_major_slice::<f64>(&i_s, n_s, 1).column_vector_as_diagonal();
+        let i_s_diag =
+            from_column_major_slice::<f64, _, _>(&i_s, n_s, 1).column_vector_as_diagonal();
         let mat = v * i_s_diag * u.transpose();
         let cond = s[0] / s[n_s - n - 1];
         Some(CalibPinv {
@@ -159,7 +160,8 @@ where
     /// Both matrices are filtered according to the mask resulting from the
     /// intersection of their masks.
     fn match_areas(&mut self, other: &mut Calib<M>) {
-        assert_eq!(
+        <Self as MatchAreas<M>>::match_areas(self, other);
+        /* assert_eq!(
             self.mask.len(),
             other.mask.len(),
             "failed to match areas these 2 `Calib:`\n > {self}\n > {other}"
@@ -204,7 +206,7 @@ where
         other.c = c_to_area;
 
         self.mask = mask.clone();
-        other.mask = mask;
+        other.mask = mask; */
     }
     fn mask_as_slice(&self) -> &[bool] {
         &self.mask
@@ -309,7 +311,7 @@ where
     /// ```
     #[inline]
     fn mat_ref(&self) -> MatRef<'_, f64> {
-        from_column_major_slice::<f64>(&self.c, self.n_rows(), self.n_cols())
+        from_column_major_slice::<f64, _, _>(&self.c, self.n_rows(), self.n_cols())
     }
     /// Return the number of modes
     ///
@@ -381,7 +383,84 @@ where
             n_cols: Default::default(),
         }
     }
+
+    fn filter(&mut self, filter: &[bool]) {
+        assert_eq!(self.mask.len(), filter.len());
+        self.c = self
+            .c
+            .chunks(self.c.len() / self.n_cols())
+            .flat_map(|c| {
+                c.iter()
+                    .zip(filter.iter().zip(&self.mask).filter(|(_, &m)| m))
+                    .filter_map(|(c, (f, _))| f.then_some(*c))
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        self.mask.iter_mut().zip(filter).for_each(|(m, f)| {
+            *m = *m && *f;
+        });
+    }
 }
+
+pub trait MatchAreas<M, Mp = M>
+where
+    M: Modality + Display,
+    Mp: Modality + Display,
+{
+    /// Computes the intersection of the mask with the mask on another [Calib]
+    ///
+    /// Both matrices are filtered according to the mask resulting from the
+    /// intersection of their masks.
+    fn match_areas(this: &mut Calib<M>, other: &mut Calib<Mp>) {
+        assert_eq!(
+            this.mask.len(),
+            other.mask.len(),
+            "failed to match areas these 2 `Calib:`\n > {this}\n > {other}"
+        );
+        let area_a = this.area();
+        let area_b = other.area();
+        let mask: Vec<_> = this
+            .mask
+            .iter()
+            .zip(other.mask.iter())
+            .map(|(&a, &b)| a && b)
+            .collect();
+
+        let c_to_area: Vec<_> = this
+            .c
+            .chunks(area_a)
+            .flat_map(|c| {
+                this.mask
+                    .iter()
+                    .zip(&mask)
+                    .filter(|&(&ma, _)| ma)
+                    .zip(c)
+                    .filter(|&((_, &mb), _)| mb)
+                    .map(|(_, c)| *c)
+            })
+            .collect();
+        this.c = c_to_area;
+        let c_to_area: Vec<_> = other
+            .c
+            .chunks(area_b)
+            .flat_map(|c| {
+                other
+                    .mask
+                    .iter()
+                    .zip(&mask)
+                    .filter(|&(&ma, _)| ma)
+                    .zip(c)
+                    .filter(|&((_, &mb), _)| mb)
+                    .map(|(_, c)| *c)
+            })
+            .collect();
+        other.c = c_to_area;
+
+        this.mask = mask.clone();
+        other.mask = mask;
+    }
+}
+impl<M: Modality + Display, Mp: Modality + Display> MatchAreas<M, Mp> for Calib<M> {}
 
 impl<M> Calib<M>
 where

@@ -19,7 +19,7 @@ mod closed_loop_calib;
 mod pinv;
 mod reconstructor;
 
-pub use calib::{Calib, CalibBuilder};
+pub use calib::{Calib, CalibBuilder, MatchAreas};
 pub use closed_loop_calib::ClosedLoopCalib;
 pub use pinv::CalibPinv;
 pub use reconstructor::Reconstructor;
@@ -39,6 +39,9 @@ where
     fn mask(&self, data: &[f64]) -> Vec<f64>;
     fn n_cols(&self) -> usize;
     fn n_rows(&self) -> usize;
+    fn shape(&self) -> (usize, usize) {
+        (self.n_rows(), self.n_cols())
+    }
     fn mat_ref(&self) -> MatRef<'_, f64>;
     fn n_mode(&self) -> usize;
     fn mode(&self) -> M;
@@ -55,6 +58,7 @@ where
     fn is_empty(&self) -> bool {
         self.as_slice().is_empty()
     }
+    fn filter(&mut self, filter: &[bool]);
 }
 
 /// Matrix block-matrix
@@ -106,6 +110,44 @@ impl<C: CalibProps<CalibrationMode>> Merge for C {
         );
         *(self.as_mut()) = c.into_iter().flatten().collect::<Vec<_>>();
         self
+    }
+}
+
+/// Split a [Calib] into multiple ones
+///
+/// Split a [MirrorMode] [Calib] into a [Vec]
+/// of [CalibrationMode] [Calib]
+pub trait Expand
+where
+    Self: CalibProps<MirrorMode>,
+{
+    fn expand(&mut self) -> Vec<Calib<CalibrationMode>>;
+}
+impl<C: CalibProps<MirrorMode>> Expand for C {
+    fn expand(&mut self) -> Vec<Calib<CalibrationMode>> {
+        let c = self.as_slice();
+        let mut c_col = c.chunks(c.len() / self.mode().n_cols());
+        let n_mode = self.n_mode();
+        let mask = self.mask_as_slice();
+        self.mode()
+            .iter()
+            .enumerate()
+            .filter_map(|(i, mode)| {
+                mode.as_ref().map(|m| Calib {
+                    sid: i as u8 + 1,
+                    n_mode,
+                    c: c_col
+                        .by_ref()
+                        .take(m.n_cols())
+                        .flat_map(|c| c.to_vec())
+                        .collect(),
+                    mask: mask.to_vec(),
+                    mode: m.clone(),
+                    runtime: Default::default(),
+                    n_cols: Default::default(),
+                })
+            })
+            .collect()
     }
 }
 

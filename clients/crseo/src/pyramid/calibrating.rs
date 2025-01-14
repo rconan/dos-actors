@@ -247,7 +247,7 @@ impl PyramidCalibrator {
     #[cfg(feature = "faer")]
     /// Returns the condition number of the `P` matrix
     pub fn p_matrix_cond(&self) -> f32 {
-        use faer::solvers::Svd;
+        use faer::linalg::solvers::Svd;
         use faer_ext::IntoFaer;
         let mat = self.p_matrix.view_range(.., ..).into_faer();
         let svd = Svd::new(mat);
@@ -258,7 +258,7 @@ impl PyramidCalibrator {
     #[cfg(feature = "faer")]
     /// Returns the condition number of the `H` matrix
     pub fn h_matrix_cond(&self) -> f32 {
-        use faer::solvers::Svd;
+        use faer::linalg::solvers::Svd;
         use faer_ext::IntoFaer;
         let mat = self.h_matrix.view_range(.., ..).into_faer();
         let svd = Svd::new(mat);
@@ -294,7 +294,7 @@ impl PyramidCalibrator {
     #[cfg(feature = "faer")]
     /// Computes the pyramid LSQ reconstructor excluding piston
     pub fn h0_estimator(&mut self) -> Result<&mut Self, PyramidCalibratorError> {
-        use faer::{solvers::Svd, Mat};
+        use faer::{linalg::solvers::Svd, Mat};
         use faer_ext::{IntoFaer, IntoNalgebra};
 
         println!("computing the H0 estimator (with faer) ...");
@@ -377,7 +377,7 @@ impl PyramidCalibrator {
     }
     #[cfg(feature = "faer")]
     pub fn hp_estimator(&mut self) -> Result<&mut Self, PyramidCalibratorError> {
-        use faer::{solvers::Svd, Mat};
+        use faer::{linalg::solvers::Svd, Mat};
         use faer_ext::{IntoFaer, IntoNalgebra};
 
         println!("computing the pyramid LSQ reconstructor (truncating the last eigen value) with faer ...");

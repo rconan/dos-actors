@@ -24,10 +24,11 @@ anyhow.workspace = true
 toml = "0.8.8"
 indicatif = { workspace = true, features = ["rayon"] }
 rayon.workspace = true
-faer = { version = "0.19.1", optional = true }
 bincode = { workspace = true, features = ["serde"] }
-faer-ext = { version = "0.2.0", features = ["nalgebra"] }
 skyangle = "0.2.2"
+geotrans = {git = "https://github.com/rconan/geotrans.git", branch = "main"}
+faer = { workspace = true, optional = true }
+faer-ext = { workspace = true, optional = true }
 
 [dev-dependencies]
 complot = "0.3.4"
@@ -38,4 +39,4 @@ skyangle = "0.2.2"
 tokio = "1.21.1"
 
 [features]
-default = ["faer"]
+ default = ["faer", "faer-ext"]

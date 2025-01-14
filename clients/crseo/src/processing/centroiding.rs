@@ -8,7 +8,7 @@ use crseo::{
 };
 use gmt_dos_clients_io::optics::{Dev, Frame};
 use interface::{Data, Read, UniqueIdentifier, Update, Write};
-use std::{marker::PhantomData, sync::Arc};
+use std::{fmt::Display, marker::PhantomData, sync::Arc};
 
 #[derive(Debug, thiserror::Error)]
 pub enum CentroidsError {
@@ -23,15 +23,37 @@ pub struct Full;
 /// Mean centroids removed
 pub struct ZeroMean;
 /// Centroids marker
-pub trait CentroidKind {}
+pub trait CentroidKind {
+    fn is_full() -> bool {
+        true
+    }
+}
 impl CentroidKind for Full {}
-impl CentroidKind for ZeroMean {}
+impl CentroidKind for ZeroMean {
+    fn is_full() -> bool {
+        false
+    }
+}
 
 /// Centroids processing
 ///
 /// Compute the centroids for a Shack-Hartmann type of sensor.
 /// The generic parameter `K` allows to compute the centroids
 /// with ([ZeroMean]) or without ([Full])  mean subtraction.
+///
+/// # Example
+///
+/// A [CentroidsProcessing] is created from a default [OpticalModelBuilder] with the [Camera](crate::sensors::Camera) sensor
+/// using the [DeviceInitialize] trait for [OpticalModelBuilder] to set the reference centroids
+/// ```
+/// use gmt_dos_clients_crseo::{OpticalModel, sensors::Camera,
+///      centroiding::CentroidsProcessing, DeviceInitialize};
+///
+/// let omb = OpticalModel::<Camera>::builder();
+/// let mut centroids: CentroidsProcessing = CentroidsProcessing::try_from(&omb)?;
+/// omb.initialize(&mut centroids);
+/// # Ok::<(),Box<dyn std::error::Error>>(())
+/// ```
 pub struct CentroidsProcessing<K = Full>
 where
     K: CentroidKind,
@@ -40,6 +62,22 @@ where
     pub(crate) centroids: Centroiding,
     frame: Option<Arc<crseo::imaging::Frame>>,
     kind: PhantomData<K>,
+}
+
+impl<K: CentroidKind> Display for CentroidsProcessing<K> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} centroids processor",
+            if <K as CentroidKind>::is_full() {
+                "full"
+            } else {
+                "zero-mean"
+            }
+        )?;
+        // writeln!(f, "{}", self.centroids)?;
+        Ok(())
+    }
 }
 
 unsafe impl<K: CentroidKind> Send for CentroidsProcessing<K> {}
@@ -108,7 +146,7 @@ impl<K: CentroidKind, const I: usize> DeviceInitialize<CentroidsProcessing<K>>
     for OpticalModelBuilder<CameraBuilder<I>>
 {
     fn initialize(&self, device: &mut CentroidsProcessing<K>) {
-        let mut om = self.clone().build().unwrap();
+        let mut om = self.clone_into::<1>().build().unwrap();
         om.update();
         let imgr = om.sensor.as_mut().unwrap();
         device.reference.process(&mut imgr.frame(), None);

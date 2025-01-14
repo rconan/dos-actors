@@ -11,8 +11,8 @@ use std::{
 use crate::calibration::mode::{MirrorMode, MixedMirrorMode, Modality};
 
 use super::{
-    Block, Calib, CalibPinv, CalibProps, CalibrationMode, ClosedLoopReconstructor, Collapse, Merge,
-    MirrorReconstructor,
+    Block, Calib, CalibPinv, CalibProps, CalibrationMode, ClosedLoopReconstructor, Collapse,
+    Expand, Merge, MirrorReconstructor,
 };
 
 /// Reconstructor from calibration matrices
@@ -52,6 +52,16 @@ where
     }
 }
 
+impl<M> From<Reconstructor<M, Calib<M>>> for Calib<M>
+where
+    M: Modality,
+    Calib<M>: CalibProps<M>,
+{
+    fn from(mut recon: Reconstructor<M, Calib<M>>) -> Self {
+        recon.calib.pop().unwrap()
+    }
+}
+
 impl<M, C> Reconstructor<M, C>
 where
     M: Modality + Default,
@@ -67,6 +77,9 @@ where
     }
     pub fn calib_slice(&self) -> &[C] {
         &self.calib
+    }
+    pub fn calib_slice_mut(&mut self) -> &mut [C] {
+        &mut self.calib
     }
     /// Computes the pseudo-inverse of the calibration matrices
     pub fn pseudoinverse(&mut self) -> &mut Self {
@@ -162,6 +175,9 @@ where
     /// Returns the number of calibration matrices cross-talks
     pub fn n_cross_talks(&self) -> usize {
         self.cross_talks().iter().filter(|&&c| c > 1).count()
+    }
+    pub fn filter(&mut self, filter: &[bool]) {
+        self.calib.iter_mut().for_each(|calib| calib.filter(filter));
     }
 }
 
@@ -259,7 +275,17 @@ impl<C: CalibProps<CalibrationMode>> Reconstructor<CalibrationMode, C> {
             dst.copy_from(mat);
 
             n_mode += calib.n_mode();
-            mask.extend(calib.mask_as_slice());
+            if mask.is_empty() {
+                mask.extend(calib.mask_as_slice())
+            } else {
+                mask.iter_mut()
+                    .zip(calib.mask_as_slice())
+                    .for_each(|(mask, m)| {
+                        if *m {
+                            *mask = *m
+                        }
+                    });
+            };
             *mode = Some(calib.mode());
 
             ni += mat.nrows();
@@ -279,6 +305,29 @@ impl<C: CalibProps<CalibrationMode>> Reconstructor<CalibrationMode, C> {
         };
         Reconstructor::new(vec![calib])
     }
+    /// Collapses the pseudo-inverse matrices into a single block-diagonal matrix
+    ///
+    /// The matrices are concatenated along the main diagonal.
+    pub fn diagonal_pinv(&self) -> Mat<f64> {
+        let n_cols: usize = self.calib.iter().map(|c| c.n_rows()).sum();
+        let n_rows: usize = self.calib.iter().map(|c| c.n_cols()).sum();
+
+        let mut block_diag_mat = Mat::<f64>::zeros(n_rows, n_cols);
+
+        let mut ni = 0;
+        let mut mi = 0;
+        for calib in self.pinv.iter() {
+            let mat = calib.as_ref().unwrap().mat_ref();
+            let mut dst = block_diag_mat
+                .as_mut()
+                .submatrix_mut(ni, mi, mat.nrows(), mat.ncols());
+            dst.copy_from(mat);
+
+            ni += mat.nrows();
+            mi += mat.ncols();
+        }
+        block_diag_mat
+    }
 }
 impl<C: CalibProps<CalibrationMode> + Merge> Reconstructor<CalibrationMode, C> {
     /// Merge two [Reconstructor]s
@@ -292,6 +341,19 @@ impl<C: CalibProps<CalibrationMode> + Merge> Reconstructor<CalibrationMode, C> {
             c.merge(oc);
         });
         self
+    }
+}
+
+impl<C: CalibProps<MirrorMode> + Expand> Reconstructor<MirrorMode, C> {
+    /// Returns the # of calibration matrix
+    pub fn len(&self) -> usize {
+        1
+    }
+    /// Splits a [MirrorMode] [Reconstructor]
+    ///
+    /// Returns a [Reconstructor] with [Vec] of [CalibrationMode] [Calib]
+    pub fn split(&mut self) -> Reconstructor<CalibrationMode> {
+        Reconstructor::new(self.calib[0].expand())
     }
 }
 
@@ -356,7 +418,7 @@ where
                     if c.is_empty() {
                         vec![0.; c.n_mode()]
                     } else {
-                        ic.as_ref().unwrap() * c.mask(&data)
+                        ic.as_ref().expect("no pseudo-inverse found") * c.mask(&data)
                     }
                 })
                 .collect(),

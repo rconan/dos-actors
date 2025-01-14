@@ -16,7 +16,7 @@ pub struct VoiceCoilToRbm {
 
 impl VoiceCoilToRbm {
     pub fn new() -> Result<Self> {
-        let data_repo = env::var("DATA_REPO").context("`DATA_REPO` is not set")?;
+        let data_repo = env::var("EDGE_SENSORS_DATA").context("`EDGE_SENSORS_DATA` is not set")?;
         let mat_file = MatFile::load(Path::new(&data_repo).join("m2_vc_r.mat"))?;
         let mut vc_2_rbm = Vec::<DMatrix<f64>>::new();
         for i in 1..=7 {

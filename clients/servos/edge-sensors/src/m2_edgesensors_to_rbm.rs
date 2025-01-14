@@ -26,7 +26,7 @@ pub struct M2EdgeSensorsToRbm {
 }
 impl M2EdgeSensorsToRbm {
     pub fn new() -> Result<Self> {
-        let data_repo = env::var("DATA_REPO").context("`DATA_REPO` is not set")?;
+        let data_repo = env::var("EDGE_SENSORS_DATA").context("`EDGE_SENSORS_DATA` is not set")?;
         //  * M2S7 RIGID-BODY MOTIONS TO EDGE SENSORS
         let r7_2_es: na::DMatrix<f64> = MatFile::load(Path::new(&data_repo).join("m2_r7_es.mat"))
             .context("Failed to read from m2_r7_es.mat")?
@@ -46,17 +46,22 @@ impl M2EdgeSensorsToRbm {
 }
 impl Update for M2EdgeSensorsToRbm {
     fn update(&mut self) {
+        // RBM of M2S7
         let r7 = &self.rbms[36..];
+        // Transform r7 into edge sensors
         let es_from_r7 = &self.r7_2_es * na::DVector::from_column_slice(r7);
         // let rbm_2_mode =
         //     &self.rbm_2_mode * na::DVector::from_column_slice(&self.edge_sensors[..36]);
+        // Offset `es_from_r7` from edge_sensors
         let data: Vec<_> = self
             .edge_sensors
             .iter()
             .zip(es_from_r7.into_iter())
             .map(|(x, y)| x - y)
             .collect();
+        // Computes outer segment RBM from offset'd edge sensors
         let rbm = &self.es_2_r * na::DVector::from_column_slice(&data);
+        // Concatenate `rbm` with `r7`
         let data: Vec<_> = rbm
             .into_iter()
             .map(|x| *x)
@@ -86,6 +91,8 @@ mod tests {
     use super::*;
     #[test]
     fn test_m2_es_to_r() {
-        let Ok(mut m2_es_to_r) = M2EdgeSensorsToRbm::new() else {return;};
+        let Ok(mut m2_es_to_r) = M2EdgeSensorsToRbm::new() else {
+            return;
+        };
     }
 }

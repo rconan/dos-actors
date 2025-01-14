@@ -132,16 +132,12 @@ where
         if self.facesheet_nodes.is_some() {
             let rbms = <DiscreteModalSolver<S> as Get<fem_io::MCM2RB6D>>::get(self)
                 .expect("failed to get rigid body motion from ASMS reference bodies");
-            let rbm = rbms
-                .chunks(6)
-                .nth(ID as usize - 1)
-                .expect("failed to get rigid body motion from ASM reference body #{ID");
-            let nodes = self
-                .facesheet_nodes
-                .as_mut()
-                .expect("facesheet nodes are missing")
-                .get_mut(&ID)?;
-            Some(super::rbm_removal(&rbm, nodes, &figure).into())
+            self.facesheet_nodes.as_mut().map(|facesheet| {
+                facesheet
+                    .from_segment(ID, &figure, &rbms)
+                    .expect("failed to remove RBM from ASM #{ID} facesheet")
+                    .into()
+            })
         } else {
             Some(figure.into())
         }

@@ -9,7 +9,7 @@ use super::{builders::WaveSensorBuilder, NoSensor, SensorPropagation};
 
 /// Complex amplitude sensor
 ///
-/// A sensor that records the amplitude and phase of a [Source] wavefront.
+/// A sensor that records the amplitude and phase of a [crseo Source](https://docs.rs/crseo/latest/crseo/source) wavefront.
 ///
 /// The phase of the wavefront is referenced with respect to the phase that
 /// corresponds to an ideally collimated GMT.

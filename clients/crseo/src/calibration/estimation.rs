@@ -6,7 +6,7 @@
 
 Calibration and estimation of M1 rigid body motion `Tz`
 
-```
+```no_run
  use crseo::gmt::GmtM1;
  use gmt_dos_clients_io::gmt_m1::M1RigidBodyMotions;
  use gmt_dos_clients_crseo::{OpticalModel,
@@ -42,14 +42,14 @@ use std::fmt::Display;
 use crseo::FromBuilder;
 use gmt_dos_clients_io::optics::{
     dispersed_fringe_sensor::{DfsFftFrame, Intercepts},
-    Dev, Frame, SensorData, Wavefront,
+    Dev, Frame, SegmentTipTilt, SensorData, Wavefront,
 };
 use interface::{Read, UniqueIdentifier, Update, Write};
 
 use crate::{
     calibration::{Calib, CalibrationError, Modality},
-    centroiding::CentroidsProcessing,
-    sensors::{Camera, DispersedFringeSensor, WaveSensor},
+    centroiding::{CentroidKind, CentroidsProcessing},
+    sensors::{Camera, DispersedFringeSensor, SegmentGradientSensor, WaveSensor},
     DeviceInitialize, DispersedFringeSensorProcessing, OpticalModel, OpticalModelBuilder,
 };
 
@@ -100,11 +100,37 @@ where
         Ok(recon.estimate.clone())
     }
 }
-
-impl<U> Estimation<U> for CentroidsProcessing
+impl<U> Estimation<U> for SegmentGradientSensor
 where
     U: UniqueIdentifier<DataType = Vec<f64>>,
+    OpticalModel<SegmentGradientSensor>: Read<U>,
+{
+    type Sensor = SegmentGradientSensor;
+
+    fn estimate<M>(
+        optical_model: &OpticalModelBuilder<<Self::Sensor as FromBuilder>::ComponentBuilder>,
+        recon: &mut Reconstructor<M, Calib<M>>,
+        cmd: &[f64],
+    ) -> std::result::Result<std::sync::Arc<Vec<f64>>, CalibrationError>
+    where
+        M: Modality + Sync + Send + Default + Display,
+    {
+        let mut om = optical_model.clone().build()?;
+        <OpticalModel<_> as Read<U>>::read(&mut om, cmd.into());
+        om.update();
+        <OpticalModel<_> as Write<SegmentTipTilt>>::write(&mut om)
+            .map(|cmd| <Reconstructor<M, Calib<M>> as Read<SegmentTipTilt>>::read(recon, cmd));
+        recon.update();
+        Ok(recon.estimate.clone())
+    }
+}
+
+impl<U, K> Estimation<U> for CentroidsProcessing<K>
+where
+    K: CentroidKind,
+    U: UniqueIdentifier<DataType = Vec<f64>>,
     OpticalModel<Camera>: Read<U>,
+    CentroidsProcessing<K>: Write<SensorData>,
 {
     type Sensor = Camera;
 
@@ -116,15 +142,15 @@ where
     where
         M: Modality + Sync + Send + Default + Display,
     {
-        let mut processor = CentroidsProcessing::try_from(optical_model)?;
+        let mut processor = CentroidsProcessing::<K>::try_from(optical_model)?;
         optical_model.initialize(&mut processor);
         let mut om = optical_model.clone().build()?;
         <OpticalModel<_> as Read<U>>::read(&mut om, cmd.into());
         om.update();
         <OpticalModel<_> as Write<Frame<Dev>>>::write(&mut om)
-            .map(|cmd| <CentroidsProcessing as Read<Frame<Dev>>>::read(&mut processor, cmd));
+            .map(|cmd| <CentroidsProcessing<K> as Read<Frame<Dev>>>::read(&mut processor, cmd));
         processor.update();
-        <CentroidsProcessing as Write<SensorData>>::write(&mut processor)
+        <CentroidsProcessing<K> as Write<SensorData>>::write(&mut processor)
             .map(|data| <Reconstructor<_, _> as Read<SensorData>>::read(recon, data));
         recon.update();
         Ok(recon.estimate.clone())

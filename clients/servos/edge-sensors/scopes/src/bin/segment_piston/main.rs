@@ -7,7 +7,7 @@ use std::env;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    env::set_var("SCOPE_SERVER_IP", "100.21.63.28");
+    env::set_var("SCOPE_SERVER_IP", "44.235.124.92");
     loop {
         if let Ok(scope) = env::var("SCOPE") {
             match scope.as_str() {
