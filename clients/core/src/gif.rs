@@ -139,7 +139,6 @@ where
             .expect("failed to write frame to GIF encoder");
     }
 }
-// Helper function to draw semi-transparent guide lines
 /* fn draw_guide_lines(image: &mut RgbaImage, width: u32, height: u32) {
     // Semi-transparent gray color (RGB: 128,128,128, Alpha: 128)
     let line_color = Rgba([128u8, 128u8, 128u8, 128u8]);
