@@ -48,20 +48,19 @@ impl<const M1_RATE: usize, const M2_RATE: usize> SystemInput<AsmsPositioners, 1,
 
 // M1 inputs
 impl<const M1_RATE: usize, const M2_RATE: usize>
-    SystemInput<gmt_dos_clients_m1_ctrl::assembly::DispatchIn, 1, 1>
+    SystemInput<gmt_dos_systems_m1::assembly::DispatchIn, 1, 1>
     for GmtServoMechanisms<M1_RATE, M2_RATE>
 {
-    fn input(&mut self) -> &mut Actor<gmt_dos_clients_m1_ctrl::assembly::DispatchIn, 1, 1> {
+    fn input(&mut self) -> &mut Actor<gmt_dos_systems_m1::assembly::DispatchIn, 1, 1> {
         self.m1.input()
     }
 }
 
 // M2 inputs
-impl<const M1_RATE: usize, const M2_RATE: usize>
-    SystemInput<gmt_dos_clients_m2_ctrl::DispatchIn, 1, 1>
+impl<const M1_RATE: usize, const M2_RATE: usize> SystemInput<gmt_dos_systems_m2::DispatchIn, 1, 1>
     for GmtServoMechanisms<M1_RATE, M2_RATE>
 {
-    fn input(&mut self) -> &mut Actor<gmt_dos_clients_m2_ctrl::DispatchIn, 1, 1> {
+    fn input(&mut self) -> &mut Actor<gmt_dos_systems_m2::DispatchIn, 1, 1> {
         self.m2.input()
     }
 }

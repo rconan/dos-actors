@@ -1,6 +1,6 @@
 [package]
 name = "gmt_dos-clients_servos"
-version = "2.2.0"
+version = "3.0.0"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -19,7 +19,6 @@ gmt_dos-clients = { workspace = true }
 gmt_dos-clients_arrow = { workspace = true }
 gmt_dos-clients_fem = { workspace = true, features = ["serde"] }
 gmt_dos-clients_io.workspace = true
-gmt_dos-clients_m1-ctrl.workspace = true
 gmt_dos-clients_m2-ctrl.workspace = true
 gmt_dos-clients_mount.workspace = true
 interface = { workspace = true, features = ["filing"] }
@@ -33,6 +32,8 @@ tokio = { workspace = true, features = ["rt-multi-thread"] }
 crseo = { workspace = true, optional = true }
 gmt_dos-clients_crseo = { workspace = true, optional = true }
 serde-pickle = "1.2.0"
+gmt_dos-systems_m1 = { workspace = true, features = ["serde"] }
+gmt_dos-systems_m2 = { workspace = true, features = ["serde"] }
 
 [dev-dependencies]
 complot = "0.3.4"

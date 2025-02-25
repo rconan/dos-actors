@@ -19,9 +19,10 @@ use gmt_dos_clients_io::{
     optics::WfeRms,
 };
 use gmt_dos_clients_lom::LinearOpticalModel;
-use gmt_dos_clients_m1_ctrl::{Calibration, M1};
+use gmt_dos_clients_m1_ctrl::Calibration;
 use gmt_dos_clients_mount::Mount;
 use gmt_dos_clients_windloads::CfdLoads;
+use gmt_dos_systems_m1::M1;
 use gmt_fem::FEM;
 
 const ACTUATOR_RATE: usize = 80;

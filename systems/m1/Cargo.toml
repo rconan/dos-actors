@@ -1,0 +1,33 @@
+[package]
+name = "gmt_dos-systems_m1"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+[dependencies]
+gmt_dos-clients_m1-ctrl.workspace = true
+gmt_dos-actors = { workspace = true, features = ["serde"] }
+gmt_dos-clients = { workspace = true, features = ["serde"] }
+interface.workspace = true
+gmt_dos-clients_io.workspace = true
+gmt_dos-clients_fem.workspace = true
+nalgebra = { workspace = true, features = ["serde", "serde-serialize"] }
+gmt-fem.workspace = true
+anyhow.workspace = true
+log.workspace = true
+serde.workspace = true
+bincode = { workspace = true, optional = true }
+
+[features]
+serde = ["bincode/serde", "nalgebra/serde-serialize"]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fem)'] }
+
+[dev-dependencies]
+gmt_dos-clients_arrow.workspace = true
+tokio-test.workspace = true

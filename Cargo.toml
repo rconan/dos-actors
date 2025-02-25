@@ -14,7 +14,7 @@ members = [
     "clients/servos/edge-sensors/io",
     "demos",
     "clients/dcs",
-    "clients/dcs/servos-scopes",
+    "clients/dcs/servos-scopes",  
 ]
 resolver = "2"
 
@@ -36,9 +36,11 @@ dos-uid-derive = { version = "5.0", path = "interface/uid-derive/" }
 gmt_dos-clients_io = { version = "4.2", path = "clients/io" }
 gmt_dos-clients_fem = { version = "5.1", path = "clients/fem/" }
 gmt_dos-clients_mount = { version = "4.1", path = "clients/mount/" }
-gmt_dos-clients_m1-ctrl = { version = "4.1", path = "clients/m1-ctrl/" }
-gmt_dos-clients_m2-ctrl = { version = "3.0", path = "clients/m2-ctrl/" }
-gmt_dos-clients_servos = { version = "2.2", default-features = false, path = "clients/servos/" }
+gmt_dos-clients_m1-ctrl = { version = "5.0", path = "clients/m1-ctrl/" }
+gmt_dos-systems_m1 = { version = "0.1", path = "systems/m1/" }
+gmt_dos-clients_m2-ctrl = { version = "4.0", path = "clients/m2-ctrl/" }
+gmt_dos-systems_m2 = { version = "0.1", path = "systems/m2/" }
+gmt_dos-clients_servos = { version = "3.0", default-features = false, path = "clients/servos/" }
 gmt_dos-clients_arrow = { version = "2.1", path = "clients/arrow/" }
 gmt_dos-clients_domeseeing = { version = "2.1", path = "clients/domeseeing/" }
 gmt_dos-clients_windloads = { version = "2.2", path = "clients/windloads/" }

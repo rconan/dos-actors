@@ -121,13 +121,13 @@ mod fem {
     pub type GmtFem =
         gmt_dos_clients_fem::DiscreteModalSolver<gmt_dos_clients_fem::solvers::ExponentialMatrix>;
     /// GMT M1 client
-    pub type GmtM1 = gmt_dos_clients_m1_ctrl::assembly::DispatchIn;
+    pub type GmtM1 = gmt_dos_systems_m1::assembly::DispatchIn;
     /// GMT mount client
     pub type GmtMount = gmt_dos_clients_mount::Mount;
     /// GMT M2 positioners client
     pub type GmtM2Hex = gmt_dos_clients_m2_ctrl::AsmsPositioners;
     /// GMT M2 mirror client
-    pub type GmtM2 = gmt_dos_clients_m2_ctrl::DispatchIn;
+    pub type GmtM2 = gmt_dos_systems_m2::DispatchIn;
 }
 #[cfg(fem)]
 pub use fem::*;

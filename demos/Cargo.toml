@@ -27,6 +27,8 @@ gmt_dos-clients_scope = { workspace = true, features = ["server"] }
 gmt_dos-clients_scope-client.workspace = true
 gmt_dos-clients_servos.workspace = true
 gmt_dos-clients_windloads.workspace = true
+gmt_dos-systems_m1.workspace = true
+gmt_dos-systems_m2.workspace = true
 interface.workspace = true
 skyangle.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread"] }

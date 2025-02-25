@@ -1,6 +1,6 @@
 [package]
 name = "gmt_dos-clients_m2-ctrl"
-version = "3.0.1"
+version = "4.0.0"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -15,19 +15,13 @@ keywords.workspace = true
 gmt_m2-ctrl_asm_preshape-filter = "0.2.1"
 gmt_m2-ctrl_asm_pid-damping = "0.2.1"
 gmt_m2-ctrl_asm_positionner = "0.2.1"
-gmt_dos-actors = { workspace = true, features = ["serde"] }
-gmt_dos-clients = { workspace = true, features = ["matio-rs"] }
 interface.workspace = true
 gmt_dos-clients_io.workspace = true
 gmt_dos-clients_fem = { workspace = true }
 gmt-fem.workspace = true
 rayon.workspace = true
 nalgebra = { workspace = true, features = ["serde-serialize"] }
-log.workspace = true
-anyhow.workspace = true
-matio-rs = { workspace = true, features = ["nalgebra"] }
 thiserror.workspace = true
-paste = "1.0.12"
 serde.workspace = true
 bincode = { workspace = true, optional = true }
 polars = { version = "0.35.4", features = ["parquet"], optional = true }

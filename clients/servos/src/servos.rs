@@ -16,9 +16,10 @@ use gmt_dos_clients_io::{
     },
     mount::{MountEncoders, MountTorques},
 };
-use gmt_dos_clients_m1_ctrl::assembly::M1;
-use gmt_dos_clients_m2_ctrl::{AsmsPositioners, ASMS};
+use gmt_dos_clients_m2_ctrl::AsmsPositioners;
 use gmt_dos_clients_mount::Mount;
+use gmt_dos_systems_m1::assembly::M1;
+use gmt_dos_systems_m2::ASMS;
 
 use serde::{Deserialize, Serialize};
 

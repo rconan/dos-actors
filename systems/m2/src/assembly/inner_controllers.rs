@@ -1,4 +1,3 @@
-use crate::actors_interface::AsmSegmentInnerController;
 use gmt_dos_actors::{
     actor::Actor,
     framework::{
@@ -9,6 +8,7 @@ use gmt_dos_actors::{
 use gmt_dos_clients_io::gmt_m2::asm::segment::{
     AsmCommand, FluidDampingForces, VoiceCoilsForces, VoiceCoilsMotion,
 };
+use gmt_dos_clients_m2_ctrl::AsmSegmentInnerController;
 use serde::{Deserialize, Serialize};
 
 use super::{DispatchIn, DispatchOut};

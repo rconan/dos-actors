@@ -4,9 +4,9 @@ use gmt_dos_clients_io::gmt_fem::{
     inputs::MCM2SmHexF,
     outputs::{MCM2Lcl6D, MCM2SmHexD, OSSM1Lcl},
 };
-use gmt_dos_clients_m1_ctrl::Calibration;
 use gmt_dos_clients_m2_ctrl::AsmsPositioners;
 use gmt_dos_clients_mount::Mount;
+use gmt_dos_systems_m1::Calibration;
 
 use crate::servos::GmtServoMechanisms;
 
@@ -76,7 +76,7 @@ impl<'a, const M1_RATE: usize, const M2_RATE: usize> TryFrom<ServosBuilder<M1_RA
 
         log::info!("Calibrating M1");
         let m1_calibration = Calibration::new(&mut fem);
-        let m1 = gmt_dos_clients_m1_ctrl::M1::<M1_RATE>::new(&m1_calibration)?;
+        let m1 = gmt_dos_systems_m1::M1::<M1_RATE>::new(&m1_calibration)?;
 
         log::info!("Calibrating ASMS positioners");
         let positioners = AsmsPositioners::new(&mut fem)?;
@@ -85,10 +85,10 @@ impl<'a, const M1_RATE: usize, const M2_RATE: usize> TryFrom<ServosBuilder<M1_RA
             Some(AsmsServo {
                 voice_coils: Some(voice_coils),
                 ..
-            }) => gmt_dos_clients_m2_ctrl::ASMS::<1>::new(&mut fem)?
+            }) => gmt_dos_systems_m2::ASMS::<1>::new(&mut fem)?
                 .modes(voice_coils.ins_transforms_view())
                 .build()?,
-            _ => gmt_dos_clients_m2_ctrl::ASMS::<1>::new(&mut fem)?.build()?,
+            _ => gmt_dos_systems_m2::ASMS::<1>::new(&mut fem)?.build()?,
         };
 
         log::info!("Building structural state space model");
