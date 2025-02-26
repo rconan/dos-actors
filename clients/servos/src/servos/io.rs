@@ -2,28 +2,26 @@ use gmt_dos_actors::{
     prelude::Actor,
     system::{SystemInput, SystemOutput},
 };
-use gmt_dos_clients_fem::{solvers::ExponentialMatrix, DiscreteModalSolver};
+use gmt_dos_clients_fem::DiscreteModalSolver;
 
 use gmt_dos_clients_m2_ctrl::AsmsPositioners;
 use gmt_dos_clients_mount::Mount;
 
-use super::GmtServoMechanisms;
+use super::{FemSolver, GmtServoMechanisms};
 
 // FEM inputs
-impl<const M1_RATE: usize, const M2_RATE: usize>
-    SystemInput<DiscreteModalSolver<ExponentialMatrix>, 1, 1>
+impl<const M1_RATE: usize, const M2_RATE: usize> SystemInput<DiscreteModalSolver<FemSolver>, 1, 1>
     for GmtServoMechanisms<M1_RATE, M2_RATE>
 {
-    fn input(&mut self) -> &mut Actor<DiscreteModalSolver<ExponentialMatrix>, 1, 1> {
+    fn input(&mut self) -> &mut Actor<DiscreteModalSolver<FemSolver>, 1, 1> {
         &mut self.fem
     }
 }
 // FEM outputs
-impl<const M1_RATE: usize, const M2_RATE: usize>
-    SystemOutput<DiscreteModalSolver<ExponentialMatrix>, 1, 1>
+impl<const M1_RATE: usize, const M2_RATE: usize> SystemOutput<DiscreteModalSolver<FemSolver>, 1, 1>
     for GmtServoMechanisms<M1_RATE, M2_RATE>
 {
-    fn output(&mut self) -> &mut Actor<DiscreteModalSolver<ExponentialMatrix>, 1, 1> {
+    fn output(&mut self) -> &mut Actor<DiscreteModalSolver<FemSolver>, 1, 1> {
         &mut self.fem
     }
 }

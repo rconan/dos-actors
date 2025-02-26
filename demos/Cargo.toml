@@ -30,3 +30,6 @@ gmt_dos-clients_windloads.workspace = true
 interface.workspace = true
 skyangle.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread"] }
+
+[features]
+cuda = ["gmt_dos-clients_fem/cuda", "gmt_dos-clients_servos/cuda"]

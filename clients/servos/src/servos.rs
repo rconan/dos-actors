@@ -7,7 +7,7 @@ use gmt_dos_actors::{
     prelude::Actor,
     system::{Sys, System},
 };
-use gmt_dos_clients_fem::{solvers::ExponentialMatrix, DiscreteModalSolver};
+use gmt_dos_clients_fem::DiscreteModalSolver;
 use gmt_dos_clients_io::{
     gmt_m1::assembly,
     gmt_m2::{
@@ -22,12 +22,14 @@ use gmt_dos_clients_mount::Mount;
 
 use serde::{Deserialize, Serialize};
 
+use crate::FemSolver;
+
 pub mod io;
 pub mod traits;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct GmtServoMechanisms<const M1_RATE: usize, const M2_RATE: usize = 1> {
-    pub fem: Actor<DiscreteModalSolver<ExponentialMatrix>>,
+    pub fem: Actor<DiscreteModalSolver<FemSolver>>,
     pub mount: Actor<Mount>,
     pub m1: Sys<M1<M1_RATE>>,
     pub m2_positioners: Actor<AsmsPositioners>,

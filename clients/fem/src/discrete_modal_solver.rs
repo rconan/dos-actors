@@ -1,7 +1,7 @@
 use crate::{
     actors_interface::RbmRemoval,
     fem_io::{GetIn, GetOut},
-    solvers::{CuStateSpace, Exponential, ExponentialMatrix, Solver},
+    solvers::{Exponential, ExponentialMatrix, Solver},
     DiscreteStateSpace,
 };
 
@@ -153,15 +153,6 @@ impl Iterator for DiscreteModalSolver<ExponentialMatrix> {
         }
 
         Some(())
-    }
-}
-impl Iterator for DiscreteModalSolver<CuStateSpace> {
-    type Item = ();
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.state_space
-            .get_mut(0)
-            .map(|ss| ss.step(&mut self.u, &mut self.y))
     }
 }
 impl<T: Solver + Default> fmt::Display for DiscreteModalSolver<T> {

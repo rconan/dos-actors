@@ -1,10 +1,12 @@
 mod bilinear;
+#[cfg(feature = "cuda")]
 mod cuda_solver;
 mod exponential;
 mod exponential_matrix;
 
 pub use bilinear::Bilinear;
-pub use cuda_solver::CuStateSpace;
+#[cfg(feature = "cuda")]
+pub use cuda_solver::{CuStateSpace, ModeStateSpace};
 pub use exponential::Exponential;
 pub use exponential_matrix::ExponentialMatrix;
 

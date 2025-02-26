@@ -2,7 +2,6 @@ use crate::{
     actors_interface::RbmRemoval,
     fem_io::{FemIo, GetIn, GetOut, SplitFem},
     solvers::Solver,
-    DiscreteModalSolver,
 };
 
 use gmt_fem::{fem_io::Inputs, fem_io::Outputs, FEM};
@@ -597,13 +596,5 @@ impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
                 "Failed to build both modal transformation matrices".to_string(),
             )),
         }
-    }
-}
-
-impl<'a, S: Solver + Default> TryFrom<DiscreteStateSpace<'a, S>> for DiscreteModalSolver<S> {
-    type Error = StateSpaceError;
-
-    fn try_from(dss: DiscreteStateSpace<'a, S>) -> std::result::Result<Self, Self::Error> {
-        dss.build()
     }
 }

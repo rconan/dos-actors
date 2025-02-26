@@ -83,6 +83,11 @@ mod fem {
     pub use crate::servos::GmtServoMechanisms;
     use gmt_dos_actors::system::Sys;
 
+    #[cfg(not(feature = "cuda"))]
+    pub(crate) type FemSolver = gmt_dos_clients_fem::solvers::ExponentialMatrix;
+    #[cfg(feature = "cuda")]
+    pub(crate) type FemSolver = gmt_dos_clients_fem::solvers::CuStateSpace;
+
     /// GMT servo-mechanisms system
     // pub enum GmtServoMechanisms<const M1_RATE: usize, const M2_RATE: usize = 1> {}
 
@@ -118,8 +123,7 @@ mod fem {
     }
 
     /// GMT FEM client
-    pub type GmtFem =
-        gmt_dos_clients_fem::DiscreteModalSolver<gmt_dos_clients_fem::solvers::ExponentialMatrix>;
+    pub type GmtFem = gmt_dos_clients_fem::DiscreteModalSolver<FemSolver>;
     /// GMT M1 client
     pub type GmtM1 = gmt_dos_clients_m1_ctrl::assembly::DispatchIn;
     /// GMT mount client

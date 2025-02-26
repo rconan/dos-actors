@@ -44,5 +44,8 @@ gmt_dos-clients_scope = { workspace = true, features = ["server"] }
 gmt_dos-clients_scope-client.workspace = true
 nanorand.workspace = true
 
+[features]
+cuda = ["gmt_dos-clients_fem/cuda"]
+
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fem)'] }

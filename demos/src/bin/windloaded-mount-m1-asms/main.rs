@@ -89,8 +89,7 @@ async fn main() -> anyhow::Result<()> {
             .outs::<MCM2SmHexD>()
             .outs::<MCM2RB6D>()
             .use_static_gain_compensation()
-            .build()?
-            .with_cuda_solver();
+            .build()?;
     println!("{state_space}");
 
     // SET POINT

@@ -2,7 +2,7 @@ use fem_cuda_solver::{mode_state_space, state_space};
 
 use crate::{
     solvers::{Exponential, ExponentialMatrix, Solver},
-    DiscreteModalSolver,
+    DiscreteModalSolver, DiscreteStateSpace, StateSpaceError,
 };
 
 impl From<&Exponential> for mode_state_space {
@@ -19,9 +19,12 @@ impl From<&Exponential> for mode_state_space {
         }
     }
 }
-impl From<Exponential> for (mode_state_space, (Vec<f64>, Vec<f64>)) {
+
+pub struct ModeStateSpace(mode_state_space, (Vec<f64>, Vec<f64>));
+
+impl From<Exponential> for ModeStateSpace {
     fn from(so: Exponential) -> Self {
-        ((&so).into(), (so.b, so.c))
+        ModeStateSpace((&so).into(), (so.b, so.c))
     }
 }
 impl From<&ExponentialMatrix> for mode_state_space {
@@ -38,17 +41,20 @@ impl From<&ExponentialMatrix> for mode_state_space {
         }
     }
 }
-impl From<ExponentialMatrix> for (mode_state_space, (Vec<f64>, Vec<f64>)) {
+impl From<ExponentialMatrix> for ModeStateSpace {
     fn from(so: ExponentialMatrix) -> Self {
-        ((&so).into(), (so.b, so.c))
+        ModeStateSpace((&so).into(), (so.b, so.c))
     }
 }
 
 /// State space model using [fem_cuda_solver]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone)]
 #[allow(dead_code)]
 pub struct CuStateSpace {
+    #[cfg_attr(feature = "serde", serde(skip))]
     mss: Vec<mode_state_space>,
+    #[cfg_attr(feature = "serde", serde(skip))]
     cu_ss: state_space,
     n_mode: usize,
     n_input: usize,
@@ -60,11 +66,14 @@ impl CuStateSpace {
     /// Creates a new instance of [CuStateSpace]
     pub fn new<T>(second_orders: Vec<T>) -> Self
     where
-        (mode_state_space, (Vec<f64>, Vec<f64>)): From<T>,
+        ModeStateSpace: From<T>,
     {
         let n_mode = second_orders.len();
-        let (mut mss, (i2m_rows, m2o_cols)): (Vec<_>, (Vec<_>, Vec<_>)) =
-            second_orders.into_iter().map(|so| so.into()).unzip();
+        let (mut mss, (i2m_rows, m2o_cols)): (Vec<_>, (Vec<_>, Vec<_>)) = second_orders
+            .into_iter()
+            .map(|so| ModeStateSpace::from(so))
+            .map(|ModeStateSpace(data, bc)| (data, bc))
+            .unzip();
         let n_input = i2m_rows[0].len();
         let n_output = m2o_cols[0].len();
         let mut i2m_rows: Vec<_> = i2m_rows.into_iter().flatten().collect();
@@ -128,7 +137,7 @@ impl Solver for CuStateSpace {
 impl<T> DiscreteModalSolver<T>
 where
     T: Solver + Default,
-    (mode_state_space, (Vec<f64>, Vec<f64>)): From<T>,
+    ModeStateSpace: From<T>,
 {
     /// Replace the CPU based solver with a GPU based solver
     pub fn with_cuda_solver(self) -> DiscreteModalSolver<CuStateSpace> {
@@ -163,171 +172,33 @@ where
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use std::{error::Error, time::Instant};
+impl Iterator for DiscreteModalSolver<CuStateSpace> {
+    type Item = ();
 
-    use gmt_fem::FEM;
-
-    use crate::{
-        solvers::{Exponential, ExponentialMatrix},
-        DiscreteModalSolver,
-    };
-    use gmt_dos_clients_io::gmt_fem::{
-        inputs::{MCM2Lcl6F, MCM2SmHexF, OSSM1Lcl6F, OSSRotDriveTorque, CFD2021106F},
-        outputs::{MCM2Lcl6D, MCM2SmHexD, OSSM1Lcl, OSSRotEncoderAngle, MCM2RB6D},
-    };
-
-    #[test]
-    pub fn gir() -> Result<(), Box<dyn Error>> {
-        let fem = FEM::from_env()?;
-        println!("{fem}");
-        let mut builder = DiscreteModalSolver::<ExponentialMatrix>::from_fem(fem.clone())
-            .sampling(1000f64)
-            .proportional_damping(2. / 100.)
-            // .use_static_gain_compensation()
-            .ins::<OSSRotDriveTorque>()
-            .outs::<OSSRotEncoderAngle>();
-        let max_hsv = builder.max_hankel_singular_values().unwrap();
-        let mut model = builder
-            // .truncate_hankel_singular_values(max_hsv * 0.01)
-            .build()?;
-        println!("{model}");
-        dbg!(&model.psi_dcg);
-
-        let mut builder = DiscreteModalSolver::<ExponentialMatrix>::from_fem(fem)
-            .sampling(1000f64)
-            .proportional_damping(2. / 100.)
-            .ins::<OSSRotDriveTorque>()
-            .outs::<OSSRotEncoderAngle>();
-        let max_hsv = builder.max_hankel_singular_values().unwrap();
-        let mut cu_model = builder
-            // .truncate_hankel_singular_values(max_hsv * 0.01)
-            .build()?
-            .with_cuda_solver();
-        /* let cu_ss = &cu_model.state_space[0];
-        let ss = &model.state_space;
-        for i in 0..2 {
-            dbg!(&ss[i].q);
-            dbg!(&ss[i].m);
-            dbg!(&cu_ss.mss[i]);
-        }
-        cu_ss
-            .i2m_rows
-            .chunks(cu_ss.n_input)
-            .enumerate()
-            .for_each(|(i, b)| println!("{}\n{:.6?}\n{:.6?}", i, b, ss[i].b));
-        cu_ss
-            .m2o_cols
-            .chunks(cu_ss.n_output)
-            .enumerate()
-            .for_each(|(i, c)| println!("{}\n{:.6?}\n{:.6?}", i, c, ss[i].c)); */
-
-        model
-            .u
-            .iter_mut()
-            .zip(&mut cu_model.u)
-            .for_each(|(u, cu_u)| {
-                *u = 10.;
-                *cu_u = 10.;
-            });
-        for i in 0..10 {
-            let now = Instant::now();
-            model.next();
-            let eta = now.elapsed().as_micros();
-            let now = Instant::now();
-            cu_model.next();
-            let cu_eta = now.elapsed().as_micros();
-            let rms = (model
-                .y
-                .iter()
-                .zip(&cu_model.y)
-                .map(|(a, b)| (a - b).powi(2))
-                .sum::<f64>()
-                / model.y.len() as f64)
-                .sqrt();
-            println!(
-                "#{} [{}/{}] [{:.3e}]:\n{:+6?}\n{:+6?}",
-                i, eta, cu_eta, rms, model.y, cu_model.y
-            );
-        }
-        Ok(())
+    fn next(&mut self) -> Option<Self::Item> {
+        self.state_space
+            .get_mut(0)
+            .map(|ss| ss.step(&mut self.u, &mut self.y))
     }
-    #[test]
-    #[ignore]
-    pub fn servos() -> Result<(), Box<dyn Error>> {
-        let fem = FEM::from_env()?;
-        println!("{fem}");
-        let sids: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7];
-        let mut model = DiscreteModalSolver::<ExponentialMatrix>::from_fem(fem.clone())
-            .sampling(1000f64)
-            .proportional_damping(2. / 100.)
-            //.max_eigen_frequency(75f64)
-            .including_mount()
-            .including_m1(Some(sids.clone()))?
-            .including_asms(Some(sids.clone()), None, None)?
-            .ins::<CFD2021106F>()
-            .ins::<OSSM1Lcl6F>()
-            .ins::<MCM2Lcl6F>()
-            .outs::<OSSM1Lcl>()
-            .outs::<MCM2Lcl6D>()
-            .ins::<MCM2SmHexF>()
-            .outs::<MCM2SmHexD>()
-            .outs::<MCM2RB6D>()
-            .use_static_gain_compensation()
-            .build()?;
-        println!("{model}");
-        let mut cu_model = DiscreteModalSolver::<ExponentialMatrix>::from_fem(fem.clone())
-            .sampling(1000f64)
-            .proportional_damping(2. / 100.)
-            //.max_eigen_frequency(75f64)
-            .including_mount()
-            .including_m1(Some(sids.clone()))?
-            .including_asms(Some(sids.clone()), None, None)?
-            .ins::<CFD2021106F>()
-            .ins::<OSSM1Lcl6F>()
-            .ins::<MCM2Lcl6F>()
-            .outs::<OSSM1Lcl>()
-            .outs::<MCM2Lcl6D>()
-            .ins::<MCM2SmHexF>()
-            .outs::<MCM2SmHexD>()
-            .outs::<MCM2RB6D>()
-            .use_static_gain_compensation()
-            .build()?
-            .with_cuda_solver();
-        model
-            .u
-            .iter_mut()
-            .zip(&mut cu_model.u)
-            .for_each(|(u, cu_u)| {
-                *u = 1.;
-                *cu_u = 1.;
-            });
-        for i in 0..10 {
-            let now = Instant::now();
-            model.next();
-            let eta = now.elapsed().as_micros();
-            let now = Instant::now();
-            cu_model.next();
-            let cu_eta = now.elapsed().as_micros();
-            let rms = (model
-                .y
-                .iter()
-                .zip(&cu_model.y)
-                .map(|(a, b)| (a - b).powi(2))
-                .sum::<f64>()
-                / model.y.len() as f64)
-                .sqrt();
-            println!(
-                "#{} [{}/{}] [{:.3e}]:\n{:+6?}\n{:+6?}",
-                i,
-                eta,
-                cu_eta,
-                rms,
-                &model.y[..5],
-                &cu_model.y[..5]
-            );
-        }
-        Ok(())
+}
+
+impl<'a, T> DiscreteStateSpace<'a, T>
+where
+    T: Solver + Default,
+    ModeStateSpace: From<T>,
+{
+    pub fn build(self) -> Result<DiscreteModalSolver<CuStateSpace>, StateSpaceError> {
+        self.builder().map(|dsm| dsm.with_cuda_solver())
+    }
+}
+impl<'a, S> TryFrom<DiscreteStateSpace<'a, S>> for DiscreteModalSolver<CuStateSpace>
+where
+    S: Solver + Default,
+    ModeStateSpace: From<S>,
+{
+    type Error = StateSpaceError;
+
+    fn try_from(dss: DiscreteStateSpace<'a, S>) -> std::result::Result<Self, Self::Error> {
+        dss.build()
     }
 }

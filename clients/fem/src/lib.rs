@@ -11,13 +11,25 @@
 //! A single input and a single output are selected.
 //! ```no_run
 //! use gmt_fem::FEM;
-//! use gmt_dos_clients_fem::{DiscreteStateSpace, DiscreteModalSolver, solvers::Exponential,
+//! use gmt_dos_clients_fem::{DiscreteStateSpace, DiscreteModalSolver,
 //!               fem_io::{actors_inputs::OSSM1Lcl6F, actors_outputs::OSSM1Lcl}};
+//! #[cfg(not(feature = "cuda"))]
+//! use gmt_dos_clients_fem::solvers::Exponential;
+//! #[cfg(feature = "cuda")]
+//! use gmt_dos_clients_fem::solvers::{CuStateSpace, Exponential};
 //!
 //! # fn main() -> anyhow::Result<()> {
 //!     let sampling_rate = 1e3; // Hz
 //!     let fem = FEM::from_env()?;
+//!   #[cfg(not(feature = "cuda"))]
 //!     let mut fem_ss: DiscreteModalSolver<Exponential> = DiscreteStateSpace::from(fem)
+//!         .sampling(sampling_rate)
+//!         .proportional_damping(2. / 100.)
+//!         .ins::<OSSM1Lcl6F>()
+//!         .outs::<OSSM1Lcl>()
+//!         .build()?;
+//!   #[cfg(feature = "cuda")]
+//!     let mut fem_ss: DiscreteModalSolver<CuStateSpace> = DiscreteStateSpace::<Exponential>::from(fem)
 //!         .sampling(sampling_rate)
 //!         .proportional_damping(2. / 100.)
 //!         .ins::<OSSM1Lcl6F>()

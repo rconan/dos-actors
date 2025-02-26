@@ -3,7 +3,11 @@ use crate::{solvers::Solver, DiscreteModalSolver, DiscreteStateSpace, StateSpace
 type Result<T> = std::result::Result<T, StateSpaceError>;
 
 impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
-    pub fn build(mut self) -> Result<DiscreteModalSolver<T>> {
+    #[cfg(not(feature = "cuda"))]
+    pub fn build(self) -> Result<DiscreteModalSolver<T>> {
+        self.builder()
+    }
+    pub fn builder(mut self) -> Result<DiscreteModalSolver<T>> {
         use std::{f64::consts::PI, sync::Arc};
 
         let tau = self.sampling.map_or(
@@ -119,5 +123,16 @@ are set to zero."
                 "Failed to build both modal transformation matrices".to_string(),
             )),
         }
+    }
+}
+#[cfg(not(feature = "cuda"))]
+impl<'a, S> TryFrom<DiscreteStateSpace<'a, S>> for DiscreteModalSolver<S>
+where
+    S: Solver + Default,
+{
+    type Error = StateSpaceError;
+
+    fn try_from(dss: DiscreteStateSpace<'a, S>) -> std::result::Result<Self, Self::Error> {
+        dss.build()
     }
 }
