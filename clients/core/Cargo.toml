@@ -54,6 +54,7 @@ required-features = ["scope"]
 
 [[example]]
 name = "iir"
+required-features = ["scope"]
 
 [[example]]
 name = "woofer-tweeter"
