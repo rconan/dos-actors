@@ -4,11 +4,7 @@
 
 use interface::{Data, Read, UniqueIdentifier, Update, Write};
 use std::collections::VecDeque;
-use std::{
-    //fmt::Debug,
-    ops::{Add, AddAssign, Mul, Sub},
-    //sync::Arc,
-};
+use std::ops::{Mul, Sub};
 
 #[derive(Debug, Clone)]
 /// A multi-dimensional IIR filter where the same coefficients are applied to all dimensions
@@ -67,14 +63,7 @@ impl<T: Default + Clone> IIRFilter<T> {
 
 impl<T> Update for IIRFilter<T>
 where
-    T: Send
-        + Sync
-        + Sub<Output = T>
-        + Add<Output = T>
-        + Mul<Output = T>
-        + AddAssign
-        + Copy
-        + std::iter::Sum,
+    T: Send + Sync + Sub<Output = T> + Mul<Output = T> + Copy + std::iter::Sum,
 {
     // Process a new multi-dimensional input sample using iterators
     //pub fn process(&mut self, input: &[f64]) -> Vec<f64> {
@@ -109,14 +98,7 @@ where
 
 impl<T, U> Read<U> for IIRFilter<T>
 where
-    T: Send
-        + Sync
-        + Sub<Output = T>
-        + Add<Output = T>
-        + Mul<Output = T>
-        + Copy
-        + AddAssign
-        + std::iter::Sum,
+    T: Send + Sync + Sub<Output = T> + Mul<Output = T> + Copy + std::iter::Sum,
     U: UniqueIdentifier<DataType = Vec<T>>,
 {
     fn read(&mut self, data: Data<U>) {
@@ -138,21 +120,12 @@ where
 }
 impl<T, U> Write<U> for IIRFilter<T>
 where
-    T: Copy
-        + Send
-        + Sync
-        + Sub<Output = T>
-        + Add<Output = T>
-        + Mul<Output = T>
-        + AddAssign
-        + std::iter::Sum,
+    T: Copy + Send + Sync + Sub<Output = T> + Mul<Output = T> + std::iter::Sum,
     U: UniqueIdentifier<DataType = Vec<T>>,
 {
     fn write(&mut self) -> Option<Data<U>> {
         // Return the most recent output from each dimension
-        let y: Vec<T> = (0..self.filter_dim)
-            .map(|dim| self.y_history[dim][0])
-            .collect();
+        let y: Vec<T> = self.y_history.iter().map(|y| y[0]).collect();
         Some(Data::new(y))
     }
 }
