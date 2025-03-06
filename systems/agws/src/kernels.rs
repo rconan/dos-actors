@@ -1,4 +1,4 @@
-use std::{any::type_name, fmt::Display, io, marker::PhantomData, path::Path};
+use std::{any::type_name, fmt::Display, io, marker::PhantomData};
 
 use gmt_dos_clients_crseo::{
     centroiding::CentroidsError, crseo::FromBuilder, OpticalModel, OpticalModelBuilder,
@@ -57,7 +57,6 @@ pub trait KernelSpecs {
     fn processor(
         model: &OpticalModelBuilder<<Self::Sensor as FromBuilder>::ComponentBuilder>,
     ) -> Result<Self::Processor>;
-    fn reconstructor<P: AsRef<Path>>(path: P) -> Result<Self::Estimator>;
 }
 
 pub struct Kernel<T>
@@ -100,13 +99,13 @@ where
     // <T as KernelSpecs>::Sensor: DerefMut, // OpticalModelBuilder<<T::Sensor as FromBuilder>::ComponentBuilder>:
     //     DeviceInitialize<T::Processor>,
 {
-    pub fn new<P: AsRef<Path>>(
+    pub fn new(
         model: &OpticalModelBuilder<<T::Sensor as FromBuilder>::ComponentBuilder>,
-        path: P,
+        estimator: T::Estimator,
     ) -> Result<Self> {
         Ok(Self {
             processor: <T as KernelSpecs>::processor(model)?,
-            estimator: <T as KernelSpecs>::reconstructor(path)?,
+            estimator,
             integrator: None,
         })
     }

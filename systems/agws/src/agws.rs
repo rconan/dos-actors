@@ -7,7 +7,7 @@ use gmt_dos_actors::{
     actor::{Actor, PlainActor},
     framework::model::{Check, SystemFlowChart, Task},
     prelude::{AddActorOutput, AddOuput, TryIntoInputs},
-    system::{System, SystemInput, SystemOutput},
+    system::{System, SystemError, SystemInput, SystemOutput},
 };
 use sh24::Sh24;
 use sh48::Sh48;
@@ -43,9 +43,10 @@ impl<const SH48_I: usize, const SH24_I: usize> System for Agws<SH48_I, SH24_I> {
     fn name(&self) -> String {
         String::from("AGWS")
     }
-    fn build(&mut self) -> anyhow::Result<&mut Self> {
+    fn build(&mut self) -> Result<&mut Self, SystemError> {
         self.sh24
             .add_output()
+            .bootstrap()
             .build::<KernelFrame<Sh24<SH24_I>>>()
             .into_input(&mut self.sh24_kernel)?;
         Ok(self)

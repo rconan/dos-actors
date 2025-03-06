@@ -3689,7 +3689,6 @@ dependencies = [
 name = "gmt_dos-systems_agws"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
  "gmt_dos-clients",

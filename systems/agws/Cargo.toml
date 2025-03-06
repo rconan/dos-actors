@@ -9,7 +9,6 @@ categories.workspace = true
 keywords.workspace = true
 
 [dependencies]
-anyhow.workspace = true
 gmt_dos-actors.workspace = true
 gmt_dos-clients.workspace = true
 gmt_dos-clients_crseo.workspace = true

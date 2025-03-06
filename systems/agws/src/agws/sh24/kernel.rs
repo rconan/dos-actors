@@ -1,5 +1,3 @@
-use std::{fs::File, path::Path};
-
 use gmt_dos_clients_crseo::{
     calibration::Reconstructor, centroiding::CentroidsProcessing, crseo::FromBuilder,
     sensors::Camera, DeviceInitialize, OpticalModelBuilder,
@@ -36,12 +34,5 @@ impl<const I: usize> KernelSpecs for Sh24<I> {
         let mut centroids = CentroidsProcessing::try_from(model)?;
         model.initialize(&mut centroids);
         Ok(centroids)
-    }
-
-    fn reconstructor<P: AsRef<Path>>(path: P) -> Result<Self::Estimator> {
-        Ok(serde_pickle::from_reader(
-            File::open(path)?,
-            Default::default(),
-        )?)
     }
 }
