@@ -3705,7 +3705,6 @@ dependencies = [
 name = "gmt_dos-systems_m1"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "bincode 2.0.0-rc.3",
  "gmt-fem",
  "gmt_dos-actors",
@@ -3718,6 +3717,7 @@ dependencies = [
  "log",
  "nalgebra 0.33.2",
  "serde",
+ "thiserror 1.0.69",
  "tokio-test",
 ]
 

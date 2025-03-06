@@ -2,10 +2,10 @@ use gmt_dos_actors::{
     actor::Actor,
     framework::{
         model::{Check, Task},
-        network::{AddActorOutput, AddOuput, TryIntoInputs},
+        network::{ActorOutputsError, AddActorOutput, AddOuput, TryIntoInputs},
     },
     graph::Graph,
-    system::Sys,
+    system::{Sys, SystemError},
 };
 use gmt_dos_clients::sampler::Sampler;
 use gmt_dos_clients_io::gmt_m1::segment::{
@@ -67,7 +67,7 @@ impl<const R: usize> IntoIterator for Box<SegmentControls<R>> {
 } */
 
 impl<const R: usize> SegmentControls<R> {
-    pub fn new(id: u8, calibration: &Calibration) -> anyhow::Result<Self> {
+    pub fn new(id: u8, calibration: &Calibration) -> Result<Self, SystemError> {
         Ok(match id {
             1 => Self::S1(Sys::new(SegmentControl::<1, R>::new(calibration)).build()?),
             2 => Self::S2(Sys::new(SegmentControl::<2, R>::new(calibration)).build()?),
@@ -143,7 +143,7 @@ impl<const R: usize> SegmentControls<R> {
     pub fn m1_rigid_body_motions(
         &mut self,
         dispatch: &mut Actor<DispatchIn>,
-    ) -> anyhow::Result<()> {
+    ) -> Result<(), ActorOutputsError> {
         match self {
             Self::S1(actor) => dispatch
                 .add_output()
@@ -180,7 +180,7 @@ impl<const R: usize> SegmentControls<R> {
     pub fn m1_actuator_command_forces(
         &mut self,
         dispatch: &mut Actor<DispatchIn>,
-    ) -> anyhow::Result<()> {
+    ) -> Result<(), ActorOutputsError> {
         match self {
             Self::S1(actor) => dispatch
                 .add_output()
@@ -213,7 +213,10 @@ impl<const R: usize> SegmentControls<R> {
         };
         Ok(())
     }
-    pub fn m1_hardpoints_motion(&mut self, dispatch: &mut Actor<DispatchIn>) -> anyhow::Result<()> {
+    pub fn m1_hardpoints_motion(
+        &mut self,
+        dispatch: &mut Actor<DispatchIn>,
+    ) -> Result<(), ActorOutputsError> {
         match self {
             Self::S1(actor) => dispatch
                 .add_output()
@@ -249,7 +252,7 @@ impl<const R: usize> SegmentControls<R> {
     pub fn m1_actuator_applied_forces(
         &mut self,
         dispatch: &mut Actor<DispatchOut>,
-    ) -> anyhow::Result<()> {
+    ) -> Result<(), ActorOutputsError> {
         match self {
             Self::S1(actor) => AddActorOutput::<'_, Actuators<1>, R, 1>::add_output(actor)
                 .build::<ActuatorAppliedForces<1>>()
@@ -278,7 +281,7 @@ impl<const R: usize> SegmentControls<R> {
     pub fn m1_hardpoints_forces(
         &mut self,
         dispatch: &mut Actor<DispatchOut>,
-    ) -> anyhow::Result<()> {
+    ) -> Result<(), ActorOutputsError> {
         match self {
             Self::S1(actor) => AddActorOutput::<'_, Hardpoints, 1, 1>::add_output(actor)
                 .build::<HardpointsForces<1>>()
