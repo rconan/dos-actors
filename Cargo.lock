@@ -3725,7 +3725,6 @@ dependencies = [
 name = "gmt_dos-systems_m2"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "bincode 2.0.0-rc.3",
  "complot",
  "gmt-fem",

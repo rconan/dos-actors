@@ -21,7 +21,6 @@ gmt-fem.workspace = true
 rayon.workspace = true
 nalgebra = { workspace = true, features = ["serde-serialize"] }
 log.workspace = true
-anyhow.workspace = true
 matio-rs = { workspace = true, features = ["nalgebra"] }
 thiserror.workspace = true
 paste = "1.0.12"

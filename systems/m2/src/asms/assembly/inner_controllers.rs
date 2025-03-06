@@ -2,7 +2,7 @@ use gmt_dos_actors::{
     actor::Actor,
     framework::{
         model::{Check, Task},
-        network::{AddActorOutput, AddOuput, TryIntoInputs},
+        network::{ActorOutputsError, AddActorOutput, AddOuput, TryIntoInputs},
     },
 };
 use gmt_dos_clients_io::gmt_m2::asm::segment::{
@@ -58,7 +58,10 @@ impl<const R: usize> AsmsInnerControllers<R> {
             Self::S7(actor) => Box::new(actor) as Box<dyn Task>,
         }
     }
-    pub fn asm_command(&mut self, dispatch: &mut Actor<DispatchIn, R, R>) -> anyhow::Result<()> {
+    pub fn asm_command(
+        &mut self,
+        dispatch: &mut Actor<DispatchIn, R, R>,
+    ) -> Result<(), ActorOutputsError> {
         match self {
             Self::S1(actor) => dispatch
                 .add_output()
@@ -94,7 +97,7 @@ impl<const R: usize> AsmsInnerControllers<R> {
     pub fn asm_voice_coils_motion(
         &mut self,
         dispatch: &mut Actor<DispatchIn, R, R>,
-    ) -> anyhow::Result<()> {
+    ) -> Result<(), ActorOutputsError> {
         match self {
             Self::S1(actor) => dispatch
                 .add_output()
@@ -130,7 +133,7 @@ impl<const R: usize> AsmsInnerControllers<R> {
     pub fn asm_voice_coils_forces(
         &mut self,
         dispatch: &mut Actor<DispatchOut, R, R>,
-    ) -> anyhow::Result<()> {
+    ) -> Result<(), ActorOutputsError> {
         match self {
             Self::S1(actor) => actor
                 .add_output()
@@ -166,7 +169,7 @@ impl<const R: usize> AsmsInnerControllers<R> {
     pub fn asm_fluid_damping_forces(
         &mut self,
         dispatch: &mut Actor<DispatchOut, R, R>,
-    ) -> anyhow::Result<()> {
+    ) -> Result<(), ActorOutputsError> {
         match self {
             Self::S1(actor) => actor
                 .add_output()

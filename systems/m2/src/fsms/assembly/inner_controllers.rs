@@ -1,6 +1,9 @@
 use gmt_dos_actors::{
     actor::Actor,
-    framework::model::{Check, Task},
+    framework::{
+        model::{Check, Task},
+        network::ActorOutputsError,
+    },
     prelude::{AddActorOutput, AddOuput, TryIntoInputs},
 };
 use gmt_dos_clients_io::gmt_m2::fsm::segment::{FsmCommand, PiezoForces, PiezoNodes};
@@ -54,7 +57,10 @@ impl<const R: usize> FsmsInnerControllers<R> {
             Self::S7(actor) => Box::new(actor) as Box<dyn Task>,
         }
     }
-    pub fn fsm_command(&mut self, dispatch: &mut Actor<DispatchIn, R, R>) -> anyhow::Result<()> {
+    pub fn fsm_command(
+        &mut self,
+        dispatch: &mut Actor<DispatchIn, R, R>,
+    ) -> Result<(), ActorOutputsError> {
         match self {
             Self::S1(actor) => dispatch
                 .add_output()
@@ -87,7 +93,10 @@ impl<const R: usize> FsmsInnerControllers<R> {
         };
         Ok(())
     }
-    pub fn fsm_pzt_motion(&mut self, dispatch: &mut Actor<DispatchIn, R, R>) -> anyhow::Result<()> {
+    pub fn fsm_pzt_motion(
+        &mut self,
+        dispatch: &mut Actor<DispatchIn, R, R>,
+    ) -> Result<(), ActorOutputsError> {
         match self {
             Self::S1(actor) => dispatch
                 .add_output()
@@ -123,7 +132,7 @@ impl<const R: usize> FsmsInnerControllers<R> {
     pub fn fsm_pzt_forces(
         &mut self,
         dispatch: &mut Actor<DispatchOut, R, R>,
-    ) -> anyhow::Result<()> {
+    ) -> Result<(), ActorOutputsError> {
         match self {
             Self::S1(actor) => actor
                 .add_output()

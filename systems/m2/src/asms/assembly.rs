@@ -2,8 +2,11 @@ use std::fmt::Display;
 
 use gmt_dos_actors::{
     actor::{Actor, PlainActor},
-    framework::model::{Check, SystemFlowChart, Task},
-    system::{System, SystemInput, SystemOutput},
+    framework::{
+        model::{Check, SystemFlowChart, Task},
+        network::ActorOutputsError,
+    },
+    system::{System, SystemError, SystemInput, SystemOutput},
 };
 use gmt_dos_clients_io::Assembly;
 
@@ -14,6 +17,12 @@ pub use inner_controllers::AsmsInnerControllers;
 use serde::{Deserialize, Serialize};
 
 use crate::M2Error;
+
+impl From<M2Error> for SystemError {
+    fn from(value: M2Error) -> Self {
+        SystemError::SubSystem(format!("{value:?}"))
+    }
+}
 
 use super::AsmsBuilder;
 
@@ -74,11 +83,11 @@ impl<const R: usize> IntoIterator for Box<ASMS<R>> {
     }
 }
 
-pub type Result<T> = std::result::Result<T, M2Error>;
+// pub type Result<T> = std::result::Result<T, M2Error>;
 
 impl<'a, const R: usize> TryFrom<AsmsBuilder<'a, R>> for ASMS<R> {
-    type Error = anyhow::Error;
-    fn try_from(builder: AsmsBuilder<'a, R>) -> anyhow::Result<ASMS<R>> {
+    type Error = SystemError;
+    fn try_from(builder: AsmsBuilder<'a, R>) -> Result<ASMS<R>, SystemError> {
         let iter = builder
             .gain
             .into_iter()
@@ -91,11 +100,11 @@ impl<'a, const R: usize> TryFrom<AsmsBuilder<'a, R>> for ASMS<R> {
                 })
                 .map(|x| x.map(|x| x.as_slice().to_vec()))
                 .map(|x| x.map(|x| Some(x)))
-                .collect::<Result<Vec<_>>>()?
+                .collect::<Result<Vec<_>, M2Error>>()?
         } else {
             iter.map(|x| x.map(|x| x.as_slice().to_vec()))
                 .map(|x| x.map(|x| Some(x)))
-                .collect::<Result<Vec<_>>>()?
+                .collect::<Result<Vec<_>, M2Error>>()?
         };
 
         let n_mode: Vec<_> = ks
@@ -124,23 +133,23 @@ impl<const R: usize> Display for ASMS<R> {
 }
 
 impl<const R: usize> System for ASMS<R> {
-    fn build(&mut self) -> anyhow::Result<&mut Self> {
+    fn build(&mut self) -> Result<&mut Self, SystemError> {
         self.segments
             .iter_mut()
             .map(|segment| segment.asm_command(&mut self.dispatch_in))
-            .collect::<anyhow::Result<Vec<()>>>()?;
+            .collect::<Result<Vec<()>, ActorOutputsError>>()?;
         self.segments
             .iter_mut()
             .map(|segment| segment.asm_voice_coils_motion(&mut self.dispatch_in))
-            .collect::<anyhow::Result<Vec<()>>>()?;
+            .collect::<Result<Vec<()>, ActorOutputsError>>()?;
         self.segments
             .iter_mut()
             .map(|segment| segment.asm_voice_coils_forces(&mut self.dispatch_out))
-            .collect::<anyhow::Result<Vec<()>>>()?;
+            .collect::<Result<Vec<()>, ActorOutputsError>>()?;
         self.segments
             .iter_mut()
             .map(|segment| segment.asm_fluid_damping_forces(&mut self.dispatch_out))
-            .collect::<anyhow::Result<Vec<()>>>()?;
+            .collect::<Result<Vec<()>, ActorOutputsError>>()?;
         Ok(self)
     }
 
