@@ -65,7 +65,7 @@ impl<T> Logging<T> {
     }
     #[cfg(feature = "matio-rs")]
     /// Saves the data to a Matlab mat file
-    pub fn to_mat_file<'a, S>(&'a self, file_name: S) -> Result<&Self, matio_rs::MatioError>
+    pub fn to_mat_file<'a, S>(&'a self, file_name: S) -> Result<&'a Self, matio_rs::MatioError>
     where
         matio_rs::Mat<'a>: matio_rs::MayBeFrom<matio_rs::MatArray<'a, T>>,
         S: AsRef<std::path::Path>,

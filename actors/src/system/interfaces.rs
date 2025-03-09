@@ -5,12 +5,16 @@ use crate::{
     prelude::GetName,
 };
 
+use super::SystemError;
+
 /// System interface
 pub trait System: Sized + Clone + Display + Send + Sync + GetName {
     fn name(&self) -> String {
         String::from("SYSTEM")
     }
-    fn build(&mut self) -> anyhow::Result<&mut Self>;
+    fn build(&mut self) -> Result<&mut Self, SystemError> {
+        Ok(self)
+    }
     fn plain(&self) -> PlainActor;
 }
 

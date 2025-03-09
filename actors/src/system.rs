@@ -21,6 +21,7 @@ use std::{
 
 use crate::actor::Actor;
 use crate::framework::model::{Check, SystemFlowChart, Task};
+use crate::framework::network::{ActorOutputsError, OutputRx};
 
 mod implementations;
 mod interfaces;
@@ -29,6 +30,26 @@ pub use interfaces::{System, SystemInput, SystemOutput};
 
 pub enum New {}
 pub enum Built {}
+
+#[derive(Debug, thiserror::Error)]
+pub enum SystemError {
+    #[error("failed to build system")]
+    Ouputs(#[from] ActorOutputsError),
+    #[error("{0}")]
+    SubSystem(String),
+}
+impl<U, CO, const NO: usize, const NI: usize> From<OutputRx<U, CO, NI, NO>> for SystemError
+where
+    U: 'static + interface::UniqueIdentifier,
+    CO: interface::Write<U>,
+{
+    fn from(value: OutputRx<U, CO, NI, NO>) -> Self {
+        SystemError::Ouputs(ActorOutputsError {
+            actor: value.actor,
+            output: value.output,
+        })
+    }
+}
 
 /// System client  
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -69,7 +90,7 @@ impl<T: System> Sys<T, New> {
         }
     }
 
-    pub fn build(self) -> anyhow::Result<Sys<T>> {
+    pub fn build(self) -> Result<Sys<T>, SystemError> {
         let mut this: Sys<T> = Sys {
             sys: self.sys,
             state: PhantomData,

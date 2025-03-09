@@ -30,8 +30,8 @@ where
     M: Modality,
 {
     fn sid(&self) -> u8;
-    fn pseudoinverse(&self) -> Option<CalibPinv<f64, M>>;
-    fn truncated_pseudoinverse(&self, n: usize) -> Option<CalibPinv<f64, M>>;
+    fn pseudoinverse(&self) -> Option<CalibPinv<M>>;
+    fn truncated_pseudoinverse(&self, n: usize) -> Option<CalibPinv<M>>;
     fn area(&self) -> usize;
     fn match_areas(&mut self, other: &mut Self);
     fn mask_as_slice(&self) -> &[bool];

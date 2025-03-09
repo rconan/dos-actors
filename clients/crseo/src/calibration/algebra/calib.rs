@@ -4,7 +4,7 @@ use crate::calibration::{
 };
 
 use super::{Block, CalibPinv, CalibProps, CalibrationMode};
-use faer::{mat::from_column_major_slice, Mat, MatRef};
+use faer::{Mat, MatRef};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
@@ -95,15 +95,23 @@ where
     /// let pinv = calib.pseudoinverse().unwrap();
     /// assert_eq!(pinv.cond(),1f64);
     /// ```
-    fn pseudoinverse(&self) -> Option<CalibPinv<f64, M>> {
+    fn pseudoinverse(&self) -> Option<CalibPinv<M>> {
         if self.is_empty() {
             return None;
         }
-        let svd = self.mat_ref().svd();
-        let s = svd.s_diagonal();
+        let svd = self.mat_ref().svd().expect("failed to compute SVD");
+        let s = svd.S().column_vector();
+        let n_s = s.nrows();
+        let u = svd.U().subcols(0, n_s);
+        let v = svd.V();
+        let i_s: Vec<_> = s.iter().map(|x| x.recip()).collect();
+        let i_s_diag = MatRef::from_column_major_slice(&i_s, n_s, 1)
+            .col(0)
+            .as_diagonal();
+        let mat = v * i_s_diag * u.transpose();
         let cond = s[0] / s[s.nrows() - 1];
         Some(CalibPinv {
-            mat: svd.pseudoinverse(),
+            mat,
             cond,
             mode: self.mode.clone(),
         })
@@ -111,23 +119,24 @@ where
     /// Returns the trucated pseudo-inverse of the calibration matrix
     ///
     /// The inverse of the last `n` eigen values are set to zero
-    fn truncated_pseudoinverse(&self, n: usize) -> Option<CalibPinv<f64, M>> {
+    fn truncated_pseudoinverse(&self, n: usize) -> Option<CalibPinv<M>> {
         if self.is_empty() {
             return None;
         }
-        let svd = self.mat_ref().svd();
-        let s = svd.s_diagonal();
+        let svd = self.mat_ref().svd().expect("failed to compute SVD");
+        let s = svd.S().column_vector();
         let n_s = s.nrows();
-        let u = svd.u().subcols(0, n_s);
-        let v = svd.v();
+        let u = svd.U().subcols(0, n_s);
+        let v = svd.V();
         let i_s: Vec<_> = s
             .iter()
             .take(n_s - n)
             .map(|x| x.recip())
             .chain(vec![0.; n])
             .collect();
-        let i_s_diag =
-            from_column_major_slice::<f64, _, _>(&i_s, n_s, 1).column_vector_as_diagonal();
+        let i_s_diag = MatRef::from_column_major_slice(&i_s, n_s, 1)
+            .col(0)
+            .as_diagonal();
         let mat = v * i_s_diag * u.transpose();
         let cond = s[0] / s[n_s - n - 1];
         Some(CalibPinv {
@@ -311,7 +320,7 @@ where
     /// ```
     #[inline]
     fn mat_ref(&self) -> MatRef<'_, f64> {
-        from_column_major_slice::<f64, _, _>(&self.c, self.n_rows(), self.n_cols())
+        MatRef::from_column_major_slice(&self.c, self.n_rows(), self.n_cols())
     }
     /// Return the number of modes
     ///

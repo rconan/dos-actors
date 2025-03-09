@@ -27,7 +27,7 @@ rayon.workspace = true
 bincode = { workspace = true, features = ["serde"] }
 skyangle = "0.2.2"
 geotrans = {git = "https://github.com/rconan/geotrans.git", branch = "main"}
-faer = { workspace = true, optional = true }
+faer = { workspace = true, features = ["serde"], optional = true }
 faer-ext = { workspace = true, optional = true }
 
 [dev-dependencies]

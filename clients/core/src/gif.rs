@@ -3,11 +3,10 @@
 //! A client to create a GIF image from a stream of frame
 
 use std::{
-    env,
     fmt::Debug,
     fs::File,
     ops::{Div, Sub},
-    path::{Path, PathBuf},
+    path::Path,
     sync::Arc,
 };
 
@@ -15,7 +14,7 @@ use ab_glyph::{FontArc, FontRef, PxScale};
 use colorous::CIVIDIS;
 use gif::{Encoder, EncodingError, Frame as GifFrame, Repeat};
 use image::{Rgba, RgbaImage};
-use imageproc::drawing::{draw_cross_mut, draw_text_mut};
+use imageproc::drawing::draw_text_mut;
 use interface::{Read, UniqueIdentifier, Update};
 
 mod frame;

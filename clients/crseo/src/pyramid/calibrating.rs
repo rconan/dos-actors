@@ -250,9 +250,9 @@ impl PyramidCalibrator {
         use faer::linalg::solvers::Svd;
         use faer_ext::IntoFaer;
         let mat = self.p_matrix.view_range(.., ..).into_faer();
-        let svd = Svd::new(mat);
-        let s_diag = svd.s_diagonal();
-        let k = s_diag.nrows() - 1;
+        let svd = Svd::new(mat).expect("failed to compute SVD");
+        let s_diag = svd.S();
+        let k = s_diag.column_vector().nrows() - 1;
         s_diag[0] / s_diag[k]
     }
     #[cfg(feature = "faer")]
@@ -261,9 +261,9 @@ impl PyramidCalibrator {
         use faer::linalg::solvers::Svd;
         use faer_ext::IntoFaer;
         let mat = self.h_matrix.view_range(.., ..).into_faer();
-        let svd = Svd::new(mat);
-        let s_diag = svd.s_diagonal();
-        let k = s_diag.nrows() - 1;
+        let svd = Svd::new(mat).expect("failed to compute SVD");
+        let s_diag = svd.S();
+        let k = s_diag.column_vector().nrows() - 1;
         s_diag[0] / s_diag[k]
     }
     #[cfg(not(feature = "faer"))]
@@ -305,15 +305,15 @@ impl PyramidCalibrator {
 
         let m = h0_matrix.nrows();
         let n = h0_matrix.ncols();
-        let svd = Svd::new(h0_matrix);
+        let svd = Svd::new(h0_matrix).expect("failed to compute SVD");
 
-        let s_diag = svd.s_diagonal();
+        let s_diag = svd.S();
         let mut s_inv = Mat::zeros(n, m);
         for i in 0..Ord::min(m, n) {
             s_inv[(i, i)] = 1.0 / s_diag[i];
         }
 
-        let mat = svd.v() * &s_inv * svd.u().adjoint();
+        let mat = svd.V() * &s_inv * svd.U().adjoint();
 
         self.estimator = Some(Estimator::H0(mat.as_ref().into_nalgebra().into()));
         println!("  ... in {}s", now.elapsed().as_secs());
@@ -402,15 +402,15 @@ impl PyramidCalibrator {
 
         let m = m_matrix.nrows();
         let n = m_matrix.ncols();
-        let svd = Svd::new(m_matrix);
+        let svd = Svd::new(m_matrix).expect("failed to compute SVD");
 
-        let s_diag = svd.s_diagonal();
+        let s_diag = svd.S();
         let mut s_inv = Mat::zeros(n, m);
         for i in 0..Ord::min(m, n) - 1 {
             s_inv[(i, i)] = 1.0 / s_diag[i];
         }
 
-        let mat = svd.v() * &s_inv * svd.u().adjoint();
+        let mat = svd.V() * &s_inv * svd.U().adjoint();
 
         let reconstructor = mat.as_ref().into_nalgebra();
 

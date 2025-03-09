@@ -113,6 +113,7 @@ pub mod gain;
 #[cfg(feature = "gif")]
 pub mod gif;
 pub mod integrator;
+pub mod iir;
 pub mod leftright;
 pub mod logging;
 pub mod low_pass_filter;

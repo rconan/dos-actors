@@ -127,7 +127,7 @@ impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
         let (n_row, n_col) = psi_dcg.shape();
         for j in input_indices {
             psi_dcg.set_column(j, &na::DVector::<f64>::zeros(n_row));
-            println!(
+            log::info!(
                 "Removing SGMC from input #{} of {} (all outputs)",
                 j + 1,
                 n_col

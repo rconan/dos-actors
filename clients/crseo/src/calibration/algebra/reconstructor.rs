@@ -29,7 +29,7 @@ where
     C: CalibProps<M>,
 {
     calib: Vec<C>,
-    pinv: Vec<Option<CalibPinv<f64, M>>>,
+    pinv: Vec<Option<CalibPinv<M>>>,
     data: Arc<Vec<f64>>,
     pub(crate) estimate: Arc<Vec<f64>>,
     mode: PhantomData<M>,
@@ -128,14 +128,14 @@ where
         self.calib.iter()
     }
     /// Returns an iterator over the pseudo-inverse of the calibration matrices
-    pub fn pinv(&mut self) -> impl Iterator<Item = &mut CalibPinv<f64, M>> {
+    pub fn pinv(&mut self) -> impl Iterator<Item = &mut CalibPinv<M>> {
         self.pinv.iter_mut().filter_map(|p| p.as_mut())
         // .zip(&self.calib)
         // .map(|(p, c)| p.get_or_insert_with(|| c.pseudoinverse()))
         // .map(|p| p)
     }
     /// Returns an iterator over the calibration matrices and their pseudo-inverse
-    pub fn calib_pinv(&mut self) -> impl Iterator<Item = (&C, &CalibPinv<f64, M>)> {
+    pub fn calib_pinv(&mut self) -> impl Iterator<Item = (&C, &CalibPinv<M>)> {
         self.pinv
             .iter_mut()
             .zip(&self.calib)
@@ -183,7 +183,14 @@ where
 
 impl<M: Modality + Default, C: CalibProps<M> + Default + Display> Display for Reconstructor<M, C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "RECONSTRUCTOR (non-zeros={}): ", self.area())?;
+        match self.n_cross_talks() {
+            0 => writeln!(f, "RECONSTRUCTOR (non-zeros={}): ", self.area())?,
+            n => writeln!(
+                f,
+                "RECONSTRUCTOR (non-zeros={}, segment cross-talks={n}): ",
+                self.area()
+            )?,
+        };
         for (c, ic) in self.calib.iter().zip(&self.pinv) {
             if let Some(ic) = ic {
                 writeln!(f, " * {c} ; cond: {:6.3E}", ic.cond)?

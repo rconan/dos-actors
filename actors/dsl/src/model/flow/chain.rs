@@ -12,7 +12,11 @@ use syn::{
     Ident, Token,
 };
 
-use crate::{client::SharedClient, model::Scope, Expand, Expanded, TryExpand};
+use crate::{
+    client::{Client, ClientKind, SharedClient},
+    model::Scope,
+    Expand, Expanded, TryExpand,
+};
 
 pub mod clientoutput;
 use clientoutput::ClientOutputPair;
@@ -98,19 +102,19 @@ impl Chain {
                     }) = iter.peek_mut()
                     {
                         // a client with an output and followed by another client: output_client[output] -> input_client
-                        let (output_rate, input_rate) = (
-                            &mut output_client.borrow_mut().output_rate,
-                            &mut input_client.borrow_mut().input_rate,
-                        );
-                        if *output_rate == 0 {
-                            *output_rate = flow_rate;
-                        }
-                        if *input_rate == 0 {
-                            *input_rate = flow_rate;
-                        }
-                        if *output_rate != *input_rate {
-                            output.add_rate_transition(*input_rate, *output_rate);
-                        }
+                            let (output_rate, input_rate) = (
+                                &mut output_client.borrow_mut().output_rate,
+                                &mut input_client.borrow_mut().input_rate,
+                            );
+                            if *output_rate == 0 {
+                                *output_rate = flow_rate;
+                            }
+                            if *input_rate == 0 {
+                                *input_rate = flow_rate;
+                            }
+                            if *output_rate != *input_rate {
+                                output.add_rate_transition(*input_rate, *output_rate);
+                            }
                     } else {
                         // a client with an output and not followed by another client: output_client[output]
                         let output_rate = &mut output_client.borrow_mut().output_rate;
@@ -118,6 +122,17 @@ impl Chain {
                             *output_rate = flow_rate;
                         }
                     }
+                    // Sub-system actors always takes inputs
+                    if let Client {
+                        input_rate,
+                        kind: ClientKind::SubSystem(..),
+                        ..
+                    } = &mut *output_client.borrow_mut()
+                    {
+                        if *input_rate == 0 {
+                            *input_rate = flow_rate;
+                        }
+                    };
                 }
                 Some(ClientOutputPair {
                     client: output_client,

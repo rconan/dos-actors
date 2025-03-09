@@ -1,4 +1,5 @@
 use std::{
+    error::Error,
     fmt::{Debug, Display},
     sync::Arc,
 };
@@ -29,6 +30,36 @@ where
     U: 'static + UniqueIdentifier,
     CO: Write<U>,
 {
+}
+/// Type-erased version of [OutputRx]
+///
+/// [ActorOutputsError ] is used to propagate [OuputRx] error.
+#[derive(Debug)]
+pub struct ActorOutputsError {
+    pub(crate) actor: String,
+    pub(crate) output: String,
+}
+impl Error for ActorOutputsError {}
+impl Display for ActorOutputsError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(
+            f,
+            r#"TryIntoInputs for output "{}" of actor "{}", check output multiplex #"#,
+            self.output, self.actor
+        )
+    }
+}
+impl<U, CO, const NO: usize, const NI: usize> From<OutputRx<U, CO, NI, NO>> for ActorOutputsError
+where
+    U: 'static + UniqueIdentifier,
+    CO: Write<U>,
+{
+    fn from(value: OutputRx<U, CO, NI, NO>) -> Self {
+        ActorOutputsError {
+            actor: value.actor,
+            output: value.output,
+        }
+    }
 }
 impl<U, CO, const NO: usize, const NI: usize> Display for OutputRx<U, CO, NI, NO>
 where

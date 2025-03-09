@@ -328,7 +328,7 @@ document.addEventListener('keydown', function (event) {{
     }
     /// Writes the flowchart to an HTML file
     pub fn to_html(&self) -> Result<PathBuf> {
-        log::info!("{:}", self);
+        log::debug!("{:}", self);
         let data_repo = env::var("DATA_REPO").unwrap_or(".".into());
         let path = Path::new(&data_repo).join(format!("{}_flowchart.html", self.name));
         let mut file = File::create(&path).unwrap();

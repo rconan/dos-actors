@@ -7,7 +7,7 @@ use gmt_dos_actors::{
         model::{Check, Task},
         network::{AddActorOutput, AddOuput, TryIntoInputs},
     },
-    system::{System, SystemInput, SystemOutput},
+    system::{System, SystemError, SystemInput, SystemOutput},
 };
 use gmt_dos_clients::sampler::Sampler;
 use gmt_dos_clients_io::gmt_m1::segment::{
@@ -20,7 +20,7 @@ impl<const S: u8, const R: usize> System for SegmentControl<S, R> {
         format!("M1S{S}")
     }
 
-    fn build(&mut self) -> anyhow::Result<&mut Self> {
+    fn build(&mut self) -> Result<&mut Self, SystemError> {
         self.sampler
             .add_output()
             .build::<ActuatorCommandForces<S>>()

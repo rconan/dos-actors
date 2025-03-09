@@ -2,9 +2,12 @@ use std::fmt::Display;
 
 use gmt_dos_actors::{
     actor::{Actor, PlainActor},
-    framework::model::{Check, Task},
+    framework::{
+        model::{Check, Task},
+        network::ActorOutputsError,
+    },
     graph::Graph,
-    system::{System, SystemInput, SystemOutput},
+    system::{System, SystemError, SystemInput, SystemOutput},
 };
 
 use gmt_dos_clients_io::Assembly;
@@ -82,28 +85,28 @@ impl<const R: usize> System for M1<R> {
         format!("M1@{R}")
     }
 
-    fn build(&mut self) -> anyhow::Result<&mut Self> {
+    fn build(&mut self) -> Result<&mut Self, SystemError> {
         self.segments
             .iter_mut()
             .map(|segment| segment.m1_rigid_body_motions(&mut self.dispatch_in))
-            .collect::<anyhow::Result<Vec<()>>>()?;
+            .collect::<Result<Vec<()>, ActorOutputsError>>()?;
         self.segments
             .iter_mut()
             .map(|segment| segment.m1_actuator_command_forces(&mut self.dispatch_in))
-            .collect::<anyhow::Result<Vec<()>>>()?;
+            .collect::<Result<Vec<()>, ActorOutputsError>>()?;
         self.segments
             .iter_mut()
             .map(|segment| segment.m1_hardpoints_motion(&mut self.dispatch_in))
-            .collect::<anyhow::Result<Vec<()>>>()?;
+            .collect::<Result<Vec<()>, ActorOutputsError>>()?;
 
         self.segments
             .iter_mut()
             .map(|segment| segment.m1_actuator_applied_forces(&mut self.dispatch_out))
-            .collect::<anyhow::Result<Vec<()>>>()?;
+            .collect::<Result<Vec<()>, ActorOutputsError>>()?;
         self.segments
             .iter_mut()
             .map(|segment| segment.m1_hardpoints_forces(&mut self.dispatch_out))
-            .collect::<anyhow::Result<Vec<()>>>()?;
+            .collect::<Result<Vec<()>, ActorOutputsError>>()?;
         Ok(self)
     }
 
@@ -131,12 +134,12 @@ impl<const R: usize> System for M1<R> {
 }
 
 impl<const R: usize> M1<R> {
-    pub fn new(calibration: &Calibration) -> anyhow::Result<Self> {
+    pub fn new(calibration: &Calibration) -> Result<Self, SystemError> {
         Ok(Self {
             segments: <M1<R> as Assembly>::SIDS
                 .into_iter()
                 .map(|sid| SegmentControls::new(sid, calibration))
-                .collect::<anyhow::Result<Vec<_>>>()?,
+                .collect::<Result<Vec<_>, SystemError>>()?,
             dispatch_in: DispatchIn::new().into(),
             dispatch_out: DispatchOut::new().into(),
         })

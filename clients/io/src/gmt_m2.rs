@@ -36,7 +36,7 @@ pub mod fsm {
     pub enum M2FSMFsmTipTilt {}
     /// M2 FSM Actuator displacement command
     #[derive(UID)]
-    #[uid(port = 58_003)]
+    #[uid(port = 58_004)]
     pub enum M2FSMFsmCommand {}
 
     pub mod segment {

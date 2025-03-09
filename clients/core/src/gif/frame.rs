@@ -25,7 +25,7 @@ where
     crosses: Option<Vec<(i32, i32)>>,
 }
 impl<T, F: Fn(&T) -> T> Frame<T, F> {
-    /// Creates a new GIF encoder
+    /// Creates a new image encoder
     ///
     /// The `width` and `height` of the image must match the frame size
     pub fn new<P: AsRef<Path>>(path: P, size: usize) -> Self {

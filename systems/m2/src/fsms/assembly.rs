@@ -3,8 +3,11 @@ use std::fmt::Display;
 pub use dispatch::{DispatchIn, DispatchOut};
 use gmt_dos_actors::{
     actor::{Actor, PlainActor},
-    framework::model::{Check, SystemFlowChart, Task},
-    system::{System, SystemInput, SystemOutput},
+    framework::{
+        model::{Check, SystemFlowChart, Task},
+        network::ActorOutputsError,
+    },
+    system::{System, SystemError, SystemInput, SystemOutput},
 };
 use gmt_dos_clients_io::Assembly;
 use serde::{Deserialize, Serialize};
@@ -76,19 +79,19 @@ impl<const R: usize> Display for FSMS<R> {
 }
 
 impl<const R: usize> System for FSMS<R> {
-    fn build(&mut self) -> anyhow::Result<&mut Self> {
+    fn build(&mut self) -> Result<&mut Self, SystemError> {
         self.segments
             .iter_mut()
             .map(|segment| segment.fsm_command(&mut self.dispatch_in))
-            .collect::<anyhow::Result<Vec<()>>>()?;
+            .collect::<Result<Vec<()>, ActorOutputsError>>()?;
         self.segments
             .iter_mut()
             .map(|segment| segment.fsm_pzt_motion(&mut self.dispatch_in))
-            .collect::<anyhow::Result<Vec<()>>>()?;
+            .collect::<Result<Vec<()>, ActorOutputsError>>()?;
         self.segments
             .iter_mut()
             .map(|segment| segment.fsm_pzt_forces(&mut self.dispatch_out))
-            .collect::<anyhow::Result<Vec<()>>>()?;
+            .collect::<Result<Vec<()>, ActorOutputsError>>()?;
         Ok(self)
     }
 

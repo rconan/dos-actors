@@ -10,7 +10,7 @@ use crate::calibration::{algebra::Reconstructor, mode::Modality};
 ///
 /// The generic parameter indicates if the matrix correspond to a single segment ([CalibrationMode])
 /// or to a full mirror ([MirrorMode](crate::calibration::MirrorMode),[MixedMirrorMode](crate::calibration::MixedMirrorMode)).
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClosedLoopCalib<M = CalibrationMode>
 where
     M: Modality,
@@ -22,6 +22,21 @@ where
     pub(crate) m2_to_sensor: Option<Reconstructor>,
     pub(crate) m1_closed_loop_to_sensor: Calib<M>,
 }
+impl<M> Default for ClosedLoopCalib<M>
+where
+    M: Modality + Default,
+{
+    fn default() -> Self {
+        Self {
+            m1_to_closed_loop_sensor: Default::default(),
+            m2_to_closed_loop_sensor: Default::default(),
+            m1_to_m2: Mat::new(),
+            m1_to_sensor: Default::default(),
+            m2_to_sensor: Default::default(),
+            m1_closed_loop_to_sensor: Default::default(),
+        }
+    }
+}
 
 impl ClosedLoopCalib {
     pub fn m1_to_m2(&self) -> MatRef<'_, f64> {
@@ -29,11 +44,11 @@ impl ClosedLoopCalib {
     }
 }
 impl<M: Modality + Display + Default> CalibProps<M> for ClosedLoopCalib<M> {
-    fn pseudoinverse(&self) -> Option<CalibPinv<f64, M>> {
+    fn pseudoinverse(&self) -> Option<CalibPinv<M>> {
         self.m1_closed_loop_to_sensor.pseudoinverse()
     }
 
-    fn truncated_pseudoinverse(&self, n: usize) -> Option<CalibPinv<f64, M>> {
+    fn truncated_pseudoinverse(&self, n: usize) -> Option<CalibPinv<M>> {
         self.m1_closed_loop_to_sensor.truncated_pseudoinverse(n)
     }
 

@@ -27,7 +27,7 @@ pub use outputs::{ActorOutput, ActorOutputBuilder, AddActorOutput, AddOuput};
 
 /// Definition of the payload between outputs and inputs
 mod output_rx;
-pub use output_rx::OutputRx;
+pub use output_rx::{ActorOutputsError, OutputRx};
 
 /// Interface for actors log outputs
 mod logs;

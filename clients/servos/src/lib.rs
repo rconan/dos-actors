@@ -77,11 +77,12 @@ mod builder;
 mod servos;
 #[cfg(fem)]
 mod fem {
+    use crate::builder::ServosBuilderError;
     #[cfg(topend = "ASM")]
     pub use crate::builder::{asms_servo, AsmsServo};
     pub use crate::builder::{EdgeSensors, M1SegmentFigure, ServosBuilder, WindLoads};
     pub use crate::servos::GmtServoMechanisms;
-    use gmt_dos_actors::system::Sys;
+    use gmt_dos_actors::system::{Sys, SystemError};
 
     #[cfg(not(feature = "cuda"))]
     pub(crate) type FemSolver = gmt_dos_clients_fem::solvers::ExponentialMatrix;
@@ -105,9 +106,15 @@ mod fem {
         }
     }
 
+    impl From<ServosBuilderError> for SystemError {
+        fn from(value: ServosBuilderError) -> Self {
+            SystemError::SubSystem(format!("{:?}", value))
+        }
+    }
+
     impl<const M1_RATE: usize, const M2_RATE: usize> ServosBuilder<M1_RATE, M2_RATE> {
         /// Build the system
-        pub fn build(self) -> anyhow::Result<Sys<GmtServoMechanisms<M1_RATE, M2_RATE>>> {
+        pub fn build(self) -> Result<Sys<GmtServoMechanisms<M1_RATE, M2_RATE>>, SystemError> {
             Ok(Sys::new(GmtServoMechanisms::<M1_RATE, M2_RATE>::try_from(self)?).build()?)
         }
     }
@@ -115,7 +122,7 @@ mod fem {
     impl<const M1_RATE: usize, const M2_RATE: usize> TryFrom<ServosBuilder<M1_RATE, M2_RATE>>
         for Sys<GmtServoMechanisms<M1_RATE, M2_RATE>>
     {
-        type Error = anyhow::Error;
+        type Error = SystemError;
 
         fn try_from(builder: ServosBuilder<M1_RATE, M2_RATE>) -> Result<Self, Self::Error> {
             builder.build()

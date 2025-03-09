@@ -3,7 +3,7 @@
 use std::{fs::File, time::Instant};
 
 use clap::Parser;
-use faer::col::AsColRef;
+use faer::{col::AsColRef, Mat, MatRef};
 use faer_ext::IntoFaer;
 use gmt_dos_clients_fem::{fem_io, Model, Switch};
 use gmt_fem::FEM;
@@ -88,42 +88,42 @@ fn main() -> anyhow::Result<()> {
         .chain(xyz.iter().map(|xyz| xyz[1] / r_max))
         .collect();
 
-    // Filtering out piston, tip * tilt
-    let svd_k = k.svd();
-    let z_123 = faer::mat::from_column_major_slice::<f64, _, _>(&z123, n, 3);
-    // fitting of bending modes
-    let q_123 = z_123.svd().pseudoinverse() * svd_k.u().subcols(0, na);
-    // removing piston, tip & tilt
-    let up = svd_k.u().subcols(0, na) - z_123 * q_123;
-    // normalizing
-    let kp = up * svd_k.s_diagonal().column_vector_as_diagonal() * svd_k.v().transpose();
-    let svd_k = kp.svd();
+    // // Filtering out piston, tip * tilt
+    // let svd_k = k.svd().unwrap();
+    // let z_123 = MatRef::from_column_major_slice(&z123, n, 3);
+    // // fitting of bending modes
+    // let q_123 = z_123.svd().unwrap().pseudoinverse() * svd_k.U().subcols(0, na);
+    // // removing piston, tip & tilt
+    // let up = svd_k.U().subcols(0, na) - z_123 * q_123;
+    // // normalizing
+    // let kp = up * svd_k.S().column_vector().as_diagonal() * svd_k.V().transpose();
+    // let svd_k = kp.svd().unwrap();
 
-    // bending modes
-    let u: Vec<f64> = svd_k
-        .u()
-        .subcols(0, na)
-        .col_iter()
-        .flat_map(|c| c.iter().cloned().collect::<Vec<f64>>())
-        .collect();
+    // // bending modes
+    // let u: Vec<f64> = svd_k
+    //     .U()
+    //     .subcols(0, na)
+    //     .col_iter()
+    //     .flat_map(|c| c.iter().cloned().collect::<Vec<f64>>())
+    //     .collect();
 
-    // modes to forces matrix
-    let mut is = svd_k.s_diagonal().to_owned();
-    is.as_mut().iter_mut().for_each(|x| *x = x.recip());
-    let vis: Vec<_> = (svd_k.v() * is.as_col_ref().column_vector_as_diagonal())
-        .col_iter()
-        .flat_map(|c| c.iter().cloned().collect::<Vec<f64>>())
-        .collect();
+    // // modes to forces matrix
+    // let mut is = svd_k.S().to_owned();
+    // is.as_mut().iter_mut().for_each(|x| *x = x.recip());
+    // let vis: Vec<_> = (svd_k.V() * is.as_col_ref().column_vector().as_diagonal())
+    //     .col_iter()
+    //     .flat_map(|c| c.iter().cloned().collect::<Vec<f64>>())
+    //     .collect();
 
-    let sms = SingularModes {
-        mode_nodes: xyz,
-        actuator_nodes: in_xyz,
-        modes: u,
-        mode_2_force: vis,
-        shape: k.shape(),
-    };
-    println!("elapsed: {:}ms", now.elapsed().as_millis());
-    serde_pickle::to_writer(&mut File::create(args.filename)?, &sms, Default::default())?;
+    // let sms = SingularModes {
+    //     mode_nodes: xyz,
+    //     actuator_nodes: in_xyz,
+    //     modes: u,
+    //     mode_2_force: vis,
+    //     shape: k.shape(),
+    // };
+    // println!("elapsed: {:}ms", now.elapsed().as_millis());
+    // serde_pickle::to_writer(&mut File::create(args.filename)?, &sms, Default::default())?;
 
     Ok(())
 }
