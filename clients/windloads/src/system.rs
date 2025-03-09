@@ -6,7 +6,7 @@ use gmt_dos_actors::{
         model::{Check, SystemFlowChart, Task},
         network::{AddActorOutput, AddOuput, TryIntoInputs},
     },
-    system::{Sys, System, SystemOutput},
+    system::{Sys, System, SystemError, SystemOutput},
 };
 use gmt_dos_clients::{
     signals::{OneSignal, Signal, Signals, SignalsError},
@@ -70,8 +70,14 @@ impl TryFrom<Builder<FOH>> for SigmoidCfdLoads {
     }
 }
 
+impl From<SigmoidCfdLoadsError> for SystemError {
+    fn from(value: SigmoidCfdLoadsError) -> Self {
+        SystemError::SubSystem(format!("{:?}", value))
+    }
+}
+
 impl TryFrom<Builder<FOH>> for Sys<SigmoidCfdLoads> {
-    type Error = anyhow::Error;
+    type Error = SystemError;
     fn try_from(builder: Builder<FOH>) -> Result<Self, Self::Error> {
         Sys::new(builder.try_into()?).build()
     }
@@ -90,7 +96,7 @@ impl System for SigmoidCfdLoads
 where
     CfdLoads<FOH>: Update,
 {
-    fn build(&mut self) -> anyhow::Result<&mut Self> {
+    fn build(&mut self) -> Result<&mut Self, SystemError> {
         self.cfd_loads
             .add_output()
             .build::<CFDM1WindLoads>()
