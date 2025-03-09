@@ -1,12 +1,14 @@
-use gmt_dos_actors::{prelude::Actor, ArcMutex};
+use asms_servo::AsmsServoError;
+use gmt_dos_actors::{prelude::Actor, system::SystemError, ArcMutex};
 use gmt_dos_clients_fem::{solvers::ExponentialMatrix, DiscreteModalSolver, StateSpaceError};
 use gmt_dos_clients_io::gmt_fem::{
     inputs::MCM2SmHexF,
     outputs::{MCM2Lcl6D, MCM2SmHexD, OSSM1Lcl},
 };
-use gmt_dos_clients_m2_ctrl::Positioners;
+use gmt_dos_clients_m2_ctrl::{Positioners, PositionersError};
 use gmt_dos_clients_mount::Mount;
 use gmt_dos_systems_m1::Calibration;
+use gmt_dos_systems_m2::M2Error;
 
 use crate::servos::GmtServoMechanisms;
 
@@ -64,10 +66,24 @@ pub trait Include<'a, C> {
         Self: 'a + Sized;
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum ServosBuilderError {
+    #[error("failed to build FEM state space model")]
+    StateSpace(#[from] StateSpaceError),
+    #[error("failed to build one of the `servos` system")]
+    System(#[from] SystemError),
+    #[error("failed to build the ASMS")]
+    Asms(#[from] AsmsServoError),
+    #[error("failed to create a new M2 mirror instance")]
+    M2Mirror(#[from] M2Error),
+    #[error("failed to create a new M2 positioners instance")]
+    M2Positioner(#[from] PositionersError),
+}
+
 impl<'a, const M1_RATE: usize, const M2_RATE: usize> TryFrom<ServosBuilder<M1_RATE, M2_RATE>>
     for GmtServoMechanisms<M1_RATE, M2_RATE>
 {
-    type Error = anyhow::Error;
+    type Error = ServosBuilderError;
 
     fn try_from(mut builder: ServosBuilder<M1_RATE, M2_RATE>) -> Result<Self, Self::Error> {
         let mut fem = builder.fem;

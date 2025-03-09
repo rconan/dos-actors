@@ -13,4 +13,4 @@ pub type M2SegmentInnerController<const SID: u8> = AsmSegmentInnerController<SID
 pub type M2SegmentInnerController<const SID: u8> = FsmSegmentInnerController<SID>;
 
 mod positioner;
-pub use positioner::Positioners;
+pub use positioner::{Positioners, PositionersError};

@@ -5,7 +5,7 @@ use gmt_dos_actors::{
         network::{AddActorOutput, AddOuput, TryIntoInputs},
     },
     prelude::Actor,
-    system::{Sys, System},
+    system::{Sys, System, SystemError},
 };
 use gmt_dos_clients_fem::DiscreteModalSolver;
 #[cfg(topend = "ASM")]
@@ -44,7 +44,7 @@ impl<const M1_RATE: usize, const M2_RATE: usize> System for GmtServoMechanisms<M
     fn name(&self) -> String {
         format!("GMT Servo-Mechanisms")
     }
-    fn build(&mut self) -> anyhow::Result<&mut Self> {
+    fn build(&mut self) -> Result<&mut Self, SystemError> {
         self.mount
             .add_output()
             .build::<MountTorques>()
