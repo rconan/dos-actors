@@ -105,13 +105,15 @@ async fn main() -> anyhow::Result<()> {
     // LOM
     let lom = LinearOpticalModel::new()?;
 
-    let sigmoid = OneSignal::try_from(Signals::new(1, n_step).channel(
-        0,
-        Signal::Sigmoid {
-            amplitude: 1f64,
-            sampling_frequency_hz: sim_sampling_frequency as f64,
-        },
-    ))?;
+    let sigmoid = OneSignal::try_from(
+        Signals::new(1, n_step + sim_sampling_frequency * sim_duration).channel(
+            0,
+            Signal::Sigmoid {
+                amplitude: 1f64,
+                sampling_frequency_hz: sim_sampling_frequency as f64,
+            },
+        ),
+    )?;
 
     let m1_smoother = Smooth::new();
     let m2_smoother = Smooth::new();
@@ -189,7 +191,7 @@ async fn main() -> anyhow::Result<()> {
     1: fem[M1RigidBodyMotions].. -> lom
     1: fem[M2RigidBodyMotions].. -> lom
 
-    1: lom[WfeRms]$
+    // 1: lom[WfeRms]$
     1: lom[TipTilt]$
     1: lom[SegmentTipTilt]$
     1: lom[SegmentPiston]$
