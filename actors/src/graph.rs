@@ -7,11 +7,34 @@ use std::{
     hash::{Hash, Hasher},
     io::{self, Write},
     path::Path,
+    sync::{LazyLock, Mutex},
 };
 
 use crate::{model::PlainModel, trim};
 mod render;
 pub use render::{Render, RenderError};
+
+#[derive(Debug)]
+pub struct ColorMap {
+    lookup: HashMap<usize, usize>,
+    colors: Vec<usize>,
+}
+impl ColorMap {
+    pub fn new() -> Self {
+        Self {
+            lookup: HashMap::new(),
+            colors: (1usize..=8).collect(),
+        }
+    }
+    pub fn get(&mut self, rate: usize) -> usize {
+        *self.lookup.entry(rate).or_insert_with(|| {
+            let color = self.colors[0];
+            self.colors.rotate_left(1);
+            color
+        })
+    }
+}
+pub static COLORMAP: LazyLock<Mutex<ColorMap>> = LazyLock::new(|| Mutex::new(ColorMap::new()));
 
 #[derive(Debug, thiserror::Error)]
 pub enum GraphError {
@@ -125,8 +148,7 @@ impl Graph {
     }
     /// Returns the diagram in the [Graphviz](https://www.graphviz.org/) dot language
     pub fn to_string(&self) -> String {
-        let mut lookup: HashMap<usize, usize> = HashMap::new();
-        let mut colors = (1usize..=8).cycle();
+        let color_map = &*COLORMAP;
         let inputs: Vec<_> = self
             .actors
             .iter()
@@ -135,10 +157,8 @@ impl Graph {
                     inputs
                         .iter()
                         .map(|input| {
-                            let color = lookup
-                                .entry(input.rate())
-                                .or_insert_with(|| colors.next().unwrap());
-                            input.as_formatted_input(actor.hash, *color)
+                            let color = color_map.lock().unwrap().get(input.rate());
+                            input.as_formatted_input(actor.hash, color)
                         })
                         .collect::<Vec<String>>()
                 })
@@ -153,10 +173,8 @@ impl Graph {
                     outputs
                         .iter()
                         .map(|output| {
-                            let color = lookup
-                                .entry(output.rate())
-                                .or_insert_with(|| colors.next().unwrap());
-                            output.as_formatted_output(actor.hash, *color)
+                            let color = color_map.lock().unwrap().get(output.rate());
+                            output.as_formatted_output(actor.hash, color)
                         })
                         .collect::<Vec<String>>()
                 })
