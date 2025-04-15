@@ -124,7 +124,7 @@ mod wave_sensor;
 mod tests {
     use std::error::Error;
 
-    use crseo::Gmt;
+    use crseo::{gmt::GmtM1, Gmt};
     use gmt_dos_clients_io::gmt_m1::M1RigidBodyMotions;
     use skyangle::Conversion;
 
@@ -143,7 +143,7 @@ mod tests {
         let optical_model = OpticalModel::<WaveSensor>::builder().gmt(gmt.clone());
         let closed_loop_optical_model = OpticalModel::<WaveSensor>::builder().gmt(gmt);
 
-        let mut recon = <WaveSensor as ClosedLoopCalibration<WaveSensor>>::calibrate(
+        let mut recon = <WaveSensor as ClosedLoopCalibration<GmtM1, WaveSensor>>::calibrate(
             &optical_model,
             CalibrationMode::r_xy(1f64.from_arcsec()),
             &closed_loop_optical_model,

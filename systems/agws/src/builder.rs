@@ -8,10 +8,13 @@ use gmt_dos_clients_crseo::{
     crseo::{
         builders::{AtmosphereBuilder, AtmosphereBuilderError, GmtBuilder},
         imaging::{Detector, LensletArray},
-        FromBuilder,
+        FromBuilder, Source,
     },
-    sensors::{builders::CameraBuilder, Camera},
-    OpticalModelBuilder, OpticalModelError,
+    sensors::{
+        builders::{CameraBuilder, WaveSensorBuilder},
+        Camera, WaveSensor,
+    },
+    OpticalModel, OpticalModelBuilder, OpticalModelError,
 };
 use shack_hartmann::{ShackHartmannBuilder, ShackHartmannBuilderError};
 
@@ -118,6 +121,36 @@ impl<const SH48_I: usize, const SH24_I: usize> AgwsBuilder<SH48_I, SH24_I> {
     pub fn sh48_calibration(mut self, sh48_recon: Reconstructor) -> Self {
         self.sh48 = self.sh48.reconstructor(sh48_recon);
         self
+    }
+    /// Returns a single [OpticalModelBuilder](https://docs.rs/gmt_dos-clients_crseo/latest/gmt_dos_clients_crseo/struct.OpticalModelBuilder.html) using as many [WaveSensor](https://docs.rs/gmt_dos-clients_crseo/latest/gmt_dos_clients_crseo/sensors/struct.WaveSensor.html) sensors as AGWS guide stars
+    pub fn wave_sensor(&self) -> OpticalModelBuilder<WaveSensorBuilder> {
+        let zenith: Vec<_> = self
+            .sh24
+            .src
+            .zenith
+            .iter()
+            .chain(&self.sh48.src.zenith)
+            .cloned()
+            .collect();
+        let azimuth: Vec<_> = self
+            .sh24
+            .src
+            .azimuth
+            .iter()
+            .chain(&self.sh48.src.azimuth)
+            .cloned()
+            .collect();
+        let src = Source::builder()
+            .size(zenith.len())
+            .zenith_azimuth(zenith, azimuth);
+        OpticalModel::<WaveSensor>::builder()
+            .gmt(self.gmt.clone().unwrap_or_default())
+            .source(src.clone())
+            .sensor(
+                WaveSensor::builder()
+                    .gmt(self.gmt.clone().unwrap_or_default())
+                    .source(src),
+            )
     }
     /// Build an [Agws] [system](gmt_dos_actors::system::Sys) instance
     pub fn build(self) -> Result<Sys<Agws<SH48_I, SH24_I>>, AgwsBuilderError> {

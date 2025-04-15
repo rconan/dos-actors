@@ -1,4 +1,4 @@
-use interface::{UniqueIdentifier, UID};
+use interface::{OperatorLeftRight, UniqueIdentifier, UID};
 use std::{marker::PhantomData, sync::Arc};
 
 /// Source wavefront error RMS `[m]`
@@ -64,9 +64,14 @@ pub enum SegmentD21PistonRSS<const E: i32 = 0> {}
 pub enum SegmentTipTilt {}
 
 /// Read-out and return sensor data
+///
+/// Can be left added or substracted
 #[derive(UID)]
 #[uid(port = 55_007)]
 pub enum SensorData {}
+impl OperatorLeftRight for SensorData {
+    const LEFT: bool = true;
+}
 
 /// Detector frame
 #[derive(UID)]
@@ -102,14 +107,26 @@ pub enum M2Modes {}
 /// GMT mirror optical state (rigid body motion and surface figure)
 #[derive(Debug, Default, Clone)]
 pub struct MirrorState {
-    pub rbms: Arc<Vec<f64>>,
-    pub modes: Arc<Vec<f64>>,
+    pub rbms: Option<Arc<Vec<f64>>>,
+    pub modes: Option<Arc<Vec<f64>>>,
 }
 impl MirrorState {
     pub fn new(rbms: Vec<f64>, modes: Vec<f64>) -> Self {
         Self {
-            rbms: Arc::new(rbms),
-            modes: Arc::new(modes),
+            rbms: Some(Arc::new(rbms)),
+            modes: Some(Arc::new(modes)),
+        }
+    }
+    pub fn modes(modes: Vec<f64>) -> Self {
+        Self {
+            modes: Some(Arc::new(modes)),
+            ..Default::default()
+        }
+    }
+    pub fn rbms(rbms: Vec<f64>) -> Self {
+        Self {
+            rbms: Some(Arc::new(rbms)),
+            ..Default::default()
         }
     }
 }

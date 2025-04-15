@@ -66,7 +66,7 @@ impl<const SID: u8> ClosedLoopPushPull<SID> for DispersedFringeSensorProcessing 
     }
 }
 
-impl<W: FromBuilder, const SID: u8> ClosedLoopCalibrateSegment<W, SID>
+impl<W: FromBuilder, const SID: u8> ClosedLoopCalibrateSegment<GmtM1, W, SID>
     for DispersedFringeSensorProcessing
 where
     W: CalibrationSegment<GmtM2, SID, Sensor = W> + CalibrationSegment<GmtM1, SID, Sensor = W>,
@@ -75,7 +75,7 @@ where
     type Sensor = DispersedFringeSensor<1, 1>;
 
     fn calibrate(
-        optical_model: OpticalModelBuilder<SegmentSensorBuilder<Self, W, SID>>,
+        optical_model: OpticalModelBuilder<SegmentSensorBuilder<GmtM1, Self, W, SID>>,
         calib_mode: super::CalibrationMode,
         closed_loop_optical_model: OpticalModelBuilder<SegmentClosedLoopSensorBuilder<W>>,
         closed_loop_calib_mode: super::CalibrationMode,
@@ -229,7 +229,7 @@ where
     }
 }
 
-impl<W: FromBuilder> ClosedLoopCalibration<W> for DispersedFringeSensorProcessing
+impl<W: FromBuilder> ClosedLoopCalibration<GmtM1, W> for DispersedFringeSensorProcessing
 where
     <W as FromBuilder>::ComponentBuilder: Clone,
     W: CalibrateAssembly<GmtM2, W> + CalibrateAssembly<GmtM1, W>,
@@ -559,6 +559,7 @@ mod tests {
             .source(agws_gs.clone())
             .sensor(DFS::builder().source(agws_gs.clone()));
         let calib = <DispersedFringeSensorProcessing as ClosedLoopCalibrateSegment<
+            GmtM1,
             WaveSensor,
             1,
         >>::calibrate(
@@ -624,21 +625,23 @@ mod tests {
             .sensor(DFS::builder().source(agws_gs.clone().band("J")));
         let closed_loop_optical_model = OpticalModel::<WaveSensor>::builder().gmt(gmt.clone());
 
-        let mut recon =
-            <DispersedFringeSensorProcessing as ClosedLoopCalibration<WaveSensor>>::calibrate_serial(
-                &optical_model,
-                MirrorMode::from(CalibrationMode::RBM([
-                    None,                    // Tx
-                    None,                    // Ty
-                    None,                    // Tz
-                    Some(100f64.from_mas()), // Rx
-                    Some(100f64.from_mas()), // Ry
-                    None,                    // Rz
-                ]))
-                .update((7, CalibrationMode::empty_rbm())),
-                &closed_loop_optical_model,
-                CalibrationMode::modes(m2_n_mode, 1e-6),
-            )?;
+        let mut recon = <DispersedFringeSensorProcessing as ClosedLoopCalibration<
+            GmtM1,
+            WaveSensor,
+        >>::calibrate_serial(
+            &optical_model,
+            MirrorMode::from(CalibrationMode::RBM([
+                None,                    // Tx
+                None,                    // Ty
+                None,                    // Tz
+                Some(100f64.from_mas()), // Rx
+                Some(100f64.from_mas()), // Ry
+                None,                    // Rz
+            ]))
+            .update((7, CalibrationMode::empty_rbm())),
+            &closed_loop_optical_model,
+            CalibrationMode::modes(m2_n_mode, 1e-6),
+        )?;
         recon.pseudoinverse();
         println!("{recon}");
 
@@ -682,21 +685,23 @@ mod tests {
             )?;
         m2_to_closed_loop_sensor.pseudoinverse();
 
-        let mut recon =
-            <DispersedFringeSensorProcessing as ClosedLoopCalibration<WaveSensor>>::calibrate_serial(
-                &optical_model,
-                MirrorMode::from(CalibrationMode::RBM([
-                    None,                    // Tx
-                    None,                    // Ty
-                    None,                    // Tz
-                    Some(100f64.from_mas()), // Rx
-                    Some(100f64.from_mas()), // Ry
-                    None,                    // Rz
-                ]))
-                .update((7, CalibrationMode::empty_rbm())),
-                &closed_loop_optical_model,
-                closed_loop_calib_mode,
-            )?;
+        let mut recon = <DispersedFringeSensorProcessing as ClosedLoopCalibration<
+            GmtM1,
+            WaveSensor,
+        >>::calibrate_serial(
+            &optical_model,
+            MirrorMode::from(CalibrationMode::RBM([
+                None,                    // Tx
+                None,                    // Ty
+                None,                    // Tz
+                Some(100f64.from_mas()), // Rx
+                Some(100f64.from_mas()), // Ry
+                None,                    // Rz
+            ]))
+            .update((7, CalibrationMode::empty_rbm())),
+            &closed_loop_optical_model,
+            closed_loop_calib_mode,
+        )?;
         recon.pseudoinverse();
         println!("{recon}");
 

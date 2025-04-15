@@ -4,7 +4,7 @@ use crseo::{
     Builder,
 };
 
-use crate::{sensors::Camera, OpticalModelBuilder};
+use crate::{sensors::Camera, OpticalModel, OpticalModelBuilder, OpticalModelError};
 
 use super::SensorBuilderProperty;
 
@@ -164,5 +164,17 @@ impl<const I: usize> CameraBuilder<I> {
 impl<const CI: usize> OpticalModelBuilder<CameraBuilder<CI>> {
     pub fn clone_into<const CO: usize>(&self) -> OpticalModelBuilder<CameraBuilder<CO>> {
         self.clone_with_sensor(self.sensor.as_ref().unwrap().clone_into::<CO>())
+    }
+}
+impl<const I: usize> OpticalModel<Camera<I>> {
+    /// Sensor pointing error relative to the source
+    ///
+    /// The pointing error is given in cartesian coordinates and in radians units
+    pub fn sensor_pointing(&mut self, xy: &[(f64, f64)]) -> Result<&mut Self, OpticalModelError> {
+        let Some(sensor) = &mut self.sensor else {
+            return Err(OpticalModelError::MissingSensor);
+        };
+        sensor.pointing(xy, &self.src);
+        Ok(self)
     }
 }

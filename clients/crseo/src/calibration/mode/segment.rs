@@ -100,6 +100,10 @@ impl CalibrationMode {
             (stroke.abs() > 0.).then_some(stroke),
         ])
     }
+    /// Create a [rigid body motions](CalibrationMode::RBM) calibration mode specifying the same RBM amplitude for all RBM
+    pub fn rbm(stroke: f64) -> Self {
+        Self::RBM([(stroke.abs() > 0.).then_some(stroke); 6])
+    }
     /// Empty [rigid body motions][CalibrationMode::RBM] calibration mode
     ///
     /// The associated calibration matrix won't be computed but set to empty instead

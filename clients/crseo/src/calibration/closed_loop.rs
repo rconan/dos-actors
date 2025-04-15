@@ -1,6 +1,6 @@
 use std::{sync::Arc, thread};
 
-use crseo::FromBuilder;
+use crseo::{gmt::GmtMx, FromBuilder};
 use faer::ColRef;
 
 use crate::{OpticalModel, OpticalModelBuilder};
@@ -14,32 +14,33 @@ mod dispersed_fringe_sensor;
 mod linear_model;
 
 /// Trait alias for M1 [ClosedLoopCalibrateSegment]s with M2
-pub trait ClosedLoopCalibrateAssembly<W: FromBuilder, S: FromBuilder>:
-    ClosedLoopCalibrateSegment<W, 1, Sensor = S>
-    + ClosedLoopCalibrateSegment<W, 2, Sensor = S>
-    + ClosedLoopCalibrateSegment<W, 3, Sensor = S>
-    + ClosedLoopCalibrateSegment<W, 4, Sensor = S>
-    + ClosedLoopCalibrateSegment<W, 5, Sensor = S>
-    + ClosedLoopCalibrateSegment<W, 6, Sensor = S>
-    + ClosedLoopCalibrateSegment<W, 7, Sensor = S>
+pub trait ClosedLoopCalibrateAssembly<M: GmtMx, W: FromBuilder, S: FromBuilder>:
+    ClosedLoopCalibrateSegment<M, W, 1, Sensor = S>
+    + ClosedLoopCalibrateSegment<M, W, 2, Sensor = S>
+    + ClosedLoopCalibrateSegment<M, W, 3, Sensor = S>
+    + ClosedLoopCalibrateSegment<M, W, 4, Sensor = S>
+    + ClosedLoopCalibrateSegment<M, W, 5, Sensor = S>
+    + ClosedLoopCalibrateSegment<M, W, 6, Sensor = S>
+    + ClosedLoopCalibrateSegment<M, W, 7, Sensor = S>
 {
 }
 impl<
+        M: GmtMx,
         W: FromBuilder,
         S: FromBuilder,
-        T: ClosedLoopCalibrateSegment<W, 1, Sensor = S>
-            + ClosedLoopCalibrateSegment<W, 2, Sensor = S>
-            + ClosedLoopCalibrateSegment<W, 3, Sensor = S>
-            + ClosedLoopCalibrateSegment<W, 4, Sensor = S>
-            + ClosedLoopCalibrateSegment<W, 5, Sensor = S>
-            + ClosedLoopCalibrateSegment<W, 6, Sensor = S>
-            + ClosedLoopCalibrateSegment<W, 7, Sensor = S>,
-    > ClosedLoopCalibrateAssembly<W, S> for T
+        T: ClosedLoopCalibrateSegment<M, W, 1, Sensor = S>
+            + ClosedLoopCalibrateSegment<M, W, 2, Sensor = S>
+            + ClosedLoopCalibrateSegment<M, W, 3, Sensor = S>
+            + ClosedLoopCalibrateSegment<M, W, 4, Sensor = S>
+            + ClosedLoopCalibrateSegment<M, W, 5, Sensor = S>
+            + ClosedLoopCalibrateSegment<M, W, 6, Sensor = S>
+            + ClosedLoopCalibrateSegment<M, W, 7, Sensor = S>,
+    > ClosedLoopCalibrateAssembly<M, W, S> for T
 {
 }
 
-type SegmentSensorBuilder<T, W, const SID: u8> =
-    <<T as ClosedLoopCalibrateSegment<W, SID>>::Sensor as FromBuilder>::ComponentBuilder;
+type SegmentSensorBuilder<M, T, W, const SID: u8> =
+    <<T as ClosedLoopCalibrateSegment<M, W, SID>>::Sensor as FromBuilder>::ComponentBuilder;
 type SegmentClosedLoopSensorBuilder<T> = <T as FromBuilder>::ComponentBuilder;
 // type Sensor<T, W, const SID: u8> = <T as ClosedLoopCalibrateSegment<W, SID>>::Sensor;
 
@@ -57,15 +58,17 @@ pub trait ClosedLoopPushPull<const SID: u8> {
 }
 
 /// Closed-loop segment calibration
-pub trait ClosedLoopCalibrateSegment<ClosedLoopSensor: FromBuilder, const SID: u8>
+pub trait ClosedLoopCalibrateSegment<M: GmtMx, ClosedLoopSensor: FromBuilder, const SID: u8>
 where
-    Self:
-        PushPull<SID, Sensor = <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, SID>>::Sensor>,
+    Self: PushPull<
+        SID,
+        Sensor = <Self as ClosedLoopCalibrateSegment<M, ClosedLoopSensor, SID>>::Sensor,
+    >,
 {
     type Sensor: FromBuilder;
 
     fn calibrate(
-        optical_model: OpticalModelBuilder<SegmentSensorBuilder<Self, ClosedLoopSensor, SID>>,
+        optical_model: OpticalModelBuilder<SegmentSensorBuilder<M, Self, ClosedLoopSensor, SID>>,
         calib_mode: CalibrationMode,
         closed_loop_optical_model: OpticalModelBuilder<
             <ClosedLoopSensor as FromBuilder>::ComponentBuilder,
@@ -74,28 +77,29 @@ where
     ) -> Result<ClosedLoopCalib>;
 }
 
-type SensorBuilder<T, W> =
-    <<T as ClosedLoopCalibration<W>>::Sensor as FromBuilder>::ComponentBuilder;
+type SensorBuilder<M, T, W> =
+    <<T as ClosedLoopCalibration<M, W>>::Sensor as FromBuilder>::ComponentBuilder;
 type ClosedLoopSensorBuilder<T> = <T as FromBuilder>::ComponentBuilder;
 
 /// Closed-loop  calibration
-pub trait ClosedLoopCalibration<ClosedLoopSensor: FromBuilder>
+pub trait ClosedLoopCalibration<M: GmtMx, ClosedLoopSensor: FromBuilder>
 where
     Self: ClosedLoopCalibrateAssembly<
+        M,
         ClosedLoopSensor,
-        <Self as ClosedLoopCalibration<ClosedLoopSensor>>::Sensor,
+        <Self as ClosedLoopCalibration<M, ClosedLoopSensor>>::Sensor,
     >,
 {
     type Sensor: FromBuilder;
 
     fn calibrate(
-        optical_model: &OpticalModelBuilder<SensorBuilder<Self, ClosedLoopSensor>>,
+        optical_model: &OpticalModelBuilder<SensorBuilder<M,Self, ClosedLoopSensor>>,
         mirror_mode: impl Into<MirrorMode>,
         closed_loop_optical_model: &OpticalModelBuilder<ClosedLoopSensorBuilder<ClosedLoopSensor>>,
         closed_loop_calib_mode: CalibrationMode,
     ) -> Result<Reconstructor<CalibrationMode, ClosedLoopCalib>>
     where
-        <<Self as ClosedLoopCalibration<ClosedLoopSensor>>::Sensor as FromBuilder>::ComponentBuilder:
+        <<Self as ClosedLoopCalibration<M,ClosedLoopSensor>>::Sensor as FromBuilder>::ComponentBuilder:
             Clone + Send + Sync,
         <ClosedLoopSensor as FromBuilder>::ComponentBuilder: Clone + Send + Sync,
     {
@@ -107,7 +111,7 @@ where
                     if calib_mode.is_empty() {
                         Ok(ClosedLoopCalib::empty(1, calib_mode.n_mode(), calib_mode))
                     } else {
-                        <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 1>>::calibrate(
+                        <Self as ClosedLoopCalibrateSegment<M, ClosedLoopSensor, 1>>::calibrate(
                             optical_model.clone(),
                             calib_mode,
                             closed_loop_optical_model.clone(),
@@ -121,7 +125,7 @@ where
                     if calib_mode.is_empty() {
                         Ok(ClosedLoopCalib::empty(2, calib_mode.n_mode(), calib_mode))
                     } else {
-                        <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 2>>::calibrate(
+                        <Self as ClosedLoopCalibrateSegment<M, ClosedLoopSensor, 2>>::calibrate(
                             optical_model.clone(),
                             calib_mode,
                             closed_loop_optical_model.clone(),
@@ -135,7 +139,7 @@ where
                     if calib_mode.is_empty() {
                         Ok(ClosedLoopCalib::empty(3, calib_mode.n_mode(), calib_mode))
                     } else {
-                        <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 3>>::calibrate(
+                        <Self as ClosedLoopCalibrateSegment<M, ClosedLoopSensor, 3>>::calibrate(
                             optical_model.clone(),
                             calib_mode,
                             closed_loop_optical_model.clone(),
@@ -149,7 +153,7 @@ where
                     if calib_mode.is_empty() {
                         Ok(ClosedLoopCalib::empty(4, calib_mode.n_mode(), calib_mode))
                     } else {
-                        <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 4>>::calibrate(
+                        <Self as ClosedLoopCalibrateSegment<M, ClosedLoopSensor, 4>>::calibrate(
                             optical_model.clone(),
                             calib_mode,
                             closed_loop_optical_model.clone(),
@@ -163,7 +167,7 @@ where
                     if calib_mode.is_empty() {
                         Ok(ClosedLoopCalib::empty(5, calib_mode.n_mode(), calib_mode))
                     } else {
-                        <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 5>>::calibrate(
+                        <Self as ClosedLoopCalibrateSegment<M, ClosedLoopSensor, 5>>::calibrate(
                             optical_model.clone(),
                             calib_mode,
                             closed_loop_optical_model.clone(),
@@ -177,7 +181,7 @@ where
                     if calib_mode.is_empty() {
                         Ok(ClosedLoopCalib::empty(6, calib_mode.n_mode(), calib_mode))
                     } else {
-                        <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 6>>::calibrate(
+                        <Self as ClosedLoopCalibrateSegment<M, ClosedLoopSensor, 6>>::calibrate(
                             optical_model.clone(),
                             calib_mode,
                             closed_loop_optical_model.clone(),
@@ -191,7 +195,7 @@ where
                     if calib_mode.is_empty() {
                         Ok(ClosedLoopCalib::empty(7, calib_mode.n_mode(), calib_mode))
                     } else {
-                        <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 7>>::calibrate(
+                        <Self as ClosedLoopCalibrateSegment<M, ClosedLoopSensor, 7>>::calibrate(
                             optical_model.clone(),
                             calib_mode,
                             closed_loop_optical_model.clone(),
@@ -224,13 +228,13 @@ where
     }
 
     fn calibrate_serial(
-        optical_model: &OpticalModelBuilder<SensorBuilder<Self, ClosedLoopSensor>>,
+        optical_model: &OpticalModelBuilder<SensorBuilder<M,Self, ClosedLoopSensor>>,
         mirror_mode: impl Into<MirrorMode>,
         closed_loop_optical_model: &OpticalModelBuilder<ClosedLoopSensorBuilder<ClosedLoopSensor>>,
         closed_loop_calib_mode: CalibrationMode,
     ) -> Result<Reconstructor<CalibrationMode, ClosedLoopCalib>>
     where
-        <<Self as ClosedLoopCalibration<ClosedLoopSensor>>::Sensor as FromBuilder>::ComponentBuilder:
+        <<Self as ClosedLoopCalibration<M,ClosedLoopSensor>>::Sensor as FromBuilder>::ComponentBuilder:
             Clone + Send + Sync,
         <ClosedLoopSensor as FromBuilder>::ComponentBuilder: Clone + Send + Sync,
     {
@@ -240,7 +244,7 @@ where
             if calib_mode.is_empty() {
                 Ok(ClosedLoopCalib::empty(1, calib_mode.n_mode(), calib_mode))
             } else {
-                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 1>>::calibrate(
+                <Self as ClosedLoopCalibrateSegment<M, ClosedLoopSensor, 1>>::calibrate(
                     optical_model.clone(),
                     calib_mode,
                     closed_loop_optical_model.clone(),
@@ -252,7 +256,7 @@ where
             if calib_mode.is_empty() {
                 Ok(ClosedLoopCalib::empty(2, calib_mode.n_mode(), calib_mode))
             } else {
-                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 2>>::calibrate(
+                <Self as ClosedLoopCalibrateSegment<M, ClosedLoopSensor, 2>>::calibrate(
                     optical_model.clone(),
                     calib_mode,
                     closed_loop_optical_model.clone(),
@@ -264,7 +268,7 @@ where
             if calib_mode.is_empty() {
                 Ok(ClosedLoopCalib::empty(3, calib_mode.n_mode(), calib_mode))
             } else {
-                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 3>>::calibrate(
+                <Self as ClosedLoopCalibrateSegment<M, ClosedLoopSensor, 3>>::calibrate(
                     optical_model.clone(),
                     calib_mode,
                     closed_loop_optical_model.clone(),
@@ -276,7 +280,7 @@ where
             if calib_mode.is_empty() {
                 Ok(ClosedLoopCalib::empty(4, calib_mode.n_mode(), calib_mode))
             } else {
-                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 4>>::calibrate(
+                <Self as ClosedLoopCalibrateSegment<M, ClosedLoopSensor, 4>>::calibrate(
                     optical_model.clone(),
                     calib_mode,
                     closed_loop_optical_model.clone(),
@@ -288,7 +292,7 @@ where
             if calib_mode.is_empty() {
                 Ok(ClosedLoopCalib::empty(5, calib_mode.n_mode(), calib_mode))
             } else {
-                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 5>>::calibrate(
+                <Self as ClosedLoopCalibrateSegment<M, ClosedLoopSensor, 5>>::calibrate(
                     optical_model.clone(),
                     calib_mode,
                     closed_loop_optical_model.clone(),
@@ -300,7 +304,7 @@ where
             if calib_mode.is_empty() {
                 Ok(ClosedLoopCalib::empty(6, calib_mode.n_mode(), calib_mode))
             } else {
-                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 6>>::calibrate(
+                <Self as ClosedLoopCalibrateSegment<M, ClosedLoopSensor, 6>>::calibrate(
                     optical_model.clone(),
                     calib_mode,
                     closed_loop_optical_model.clone(),
@@ -312,7 +316,7 @@ where
             if calib_mode.is_empty() {
                 Ok(ClosedLoopCalib::empty(7, calib_mode.n_mode(), calib_mode))
             } else {
-                <Self as ClosedLoopCalibrateSegment<ClosedLoopSensor, 7>>::calibrate(
+                <Self as ClosedLoopCalibrateSegment<M, ClosedLoopSensor, 7>>::calibrate(
                     optical_model.clone(),
                     calib_mode,
                     closed_loop_optical_model.clone(),

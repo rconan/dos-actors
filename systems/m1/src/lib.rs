@@ -134,4 +134,13 @@ impl SingularModes {
             shape,
         }
     }
+    #[cfg(feature = "faer")]
+    pub fn mat_ref(&self) -> faer::mat::MatRef<f64> {
+        let (ns, na) = self.shape;
+        faer::mat::MatRef::from_column_major_slice(&self.raw_modes, ns, na)
+    }
+    pub fn dmatrix(&self) -> nalgebra::DMatrix<f64> {
+        let (ns, na) = self.shape;
+        nalgebra::DMatrix::from_column_slice(ns, na, &self.raw_modes)
+    }
 }

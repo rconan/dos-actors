@@ -137,8 +137,10 @@ where
 {
     /// Creates a new [Gain] clients
     ///
-    /// The gain is either a matrix of dimensions `Ny`x`Nu`
-    /// or a vector of size `Ny`=`Nu`
+    /// The gain is either a matrix of dimensions `Ny`x`Nu`,
+    /// a vector of size `Ny`=`Nu` or a vector or matrices such
+    /// as the sum of the number of columns is equal to `Nu` and
+    /// the sum of the number of rows is equal to `Ny`
     pub fn new<G: Into<GainKind<T>>>(gain: G) -> Self {
         let gain: GainKind<T> = gain.into();
         Self {
@@ -195,6 +197,13 @@ where
     U: UniqueIdentifier<DataType = Vec<T>>,
 {
     fn read(&mut self, data: Data<U>) {
+        assert_eq!(
+            self.u.len(),
+            data.len(),
+            "data size ({}) do not match expected input size ({})",
+            data.len(),
+            self.u.len()
+        );
         self.u = data.into_arc();
     }
 }
@@ -205,6 +214,13 @@ where
     U: UniqueIdentifier<DataType = Vec<T>>,
 {
     fn read(&mut self, data: Data<U>) {
+        assert_eq!(
+            self.u.len(),
+            data.len(),
+            "data size ({}) do not match expected input size ({})",
+            data.len(),
+            self.u.len()
+        );
         self.u = data.into_arc();
     }
 }

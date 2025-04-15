@@ -22,10 +22,14 @@ pub enum M2EdgeSensors {}
 /// Fast Steering Mirror IO
 pub mod fsm {
     use interface::UID;
+
+    use crate::Assembly;
+
     /// M2 FSM Piezo-Stack Actuators Forces
     #[derive(UID)]
     #[uid(port = 58_001)]
     pub enum M2FSMPiezoForces {}
+    impl Assembly for M2FSMPiezoForces {}
     /// M2 FSM Piezo-Stack Actuators Node Displacements
     #[derive(UID)]
     #[uid(port = 58_002)]

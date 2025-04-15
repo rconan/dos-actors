@@ -701,6 +701,13 @@ impl<M: Modality + Display> Display for Calib<M> {
     }
 }
 
+impl Mul<&[f64]> for &Calib {
+    type Output = Mat<f64>;
+    fn mul(self, rhs: &[f64]) -> Self::Output {
+        self.mat_ref() * MatRef::from_row_major_slice(rhs, rhs.len(), 1)
+    }
+}
+
 impl Mul<Mat<f64>> for &Calib {
     type Output = Mat<f64>;
     fn mul(self, rhs: Mat<f64>) -> Self::Output {

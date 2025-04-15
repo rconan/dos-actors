@@ -26,6 +26,10 @@ pub mod filing;
 
 pub type Assoc<U> = <U as UniqueIdentifier>::DataType;
 
+/// Marker to allow the UID data to be either left or right added or substracted with the [Operator](https://docs.rs/gmt_dos-clients/latest/gmt_dos_clients/operator/index.html) client
+pub trait OperatorLeftRight {
+    const LEFT: bool;
+}
 /// Units conversion marker trait for clients
 pub trait Units {}
 

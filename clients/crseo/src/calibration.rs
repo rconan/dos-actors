@@ -61,7 +61,7 @@ Calibration of M1 segment tip and tilt with the [DispersedFringeSensor](crate::s
 The 7 matrices are collapsed horizontally (column-wise concatenation) into a single matrix using the implementation of the [Collapse](crate::calibration::algebra::Collapse) trait.
 
 ```no_run
-use crseo::{FromBuilder, Gmt, Source};
+use crseo::{FromBuilder, Gmt, Source, gmt::GmtM1};
 use skyangle::Conversion;
 use gmt_dos_clients_crseo::{
     calibration::{ClosedLoopCalibration, CalibrationMode,
@@ -81,7 +81,7 @@ let omb = OpticalModel::<DFS>::builder()
     .sensor(DFS::builder().source(agws_gs.clone().band("J")));
 let closed_loop_omb = OpticalModel::<WaveSensor>::builder().gmt(gmt.clone());
 let mut recon =
-    <DispersedFringeSensorProcessing as ClosedLoopCalibration<WaveSensor>>::calibrate_serial(
+    <DispersedFringeSensorProcessing as ClosedLoopCalibration<GmtM1,WaveSensor>>::calibrate_serial(
         &omb,
         CalibrationMode::r_xy(100f64.from_mas()),
         &closed_loop_omb,

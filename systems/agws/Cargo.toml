@@ -18,3 +18,8 @@ log.workspace = true
 serde-pickle = "1.2.0"
 skyangle.workspace = true
 thiserror.workspace = true
+
+[dev-dependencies]
+complot = "0.3.5"
+gmt_dos-clients_io.workspace = true
+tokio.workspace = true
