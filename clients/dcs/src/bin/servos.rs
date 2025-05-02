@@ -67,12 +67,13 @@ async fn main() -> anyhow::Result<()> {
         1: {windloads::M2}[CFDM2WindLoads] -> {gmt_servos::GmtFem}
         1: {windloads::Mount}[CFDMountWindLoads] -> {gmt_servos::GmtFem}
 
+         1: {gmt_servos::GmtFem}[AverageMountEncoders]! -> rmt
+
         400: metronome[Tick] -> dcs_pull[OcsMountTrajectory]${3} -> rmt[MountSetPoint] -> scope_mountsetpoint
         400: rmt[ImMountTrajectory]${3} -> dcs_push
         1: rmt[MountSetPoint] -> {gmt_servos::GmtMount}
-        1: {gmt_servos::GmtFem}[AverageMountEncoders]! -> rmt
-        400: {gmt_servos::GmtFem}[AverageMountEncoders]! -> scope_averagemountencoders
-        8: {gmt_servos::GmtFem}[M12RigidBodyMotions].. -> tx
+        1: {gmt_servos::GmtFem}[AverageMountEncoders]! -> scope_averagemountencoders
+        1: {gmt_servos::GmtFem}[M12RigidBodyMotions].. -> tx
     );
 
     scope_monitor.await?;

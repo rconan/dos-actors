@@ -1,11 +1,50 @@
 use std::{fs::File, time::Instant};
 
+use clap::{Parser, ValueEnum};
+use faer::Mat;
 use faer_ext::IntoFaer;
 use gmt_dos_clients_fem::{Model, Switch, fem_io};
 use gmt_dos_systems_m1::SingularModes;
 use gmt_fem::FEM;
 
+/// M1 singular modes (a.k.a. bending modes) computation
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// file name to save the modes to
+    #[arg(short, long, default_value = "m1_singular_modes.pkl")]
+    filename: Option<String>,
+    /// singular modes null space
+    #[arg(long,require_equals=true,default_value_t= NullSpace::Rbm, default_missing_value="RbmHp",value_enum)]
+    null_space: NullSpace,
+    /// Display the RBMs and hardpoints displacement values for the first 27 modes
+    #[arg(long)]
+    validation: bool,
+}
+#[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Eq)]
+enum NullSpace {
+    /// M1 rigid body motions
+    Rbm,
+    /// M1 rigid body & hardpoints motions
+    RbmHp,
+}
+// impl std::fmt::Display for NullSpace {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         self.to_possible_value()
+//             .expect("no values are skipped")
+//             .get_name()
+//             .fmt(f)
+//     }
+// }
+
 fn main() -> anyhow::Result<()> {
+    let args = Args::parse();
+
+    let null_space_n_mode = match args.null_space {
+        NullSpace::Rbm => 6,
+        NullSpace::RbmHp => 12,
+    };
+
     // let gain: na::DMatrix<f64> = serde_pickle::from_reader(
     // &mut File::open("m1_actuators_gain.pkl")?,
     // Default::default(),
@@ -72,10 +111,34 @@ fn main() -> anyhow::Result<()> {
         let gain_rbm = gain_rbm.view_range(.., ..).into_faer();
 
         let i = (sid - 1) as usize;
-        let gain_r = gain_rbm.subrows(i * 6, 6);
+        fem.switch_inputs(Switch::Off, None)
+            .switch_outputs(Switch::Off, None);
+        let gain_hp = fem
+            .switch_inputs_by_name(inputs.clone(), Switch::On)
+            .and_then(|fem| fem.switch_outputs_by_name(vec!["OSS_Hardpoint_D"], Switch::On))
+            .map(|fem| fem.reduced_static_gain().unwrap())?;
+        let rows = i * 12..(i + 1) * 12;
+        let gain_hp = gain_hp.view_range(rows, ..).into_faer();
+        let gain_hp = gain_hp.subrows(6, 6) - gain_hp.subrows(0, 6);
+
+        let gain_r = match args.null_space {
+            NullSpace::Rbm => gain_rbm.subrows(i * 6, 6).to_owned(),
+            NullSpace::RbmHp => {
+                let mut gain_r = Mat::<f64>::zeros(null_space_n_mode, gain_d.ncols());
+                gain_r
+                    .as_mut()
+                    .subrows_mut(0, 6)
+                    .copy_from(gain_rbm.subrows(i * 6, 6));
+                gain_r
+                    .as_mut()
+                    .subrows_mut(6, 6)
+                    .copy_from(gain_hp.as_ref());
+                gain_r
+            }
+        };
         println!(" R gain matrix {:?}", gain_r.shape());
         let svd_r = gain_r.svd().unwrap();
-        let v_r = svd_r.V().subcols(0, 6);
+        let v_r = svd_r.V().subcols(0, null_space_n_mode);
         println!(
             "  SVD R gain: U {:?}, S ({:}), V {:?}",
             svd_r.U().shape(),
@@ -99,15 +162,15 @@ fn main() -> anyhow::Result<()> {
         let svd_rd = gain_rd.svd().unwrap();
         let u_rd = svd_rd
             .U()
-            .subcols(0, svd_rd.S().column_vector().nrows() - 6);
+            .subcols(0, svd_rd.S().column_vector().nrows() - null_space_n_mode);
         let mut s_rd = svd_rd
             .S()
             .column_vector()
-            .subrows(0, svd_rd.S().column_vector().nrows() - 6)
+            .subrows(0, svd_rd.S().column_vector().nrows() - null_space_n_mode)
             .to_owned();
         let v_rd = svd_rd
             .V()
-            .subcols(0, svd_rd.S().column_vector().nrows() - 6);
+            .subcols(0, svd_rd.S().column_vector().nrows() - null_space_n_mode);
         println!(
             "  SVD RD gain: U {:?}, S ({:}), V {:?}",
             u_rd.shape(),
@@ -126,12 +189,20 @@ fn main() -> anyhow::Result<()> {
             "\nU_rd^T G_d V_rd S_rd^{{-1}} = {:5.2}",
             modes_coefs.submatrix(0, 0, 10, 10).into_nalgebra()
         );
+        */
 
-        let rbms = gain_r * &mode_2_force;
-        println!("RBMs = ");
-        println!("{:5.2}", rbms.subcols(0, 10).into_nalgebra());
-        println!("{:5.2}", rbms.subcols(319, 10).into_nalgebra()); */
-
+        if args.validation {
+            let rbms = gain_rbm.subrows(i * 6, 6) * &mode_2_force;
+            println!("RBMs [x1e-6] = ");
+            for i in 0..27 {
+                println!("#{i:2}: {:+6.3?}", rbms.col(i) * 1e6);
+            }
+            let hps = gain_hp * &mode_2_force;
+            println!("HPs [x1e-6] = ");
+            for i in 0..27 {
+                println!("#{i:2}: {:+8.0?}", hps.col(i) * 1e6);
+            }
+        }
         let sms = SingularModes::new(
             xyz,
             in_xyz,
@@ -153,7 +224,7 @@ fn main() -> anyhow::Result<()> {
     }
 
     serde_pickle::to_writer(
-        &mut File::create("m1_singular_modes.pkl")?,
+        &mut File::create(&args.filename.unwrap_or("m1_singular_modes.pkl".to_string()))?,
         &m1_sms,
         Default::default(),
     )?;

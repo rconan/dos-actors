@@ -5,7 +5,9 @@ edition = "2024"
 
 [dependencies]
 anyhow.workspace = true
+clap = { version = "4.5.37", features = ["derive"] }
 faer-ext.workspace = true
+faer.workspace = true
 gmt-fem.workspace = true
 gmt_dos-clients_fem.workspace = true
 gmt_dos-systems_m1.workspace = true
