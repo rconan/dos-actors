@@ -154,7 +154,10 @@ impl<S: Default> Builder<S> {
     }
 }
 
-#[cfg(any(cfd2021, feature = "cfd2021"))]
+#[cfg(any(
+    cfd2021,
+    all(feature = "cfd2021", not(cfd2025), not(feature = "cfd2025"))
+))]
 impl<S> Builder<S> {
     /// Returns a [CfdLoads] object
     pub fn build(self) -> Result<CfdLoads<S>> {
@@ -419,7 +422,10 @@ impl<S> Builder<S> {
     }
 }
 
-#[cfg(any(cfd2025, feature = "cfd2025"))]
+#[cfg(any(
+    cfd2025,
+    all(feature = "cfd2025", not(cfd2021), not(feature = "cfd2021"))
+))]
 impl<S> Builder<S> {
     /// Returns a [CfdLoads] object
     pub fn build(self) -> Result<CfdLoads<S>> {

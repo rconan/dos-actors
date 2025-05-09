@@ -6,7 +6,7 @@ The wind forces and moments derived from the CFD simulations are saved into file
 This file is loaded into the client [CfdLoads] and resampled at given sample frequency.
 
 For example:
-```
+```no_run
 use gmt_dos_clients_windloads::CfdLoads;
 
 let cfd_loads = CfdLoads::foh(".", 100)
@@ -24,7 +24,7 @@ The version of the wind loads is selected by setting feature to either `cfd2021`
 Note that if the environment variable `FEM_REPO` points to a valid GMT FEM folder, then the version of the wind loads is derived from the FEM CFD inputs and no feature is required.
 
 If the wind loads are applied to a GMT FEM, then the FEM CFD inputs must be matched against the CFD loads, like so:
-```
+```no_run
 use gmt_fem::FEM;
 use gmt_dos_clients_windloads::CfdLoads;
 
