@@ -9,8 +9,13 @@ where
     DiscreteModalSolver<S>: Iterator,
     S: Solver + Default,
 {
+    #[cfg(cfd2021)]
     fn read(&mut self, data: Data<CFDMountWindLoads>) {
         <DiscreteModalSolver<S> as Set<fem_io::CFD2021106F>>::set(self, &data)
+    }
+    #[cfg(cfd2025)]
+    fn read(&mut self, data: Data<CFDMountWindLoads>) {
+        <DiscreteModalSolver<S> as Set<fem_io::CFD2025046F>>::set(self, &data)
     }
 }
 /// M1

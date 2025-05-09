@@ -127,8 +127,13 @@ impl<'a> Include<'a, WindLoads> for DiscreteStateSpace<'a, ExponentialMatrix> {
             return Ok(self);
         };
         let mut state_space = self;
+        #[cfg(cfd2021)]
         if let WindLoaded::Mount = wind_loads.mount {
             state_space = state_space.ins::<gmt_dos_clients_io::gmt_fem::inputs::CFD2021106F>();
+        }
+        #[cfg(cfd2025)]
+        if let WindLoaded::Mount = wind_loads.mount {
+            state_space = state_space.ins::<gmt_dos_clients_io::gmt_fem::inputs::CFD2025046F>();
         }
         if let WindLoaded::M1 = wind_loads.m1 {
             state_space = state_space.ins::<gmt_dos_clients_io::gmt_fem::inputs::OSSM1Lcl6F>();

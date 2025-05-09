@@ -1,13 +1,50 @@
-//! CFD wind loads client implementation
-//!
+/*!
+# CFD wind loads client implementation
 
-use geotrans::{SegmentTrait, Transform};
+The wind forces and moments derived from the CFD simulations are saved into file called `monitors.csv.z`.
+
+This file is loaded into the client [CfdLoads] and resampled at given sample frequency.
+
+For example:
+```no_run
+use gmt_dos_clients_windloads::CfdLoads;
+
+let cfd_loads = CfdLoads::foh(".", 100)
+    .duration(100.0)
+    .mount(None)
+    .m1_segments()
+    .m2_segments()
+    .build()?;
+# Ok::<(), gmt_dos_clients_windloads::WindLoadsError>(())
+```
+The CFD wind loads are loaded from the current directory, resampled at 100Hz, truncated to the first 100s of data, and includes the loads on the mount, on M1 and on M2.
+
+The version of the wind loads is selected by setting feature to either `cfd2021` or `cdf2025`.
+
+Note that if the environment variable `FEM_REPO` points to a valid GMT FEM folder, then the version of the wind loads is derived from the FEM CFD inputs and no feature is required.
+
+If the wind loads are applied to a GMT FEM, then the FEM CFD inputs must be matched against the CFD loads, like so:
+```no_run
+use gmt_fem::FEM;
+use gmt_dos_clients_windloads::CfdLoads;
+
+let mut fem = FEM::from_env()?;
+let cfd_loads = CfdLoads::foh(".", 1000)
+    .duration(30.0)
+    .windloads(&mut fem, Default::default())
+    .build()?;
+# Ok::<(), anyhow::Error>(())
+```
+*/
+
+use geotrans::{Segment, SegmentTrait, Transform, M1, M2};
 use interface::filing::Codec;
 use parse_monitors::Vector;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
 mod actors_interface;
+#[cfg(fem)]
 pub mod system;
 
 #[derive(Debug, thiserror::Error)]
@@ -21,32 +58,21 @@ pub type Result<T> = std::result::Result<T, WindLoadsError>;
 
 const MAX_DURATION: usize = 400;
 
-mod windloads;
-pub use windloads::WindLoads;
+#[cfg(any(cfd2021, cfd2025, feature = "cfd2021", feature = "cfd2025"))]
+pub mod windloads;
 
-mod builder;
-pub use builder::{Builder, CS, M1S, M2S};
+#[cfg(any(cfd2021, cfd2025, feature = "cfd2021", feature = "cfd2025"))]
+pub mod builder;
 
-impl Builder<ZOH> {
-    /// Returns a [CfdLoads] [Builder]
-    pub fn zoh<C: Into<String>>(cfd_case: C) -> Self {
-        Self {
-            cfd_case: cfd_case.into(),
-            upsampling: ZOH(20),
-            ..Default::default()
-        }
-    }
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum CS {
+    OSS(Vec<f64>),
+    M1S(i32),
+    M2S(i32),
 }
-impl Builder<FOH> {
-    /// Returns a [CfdLoads] [Builder]
-    pub fn foh<C: Into<String>>(cfd_case: C, upsampling: usize) -> Self {
-        Self {
-            cfd_case: cfd_case.into(),
-            upsampling: FOH::new(upsampling / 20),
-            ..Default::default()
-        }
-    }
-}
+
+pub type M1S = Segment<M1>;
+pub type M2S = Segment<M2>;
 
 /// Zero-order hold wind loads interpolation
 ///
@@ -100,18 +126,6 @@ pub struct CfdLoads<S> {
     step: usize,
     upsampling: S,
     max_step: usize,
-}
-impl CfdLoads<ZOH> {
-    /// Creates a new [CfdLoads] object
-    pub fn zoh<C: Into<String>>(cfd_case: C) -> Builder<ZOH> {
-        Builder::zoh(cfd_case)
-    }
-}
-impl CfdLoads<FOH> {
-    /// Creates a new [CfdLoads] object
-    pub fn foh<C: Into<String>>(cfd_case: C, upsampling: usize) -> Builder<FOH> {
-        Builder::foh(cfd_case, upsampling)
-    }
 }
 
 impl<S: Serialize + for<'de> Deserialize<'de>> Codec for CfdLoads<S> {}

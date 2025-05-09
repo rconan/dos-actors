@@ -50,6 +50,8 @@ cuda = ["gmt_dos-clients_fem/cuda"]
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fem)',
     'cfg(topend,values("FSM","ASM"))',
+    'cfg(cfd2021)',
+    'cfg(cfd2025)'
 ]}
 
 [build-dependencies]

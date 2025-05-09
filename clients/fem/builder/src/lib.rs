@@ -283,7 +283,11 @@ pub fn rustc_config(from_crate: &str, io: Option<(Names, Names)>) -> anyhow::Res
         };
         if input_names.find("CFD2021106F").is_some() {
             println!("cargo:warning={}: CFD inputs", from_crate);
-            println!(r#"cargo:rustc-cfg=cfd"#)
+            println!(r#"cargo:rustc-cfg=cfd2021"#)
+        }
+        if input_names.find("CFD2025046F").is_some() {
+            println!("cargo:warning={}: CFD inputs", from_crate);
+            println!(r#"cargo:rustc-cfg=cfd2025"#)
         }
         match (
             input_names.find("OSSAzDriveTorque"),

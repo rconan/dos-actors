@@ -27,9 +27,7 @@ async fn main() -> anyhow::Result<()> {
         let cfd_loads = Sys::<SigmoidCfdLoads>::try_from(
             CfdLoads::foh(".", sim_sampling_frequency)
                 .duration(sim_duration as f64)
-                .mount(&mut fem, 0, None)
-                .m1_segments()
-                .m2_segments(),
+                .windloads(&mut fem, Default::default()),
         )?;
 
         let gmt_servos = Sys::<GmtServoMechanisms<ACTUATOR_RATE, 1>>::try_from(

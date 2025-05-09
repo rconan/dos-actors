@@ -48,9 +48,7 @@ async fn main() -> anyhow::Result<()> {
         let cfd_loads = Sys::<SigmoidCfdLoads>::from_data_repo_or("windloads.bin", {
             CfdLoads::foh(".", sim_sampling_frequency)
                 .duration(sim_duration as f64)
-                .mount(fem.get_or_insert_with(|| FEM::from_env().unwrap()), 0, None)
-                .m1_segments()
-                .m2_segments()
+                .windloads(fem.get_or_insert(FEM::from_env()?), Default::default())
         })?;
 
         let gmt_servos = Sys::<GmtServoMechanisms<ACTUATOR_RATE, 1>>::from_data_repo_or_else(
@@ -104,9 +102,7 @@ async fn main() -> anyhow::Result<()> {
         let cfd_loads = Sys::<SigmoidCfdLoads>::from_data_repo_or("windloads.bin", {
             CfdLoads::foh(".", sim_sampling_frequency)
                 .duration(sim_duration as f64)
-                .mount(fem.get_or_insert_with(|| FEM::from_env().unwrap()), 0, None)
-                .m1_segments()
-                .m2_segments()
+                .windloads(fem.get_or_insert(FEM::from_env()?), Default::default())
         })?;
 
         let gmt_servos = Sys::<GmtServoMechanisms<ACTUATOR_RATE, 1>>::from_data_repo_or_else(

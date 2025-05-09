@@ -507,7 +507,9 @@ impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
         Ok((w, n_modes, zeta, n_io))
     }
     #[cfg(not(fem))]
-    pub fn build(mut self) -> Result<DiscreteModalSolver<T>> {
+    pub fn build(mut self) -> Result<crate::DiscreteModalSolver<T>> {
+        use crate::DiscreteModalSolver;
+
         let tau = self.sampling.map_or(
             Err(StateSpaceError::MissingArguments("sampling".to_owned())),
             |x| Ok(1f64 / x),

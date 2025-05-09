@@ -81,7 +81,8 @@ all-features = true
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(fem)',
-    'cfg(cfd)',
+    'cfg(cfd2021)',
+    'cfg(cfd2025)',
     'cfg(mount)',
     'cfg(m1)',
     'cfg(m2)',

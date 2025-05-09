@@ -20,7 +20,7 @@ use gmt_dos_clients::operator;
 use interface::Units;
 use prelude::*;
 
-#[cfg(all(fem, cfd))]
+#[cfg(all(fem, any(cfd2021, cfd2025)))]
 mod cfd;
 #[cfg(all(fem, m1))]
 mod m1;

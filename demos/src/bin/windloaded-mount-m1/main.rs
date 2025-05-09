@@ -51,9 +51,7 @@ async fn main() -> anyhow::Result<()> {
 
     let cfd_loads = CfdLoads::foh(".", sim_sampling_frequency)
         .duration(sim_duration as f64)
-        .mount(fem.get_or_insert(FEM::from_env()?), 0, None)
-        .m1_segments()
-        .m2_segments()
+        .windloads(fem.get_or_insert(FEM::from_env()?), Default::default())
         .build()?;
 
     // FEM MODEL

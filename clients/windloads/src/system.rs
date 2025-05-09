@@ -16,7 +16,7 @@ use gmt_dos_clients_io::cfd_wind_loads::{CFDM1WindLoads, CFDM2WindLoads, CFDMoun
 use interface::Update;
 use serde::{Deserialize, Serialize};
 
-use crate::{Builder, CfdLoads, WindLoadsError, FOH};
+use crate::{builder::Builder, CfdLoads, WindLoadsError, FOH};
 
 mod m1;
 mod m2;
