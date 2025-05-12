@@ -17,6 +17,12 @@ struct Args {
     /// singular modes null space
     #[arg(long,require_equals=true,default_value_t= NullSpace::Rbm, default_missing_value="RbmHp",value_enum)]
     null_space: NullSpace,
+    /// Display the RBMs and hardpoints displacement values for the first 27 modes
+    #[arg(long)]
+    validation: bool,
+    /// computes the singular modes without saving them to a file
+    #[arg(long)]
+    dry_run: bool,
 }
 #[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Eq)]
 enum NullSpace {
@@ -62,6 +68,7 @@ fn main() -> anyhow::Result<()> {
 
     for sid in 1..=7u8 {
         println!("Segment #{sid}");
+        let i = (sid - 1) as usize;
 
         let inputs = vec![format!("M1_actuators_segment_{sid}")];
         let outputs = vec![format!("M1_segment_{sid}_axial_d")];
@@ -69,6 +76,7 @@ fn main() -> anyhow::Result<()> {
         println!("extracting the static gain {:?} -> {:?}", inputs, outputs);
         fem.switch_inputs(Switch::Off, None)
             .switch_outputs(Switch::Off, None);
+        // M1 actuator forces to M1 surface displacement gain
         let gain_d = fem
             .switch_inputs_by_name(inputs.clone(), Switch::On)
             .and_then(|fem| fem.switch_outputs_by_name(outputs.clone(), Switch::On))
@@ -102,6 +110,7 @@ fn main() -> anyhow::Result<()> {
 
         fem.switch_inputs(Switch::Off, None)
             .switch_outputs(Switch::Off, None);
+        // M1 actuator forces to M1 RBMs gain
         let gain_rbm = fem
             .switch_inputs_by_name(inputs.clone(), Switch::On)
             .and_then(|fem| fem.switch_outputs_by_name(vec!["OSS_M1_lcl"], Switch::On))
@@ -109,6 +118,17 @@ fn main() -> anyhow::Result<()> {
         let gain_rbm = gain_rbm.view_range(.., ..).into_faer();
 
         let i = (sid - 1) as usize;
+        fem.switch_inputs(Switch::Off, None)
+            .switch_outputs(Switch::Off, None);
+        // M1 actuator forces to M1 hardpoints displacement gain
+        let gain_hp = fem
+            .switch_inputs_by_name(inputs.clone(), Switch::On)
+            .and_then(|fem| fem.switch_outputs_by_name(vec!["OSS_Hardpoint_D"], Switch::On))
+            .map(|fem| fem.reduced_static_gain().unwrap())?;
+        let rows = i * 12..(i + 1) * 12;
+        let gain_hp = gain_hp.view_range(rows, ..).into_faer();
+        let gain_hp = gain_hp.subrows(6, 6) - gain_hp.subrows(0, 6);
+
         let gain_r = match args.null_space {
             NullSpace::Rbm => gain_rbm.subrows(i * 6, 6).to_owned(),
             NullSpace::RbmHp => {
@@ -148,12 +168,13 @@ fn main() -> anyhow::Result<()> {
         let u_d = svd_d.U().subcols(0, svd_d.S().column_vector().nrows());
         let v_d = svd_d.V();
         println!(
-            "  SVD R gain: U {:?}, S ({:}), V {:?}",
+            "  SVD D gain: U {:?}, S ({:}), V {:?}",
             u_d.shape(),
             svd_d.S().column_vector().nrows(),
             v_d.shape()
         );
 
+        // Projecting out RBM right eigen vectors
         let v_dr = v_d - v_r * v_r.transpose() * v_d;
         let gain_rd = u_d * svd_d.S().column_vector().as_diagonal() * &v_dr.transpose();
         let svd_rd = gain_rd.svd().unwrap();
@@ -212,11 +233,11 @@ fn main() -> anyhow::Result<()> {
         m1_sms.push(sms);
     }
 
-    serde_pickle::to_writer(
-        &mut File::create(&args.filename.unwrap_or("m1_singular_modes.pkl".to_string()))?,
-        &m1_sms,
-        Default::default(),
-    )?;
+    if !args.dry_run {
+        let file = args.filename.unwrap_or("m1_singular_modes.pkl".to_string());
+        serde_pickle::to_writer(&mut File::create(&file)?, &m1_sms, Default::default())?;
+        println!("saved modes into {file}");
+    }
 
     Ok(())
 }
