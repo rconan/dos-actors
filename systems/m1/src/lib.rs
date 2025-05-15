@@ -139,8 +139,17 @@ impl SingularModes {
         let (ns, na) = self.shape;
         faer::mat::MatRef::from_column_major_slice(&self.raw_modes, ns, na)
     }
+    #[cfg(feature = "faer")]
+    pub fn mode2force_mat_ref(&self) -> faer::mat::MatRef<f64> {
+        let (_, na) = self.shape;
+        let ns = self.mode_2_force.len() / na;
+        faer::mat::MatRef::from_column_major_slice(&self.mode_2_force, na, ns)
+    }
     pub fn dmatrix(&self) -> nalgebra::DMatrix<f64> {
         let (ns, na) = self.shape;
         nalgebra::DMatrix::from_column_slice(ns, na, &self.raw_modes)
+    }
+    pub fn shape(&self) -> (usize, usize) {
+        self.shape
     }
 }

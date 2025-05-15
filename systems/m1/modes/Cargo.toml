@@ -2,6 +2,7 @@
 name = "gmt_dos-systems_m1-modes"
 version = "0.1.0"
 edition = "2024"
+default-run = "m1-modes"
 
 [dependencies]
 anyhow.workspace = true
@@ -10,8 +11,12 @@ faer-ext.workspace = true
 faer.workspace = true
 gmt-fem.workspace = true
 gmt_dos-clients_fem.workspace = true
-gmt_dos-systems_m1.workspace = true
+gmt_dos-systems_m1 = {workspace = true, features = ["faer"]}
 serde-pickle = "1.2.0"
+gmt_dos-clients_m1-ctrl.workspace = true
+interface.workspace = true
+gmt_dos-clients_io.workspace = true
+serde = { workspace = true, features = ["derive"] }
 
 [[bin]]
 name="m1-modes"
