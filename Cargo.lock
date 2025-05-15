@@ -3748,8 +3748,12 @@ dependencies = [
  "faer",
  "faer-ext",
  "gmt-fem",
+ "gmt_dos-actors-clients_interface",
  "gmt_dos-clients_fem",
+ "gmt_dos-clients_io",
+ "gmt_dos-clients_m1-ctrl",
  "gmt_dos-systems_m1",
+ "serde",
  "serde-pickle 1.2.0",
 ]
 
