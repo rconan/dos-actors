@@ -16,8 +16,13 @@ use serde::{Deserialize, Serialize};
 pub enum FilingError {
     #[error("filing error")]
     IO(#[from] std::io::Error),
+    #[cfg(feature = "filing")]
     #[error("decoder error")]
     Decoder(#[from] bincode::error::DecodeError),
+    #[cfg(feature = "pickling")]
+    #[error("decoder error")]
+    PickleCodec(#[from] serde_pickle::error::Error),
+    #[cfg(feature = "filing")]
     #[error("encoder error")]
     Encoder(#[from] bincode::error::EncodeError),
     #[error("builder error: {0}")]
@@ -35,6 +40,7 @@ where
 {
     /// Decodes object from [std::io::Read]
     #[inline]
+    #[cfg(feature = "filing")]
     fn decode<R>(reader: &mut R) -> Result<Self>
     where
         R: Read,
@@ -44,14 +50,32 @@ where
             bincode::config::standard(),
         )?)
     }
+    #[inline]
+    #[cfg(feature = "pickling")]
+    fn decode<R>(reader: &mut R) -> Result<Self>
+    where
+        R: Read,
+    {
+        Ok(serde_pickle::from_reader(reader, Default::default())?)
+    }
 
     /// Encodes object to [std::io::Write]
     #[inline]
+    #[cfg(feature = "filing")]
     fn encode<W>(&self, writer: &mut W) -> Result<()>
     where
         W: Write,
     {
         bincode::serde::encode_into_std_write(self, writer, bincode::config::standard())?;
+        Ok(())
+    }
+    #[inline]
+    #[cfg(feature = "pickling")]
+    fn encode<W>(&self, writer: &mut W) -> Result<()>
+    where
+        W: Write,
+    {
+        serde_pickle::to_writer(writer, self, Default::default())?;
         Ok(())
     }
 }

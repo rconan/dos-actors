@@ -3287,7 +3287,7 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-actors-clients_interface"
-version = "1.4.0"
+version = "1.5.0"
 dependencies = [
  "bincode 2.0.1",
  "criterion 0.5.1",
@@ -3295,6 +3295,7 @@ dependencies = [
  "log",
  "paris",
  "serde",
+ "serde-pickle 1.2.0",
  "thiserror 1.0.69",
 ]
 
