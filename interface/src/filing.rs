@@ -7,7 +7,7 @@ use std::{
     fmt::Debug,
     fs::File,
     io::{Read, Write},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use serde::{Deserialize, Serialize};
@@ -16,8 +16,17 @@ use serde::{Deserialize, Serialize};
 pub enum FilingError {
     #[error("filing error")]
     IO(#[from] std::io::Error),
+    #[error("can't create file {0:?}")]
+    Create(#[source] std::io::Error, PathBuf),
+    #[error("can't open file {0:?}")]
+    Open(#[source] std::io::Error, PathBuf),
+    #[cfg(feature = "filing")]
     #[error("decoder error")]
     Decoder(#[from] bincode::error::DecodeError),
+    #[cfg(all(feature = "pickling", not(feature = "filing")))]
+    #[error("decoder error")]
+    PickleCodec(#[from] serde_pickle::error::Error),
+    #[cfg(feature = "filing")]
     #[error("encoder error")]
     Encoder(#[from] bincode::error::EncodeError),
     #[error("builder error: {0}")]
@@ -35,6 +44,7 @@ where
 {
     /// Decodes object from [std::io::Read]
     #[inline]
+    #[cfg(feature = "filing")]
     fn decode<R>(reader: &mut R) -> Result<Self>
     where
         R: Read,
@@ -44,14 +54,32 @@ where
             bincode::config::standard(),
         )?)
     }
+    #[inline]
+    #[cfg(all(feature = "pickling", not(feature = "filing")))]
+    fn decode<R>(reader: &mut R) -> Result<Self>
+    where
+        R: Read,
+    {
+        Ok(serde_pickle::from_reader(reader, Default::default())?)
+    }
 
     /// Encodes object to [std::io::Write]
     #[inline]
+    #[cfg(feature = "filing")]
     fn encode<W>(&self, writer: &mut W) -> Result<()>
     where
         W: Write,
     {
         bincode::serde::encode_into_std_write(self, writer, bincode::config::standard())?;
+        Ok(())
+    }
+    #[inline]
+    #[cfg(all(feature = "pickling", not(feature = "filing")))]
+    fn encode<W>(&self, writer: &mut W) -> Result<()>
+    where
+        W: Write,
+    {
+        serde_pickle::to_writer(writer, self, Default::default())?;
         Ok(())
     }
 }
@@ -72,7 +100,8 @@ where
         P: AsRef<Path> + Debug,
     {
         log::info!("decoding from {path:?}");
-        let file = File::open(path)?;
+        let file =
+            File::open(&path).map_err(|e| FilingError::Open(e, path.as_ref().to_path_buf()))?;
         let mut buffer = std::io::BufReader::new(file);
         Self::decode(&mut buffer)
     }
@@ -91,7 +120,8 @@ where
         P: AsRef<Path> + Debug,
     {
         log::info!("encoding to {path:?}");
-        let file = File::create(path)?;
+        let file =
+            File::create(&path).map_err(|e| FilingError::Create(e, path.as_ref().to_path_buf()))?;
         let mut buffer = std::io::BufWriter::new(file);
         self.encode(&mut buffer)?;
         Ok(())
