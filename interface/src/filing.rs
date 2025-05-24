@@ -3,7 +3,11 @@
 //! Interface to serialize and to deserialize `dos-actors` objects.
 
 use std::{
-    env::{self, VarError}, fmt::Debug, fs::File, io::{Read, Write}, num::Saturating, path::Path
+    env::{self, VarError},
+    fmt::Debug,
+    fs::File,
+    io::{Read, Write},
+    path::{Path, PathBuf},
 };
 
 use serde::{Deserialize, Serialize};
@@ -12,8 +16,10 @@ use serde::{Deserialize, Serialize};
 pub enum FilingError {
     #[error("filing error")]
     IO(#[from] std::io::Error),
-    #[error("werror")]
-    CreateFile(#[source] std::io::Error, String),
+    #[error("can't create file {0:?}")]
+    Create(#[source] std::io::Error, PathBuf),
+    #[error("can't open file {0:?}")]
+    Open(#[source] std::io::Error, PathBuf),
     #[cfg(feature = "filing")]
     #[error("decoder error")]
     Decoder(#[from] bincode::error::DecodeError),
@@ -94,7 +100,8 @@ where
         P: AsRef<Path> + Debug,
     {
         log::info!("decoding from {path:?}");
-        let file = File::open(path)?;
+        let file =
+            File::open(&path).map_err(|e| FilingError::Open(e, path.as_ref().to_path_buf()))?;
         let mut buffer = std::io::BufReader::new(file);
         Self::decode(&mut buffer)
     }
@@ -113,7 +120,8 @@ where
         P: AsRef<Path> + Debug,
     {
         log::info!("encoding to {path:?}");
-        let file = File::create(path)?;
+        let file =
+            File::create(&path).map_err(|e| FilingError::Create(e, path.as_ref().to_path_buf()))?;
         let mut buffer = std::io::BufWriter::new(file);
         self.encode(&mut buffer)?;
         Ok(())
