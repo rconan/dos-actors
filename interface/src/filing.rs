@@ -3,11 +3,7 @@
 //! Interface to serialize and to deserialize `dos-actors` objects.
 
 use std::{
-    env::{self, VarError},
-    fmt::Debug,
-    fs::File,
-    io::{Read, Write},
-    path::Path,
+    env::{self, VarError}, fmt::Debug, fs::File, io::{Read, Write}, num::Saturating, path::Path
 };
 
 use serde::{Deserialize, Serialize};
@@ -16,10 +12,12 @@ use serde::{Deserialize, Serialize};
 pub enum FilingError {
     #[error("filing error")]
     IO(#[from] std::io::Error),
+    #[error("werror")]
+    CreateFile(#[source] std::io::Error, String),
     #[cfg(feature = "filing")]
     #[error("decoder error")]
     Decoder(#[from] bincode::error::DecodeError),
-    #[cfg(feature = "pickling")]
+    #[cfg(all(feature = "pickling", not(feature = "filing")))]
     #[error("decoder error")]
     PickleCodec(#[from] serde_pickle::error::Error),
     #[cfg(feature = "filing")]
@@ -51,7 +49,7 @@ where
         )?)
     }
     #[inline]
-    #[cfg(feature = "pickling")]
+    #[cfg(all(feature = "pickling", not(feature = "filing")))]
     fn decode<R>(reader: &mut R) -> Result<Self>
     where
         R: Read,
@@ -70,7 +68,7 @@ where
         Ok(())
     }
     #[inline]
-    #[cfg(feature = "pickling")]
+    #[cfg(all(feature = "pickling", not(feature = "filing")))]
     fn encode<W>(&self, writer: &mut W) -> Result<()>
     where
         W: Write,
