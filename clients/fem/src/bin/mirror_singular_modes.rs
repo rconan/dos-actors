@@ -3,9 +3,9 @@
 use std::{fs::File, time::Instant};
 
 use clap::Parser;
-use faer::{col::AsColRef, Mat, MatRef};
+use faer::{Mat, MatRef, col::AsColRef};
 use faer_ext::IntoFaer;
-use gmt_dos_clients_fem::{fem_io, Model, Switch};
+use gmt_dos_clients_fem::{Model, Switch, fem_io};
 use gmt_fem::FEM;
 use serde::Serialize;
 

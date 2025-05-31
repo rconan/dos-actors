@@ -1,9 +1,9 @@
 use std::{ptr, sync::Arc};
 
 use gmt_dos_clients_io::gmt_m2::fsm::segment::{FsmCommand, PiezoForces, PiezoNodes};
+use gmt_m2_ctrl_fsm_piezo_7::FsmPiezo7;
 use gmt_m2_ctrl_fsm_piezo_135::FsmPiezo135;
 use gmt_m2_ctrl_fsm_piezo_246::FsmPiezo246;
-use gmt_m2_ctrl_fsm_piezo_7::FsmPiezo7;
 use interface::{Data, Read, Size, Update, Write};
 use serde::{Deserialize, Serialize};
 

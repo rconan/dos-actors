@@ -1,11 +1,11 @@
 use crate::{
+    DiscreteStateSpace,
     actors_interface::RbmRemoval,
     fem_io::{GetIn, GetOut},
     solvers::{Exponential, ExponentialMatrix, Solver},
-    DiscreteStateSpace,
 };
 
-use gmt_fem::{Result, FEM};
+use gmt_fem::{FEM, Result};
 use interface::TimerMarker;
 use nalgebra as na;
 use rayon::prelude::*;

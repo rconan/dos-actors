@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use gmt_dos_clients::operator;
 use gmt_dos_clients_io::{
+    Assembly,
     gmt_m1::{
         assembly::{
             M1ActuatorAppliedForces, M1ActuatorCommandForces, M1HardpointsForces,
@@ -11,7 +12,6 @@ use gmt_dos_clients_io::{
             ActuatorAppliedForces, ActuatorCommandForces, HardpointsForces, HardpointsMotion, RBM,
         },
     },
-    Assembly,
 };
 use interface::{Data, Read, UniqueIdentifier, Update, Write};
 use serde::{Deserialize, Serialize};

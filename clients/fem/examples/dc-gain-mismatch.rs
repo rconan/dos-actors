@@ -1,11 +1,11 @@
 use std::ops::Deref;
 
-use gmt_dos_clients_fem::{solvers::ExponentialMatrix, DiscreteModalSolver, DiscreteStateSpace};
+use gmt_dos_clients_fem::{DiscreteModalSolver, DiscreteStateSpace, solvers::ExponentialMatrix};
 use gmt_dos_clients_io::gmt_fem::{
-    inputs::{MCM2Lcl6F, MCM2SmHexF, OSSM1Lcl6F, CFD2021106F},
+    inputs::{CFD2021106F, MCM2Lcl6F, MCM2SmHexF, OSSM1Lcl6F},
     outputs::{
         M2Segment1AxialD, M2Segment2AxialD, M2Segment3AxialD, M2Segment4AxialD, M2Segment5AxialD,
-        M2Segment6AxialD, M2Segment7AxialD, MCM2Lcl6D, MCM2SmHexD, OSSM1Lcl, MCM2RB6D,
+        M2Segment6AxialD, M2Segment7AxialD, MCM2Lcl6D, MCM2RB6D, MCM2SmHexD, OSSM1Lcl,
     },
 };
 use gmt_fem::FEM;

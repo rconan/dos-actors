@@ -1,14 +1,14 @@
 use crate::{
+    DeviceInitialize, DispersedFringeSensorProcessing,
     calibration::{
         Calib, Calibration, CalibrationMode, CalibrationSegment, PushPull, SegmentSensorBuilder,
     },
     sensors::DispersedFringeSensor,
-    DeviceInitialize, DispersedFringeSensorProcessing,
 };
 use crseo::{
+    Gmt,
     builders::{GmtBuilder, GmtMirrorBuilder},
     gmt::{GmtMirror, GmtMx, MirrorGetSet},
-    Gmt,
 };
 use interface::Update;
 use std::time::Instant;

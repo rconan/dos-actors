@@ -20,7 +20,7 @@ use crate::{Size, Units};
 use super::{Data, UniqueIdentifier, Write};
 
 macro_rules! converter {
-    ( $( ($u:literal:$t:ident,$l:expr) ),* ) => {
+    ( $( ($u:literal:$t:ident,$l:expr_2021) ),* ) => {
         $(
         #[doc = "Conversion to "]
         #[doc = $u]

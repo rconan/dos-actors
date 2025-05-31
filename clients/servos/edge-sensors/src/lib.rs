@@ -179,14 +179,14 @@ pub const N_SCOPE: usize = 8;
 
 pub use asms_offload::AsmsToHexOffload;
 pub use edge_sensors_feed_forward::EdgeSensorsFeedForward;
-use gmt_dos_clients_fem::{solvers::ExponentialMatrix, DiscreteModalSolver};
+use gmt_dos_clients_fem::{DiscreteModalSolver, solvers::ExponentialMatrix};
 use gmt_dos_clients_io::gmt_m1::M1EdgeSensors;
 pub use hex_to_rbm::HexToRbm;
 pub use m1_edgesensors_to_rbm::M1EdgeSensorsToRbm;
 pub use m2_edgesensors_to_rbm::M2EdgeSensorsToRbm;
 pub use rbm_to_shell::RbmToShell;
 pub use scopes::segment_piston;
-pub use transform::{Transform, IO};
+pub use transform::{IO, Transform};
 pub use voice_coil_to_rbm::VoiceCoilToRbm;
 
 pub enum M1EdgeSensorsAsRbms {}

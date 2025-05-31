@@ -1,14 +1,14 @@
 use crate::{
+    OpticalModel, OpticalModelBuilder,
     calibration::{
         Calib, Calibration, CalibrationMode, CalibrationSegment, PushPull, SegmentSensorBuilder,
     },
     centroiding::{CentroidKind, CentroidsProcessing, Full, ZeroMean},
-    OpticalModel, OpticalModelBuilder,
 };
 use crseo::{
+    Gmt, Imaging,
     builders::{GmtBuilder, GmtMirrorBuilder},
     gmt::{GmtMirror, GmtMx, MirrorGetSet},
-    Gmt, Imaging,
 };
 use interface::Update;
 use std::time::Instant;
@@ -218,7 +218,7 @@ where
 mod tests {
     use std::error::Error;
 
-    use crseo::{gmt::GmtM1, imaging::LensletArray, FromBuilder, Gmt, Source};
+    use crseo::{FromBuilder, Gmt, Source, gmt::GmtM1, imaging::LensletArray};
     use gmt_dos_clients_io::{
         gmt_m1::segment::ModeShapes,
         optics::{Dev, Frame, SensorData},
@@ -227,7 +227,7 @@ mod tests {
     use skyangle::Conversion;
 
     use crate::{
-        calibration::algebra::CalibProps, sensors::Camera, DeviceInitialize, OpticalModel,
+        DeviceInitialize, OpticalModel, calibration::algebra::CalibProps, sensors::Camera,
     };
 
     use super::*;

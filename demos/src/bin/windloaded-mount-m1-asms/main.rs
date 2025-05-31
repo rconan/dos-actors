@@ -6,20 +6,20 @@ use gmt_dos_clients::{
     signals::{OneSignal, Signal, Signals},
     smooth::{Smooth, Weight},
 };
-use gmt_dos_clients_fem::{solvers::ExponentialMatrix, DiscreteModalSolver};
+use gmt_dos_clients_fem::{DiscreteModalSolver, solvers::ExponentialMatrix};
 use gmt_dos_clients_io::{
     cfd_wind_loads::{CFDM1WindLoads, CFDM2WindLoads, CFDMountWindLoads},
     gmt_fem::{
-        inputs::{MCM2Lcl6F, MCM2SmHexF, OSSM1Lcl6F, CFD2021106F},
-        outputs::{MCM2Lcl6D, MCM2SmHexD, OSSM1Lcl, MCM2RB6D},
+        inputs::{CFD2021106F, MCM2Lcl6F, MCM2SmHexF, OSSM1Lcl6F},
+        outputs::{MCM2Lcl6D, MCM2RB6D, MCM2SmHexD, OSSM1Lcl},
     },
-    gmt_m1::{assembly, M1RigidBodyMotions},
+    gmt_m1::{M1RigidBodyMotions, assembly},
     gmt_m2::{
+        M2PositionerForces, M2PositionerNodes, M2RigidBodyMotions,
         asm::{
             M2ASMAsmCommand, M2ASMFluidDampingForces, M2ASMReferenceBodyNodes,
             M2ASMVoiceCoilsForces, M2ASMVoiceCoilsMotion,
         },
-        M2PositionerForces, M2PositionerNodes, M2RigidBodyMotions,
     },
     mount::{MountEncoders, MountSetPoint, MountTorques},
     optics::WfeRms,
@@ -44,14 +44,15 @@ MOUNT_MODEL=MOUNT_PDR_8kHz FEM_REPO=`pwd`/20230131_1605_zen_30_M1_202110_ASM_202
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    env::set_var(
-        "DATA_REPO",
-        Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("src")
-            .join("bin")
-            .join("windloaded-mount-m1-asms"),
-    );
-
+    unsafe {
+        env::set_var(
+            "DATA_REPO",
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("src")
+                .join("bin")
+                .join("windloaded-mount-m1-asms"),
+        );
+    }
     let sim_sampling_frequency = 8000;
     let sim_duration = 5_usize; // second
     let n_step = sim_sampling_frequency * sim_duration;

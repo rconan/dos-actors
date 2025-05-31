@@ -10,14 +10,14 @@ use gmt_dos_actors::{actorscript, system::Sys};
 use gmt_dos_clients::timer::Timer;
 use gmt_dos_clients_io::cfd_wind_loads::{CFDM1WindLoads, CFDM2WindLoads, CFDMountWindLoads};
 use gmt_dos_clients_servos::{
-    asms_servo, AsmsServo, EdgeSensors, GmtFem, GmtServoMechanisms, WindLoads,
+    AsmsServo, EdgeSensors, GmtFem, GmtServoMechanisms, WindLoads, asms_servo,
 };
 use gmt_dos_clients_windloads::{
-    system::{Mount, SigmoidCfdLoads, M1, M2},
     CfdLoads,
+    system::{M1, M2, Mount, SigmoidCfdLoads},
 };
 use gmt_fem::FEM;
-use interface::{filing::Filing, Tick};
+use interface::{Tick, filing::Filing};
 use matio_rs::MatFile;
 use nalgebra as na;
 use std::{env, path::Path};

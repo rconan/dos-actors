@@ -10,14 +10,14 @@ export MOUNT_MODEL=MOUNT_FDR_8kHz
 use crseo::{FromBuilder, Gmt};
 use gmt_dos_actors::actorscript;
 use gmt_dos_clients::Signals;
-use gmt_dos_clients_crseo::{sensors::NoSensor, OpticalModel};
+use gmt_dos_clients_crseo::{OpticalModel, sensors::NoSensor};
 use gmt_dos_clients_io::{
-    gmt_m2::asm::{segment::FaceSheetFigure, M2ASMAsmCommand},
+    gmt_m2::asm::{M2ASMAsmCommand, segment::FaceSheetFigure},
     optics::Wavefront,
 };
 use gmt_dos_clients_servos::{AsmsServo, GmtM2, GmtServoMechanisms};
 use gmt_fem::FEM;
-use interface::{units::MuM, Size, Write};
+use interface::{Size, Write, units::MuM};
 
 const ACTUATOR_RATE: usize = 80;
 const N_MODE: usize = 675;

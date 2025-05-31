@@ -5,7 +5,7 @@
 
 use std::any::type_name;
 
-use interface::{UniqueIdentifier, UID};
+use interface::{UID, UniqueIdentifier};
 
 pub mod assembly;
 pub mod gmt_fem;

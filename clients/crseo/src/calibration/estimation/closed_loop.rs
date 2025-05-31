@@ -2,11 +2,11 @@ use crseo::FromBuilder;
 use interface::UniqueIdentifier;
 
 use crate::{
-    calibration::{
-        algebra::CalibProps, Calib, CalibrationError, CalibrationMode, ClosedLoopCalib, Modality,
-        Reconstructor,
-    },
     OpticalModelBuilder,
+    calibration::{
+        Calib, CalibrationError, CalibrationMode, ClosedLoopCalib, Modality, Reconstructor,
+        algebra::CalibProps,
+    },
 };
 
 /// Command closed-loop estimator
@@ -124,14 +124,14 @@ mod wave_sensor;
 mod tests {
     use std::error::Error;
 
-    use crseo::{gmt::GmtM1, Gmt};
+    use crseo::{Gmt, gmt::GmtM1};
     use gmt_dos_clients_io::gmt_m1::M1RigidBodyMotions;
     use skyangle::Conversion;
 
     use crate::{
+        OpticalModel,
         calibration::{CalibrationMode, ClosedLoopCalibration},
         sensors::WaveSensor,
-        OpticalModel,
     };
 
     use super::*;

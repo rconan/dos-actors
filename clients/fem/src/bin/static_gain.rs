@@ -28,7 +28,7 @@
 //! ```
 
 use std::{
-    fs::{exists, File},
+    fs::{File, exists},
     io::Read,
 };
 

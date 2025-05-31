@@ -1,14 +1,14 @@
 use crate::{
+    OpticalModel, OpticalModelBuilder,
     calibration::{
         Calib, Calibration, CalibrationMode, CalibrationSegment, PushPull, SegmentSensorBuilder,
     },
     sensors::WaveSensor,
-    OpticalModel, OpticalModelBuilder,
 };
 use crseo::{
+    Gmt,
     builders::{GmtBuilder, GmtMirrorBuilder},
     gmt::{GmtMirror, GmtMx, MirrorGetSet},
-    Gmt,
 };
 use interface::Update;
 use std::time::Instant;

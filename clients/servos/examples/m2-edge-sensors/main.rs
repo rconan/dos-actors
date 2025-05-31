@@ -1,37 +1,34 @@
 use anyhow::{Context, Result};
 use gmt_dos_actors::{actorscript, system::Sys};
 use gmt_dos_clients::{
+    Gain, Integrator, Signal, Signals,
     operator::{Left, Operator, Right},
     select::Select,
-    Gain, Integrator, Signal, Signals
 };
+use gmt_dos_clients_io::gmt_m2::asm::segment::VoiceCoilsMotion;
 use gmt_dos_clients_io::{
-    gmt_fem::{
-        outputs::{
-            M2EdgeSensors,
-        },
-    },
+    gmt_fem::outputs::M2EdgeSensors,
     gmt_m2::{
-        asm::{
-             M2ASMAsmCommand,
-            M2ASMReferenceBodyNodes, M2ASMVoiceCoilsForces, M2ASMVoiceCoilsMotion,
-        },
         M2PositionerForces, M2PositionerNodes, M2RigidBodyMotions,
+        asm::{
+            M2ASMAsmCommand, M2ASMReferenceBodyNodes, M2ASMVoiceCoilsForces, M2ASMVoiceCoilsMotion,
+        },
     },
     optics::{M2modes, SegmentD21PistonRSS, SegmentPiston, SegmentTipTilt, Wavefront, WfeRms},
 };
 use gmt_dos_clients_lom::LinearOpticalModel;
-use gmt_dos_clients_servos::{asms_servo, AsmsServo, EdgeSensors, GmtServoMechanisms,GmtFem,GmtM2,GmtM2Hex};
+use gmt_dos_clients_servos::{
+    AsmsServo, EdgeSensors, GmtFem, GmtM2, GmtM2Hex, GmtServoMechanisms, asms_servo,
+};
 use gmt_fem::FEM;
 use interface::filing::Filing;
 use interface::{
+    Data, Read, UID, Update, Write,
     units::{Mas, NM},
-    Data, Read, Update, Write, UID,
 };
 use matio_rs::MatFile;
 use nalgebra as na;
 use std::{env, path::Path, sync::Arc};
-use gmt_dos_clients_io::gmt_m2::asm::segment::VoiceCoilsMotion;
 
 const ACTUATOR_RATE: usize = 80; // 100Hz
 
@@ -130,9 +127,11 @@ async fn main() -> Result<()> {
                 sim_sampling_frequency as f64,
                 FEM::from_env().expect("failed to load the FEM"),
             )
-            .asms_servo(AsmsServo::new()
-                .voice_coils(asms_servo::VoiceCoils::new(kl_modes))
-                .reference_body(asms_servo::ReferenceBody::new()))
+            .asms_servo(
+                AsmsServo::new()
+                    .voice_coils(asms_servo::VoiceCoils::new(kl_modes))
+                    .reference_body(asms_servo::ReferenceBody::new()),
+            )
             .edge_sensors(EdgeSensors::both())
         },
     )?;
@@ -145,16 +144,16 @@ async fn main() -> Result<()> {
         .channel(
             (SID as usize - 1) * n_mode,
             Signal::Constant(100e-6), /*         Signal::Sinusoid {
-                                         amplitude: 50e-6,
-                                         sampling_frequency_hz: sim_sampling_frequency as f64,
-                                         frequency_hz: 1.,
-                                         phase_s: 0.,
-                                     } + Signal::Sinusoid {
-                                         amplitude: 50e-6,
-                                         sampling_frequency_hz: sim_sampling_frequency as f64,
-                                         frequency_hz: 10.,
-                                         phase_s: 0.01,
-                                     }, */
+                                          amplitude: 50e-6,
+                                          sampling_frequency_hz: sim_sampling_frequency as f64,
+                                          frequency_hz: 1.,
+                                          phase_s: 0.,
+                                      } + Signal::Sinusoid {
+                                          amplitude: 50e-6,
+                                          sampling_frequency_hz: sim_sampling_frequency as f64,
+                                          frequency_hz: 10.,
+                                          phase_s: 0.01,
+                                      }, */
         );
 
     // LINEAR OPTICAL MODELS
@@ -167,7 +166,7 @@ async fn main() -> Result<()> {
     //  * M1
     // let m1_es_int = Integrator::new(42).gain(0.2);
     //  * M2
-     let m2_es_int = Integrator::new(42).gain(0.2);
+    let m2_es_int = Integrator::new(42).gain(0.2);
 
     // let m1_add = Operator::new("+");
     let m2_add = Operator::new("+");
@@ -201,81 +200,81 @@ async fn main() -> Result<()> {
 
     let asms_offloading = AsmsOffLoading::new(m2_rbm_2_mode, r7_2_es, es_2_m2_rbm);
 
-    actorscript! { 
-        #[labels(m2_rbm_2_kls = "M2 RBM\nto\nASMS KLS",
-        ptt_to_rbm = "PTT to RBM", m2_es_int = "RBM\nIntegrator")]
-        
-        // 1: asm_cmd[M2ASMAsmCommand] -> {gmt_servos::GmtM2}
+    actorscript! {
+    #[labels(m2_rbm_2_kls = "M2 RBM\nto\nASMS KLS",
+    ptt_to_rbm = "PTT to RBM", m2_es_int = "RBM\nIntegrator")]
+
+    // 1: asm_cmd[M2ASMAsmCommand] -> {gmt_servos::GmtM2}
 
 
-        // ASMS positioners feedback loop
-        1: m2_rbm[Right<M2RigidBodyMotions>] ->  m2_add[M2RigidBodyMotions]
-                -> {gmt_servos::GmtM2Hex}
-        // ASMS voice coils feedback loop
-        1: asm_cmd[Right<M2ASMAsmCommand>] -> add_asm_cmd[M2ASMAsmCommand]
-                 -> {gmt_servos::GmtM2}
-        // ASMS edge sensors feedback loop to ASMS positioners
-        // 500: plant[M2EdgeSensors]! -> m2_es_int
+    // ASMS positioners feedback loop
+    1: m2_rbm[Right<M2RigidBodyMotions>] ->  m2_add[M2RigidBodyMotions]
+            -> {gmt_servos::GmtM2Hex}
+    // ASMS voice coils feedback loop
+    1: asm_cmd[Right<M2ASMAsmCommand>] -> add_asm_cmd[M2ASMAsmCommand]
+             -> {gmt_servos::GmtM2}
+    // ASMS edge sensors feedback loop to ASMS positioners
+    // 500: plant[M2EdgeSensors]! -> m2_es_int
 
-        1: m2_add[M2RigidBodyMotions] -> asms_offloading
-        1: {gmt_servos::GmtFem}[M2EdgeSensors]!-> asms_offloading[EdgeSensorsAsRbms]//${42}
-        // 32: asms_offloading[EdgeSensorsAsRbms]~
-        // 1: asms_offloading[EdgeSensorsAsRbms] -> m2_rbm_2_kls
+    1: m2_add[M2RigidBodyMotions] -> asms_offloading
+    1: {gmt_servos::GmtFem}[M2EdgeSensors]!-> asms_offloading[EdgeSensorsAsRbms]//${42}
+    // 32: asms_offloading[EdgeSensorsAsRbms]~
+    // 1: asms_offloading[EdgeSensorsAsRbms] -> m2_rbm_2_kls
 
-        500: {gmt_servos::GmtFem}[M2ASMVoiceCoilsMotion]!
-            -> ptt_to_rbm[M2RigidBodyMotions]${42} 
-                -> m2_es_int
-        1: m2_es_int[Left<M2RigidBodyMotions>]!->  m2_add
-         // M2 edge sensors feed-forward loop to ASMS KL modes
-        //  1: plant[M2EdgeSensors]! -> es_2_m2_rbm_c[EdgeSensorsAsRbms] -> m2_rbm_2_kls
-         1: asms_offloading[EdgeSensorsAsRbms] ->  m2_rbm_2_kls
-         8: m2_rbm_2_kls[Left<EdgeSensorsAsRbms>] ->  add_asm_cmd
+    500: {gmt_servos::GmtFem}[M2ASMVoiceCoilsMotion]!
+        -> ptt_to_rbm[M2RigidBodyMotions]${42}
+            -> m2_es_int
+    1: m2_es_int[Left<M2RigidBodyMotions>]!->  m2_add
+     // M2 edge sensors feed-forward loop to ASMS KL modes
+    //  1: plant[M2EdgeSensors]! -> es_2_m2_rbm_c[EdgeSensorsAsRbms] -> m2_rbm_2_kls
+     1: asms_offloading[EdgeSensorsAsRbms] ->  m2_rbm_2_kls
+     8: m2_rbm_2_kls[Left<EdgeSensorsAsRbms>] ->  add_asm_cmd
 
 
-        1: {gmt_servos::GmtFem}[NM<VoiceCoilsMotion<1>>]~
-        1: {gmt_servos::GmtFem}[NM<VoiceCoilsMotion<2>>]~
-        1: {gmt_servos::GmtFem}[NM<VoiceCoilsMotion<3>>]~
-        1: {gmt_servos::GmtFem}[NM<VoiceCoilsMotion<SID>>]~
-        1: {gmt_servos::GmtFem}[NM<M2ASMReferenceBodyNodes>] -> tzrxry[Tz]~
-        }
+    1: {gmt_servos::GmtFem}[NM<VoiceCoilsMotion<1>>]~
+    1: {gmt_servos::GmtFem}[NM<VoiceCoilsMotion<2>>]~
+    1: {gmt_servos::GmtFem}[NM<VoiceCoilsMotion<3>>]~
+    1: {gmt_servos::GmtFem}[NM<VoiceCoilsMotion<SID>>]~
+    1: {gmt_servos::GmtFem}[NM<M2ASMReferenceBodyNodes>] -> tzrxry[Tz]~
+    }
 
-/*     actorscript! {
-        #[model(name = model, state = completed)]
-        #[labels(m2_rbm_2_kls = "M2 RBM\nto\nASMS KLS",
-                 ptt_to_rbm = "PTT to RBM", m2_es_int = "RBM\nIntegrator")]
+    /*     actorscript! {
+            #[model(name = model, state = completed)]
+            #[labels(m2_rbm_2_kls = "M2 RBM\nto\nASMS KLS",
+                     ptt_to_rbm = "PTT to RBM", m2_es_int = "RBM\nIntegrator")]
 
-        // ASMS positioners feedback loop
-        1: m2_rbm[Right<M2RigidBodyMotions>] ->  m2_add[M2RigidBodyMotions]
-                -> {gmt_servos::GmtM2Hex}
-        // ASMS voice coils feedback loop
-        1: asm_cmd[Right<M2ASMAsmCommand>] -> add_asm_cmd[M2ASMAsmCommand]
-                 -> {gmt_servos::GmtM2}
-        // ASMS edge sensors feedback loop to ASMS positioners
-        // 500: plant[M2EdgeSensors]! -> m2_es_int
+            // ASMS positioners feedback loop
+            1: m2_rbm[Right<M2RigidBodyMotions>] ->  m2_add[M2RigidBodyMotions]
+                    -> {gmt_servos::GmtM2Hex}
+            // ASMS voice coils feedback loop
+            1: asm_cmd[Right<M2ASMAsmCommand>] -> add_asm_cmd[M2ASMAsmCommand]
+                     -> {gmt_servos::GmtM2}
+            // ASMS edge sensors feedback loop to ASMS positioners
+            // 500: plant[M2EdgeSensors]! -> m2_es_int
 
-/*         1: m2_add[M2RigidBodyMotions] -> asms_offloading
-        1: {gmt_servos::GmtFem}[M2EdgeSensors]!-> asms_offloading[EdgeSensorsAsRbms]${42}
-        // 32: asms_offloading[EdgeSensorsAsRbms]~
-        // 1: asms_offloading[EdgeSensorsAsRbms] -> m2_rbm_2_kls
+    /*         1: m2_add[M2RigidBodyMotions] -> asms_offloading
+            1: {gmt_servos::GmtFem}[M2EdgeSensors]!-> asms_offloading[EdgeSensorsAsRbms]${42}
+            // 32: asms_offloading[EdgeSensorsAsRbms]~
+            // 1: asms_offloading[EdgeSensorsAsRbms] -> m2_rbm_2_kls
 
-        500: {gmt_servos::GmtFem}[M2ASMVoiceCoilsMotion]! -> ptt_to_rbm[M2RigidBodyMotions] -> m2_es_int
-        1: m2_es_int[Left<M2RigidBodyMotions>]!->  m2_add
-         // M2 edge sensors feed-forward loop to ASMS KL modes
-        //  1: plant[M2EdgeSensors]! -> es_2_m2_rbm_c[EdgeSensorsAsRbms] -> m2_rbm_2_kls
-         1: asms_offloading[EdgeSensorsAsRbms] ->  m2_rbm_2_kls
-         8: m2_rbm_2_kls[Left<EdgeSensorsAsRbms>] ->  add_asm_cmd */
+            500: {gmt_servos::GmtFem}[M2ASMVoiceCoilsMotion]! -> ptt_to_rbm[M2RigidBodyMotions] -> m2_es_int
+            1: m2_es_int[Left<M2RigidBodyMotions>]!->  m2_add
+             // M2 edge sensors feed-forward loop to ASMS KL modes
+            //  1: plant[M2EdgeSensors]! -> es_2_m2_rbm_c[EdgeSensorsAsRbms] -> m2_rbm_2_kls
+             1: asms_offloading[EdgeSensorsAsRbms] ->  m2_rbm_2_kls
+             8: m2_rbm_2_kls[Left<EdgeSensorsAsRbms>] ->  add_asm_cmd */
 
-        32: {gmt_servos::GmtFem}[VoiceCoilsMotion<1>]!~
-        32: {gmt_servos::GmtFem}[VoiceCoilsMotion<2>]!~
-        32: {gmt_servos::GmtFem}[VoiceCoilsMotion<3>]!~
-        32: {gmt_servos::GmtFem}[VoiceCoilsMotion<SID>]!~
-        32: {gmt_servos::GmtFem}[M2ASMReferenceBodyNodes] -> tzrxry[Tz] ~
+            32: {gmt_servos::GmtFem}[VoiceCoilsMotion<1>]!~
+            32: {gmt_servos::GmtFem}[VoiceCoilsMotion<2>]!~
+            32: {gmt_servos::GmtFem}[VoiceCoilsMotion<3>]!~
+            32: {gmt_servos::GmtFem}[VoiceCoilsMotion<SID>]!~
+            32: {gmt_servos::GmtFem}[M2ASMReferenceBodyNodes] -> tzrxry[Tz] ~
 
-        // 1: plant[M1RigidBodyMotions].. -> lom
-        // 1: plant[M2RigidBodyMotions].. -> lom
-        // 32: lom[WfeRms<-9>]~
+            // 1: plant[M1RigidBodyMotions].. -> lom
+            // 1: plant[M2RigidBodyMotions].. -> lom
+            // 32: lom[WfeRms<-9>]~
 
-    } */
+        } */
 
     Ok(())
 }

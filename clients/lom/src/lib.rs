@@ -9,13 +9,13 @@ use std::{io::Read, path::Path, sync::Arc};
 use flate2::bufread::GzDecoder;
 use gmt_dos_clients_io::{
     gmt_m1::M1RigidBodyMotions,
-    gmt_m2::{asm::M2ASMReferenceBodyNodes, M2RigidBodyMotions},
+    gmt_m2::{M2RigidBodyMotions, asm::M2ASMReferenceBodyNodes},
     optics::{
         MaskedWavefront, SegmentD21PistonRSS, SegmentPiston, SegmentTipTilt, SegmentWfeRms,
         TipTilt, Wavefront, WfeRms,
     },
 };
-use gmt_lom::{LinearOpticalModelError, Loader, LOM};
+use gmt_lom::{LOM, LinearOpticalModelError, Loader};
 use interface::{self, Data, Size, Units, Update, Write};
 
 mod optical_sensitivity;

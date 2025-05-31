@@ -13,8 +13,8 @@ use sh24::Sh24;
 use sh48::Sh48;
 
 use crate::{
-    kernels::{Kernel, KernelFrame},
     AgwsBuilder,
+    kernels::{Kernel, KernelFrame},
 };
 
 /// GMT AGWS model

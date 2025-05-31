@@ -5,11 +5,11 @@ use gmt_dos_clients_io::{gmt_m2::asm::M2ASMAsmCommand, optics::Wavefront};
 use interface::{Data, Read, UniqueIdentifier, Update, Write};
 
 use crate::{
-    sensors::{
-        builders::{SensorBuilderProperty, WaveSensorBuilder},
-        WaveSensor,
-    },
     DispersedFringeSensorProcessing, OpticalModel, OpticalModelBuilder,
+    sensors::{
+        WaveSensor,
+        builders::{SensorBuilderProperty, WaveSensorBuilder},
+    },
 };
 
 use super::{CalibrationError, Reconstructor};

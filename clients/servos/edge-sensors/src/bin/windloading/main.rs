@@ -7,9 +7,9 @@ voice coil actuators and off-load from the voice coil actuators to the reference
 */
 use anyhow::Result;
 use edge_sensors::{
-    segment_piston::{M1Lom, M2Lom, M2RBLom, M2SegmentActuatorAverage, Scopes},
     AsmsToHexOffload, EdgeSensorsFeedForward, HexToRbm, M1EdgeSensorsAsRbms, M1EdgeSensorsToRbm,
-    M2EdgeSensorsToRbm, RbmToShell, N_ACTUATOR, N_SCOPE,
+    M2EdgeSensorsToRbm, N_ACTUATOR, N_SCOPE, RbmToShell,
+    segment_piston::{M1Lom, M2Lom, M2RBLom, M2SegmentActuatorAverage, Scopes},
 };
 use gmt_dos_actors::{actorscript, system::Sys};
 use gmt_dos_clients::{
@@ -22,28 +22,28 @@ use gmt_dos_clients::{
 use gmt_dos_clients_io::{
     cfd_wind_loads::{CFDM1WindLoads, CFDM2WindLoads, CFDMountWindLoads},
     gmt_fem::outputs::MCM2SmHexD,
-    gmt_m1::{assembly, M1EdgeSensors, M1RigidBodyMotions},
+    gmt_m1::{M1EdgeSensors, M1RigidBodyMotions, assembly},
     gmt_m2::{
-        asm::{M2ASMAsmCommand, M2ASMReferenceBodyNodes, M2ASMVoiceCoilsMotion},
         M2EdgeSensors, M2RigidBodyMotions,
+        asm::{M2ASMAsmCommand, M2ASMReferenceBodyNodes, M2ASMVoiceCoilsMotion},
     },
     optics::{MaskedWavefront, SegmentD21PistonRSS, TipTilt, Wavefront},
 };
 use gmt_dos_clients_lom::LinearOpticalModel;
 use gmt_dos_clients_scope::server::{GmtShot, Monitor, Scope, Shot};
 use gmt_dos_clients_servos::{
-    asms_servo, AsmsServo, EdgeSensors, GmtFem, GmtM1, GmtM2, GmtM2Hex, GmtServoMechanisms,
-    WindLoads,
+    AsmsServo, EdgeSensors, GmtFem, GmtM1, GmtM2, GmtM2Hex, GmtServoMechanisms, WindLoads,
+    asms_servo,
 };
 use gmt_dos_clients_windloads::{
-    system::{Mount, SigmoidCfdLoads, M1, M2},
     CfdLoads,
+    system::{M1, M2, Mount, SigmoidCfdLoads},
 };
 use gmt_fem::FEM;
 use interface::{
+    Tick,
     filing::Filing,
     units::{Mas, NM},
-    Tick,
 };
 use io::RBMCmd;
 use matio_rs::MatFile;

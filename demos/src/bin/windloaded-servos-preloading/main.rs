@@ -10,14 +10,14 @@ use gmt_dos_clients_io::{
 };
 use gmt_dos_clients_lom::LinearOpticalModel;
 use gmt_dos_clients_servos::{
-    asms_servo::ReferenceBody, AsmsServo, GmtFem, GmtServoMechanisms, WindLoads,
+    AsmsServo, GmtFem, GmtServoMechanisms, WindLoads, asms_servo::ReferenceBody,
 };
 use gmt_dos_clients_windloads::{
-    system::{Mount, SigmoidCfdLoads, M1, M2},
     CfdLoads,
+    system::{M1, M2, Mount, SigmoidCfdLoads},
 };
 use gmt_fem::FEM;
-use interface::{filing::Filing, Tick};
+use interface::{Tick, filing::Filing};
 
 const ACTUATOR_RATE: usize = 80;
 
@@ -31,14 +31,15 @@ MOUNT_MODEL=MOUNT_PDR_8kHz FEM_REPO=`pwd`/20230131_1605_zen_30_M1_202110_ASM_202
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     env_logger::init();
-    env::set_var(
-        "DATA_REPO",
-        Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("src")
-            .join("bin")
-            .join("windloaded-servos-preloading"),
-    );
-
+    unsafe {
+        env::set_var(
+            "DATA_REPO",
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("src")
+                .join("bin")
+                .join("windloaded-servos-preloading"),
+        );
+    }
     let sim_sampling_frequency = 8000;
     let sim_duration = 5_usize; // second
 

@@ -5,11 +5,11 @@ use gmt_dos_clients::timer::Timer;
 use gmt_dos_clients_io::cfd_wind_loads::{CFDM1WindLoads, CFDM2WindLoads, CFDMountWindLoads};
 use gmt_dos_clients_servos::{GmtFem, GmtServoMechanisms, WindLoads};
 use gmt_dos_clients_windloads::{
-    system::{Mount, SigmoidCfdLoads, M1, M2},
     CfdLoads,
+    system::{M1, M2, Mount, SigmoidCfdLoads},
 };
 use gmt_fem::FEM;
-use interface::{filing::Filing, Tick};
+use interface::{Tick, filing::Filing};
 
 const ACTUATOR_RATE: usize = 80;
 

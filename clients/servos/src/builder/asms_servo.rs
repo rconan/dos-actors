@@ -30,7 +30,7 @@ let gmt_servos =
 ```
 */
 
-use gmt_dos_clients_fem::{solvers::ExponentialMatrix, DiscreteStateSpace, StateSpaceError};
+use gmt_dos_clients_fem::{DiscreteStateSpace, StateSpaceError, solvers::ExponentialMatrix};
 
 mod facesheet;
 mod reference_body;

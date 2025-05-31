@@ -1,15 +1,15 @@
 //! # FEM inputs/outputs definitions
 
 use std::{
-    any::{type_name, Any},
+    any::{Any, type_name},
     fmt,
     fmt::Debug,
     marker::PhantomData,
     ops::Range,
 };
 
-use gmt_fem::fem_io::{Inputs, Outputs};
 use gmt_fem::FEM;
+use gmt_fem::fem_io::{Inputs, Outputs};
 use interface::UniqueIdentifier;
 use nalgebra::DMatrix;
 
@@ -24,7 +24,7 @@ pub trait FemIo<U: UniqueIdentifier> {
 //fem_macros::ad_hoc! {}
 mod inputs {
     use super::{FemIo, GetIn, SplitFem};
-    use gmt_fem::{fem_io::Inputs, FemError};
+    use gmt_fem::{FemError, fem_io::Inputs};
     // pub mod actors_inputs {
     //     include!(concat!(env!("OUT_DIR"), "/fem_actors_inputs.rs"));
     // }
@@ -34,7 +34,7 @@ mod inputs {
 }
 mod outputs {
     use super::{FemIo, GetOut, SplitFem};
-    use gmt_fem::{fem_io::Outputs, FemError};
+    use gmt_fem::{FemError, fem_io::Outputs};
     // pub mod actors_outputs {
     //     include!(concat!(env!("OUT_DIR"), "/fem_actors_outputs.rs"));
     // }

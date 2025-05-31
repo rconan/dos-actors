@@ -1,4 +1,4 @@
-use glob::{glob, GlobError, PatternError};
+use glob::{GlobError, PatternError, glob};
 use gmt_dos_clients_io::domeseeing::DomeSeeingOpd;
 use interface::{Data, Size, Update, Write};
 use serde::{Deserialize, Serialize};
@@ -118,8 +118,7 @@ impl DomeSeeing {
             ) as Counter
         };
         if let Some(c) = counter.next() {
-            let y2: Opd =
-                bincode::deserialize_from(&File::open(&data[c].file)?)?;
+            let y2: Opd = bincode::deserialize_from(&File::open(&data[c].file)?)?;
             //dbg!(y2.values.len());
             //dbg!(y2.mask.len());
             Ok(Self {

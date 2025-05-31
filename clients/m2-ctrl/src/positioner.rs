@@ -152,7 +152,7 @@ impl Write<M2PositionerForces> for Positioners {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gmt_dos_clients_fem::{solvers::ExponentialMatrix, DiscreteModalSolver};
+    use gmt_dos_clients_fem::{DiscreteModalSolver, solvers::ExponentialMatrix};
     use gmt_dos_clients_io::gmt_fem::{
         inputs::MCM2SmHexF,
         outputs::{MCM2Lcl6D, MCM2SmHexD},

@@ -1,6 +1,6 @@
 #[cfg(mount)]
 use crate::fem_io::{self, SplitFem};
-use crate::{solvers::Solver, DiscreteStateSpace};
+use crate::{DiscreteStateSpace, solvers::Solver};
 use nalgebra as na;
 
 impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {

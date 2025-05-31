@@ -49,8 +49,8 @@ where
     U: UniqueIdentifier,
     <U as UniqueIdentifier>::DataType: Send + Sync + serde::ser::Serialize,
 {
-    use flate2::write::DeflateEncoder;
     use flate2::Compression;
+    use flate2::write::DeflateEncoder;
     let zbytes: Vec<u8> = Vec::new();
     let mut e = DeflateEncoder::new(zbytes, Compression::fast());
     bincode::serde::encode_into_std_write(payload, &mut e, config::standard())?;

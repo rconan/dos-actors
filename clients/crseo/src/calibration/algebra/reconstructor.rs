@@ -1,5 +1,5 @@
 use faer::{Mat, MatRef};
-use interface::{filing::Codec, Data, Read, UniqueIdentifier, Update, Write};
+use interface::{Data, Read, UniqueIdentifier, Update, Write, filing::Codec};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Display, Formatter},
@@ -36,9 +36,9 @@ where
 }
 
 impl<
-        M: Modality + Serialize + for<'de> Deserialize<'de>,
-        C: CalibProps<M> + Serialize + for<'de> Deserialize<'de>,
-    > Codec for Reconstructor<M, C>
+    M: Modality + Serialize + for<'de> Deserialize<'de>,
+    C: CalibProps<M> + Serialize + for<'de> Deserialize<'de>,
+> Codec for Reconstructor<M, C>
 {
 }
 

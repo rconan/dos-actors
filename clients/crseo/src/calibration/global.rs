@@ -1,7 +1,7 @@
 use crseo::{
+    FromBuilder, Imaging,
     builders::ImagingBuilder,
     gmt::{GmtM1, GmtM2, GmtMx},
-    FromBuilder, Imaging,
 };
 use gmt_dos_clients_io::optics::{
     Dev, Frame, M1GlobalTipTilt, M2GlobalTipTilt, SensorData, Wavefront,
@@ -9,9 +9,9 @@ use gmt_dos_clients_io::optics::{
 use interface::{Data, Read, UniqueIdentifier, Update, Write};
 
 use crate::{
-    centroiding::{CentroidKind, CentroidsProcessing},
-    sensors::{builders::WaveSensorBuilder, WaveSensor},
     DeviceInitialize, OpticalModel, OpticalModelBuilder,
+    centroiding::{CentroidKind, CentroidsProcessing},
+    sensors::{WaveSensor, builders::WaveSensorBuilder},
 };
 
 use super::{Calib, CalibrationError, CalibrationMode, Reconstructor};

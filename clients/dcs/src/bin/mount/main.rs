@@ -1,12 +1,12 @@
 use gmt_dos_actors::actorscript;
 use gmt_dos_clients::{foh::FirstOrderHold, sampler::Sampler, timer::Timer};
 use gmt_dos_clients_dcs::{
+    Dcs, Pull, Push,
     mount_trajectory::{
         ImMountTrajectory, MountTrajectory, OcsMountTrajectory, RelativeMountTrajectory,
     },
-    Dcs, Pull, Push,
 };
-use gmt_dos_clients_fem::{solvers::ExponentialMatrix, DiscreteModalSolver};
+use gmt_dos_clients_fem::{DiscreteModalSolver, solvers::ExponentialMatrix};
 use gmt_dos_clients_io::{
     gmt_fem::outputs::{MCM2Lcl6D, OSSM1Lcl},
     mount::{AverageMountEncoders, MountEncoders, MountSetPoint, MountTorques},

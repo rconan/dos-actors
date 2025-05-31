@@ -147,7 +147,7 @@ impl SignalData {
                         let range = max - min;
                         mask.iter()
                             .zip(img.pixels.iter_mut())
-                            .filter(|(&m, _)| m)
+                            .filter(|&(&m, _)| m)
                             .zip(pixels)
                             .map(|((_, u), v)| (u, (v - min) / range))
                             .map(|(u, t)| (u, colormap.eval_continuous(t)))

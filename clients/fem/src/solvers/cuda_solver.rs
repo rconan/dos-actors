@@ -1,8 +1,8 @@
 use fem_cuda_solver::{mode_state_space, state_space};
 
 use crate::{
-    solvers::{Exponential, ExponentialMatrix, Solver},
     DiscreteModalSolver, DiscreteStateSpace, StateSpaceError,
+    solvers::{Exponential, ExponentialMatrix, Solver},
 };
 
 impl From<&Exponential> for mode_state_space {

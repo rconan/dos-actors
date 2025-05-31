@@ -27,8 +27,8 @@ let select = Select::<f64>::new(1..3);
 use std::{marker::PhantomData, ops::Range, sync::Arc};
 
 use interface::{
-    units::{Arcsec, Mas, MuM, UnitsConversion, NM},
     Data, Read, UniqueIdentifier, Update, Write,
+    units::{Arcsec, Mas, MuM, NM, UnitsConversion},
 };
 
 pub enum Selection {

@@ -2,8 +2,8 @@ use std::{f32::consts::PI, fmt::Display, iter::repeat};
 
 use crseo::imaging;
 use gmt_dos_clients_io::optics::{
-    dispersed_fringe_sensor::{DfsFftFrame, Intercepts},
     Dev,
+    dispersed_fringe_sensor::{DfsFftFrame, Intercepts},
 };
 use interface::{Data, Read, Update, Write};
 use serde::{Deserialize, Serialize};
@@ -190,7 +190,7 @@ impl DispersedFringeSensorProcessing {
     /// Return an iterator over the [Fftlet] `(x,y)` coordinates
     ///
     /// The coordinates axis are matched to the direction of dispersion
-    pub fn xy(&self, o: f32) -> impl Iterator<Item = (f32, f32)> {
+    pub fn xy(&self, o: f32) -> impl Iterator<Item = (f32, f32)> + use<> {
         let n = self.n;
 
         let x = (0..n)

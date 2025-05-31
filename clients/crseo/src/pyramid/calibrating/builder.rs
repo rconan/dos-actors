@@ -1,8 +1,8 @@
 use std::time::Instant;
 
 use crseo::{
-    builders::SourceBuilder, imaging::LensletArray, set_gpu, wavefrontsensor::PyramidBuilder,
     Builder, CrseoError, FromBuilder, Gmt, WavefrontSensor, WavefrontSensorBuilder,
+    builders::SourceBuilder, imaging::LensletArray, set_gpu, wavefrontsensor::PyramidBuilder,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use nalgebra as na;

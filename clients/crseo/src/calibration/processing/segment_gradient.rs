@@ -1,14 +1,14 @@
 use crate::{
+    OpticalModel, OpticalModelBuilder,
     calibration::{
         Calib, Calibration, CalibrationMode, CalibrationSegment, PushPull, SegmentSensorBuilder,
     },
     sensors::SegmentGradientSensor,
-    OpticalModel, OpticalModelBuilder,
 };
 use crseo::{
+    Builder, FromBuilder, Gmt,
     builders::{GmtBuilder, GmtMirrorBuilder},
     gmt::{GmtMirror, GmtMx, MirrorGetSet},
-    Builder, FromBuilder, Gmt,
 };
 use gmt_dos_clients_io::optics::SegmentTipTilt;
 use interface::{Update, Write};
@@ -152,12 +152,12 @@ mod tests {
     use std::error::Error;
 
     use crseo::{
-        gmt::{GmtM1, GmtM2},
         Source,
+        gmt::{GmtM1, GmtM2},
     };
     use skyangle::Conversion;
 
-    use crate::{calibration::algebra::CalibProps, OpticalModel};
+    use crate::{OpticalModel, calibration::algebra::CalibProps};
 
     use super::*;
 

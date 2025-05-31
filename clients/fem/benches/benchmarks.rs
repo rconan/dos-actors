@@ -1,7 +1,7 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use gmt_dos_clients_fem::{
-    solvers::{Exponential, ExponentialMatrix, Solver},
     DiscreteModalSolver,
+    solvers::{Exponential, ExponentialMatrix, Solver},
 };
 
 pub fn exponential_solve(c: &mut Criterion) {

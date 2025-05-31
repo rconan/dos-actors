@@ -51,7 +51,7 @@ pub mod actors_interface;
 #[cfg(feature = "serde")]
 mod impl_serde;
 mod model;
-pub use model::{fem_io, Model, Switch};
+pub use model::{Model, Switch, fem_io};
 
 use solvers::Solver;
 

@@ -1,14 +1,14 @@
 use gmt_dos_actors::{actorscript, system::Sys};
 use gmt_dos_clients::{Logging, Signal, Signals};
 use gmt_dos_clients_fem::{
-    fem_io::actors_outputs::OSSM1Lcl, DiscreteModalSolver, ExponentialMatrix,
+    DiscreteModalSolver, ExponentialMatrix, fem_io::actors_outputs::OSSM1Lcl,
 };
 use gmt_dos_clients_io::{
-    gmt_m1::assembly,
     gmt_m1::M1RigidBodyMotions,
+    gmt_m1::assembly,
     mount::{MountEncoders, MountSetPoint, MountTorques},
 };
-use gmt_dos_clients_m1_ctrl::{assembly::M1, Calibration};
+use gmt_dos_clients_m1_ctrl::{Calibration, assembly::M1};
 use gmt_dos_clients_mount::Mount;
 use gmt_fem::FEM;
 

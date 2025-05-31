@@ -10,8 +10,8 @@ use gmt_dos_clients_io::{
 use gmt_dos_clients_lom::LinearOpticalModel;
 use gmt_dos_clients_servos::{GmtFem, GmtServoMechanisms, WindLoads};
 use gmt_dos_clients_windloads::{
-    system::{Mount, SigmoidCfdLoads, M1, M2},
     CfdLoads,
+    system::{M1, M2, Mount, SigmoidCfdLoads},
 };
 use gmt_fem::FEM;
 use interface::units::Arcsec;
@@ -25,14 +25,15 @@ MOUNT_MODEL=MOUNT_FDR_1kHz FEM_REPO=path/to/20250506_1715_zen_30_M1_202110_FSM_2
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     env_logger::init();
-    env::set_var(
-        "DATA_REPO",
-        Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("src")
-            .join("bin")
-            .join("windloaded-servos"),
-    );
-
+    unsafe {
+        env::set_var(
+            "DATA_REPO",
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("src")
+                .join("bin")
+                .join("windloaded-servos"),
+        );
+    }
     let sim_sampling_frequency = 1000;
     let sim_duration = 30_usize; // second
     let n_step = sim_sampling_frequency * sim_duration;

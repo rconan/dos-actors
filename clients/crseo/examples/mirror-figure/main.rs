@@ -1,7 +1,7 @@
-use crseo::{wavefrontsensor::PhaseSensor, FromBuilder, Gmt};
+use crseo::{FromBuilder, Gmt, wavefrontsensor::PhaseSensor};
 use gmt_dos_clients_crseo::OpticalModel;
 use gmt_dos_clients_io::{gmt_m2::asm::segment::FaceSheetFigure, optics::Wavefront};
-use interface::{units::MuM, Read, Size, Update, Write};
+use interface::{Read, Size, Update, Write, units::MuM};
 
 /*
 GMT_MODES_PATH=... cargo run --release --example mirror-figure

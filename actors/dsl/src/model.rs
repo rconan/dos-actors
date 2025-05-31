@@ -3,11 +3,11 @@ use std::{collections::HashSet, fmt::Display, sync::Arc};
 use proc_macro2::Span;
 use quote::quote;
 use syn::{
-    parse::{Parse, ParseStream},
     Attribute, Ident, LitInt, LitStr,
+    parse::{Parse, ParseStream},
 };
 
-use crate::{client::SharedClient, Expand, Expanded, TryExpand};
+use crate::{Expand, Expanded, TryExpand, client::SharedClient};
 
 mod flow;
 use flow::Flow;
@@ -104,7 +104,7 @@ impl Model {
                                 return Err(syn::Error::new(
                                     Span::call_site(),
                                     r#"expected model attributes "name" or "state", found {key}"#,
-                                ))
+                                ));
                             }
                         }
                     }

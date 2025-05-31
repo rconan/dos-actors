@@ -50,7 +50,7 @@ let cfd_loads = CfdLoads::foh(".", 1000)
 ```
 */
 
-use geotrans::{Segment, SegmentTrait, Transform, M1, M2};
+use geotrans::{M1, M2, Segment, SegmentTrait, Transform};
 use interface::filing::Codec;
 use parse_monitors::Vector;
 use serde::{Deserialize, Serialize};

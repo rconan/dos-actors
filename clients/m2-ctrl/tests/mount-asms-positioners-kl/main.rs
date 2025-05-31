@@ -6,30 +6,28 @@ use gmt_dos_clients_fem::{DiscreteModalSolver, ExponentialMatrix};
 use gmt_dos_clients_io::{
     gmt_fem::{
         inputs::MCM2SmHexF,
-        outputs::{MCM2Lcl6D, MCM2SmHexD, OSSM1Lcl, MCM2RB6D},
+        outputs::{MCM2Lcl6D, MCM2RB6D, MCM2SmHexD, OSSM1Lcl},
     },
     gmt_m1::M1RigidBodyMotions,
     gmt_m2::{
+        M2PositionerForces, M2PositionerNodes, M2RigidBodyMotions,
         asm::{
             M2ASMAsmCommand, M2ASMFluidDampingForces, M2ASMReferenceBodyNodes,
             M2ASMVoiceCoilsForces, M2ASMVoiceCoilsMotion,
         },
-        M2PositionerForces, M2PositionerNodes, M2RigidBodyMotions,
     },
     mount::{MountEncoders, MountSetPoint, MountTorques},
     optics::SegmentPiston,
 };
 use gmt_dos_clients_lom::LinearOpticalModel;
-use gmt_dos_clients_m2_ctrl::{positioner::AsmsPositioners, ASMS};
+use gmt_dos_clients_m2_ctrl::{ASMS, positioner::AsmsPositioners};
 use gmt_dos_clients_mount::Mount;
-use interface::{ UID};
+use interface::UID;
 use matio_rs::MatFile;
 use nalgebra as na;
 
 #[derive(UID)]
 pub enum ASMSCmd {}
-
-
 
 /*
 export FEM_REPO=/home/rconan/mnt/20230131_1605_zen_30_M1_202110_ASM_202208_Mount_202111/

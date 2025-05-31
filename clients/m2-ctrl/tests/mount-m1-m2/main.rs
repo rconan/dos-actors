@@ -74,11 +74,11 @@ async fn main() -> anyhow::Result<()> {
 
     let mut plant: Actor<_> = Actor::new(fem_dss.into_arcx())
         /*         .name(format!(
-                "GMT
+            "GMT
         Finite Element Model
         {}",
-                env::var("FEM_REPO").unwrap()
-            )) */
+            env::var("FEM_REPO").unwrap()
+        )) */
         .name("")
         .image("fem.png");
 

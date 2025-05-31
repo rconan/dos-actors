@@ -161,9 +161,9 @@ pub fn io_names(from_crate: &str) -> std::result::Result<(Names, Names), Error> 
     Ok(if let Ok(fem_repo) = env::var("FEM_REPO") {
         // Gets the FEM repository
         println!(
-        "cargo:warning={}: generating FEM/Actors interface code based on the FEM inputs and outputs tables in {}",
-        from_crate,fem_repo
-    );
+            "cargo:warning={}: generating FEM/Actors interface code based on the FEM inputs and outputs tables in {}",
+            from_crate, fem_repo
+        );
         // Opens the mat file
         let path = Path::new(&fem_repo);
         let Ok(file) = File::open(path.join("modal_state_space_model_2ndOrder.zip")) else {
@@ -179,7 +179,9 @@ pub fn io_names(from_crate: &str) -> std::result::Result<(Names, Names), Error> 
         };
         (input_names, output_names)
     } else {
-        println!("cargo:warning=the FEM_REPO environment variable is not set, using dummy inputs and outputs instead");
+        println!(
+            "cargo:warning=the FEM_REPO environment variable is not set, using dummy inputs and outputs instead"
+        );
         let (inputs, outputs): (Vec<_>, Vec<_>) = (1..=5)
             .map(|i| {
                 (

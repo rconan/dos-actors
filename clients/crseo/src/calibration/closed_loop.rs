@@ -1,13 +1,13 @@
 use std::{sync::Arc, thread};
 
-use crseo::{gmt::GmtMx, FromBuilder};
+use crseo::{FromBuilder, gmt::GmtMx};
 use faer::ColRef;
 
 use crate::{OpticalModel, OpticalModelBuilder};
 
 use super::{
-    algebra::CalibProps, Calib, CalibrationMode, ClosedLoopCalib, MirrorMode, PushPull,
-    Reconstructor, Result,
+    Calib, CalibrationMode, ClosedLoopCalib, MirrorMode, PushPull, Reconstructor, Result,
+    algebra::CalibProps,
 };
 
 mod dispersed_fringe_sensor;
@@ -25,17 +25,17 @@ pub trait ClosedLoopCalibrateAssembly<M: GmtMx, W: FromBuilder, S: FromBuilder>:
 {
 }
 impl<
-        M: GmtMx,
-        W: FromBuilder,
-        S: FromBuilder,
-        T: ClosedLoopCalibrateSegment<M, W, 1, Sensor = S>
-            + ClosedLoopCalibrateSegment<M, W, 2, Sensor = S>
-            + ClosedLoopCalibrateSegment<M, W, 3, Sensor = S>
-            + ClosedLoopCalibrateSegment<M, W, 4, Sensor = S>
-            + ClosedLoopCalibrateSegment<M, W, 5, Sensor = S>
-            + ClosedLoopCalibrateSegment<M, W, 6, Sensor = S>
-            + ClosedLoopCalibrateSegment<M, W, 7, Sensor = S>,
-    > ClosedLoopCalibrateAssembly<M, W, S> for T
+    M: GmtMx,
+    W: FromBuilder,
+    S: FromBuilder,
+    T: ClosedLoopCalibrateSegment<M, W, 1, Sensor = S>
+        + ClosedLoopCalibrateSegment<M, W, 2, Sensor = S>
+        + ClosedLoopCalibrateSegment<M, W, 3, Sensor = S>
+        + ClosedLoopCalibrateSegment<M, W, 4, Sensor = S>
+        + ClosedLoopCalibrateSegment<M, W, 5, Sensor = S>
+        + ClosedLoopCalibrateSegment<M, W, 6, Sensor = S>
+        + ClosedLoopCalibrateSegment<M, W, 7, Sensor = S>,
+> ClosedLoopCalibrateAssembly<M, W, S> for T
 {
 }
 
@@ -61,9 +61,9 @@ pub trait ClosedLoopPushPull<const SID: u8> {
 pub trait ClosedLoopCalibrateSegment<M: GmtMx, ClosedLoopSensor: FromBuilder, const SID: u8>
 where
     Self: PushPull<
-        SID,
-        Sensor = <Self as ClosedLoopCalibrateSegment<M, ClosedLoopSensor, SID>>::Sensor,
-    >,
+            SID,
+            Sensor = <Self as ClosedLoopCalibrateSegment<M, ClosedLoopSensor, SID>>::Sensor,
+        >,
 {
     type Sensor: FromBuilder;
 
@@ -85,10 +85,10 @@ type ClosedLoopSensorBuilder<T> = <T as FromBuilder>::ComponentBuilder;
 pub trait ClosedLoopCalibration<M: GmtMx, ClosedLoopSensor: FromBuilder>
 where
     Self: ClosedLoopCalibrateAssembly<
-        M,
-        ClosedLoopSensor,
-        <Self as ClosedLoopCalibration<M, ClosedLoopSensor>>::Sensor,
-    >,
+            M,
+            ClosedLoopSensor,
+            <Self as ClosedLoopCalibration<M, ClosedLoopSensor>>::Sensor,
+        >,
 {
     type Sensor: FromBuilder;
 
@@ -204,10 +204,10 @@ where
                     }
                 })
             }); // let mut ci = vec![];
-                // for c in [c1, c2, c3, c4, c5, c6, c7] {
-                //     ci.push(c.join().unwrap().unwrap());
-                // }
-                // ci
+            // for c in [c1, c2, c3, c4, c5, c6, c7] {
+            //     ci.push(c.join().unwrap().unwrap());
+            // }
+            // ci
             [h1, h2, h3, h4, h5, h6, h7]
                 .into_iter()
                 .filter_map(|h| h.map(|h| h.join().unwrap()))

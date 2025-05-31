@@ -1,11 +1,11 @@
 //! # Centroids processing pipeline
 
 use crate::{
-    sensors::builders::CameraBuilder, DeviceInitialize, OpticalModel, OpticalModelBuilder,
+    DeviceInitialize, OpticalModel, OpticalModelBuilder, sensors::builders::CameraBuilder,
 };
 use crseo::{
-    builders::{CentroidingBuilder, ImagingBuilder},
     Builder, Centroiding, Imaging,
+    builders::{CentroidingBuilder, ImagingBuilder},
 };
 use gmt_dos_clients_io::optics::{Dev, Frame};
 use interface::{Data, Read, UniqueIdentifier, Update, Write};
@@ -235,7 +235,7 @@ where
 mod tests {
 
     use ::interface::{Update, Write};
-    use crseo::{imaging::LensletArray, Builder, FromBuilder, Gmt, Source};
+    use crseo::{Builder, FromBuilder, Gmt, Source, imaging::LensletArray};
     use gmt_dos_clients_io::optics::{Frame, Host};
 
     use crate::sensors::Camera;

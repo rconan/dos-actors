@@ -1,4 +1,4 @@
-use gmt_dos_clients_fem::{solvers::ExponentialMatrix, DiscreteStateSpace, StateSpaceError};
+use gmt_dos_clients_fem::{DiscreteStateSpace, StateSpaceError, solvers::ExponentialMatrix};
 
 use super::Include;
 

@@ -9,7 +9,7 @@ use interface::{Data, Write};
 
 use crate::OpticalModel;
 
-use super::{builders::SegmentGradientSensorBuilder, SensorPropagation, WaveSensor};
+use super::{SensorPropagation, WaveSensor, builders::SegmentGradientSensorBuilder};
 
 #[derive(Debug, Clone)]
 pub struct SegmentGradientSensor(pub(crate) WaveSensor);

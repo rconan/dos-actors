@@ -1,4 +1,4 @@
-use crate::{CfdLoads, Result, WindLoadsError, FOH, ZOH};
+use crate::{CfdLoads, FOH, Result, WindLoadsError, ZOH};
 
 mod builder;
 pub use builder::Builder;

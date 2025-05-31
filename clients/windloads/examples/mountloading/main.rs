@@ -10,12 +10,12 @@ use gmt_dos_clients::{
 };
 use gmt_dos_clients_arrow::Arrow;
 use gmt_dos_clients_fem::{
+    DiscreteModalSolver,
     fem_io::{
-        actors_inputs::{MCM2Lcl6F, OSSM1Lcl6F, CFD2021106F},
+        actors_inputs::{CFD2021106F, MCM2Lcl6F, OSSM1Lcl6F},
         actors_outputs::{MCM2Lcl6D, OSSGIR6d, OSSM1Lcl, OSSPayloads6D},
     },
     solvers::ExponentialMatrix,
-    DiscreteModalSolver,
 };
 use gmt_dos_clients_io::{
     cfd_wind_loads::{CFDM1WindLoads, CFDM2WindLoads, CFDMountWindLoads},

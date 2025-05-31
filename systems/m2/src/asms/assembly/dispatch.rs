@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use gmt_dos_clients_io::{
-    gmt_m2::asm::{
-        segment::{AsmCommand, FluidDampingForces, VoiceCoilsForces, VoiceCoilsMotion},
-        M2ASMAsmCommand, M2ASMFluidDampingForces, M2ASMVoiceCoilsForces, M2ASMVoiceCoilsMotion,
-    },
     Assembly,
+    gmt_m2::asm::{
+        M2ASMAsmCommand, M2ASMFluidDampingForces, M2ASMVoiceCoilsForces, M2ASMVoiceCoilsMotion,
+        segment::{AsmCommand, FluidDampingForces, VoiceCoilsForces, VoiceCoilsMotion},
+    },
 };
 use interface::{Data, Read, Update, Write};
 use serde::{Deserialize, Serialize};

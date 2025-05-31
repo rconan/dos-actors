@@ -8,17 +8,17 @@ use gmt_dos_clients::{
     timer::Timer,
 };
 use gmt_dos_clients_io::{
-    gmt_m1::{assembly, M1EdgeSensors, M1RigidBodyMotions},
+    gmt_m1::{M1EdgeSensors, M1RigidBodyMotions, assembly},
     gmt_m2::M2RigidBodyMotions,
     optics::{SegmentPiston, SegmentTipTilt},
 };
 use gmt_dos_clients_lom::LinearOpticalModel;
 use gmt_dos_clients_scope::server::{Monitor, Scope};
 use gmt_dos_clients_servos::{
-    asms_servo, AsmsServo, EdgeSensors, GmtFem, GmtM1, GmtServoMechanisms,
+    AsmsServo, EdgeSensors, GmtFem, GmtM1, GmtServoMechanisms, asms_servo,
 };
 use gmt_fem::FEM;
-use interface::{filing::Filing, units::NM, Tick, UID};
+use interface::{Tick, UID, filing::Filing, units::NM};
 use matio_rs::MatFile;
 use nalgebra as na;
 use std::{env, path::Path};

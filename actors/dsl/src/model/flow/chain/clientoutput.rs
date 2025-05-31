@@ -3,13 +3,15 @@ use std::fmt::Display;
 use proc_macro2::Span;
 use quote::quote;
 use syn::{
-    braced,
+    Ident, braced,
     parse::{Parse, ParseStream},
     token::Brace,
-    Ident,
 };
 
-use crate::{client::{ClientKind, SharedClient, System}, Expanded, TryExpand};
+use crate::{
+    Expanded, TryExpand,
+    client::{ClientKind, SharedClient, System},
+};
 
 mod output;
 pub use output::{MaybeOutput, Output};

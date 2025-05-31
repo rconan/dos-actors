@@ -2,9 +2,9 @@
 
 use super::prelude::*;
 use gmt_dos_clients_io::{
-    gmt_m2::{fsm::M2FSMPiezoForces, M2RigidBodyMotions},
-    optics::{self, MirrorState},
     Assembly,
+    gmt_m2::{M2RigidBodyMotions, fsm::M2FSMPiezoForces},
+    optics::{self, MirrorState},
 };
 
 impl<S> Size<M2RigidBodyMotions> for DiscreteModalSolver<S>

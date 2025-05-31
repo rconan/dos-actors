@@ -1,5 +1,5 @@
 use std::{
-    collections::{hash_map::DefaultHasher, HashSet},
+    collections::{HashSet, hash_map::DefaultHasher},
     fmt::Display,
     hash::{Hash, Hasher},
 };
@@ -7,10 +7,9 @@ use std::{
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{
-    braced, bracketed,
+    Expr, Ident, Token, Type, TypePath, braced, bracketed,
     parse::{Parse, ParseBuffer, ParseStream},
     token::{Brace, Bracket},
-    Expr, Ident, Token, Type, TypePath,
 };
 
 use crate::client::SharedClient;

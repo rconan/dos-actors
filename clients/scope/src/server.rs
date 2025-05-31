@@ -28,10 +28,10 @@ use std::{any::type_name, env, marker::PhantomData, thread, time::Duration};
 pub use gmt_dos_clients_transceiver::Monitor;
 
 use gmt_dos_clients_transceiver::{On, Transceiver, TransceiverError, Transmitter};
-use interface::{trim_type_name, UniqueIdentifier};
+use interface::{UniqueIdentifier, trim_type_name};
 pub use shot::{GmtShot, Shot};
 
-use crate::{payload::ScopeData, PlotScope};
+use crate::{PlotScope, payload::ScopeData};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ServerError {

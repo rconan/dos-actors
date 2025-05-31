@@ -79,7 +79,7 @@ mod servos;
 mod fem {
     use crate::builder::ServosBuilderError;
     #[cfg(topend = "ASM")]
-    pub use crate::builder::{asms_servo, AsmsServo};
+    pub use crate::builder::{AsmsServo, asms_servo};
     pub use crate::builder::{EdgeSensors, M1SegmentFigure, ServosBuilder, WindLoads};
     pub use crate::servos::GmtServoMechanisms;
     use gmt_dos_actors::system::{Sys, SystemError};

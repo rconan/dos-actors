@@ -2,7 +2,7 @@ use std::env;
 
 use gmt_dos_actors::prelude::*;
 use gmt_dos_clients_transceiver::{Monitor, Transceiver};
-use interface::{Data, Update, Write, UID};
+use interface::{Data, UID, Update, Write};
 
 #[derive(UID)]
 #[uid(data = Vec<u8>)]

@@ -1,5 +1,5 @@
 use gmt_dos_actors::prelude::*;
-use gmt_dos_clients::{interface::Size, Logging, Signal, Signals};
+use gmt_dos_clients::{Logging, Signal, Signals, interface::Size};
 use gmt_dos_clients_fem::{DiscreteModalSolver, ExponentialMatrix};
 use gmt_dos_clients_io::gmt_m1::segment::{
     ActuatorAppliedForces, ActuatorCommandForces, BarycentricForce, HardpointsForces,
@@ -16,7 +16,7 @@ macro_rules! segment_model {
     ($sid:expr) => {
         let sim_sampling_frequency = 1000;
         let m1_freq = 100; // Hz
-        assert!(m1_freq = sim_sampling_frequency/ACTUATOR_RATE);
+        assert!(m1_freq = sim_sampling_frequency / ACTUATOR_RATE);
         let sim_duration = 10_usize; // second
         let n_step = sim_sampling_frequency * sim_duration;
 

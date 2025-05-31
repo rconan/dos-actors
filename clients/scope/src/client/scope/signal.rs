@@ -144,19 +144,21 @@ where
                                     .include_x(maximum)
                                     .include_y(75.)
                                     .show(ui, |plot_ui: &mut PlotUi| {
-                                        plot_ui.box_plot(BoxPlot::new(vec![BoxElem::new(
-                                            0.,
-                                            BoxSpread::new(
-                                                lower_whisker,
-                                                quartile1,
-                                                median,
-                                                quartile3,
-                                                upper_whisker,
-                                            ),
-                                        )
-                                        .box_width(40.)
-                                        .whisker_width(50.)
-                                        .horizontal()]));
+                                        plot_ui.box_plot(BoxPlot::new(vec![
+                                            BoxElem::new(
+                                                0.,
+                                                BoxSpread::new(
+                                                    lower_whisker,
+                                                    quartile1,
+                                                    median,
+                                                    quartile3,
+                                                    upper_whisker,
+                                                ),
+                                            )
+                                            .box_width(40.)
+                                            .whisker_width(50.)
+                                            .horizontal(),
+                                        ]));
                                     });
                             });
                     }

@@ -40,7 +40,7 @@ impl<const S: u8, const R: usize> System for SegmentControl<S, R> {
     }
 
     fn plain(&self) -> gmt_dos_actors::actor::PlainActor {
-        let  plain = PlainActor::new(self.name());
+        let plain = PlainActor::new(self.name());
         // plain.inputs_rate = 1;
         // plain.outputs_rate = 1;
         let inputs_iter = PlainActor::from(&self.hardpoints)

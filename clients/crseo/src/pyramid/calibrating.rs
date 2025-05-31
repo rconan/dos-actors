@@ -294,7 +294,7 @@ impl PyramidCalibrator {
     #[cfg(feature = "faer")]
     /// Computes the pyramid LSQ reconstructor excluding piston
     pub fn h0_estimator(&mut self) -> Result<&mut Self, PyramidCalibratorError> {
-        use faer::{linalg::solvers::Svd, Mat};
+        use faer::{Mat, linalg::solvers::Svd};
         use faer_ext::{IntoFaer, IntoNalgebra};
 
         println!("computing the H0 estimator (with faer) ...");
@@ -377,10 +377,12 @@ impl PyramidCalibrator {
     }
     #[cfg(feature = "faer")]
     pub fn hp_estimator(&mut self) -> Result<&mut Self, PyramidCalibratorError> {
-        use faer::{linalg::solvers::Svd, Mat};
+        use faer::{Mat, linalg::solvers::Svd};
         use faer_ext::{IntoFaer, IntoNalgebra};
 
-        println!("computing the pyramid LSQ reconstructor (truncating the last eigen value) with faer ...");
+        println!(
+            "computing the pyramid LSQ reconstructor (truncating the last eigen value) with faer ..."
+        );
         let now = Instant::now();
         let h_matrix = self.h_matrix.view_range(.., ..);
         let p_matrix = self.p_matrix.view_range(.., ..);
@@ -443,12 +445,13 @@ impl PyramidCalibrator {
         let m_matrix = na::DMatrix::from_columns(&columns).transpose();
         dbg!(m_matrix.shape());
         let mut svd = m_matrix.svd(true, true);
-        dbg!(svd
-            .singular_values
-            .iter()
-            .rev()
-            .take(10)
-            .collect::<Vec<_>>());
+        dbg!(
+            svd.singular_values
+                .iter()
+                .rev()
+                .take(10)
+                .collect::<Vec<_>>()
+        );
         let n = svd.singular_values.len();
         for i in 0..n - 1 {
             let val = svd.singular_values[i].clone();

@@ -1,14 +1,14 @@
 use crate::{
+    OpticalModel, OpticalModelBuilder,
     calibration::{
         Calib, Calibration, CalibrationMode, CalibrationSegment, PushPull, SegmentSensorBuilder,
     },
     sensors::SegmentPistonSensor,
-    OpticalModel, OpticalModelBuilder,
 };
 use crseo::{
+    Builder, FromBuilder, Gmt,
     builders::{GmtBuilder, GmtMirrorBuilder},
     gmt::{GmtMirror, GmtMx, MirrorGetSet},
-    Builder, FromBuilder, Gmt,
 };
 use gmt_dos_clients_io::optics::SegmentPiston;
 use interface::{Update, Write};
@@ -149,10 +149,10 @@ where
 mod tests {
     use std::error::Error;
 
-    use crseo::{gmt::GmtM1, Source};
+    use crseo::{Source, gmt::GmtM1};
     use skyangle::Conversion;
 
-    use crate::{calibration::algebra::CalibProps, OpticalModel};
+    use crate::{OpticalModel, calibration::algebra::CalibProps};
 
     use super::*;
 

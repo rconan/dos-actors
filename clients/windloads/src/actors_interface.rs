@@ -1,5 +1,5 @@
 use gmt_dos_clients_io::cfd_wind_loads::{CFDM1WindLoads, CFDM2WindLoads, CFDMountWindLoads};
-use interface::{Data, Size, Update, Write, UID};
+use interface::{Data, Size, UID, Update, Write};
 
 use crate::{CfdLoads, FOH, ZOH};
 
@@ -181,10 +181,6 @@ impl Write<MountM2M1Loads> for CfdLoads<FOH> {
             )
             .flatten()
             .collect();
-        if v.is_empty() {
-            None
-        } else {
-            Some(v.into())
-        }
+        if v.is_empty() { None } else { Some(v.into()) }
     }
 }

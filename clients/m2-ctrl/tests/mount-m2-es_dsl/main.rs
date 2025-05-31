@@ -7,18 +7,18 @@ use gmt_dos_clients_io::{
         outputs::{M2EdgeSensors, MCM2Lcl6D, MCM2SmHexD},
     },
     gmt_m2::{
-        asm::{
-            segment::VoiceCoilsMotion, M2ASMAsmCommand, M2ASMFluidDampingForces,
-            M2ASMVoiceCoilsForces, M2ASMVoiceCoilsMotion,
-        },
         M2PositionerForces, M2PositionerNodes, M2RigidBodyMotions,
+        asm::{
+            M2ASMAsmCommand, M2ASMFluidDampingForces, M2ASMVoiceCoilsForces, M2ASMVoiceCoilsMotion,
+            segment::VoiceCoilsMotion,
+        },
     },
     mount::{MountEncoders, MountSetPoint, MountTorques},
 };
-use gmt_dos_clients_m2_ctrl::{positioner::AsmsPositioners, ASMS};
+use gmt_dos_clients_m2_ctrl::{ASMS, positioner::AsmsPositioners};
 use gmt_dos_clients_mount::Mount;
 use gmt_fem::FEM;
-use interface::{Data, Read, UniqueIdentifier, Update, Write, UID};
+use interface::{Data, Read, UID, UniqueIdentifier, Update, Write};
 use matio_rs::MatFile;
 use nalgebra as na;
 use std::{env, path::Path, sync::Arc, time::Instant};

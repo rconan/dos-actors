@@ -7,15 +7,15 @@ use std::{
 use proc_macro2::Span;
 use quote::quote;
 use syn::{
+    Ident, Token,
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
-    Ident, Token,
 };
 
 use crate::{
+    Expand, Expanded, TryExpand,
     client::{Client, ClientKind, SharedClient},
     model::Scope,
-    Expand, Expanded, TryExpand,
 };
 
 pub mod clientoutput;
@@ -102,19 +102,19 @@ impl Chain {
                     }) = iter.peek_mut()
                     {
                         // a client with an output and followed by another client: output_client[output] -> input_client
-                            let (output_rate, input_rate) = (
-                                &mut output_client.borrow_mut().output_rate,
-                                &mut input_client.borrow_mut().input_rate,
-                            );
-                            if *output_rate == 0 {
-                                *output_rate = flow_rate;
-                            }
-                            if *input_rate == 0 {
-                                *input_rate = flow_rate;
-                            }
-                            if *output_rate != *input_rate {
-                                output.add_rate_transition(*input_rate, *output_rate);
-                            }
+                        let (output_rate, input_rate) = (
+                            &mut output_client.borrow_mut().output_rate,
+                            &mut input_client.borrow_mut().input_rate,
+                        );
+                        if *output_rate == 0 {
+                            *output_rate = flow_rate;
+                        }
+                        if *input_rate == 0 {
+                            *input_rate = flow_rate;
+                        }
+                        if *output_rate != *input_rate {
+                            output.add_rate_transition(*input_rate, *output_rate);
+                        }
                     } else {
                         // a client with an output and not followed by another client: output_client[output]
                         let output_rate = &mut output_client.borrow_mut().output_rate;

@@ -1,11 +1,11 @@
 use std::{collections::HashSet, fmt::Display};
 
 use syn::{
-    parse::{Parse, ParseStream},
     LitInt, Token,
+    parse::{Parse, ParseStream},
 };
 
-use crate::{client::SharedClient, Expand, Expanded};
+use crate::{Expand, Expanded, client::SharedClient};
 
 mod chain;
 use chain::Chain;

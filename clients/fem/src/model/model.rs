@@ -1,4 +1,4 @@
-use gmt_fem::{IOData, FEM};
+use gmt_fem::{FEM, IOData};
 use interface::UniqueIdentifier;
 use nalgebra as na;
 

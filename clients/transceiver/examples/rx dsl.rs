@@ -15,7 +15,7 @@ async fn main() -> anyhow::Result<()> {
 
     let mut monitor = Monitor::new();
     let sin_rx = Transceiver::<Sin>::receiver("127.0.0.1:5001", "127.0.0.1:0")?;
-    let isin_rx = sin_rx.spawn("127.0.0.1:5002")?; 
+    let isin_rx = sin_rx.spawn("127.0.0.1:5002")?;
 
     let mut sin_arx: Initiator<_> = sin_rx.run(&mut monitor).into();
     let mut sin_rx_print: Terminator<_> = Print.into();
@@ -42,7 +42,7 @@ async fn main() -> anyhow::Result<()> {
         .run()
         .await?;
 
-/*     actorscript!{
+    /*     actorscript!{
         #[transceiver(server="127.0.0.1", client="127.0.0.1")]
         1: 5001 sin_print[Sin]
         1: 5002 isin_print[ISin]

@@ -1,16 +1,16 @@
 use crseo::{
-    gmt::{GmtM2, GmtMx},
     FromBuilder, Imaging,
+    gmt::{GmtM2, GmtMx},
 };
 
 use crate::{
+    OpticalModelBuilder,
     calibration::{
-        algebra::ClosedLoopCalib, CalibrateAssembly, CalibrationMode, CalibrationSegment,
-        Reconstructor,
+        CalibrateAssembly, CalibrationMode, CalibrationSegment, Reconstructor,
+        algebra::ClosedLoopCalib,
     },
     centroiding::{CentroidKind, CentroidsProcessing},
     sensors::{SegmentPistonSensor, WaveSensor},
-    OpticalModelBuilder,
 };
 
 use super::{ClosedLoopCalibrateSegment, ClosedLoopCalibration};
@@ -139,20 +139,20 @@ where
 mod tests {
     use std::error::Error;
 
-    use crseo::{gmt::GmtM1, imaging::LensletArray, Gmt, Source};
+    use crseo::{Gmt, Source, gmt::GmtM1, imaging::LensletArray};
     use faer::MatRef;
     use gmt_dos_clients_io::{
-        gmt_m1::{segment::ModeShapes, M1ModeShapes},
-        gmt_m2::asm::{segment::AsmCommand, M2ASMAsmCommand},
+        gmt_m1::{M1ModeShapes, segment::ModeShapes},
+        gmt_m2::asm::{M2ASMAsmCommand, segment::AsmCommand},
         optics::{Dev, Frame, SegmentWfeRms, SensorData, Wavefront},
     };
     use interface::{Read, Update, Write};
     use skyangle::Conversion;
 
     use crate::{
-        calibration::{algebra::CalibProps, ClosedLoopCalibration, ClosedLoopReconstructor},
-        sensors::{Camera, NoSensor},
         DeviceInitialize, OpticalModel,
+        calibration::{ClosedLoopCalibration, ClosedLoopReconstructor, algebra::CalibProps},
+        sensors::{Camera, NoSensor},
     };
 
     use super::*;

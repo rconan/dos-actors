@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use gmt_dos_actors_clients_interface::{Data, UniqueIdentifier};
 
 const N: usize = 100_000;

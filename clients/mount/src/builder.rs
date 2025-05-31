@@ -3,7 +3,7 @@ use gmt_dos_actors::{
     actor::Actor,
     framework::network::{AddActorOutput, AddOuput, TryIntoInputs},
 };
-use gmt_dos_clients_fem::{solvers::ExponentialMatrix, DiscreteModalSolver};
+use gmt_dos_clients_fem::{DiscreteModalSolver, solvers::ExponentialMatrix};
 use gmt_dos_clients_io::mount::{MountEncoders, MountSetPoint, MountTorques};
 use interface::{Update, Write};
 

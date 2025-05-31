@@ -12,7 +12,7 @@
 
 use faer::MatRef;
 
-use super::{mode::Modality, CalibrationMode, MirrorMode};
+use super::{CalibrationMode, MirrorMode, mode::Modality};
 
 mod calib;
 mod closed_loop_calib;

@@ -1,7 +1,7 @@
-use crate::{actors_interface::fem_io, DiscreteModalSolver, Get, Set, Solver};
+use crate::{DiscreteModalSolver, Get, Set, Solver, actors_interface::fem_io};
 use gmt_dos_clients_io::{
-    gmt_m1::assembly::{M1ActuatorAppliedForces, M1HardpointsForces, M1HardpointsMotion},
     Assembly,
+    gmt_m1::assembly::{M1ActuatorAppliedForces, M1HardpointsForces, M1HardpointsMotion},
 };
 use interface::{Data, Read, Write};
 use std::sync::Arc;

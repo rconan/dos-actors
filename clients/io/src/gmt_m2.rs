@@ -73,7 +73,7 @@ pub mod fsm {
 }
 /// Adaptive Secondary Mirror IO
 pub mod asm {
-    use interface::{UniqueIdentifier, UID};
+    use interface::{UID, UniqueIdentifier};
     use std::sync::Arc;
 
     use crate::Assembly;

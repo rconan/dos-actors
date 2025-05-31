@@ -1,6 +1,6 @@
 use crate::{
+    CS, CfdLoads, M1S, M2S, MAX_DURATION, Result,
     windloads::{WindLoads, WindLoadsBuilder},
-    CfdLoads, Result, CS, M1S, M2S, MAX_DURATION,
 };
 use geotrans::{SegmentTrait, Transform};
 use parse_monitors::{Exertion, Monitors, Vector};

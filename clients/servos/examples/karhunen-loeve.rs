@@ -3,7 +3,7 @@
 
 use std::{env, path::Path};
 
-use gmt_dos_clients_servos::{asms_servo, AsmsServo, GmtServoMechanisms};
+use gmt_dos_clients_servos::{AsmsServo, GmtServoMechanisms, asms_servo};
 use gmt_fem::FEM;
 
 const ACTUATOR_RATE: usize = 80;

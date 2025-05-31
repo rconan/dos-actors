@@ -2,18 +2,18 @@ use std::sync::Arc;
 
 use gmt_dos_actors::prelude::*;
 use gmt_dos_clients::{
-    interface::{Data, Read, Size, Update, Write},
     Logging, Signal, Signals,
+    interface::{Data, Read, Size, Update, Write},
 };
 use gmt_dos_clients_io::gmt_m1::{
+    M1RigidBodyMotions,
     segment::{
         ActuatorAppliedForces, ActuatorCommandForces, BarycentricForce, HardpointsForces,
         HardpointsMotion, RBM,
     },
-    M1RigidBodyMotions,
 };
 use gmt_dos_clients_m1_ctrl::{Actuators, Hardpoints, LoadCells};
-use gmt_fem::{fem_io::OSSM1Lcl, FEM};
+use gmt_fem::{FEM, fem_io::OSSM1Lcl};
 use matio_rs::MatFile;
 use nalgebra as na;
 

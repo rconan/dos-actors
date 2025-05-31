@@ -3,7 +3,7 @@ use gmt_dos_clients::{Logging, Signal, Signals};
 use gmt_dos_clients_fem::{DiscreteModalSolver, ExponentialMatrix};
 use gmt_dos_clients_io::gmt_m1::M1RigidBodyMotions;
 use gmt_dos_clients_m1_ctrl::{Calibration, Segment};
-use gmt_fem::{fem_io::OSSM1Lcl, FEM};
+use gmt_fem::{FEM, fem_io::OSSM1Lcl};
 use std::env;
 
 const ACTUATOR_RATE: usize = 10;
@@ -14,7 +14,7 @@ async fn segment() -> anyhow::Result<()> {
 
     let sim_sampling_frequency = 1000;
     let m1_freq = 100; // Hz
-    assert!(m1_freq == sim_sampling_frequency/ACTUATOR_RATE);
+    assert!(m1_freq == sim_sampling_frequency / ACTUATOR_RATE);
     let sim_duration = 3_usize; // second
     let n_step = sim_sampling_frequency * sim_duration;
 

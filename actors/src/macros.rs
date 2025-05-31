@@ -14,7 +14,7 @@ model!(actor1, actor2, ...)
 */
 #[macro_export]
 macro_rules! model {
-    ($($x:expr),*) => ($crate::model::Model::new((vec![$(Box::new($x)),*])));
+    ($($x:expr_2021),*) => ($crate::model::Model::new((vec![$(Box::new($x)),*])));
 }
 
 /* #[macro_export]

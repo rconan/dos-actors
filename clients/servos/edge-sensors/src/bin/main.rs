@@ -7,9 +7,9 @@ voice coil actuators and off-load from the voice coil actuators to the reference
 */
 use anyhow::Result;
 use edge_sensors::{
-    segment_piston::{M1Lom, M2Lom, M2RBLom, M2SegmentActuatorAverage, Scopes},
     AsmsToHexOffload, EdgeSensorsFeedForward, HexToRbm, M1EdgeSensorsAsRbms, M1EdgeSensorsToRbm,
-    M2EdgeSensorsToRbm, RbmToShell, N_ACTUATOR,
+    M2EdgeSensorsToRbm, N_ACTUATOR, RbmToShell,
+    segment_piston::{M1Lom, M2Lom, M2RBLom, M2SegmentActuatorAverage, Scopes},
 };
 use gmt_dos_actors::{actorscript, system::Sys};
 use gmt_dos_clients::{
@@ -21,20 +21,20 @@ use gmt_dos_clients::{
 };
 use gmt_dos_clients_io::{
     gmt_fem::outputs::MCM2SmHexD,
-    gmt_m1::{assembly, M1EdgeSensors, M1RigidBodyMotions},
+    gmt_m1::{M1EdgeSensors, M1RigidBodyMotions, assembly},
     gmt_m2::{
-        asm::{M2ASMAsmCommand, M2ASMReferenceBodyNodes, M2ASMVoiceCoilsMotion},
         M2EdgeSensors, M2RigidBodyMotions,
+        asm::{M2ASMAsmCommand, M2ASMReferenceBodyNodes, M2ASMVoiceCoilsMotion},
     },
 };
 use gmt_dos_clients_lom::LinearOpticalModel;
 use gmt_dos_clients_scope::server::Monitor;
 use gmt_dos_clients_servos::{
-    asms_servo, AsmsServo, EdgeSensors, GmtFem, GmtM1, GmtM2, GmtM2Hex, GmtServoMechanisms,
-    WindLoads,
+    AsmsServo, EdgeSensors, GmtFem, GmtM1, GmtM2, GmtM2Hex, GmtServoMechanisms, WindLoads,
+    asms_servo,
 };
 use gmt_fem::FEM;
-use interface::{filing::Filing, Tick};
+use interface::{Tick, filing::Filing};
 use io::RBMCmd;
 use matio_rs::MatFile;
 use nalgebra as na;

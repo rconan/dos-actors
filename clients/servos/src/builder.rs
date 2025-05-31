@@ -1,11 +1,11 @@
-use gmt_dos_actors::{prelude::Actor, system::SystemError, ArcMutex};
-use gmt_dos_clients_fem::{solvers::ExponentialMatrix, DiscreteModalSolver, StateSpaceError};
+use gmt_dos_actors::{ArcMutex, prelude::Actor, system::SystemError};
+use gmt_dos_clients_fem::{DiscreteModalSolver, StateSpaceError, solvers::ExponentialMatrix};
+#[cfg(topend = "FSM")]
+use gmt_dos_clients_io::gmt_fem::{inputs::MCM2PZTF, outputs::MCM2PZTD};
 use gmt_dos_clients_io::gmt_fem::{
     inputs::MCM2SmHexF,
     outputs::{MCM2Lcl6D, MCM2SmHexD, OSSM1Lcl},
 };
-#[cfg(topend = "FSM")]
-use gmt_dos_clients_io::gmt_fem::{inputs::MCM2PZTF, outputs::MCM2PZTD};
 use gmt_dos_clients_m2_ctrl::{Positioners, PositionersError};
 use gmt_dos_clients_mount::Mount;
 use gmt_dos_systems_m2::M2Error;
