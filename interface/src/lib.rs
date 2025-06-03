@@ -178,51 +178,65 @@ chain!(
 */
 #[macro_export]
 macro_rules! chain {
-    ($r:ty:$vr:expr_2021;$e:expr_2021) => {
-        <_ as ::interface::Read<$r>>::read($e, $vr);
+    // read, update
+    // UID1: input1, ..., UIDN: inputN; client
+    ($($r:ty:$vr:expr),+;$e:expr) => {
+        $(<_ as ::interface::Read<$r>>::read($e, interface::Data::<$r>::from($vr));)+
         <_ as ::interface::Update>::update($e);
     };
-    ($e:expr_2021;$w:ty:$vw:ident) => {
-        let $vw = {
+    // update, write
+    // client; UID1: output1, ..., UIDN: outputN
+    ($e:expr;$($w:ty:$vw:ident),+) => {
             <_ as ::interface::Update>::update($e);
-            <_ as ::interface::Write<$w>>::write($e).expect(&format!(
+            $(let $vw = <_ as ::interface::Write<$w>>::write($e).expect(&format!(
                 "cannot write to {}",
                 ::std::any::type_name::<$w>()
-            ))
-        };
+            ));)+
     };
-    ($r:ty:$vr:expr_2021;$e:expr_2021;$w:ty:$vw:ident) => {
-        let $vw = {
-            <_ as ::interface::Read<$r>>::read($e, $vr);
+    // read, update, write
+    // UID1: input1, ..., UIDN: inputN; client; UID1: output1, ..., UIDN: outputN
+    ($($r:ty:$vr:expr),+;$e:expr;$($w:ty:$vw:ident),+) => {
+            $(<_ as ::interface::Read<$r>>::read($e, interface::Data::<$r>::from($vr));)+
             <_ as ::interface::Update>::update($e);
-            <_ as ::interface::Write<$w>>::write($e).expect(&format!(
+            $(let $vw =<_ as ::interface::Write<$w>>::write($e).expect(&format!(
                 "cannot write to {}",
                 ::std::any::type_name::<$w>()
-            ))
-        };
+            ));)+
     };
-    ($r1:ty:$vr1:expr_2021;$e1:expr_2021;$w1:ty;$e2:expr_2021) => {
-        ::interface::chain!($r1:$vr1;$e1;$w1:data);
+    // read, update, write, read, update
+    // UID1: input1, ..., UIDN: inputN; client1; UID; client2
+    ($($r1:ty:$vr1:expr),+;$e1:expr;$w1:ty;$e2:expr) => {
+        ::interface::chain!($($r1:$vr1),+;$e1;$w1:data);
         ::interface::chain!($w1:data;$e2);
     };
-    ($e1:expr_2021;$w1:ty;$e2:expr_2021) => {
+    // update, write, read, update
+    // client1; UID; client2
+    ($e1:expr;$w1:ty;$e2:expr) => {
         ::interface::chain!($e1;$w1:data);
         ::interface::chain!($w1:data;$e2);
     };
-    ($e1:expr_2021;$w1:ty;$e2:expr_2021;$w2:ty:$vw2:ident) => {
+    // update, write, read, update, write
+    // client1; UID; client2; UID1: output1, ..., UIDN: outputN
+    ($e1:expr;$w1:ty;$e2:expr;$($w2:ty:$vw2:ident),+) => {
         ::interface::chain!($e1;$w1:data);
-        ::interface::chain!($w1:data;$e2;$w2:$vw2);
+        ::interface::chain!($w1:data;$e2;$($w2:$vw2),+);
     };
-    ($r1:ty:$vr1:expr_2021;$e1:expr_2021;$w1:ty;$e2:expr_2021;$w2:ty:$vw2:ident) => {
-        ::interface::chain!($r1:$vr1;$e1;$w1:data);
-        ::interface::chain!($w1:data;$e2;$w2:$vw2);
+    // read, update, write, read, update, write
+    // UID1: input1, ..., UIDN: inputN; client1; UID; client2; UID1: output1, ..., UIDN: outputN
+    ($($r1:ty:$vr1:expr),+;$e1:expr;$w1:ty;$e2:expr;$($w2:ty:$vw2:ident),+) => {
+        ::interface::chain!($($r1:$vr1),+;$e1;$w1:data);
+        ::interface::chain!($w1:data;$e2;$($w2:$vw2),+);
     };
-    ($r1:ty:$vr1:expr_2021;$e1:expr_2021;$w1:ty;$e2:expr_2021;$w2:ty;$e3:expr_2021;$w3:ty:$vw3:ident) => {
-        ::interface::chain!($r1:$vr1;$e1;$w1;$e2;$w2:data);
-        ::interface::chain!($w2:data;$e3;$w3:$vw3);
+    // read, update, write, read, update, write, read, update, write
+    // UID1: input1, ..., UIDN: inputN; client1; UID; client2; UID; client3; UID1: output1, ..., UIDN: outputN
+    ($($r1:ty:$vr1:expr),+;$e1:expr;$w1:ty;$e2:expr;$w2:ty;$e3:expr;$($w3:ty:$vw3:ident),+) => {
+        ::interface::chain!($($r1:$vr1),+;$e1;$w1;$e2;$w2:data);
+        ::interface::chain!($w2:data;$e3;$($w3:$vw3),+);
     };
-    ($r1:ty:$vr1:expr_2021;$e1:expr_2021;$w1:ty;$e2:expr_2021;$w2:ty;$e3:expr_2021;$w3:ty;$e4:expr_2021;$w4:ty:$vw4:ident) => {
-        ::interface::chain!($r1:$vr1;$e1;$w1;$e2;$w2;$e3;$w3:data);
-        ::interface::chain!($w3:data;$e4;$w4:$vw4);
+    // read, update, write, read, update, write, read, update, write, read, update, write
+    // UID1: input1, ..., UIDN: inputN; client1; UID; client2; UID; client3; UID; client4; UID1: output1, ..., UIDN: outputN
+    ($($r1:ty:$vr1:expr),+;$e1:expr;$w1:ty;$e2:expr;$w2:ty;$e3:expr;$w3:ty;$e4:expr;$($w4:ty:$vw4:ident),+) => {
+        ::interface::chain!($($r1:$vr1),+;$e1;$w1;$e2;$w2;$e3;$w3:data);
+        ::interface::chain!($w3:data;$e4;$($w4:$vw4),+);
     };
 }
