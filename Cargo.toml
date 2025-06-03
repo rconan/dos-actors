@@ -22,7 +22,7 @@ resolver = "2"
 
 [workspace.package]
 authors = ["Rod Conan <rconan@gmto.org>"]
-edition = "2021"
+edition = "2024"
 license = "MIT"
 repository = "https://github.com/rconan/dos-actors"
 categories = ["science", "simulation"]
@@ -32,7 +32,7 @@ keywords = ["telescope", "astronomy"]
 gmt_dos-actors = { version = "11.1", path = "actors/" }
 gmt_dos-clients = { version = "5.0", default-features = false, path = "clients/core" }
  interface = { version = "1.5", path = "interface", package = "gmt_dos-actors-clients_interface" }
- gmt-fem = { version = "5.1", path = "clients/fem/model" }
+ gmt-fem = { version = "5.2", path = "clients/fem/model" }
 gmt-fem-code-builder = { version = "2.3", path = "clients/fem/builder" }
 dos-uid-derive = { version = "5.0", path = "interface/uid-derive/" }
 gmt_dos-clients_io = { version = "4.2", path = "clients/io" }

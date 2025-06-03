@@ -1,7 +1,7 @@
 use std::{collections::VecDeque, sync::Arc, time::Duration};
 
 use gmt_dos_clients_io::mount::{AverageMountEncoders, MountSetPoint};
-use interface::{Read, UniqueIdentifier, Update, Write, UID};
+use interface::{Read, UID, UniqueIdentifier, Update, Write};
 use tai_time::{MonotonicTime, TaiClock};
 
 use crate::DcsIO;

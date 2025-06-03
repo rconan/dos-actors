@@ -1,6 +1,6 @@
 use gmt_dos_clients_crseo::{
-    calibration::Reconstructor, centroiding::CentroidsProcessing, crseo::FromBuilder,
-    sensors::Camera, DeviceInitialize, OpticalModelBuilder,
+    DeviceInitialize, OpticalModelBuilder, calibration::Reconstructor,
+    centroiding::CentroidsProcessing, crseo::FromBuilder, sensors::Camera,
 };
 use gmt_dos_clients_io::{
     gmt_m2::fsm::M2FSMFsmCommand,

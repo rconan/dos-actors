@@ -1,5 +1,5 @@
 use clap::Parser;
-use gmt_dos_clients_fem::{solvers::Exponential, DiscreteStateSpace};
+use gmt_dos_clients_fem::{DiscreteStateSpace, solvers::Exponential};
 use gmt_fem::FEM;
 
 fn frequency_base2_histogram<'a>(nu: &[f64], max_nu: f64) -> Vec<usize> {

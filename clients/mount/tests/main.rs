@@ -3,7 +3,7 @@ use std::{fmt::Display, ops::Range};
 use gmt_dos_actors::actorscript;
 use gmt_dos_clients::{Signal, Signals};
 use gmt_dos_clients_arrow::Arrow;
-use gmt_dos_clients_fem::{fem_io::actors_outputs::*, DiscreteModalSolver, ExponentialMatrix};
+use gmt_dos_clients_fem::{DiscreteModalSolver, ExponentialMatrix, fem_io::actors_outputs::*};
 use gmt_dos_clients_io::{
     // gmt_m1::M1RigidBodyMotions,
     // gmt_m2::M2RigidBodyMotions,

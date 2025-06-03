@@ -1,17 +1,17 @@
 use gmt_dos_actors::{actorscript, prelude::*, system::Sys};
 use gmt_dos_clients::{Logging, Signal, Signals};
 use gmt_dos_clients_fem::{
-    fem_io::actors_outputs::OSSM1Lcl, DiscreteModalSolver, ExponentialMatrix,
+    DiscreteModalSolver, ExponentialMatrix, fem_io::actors_outputs::OSSM1Lcl,
 };
 use gmt_dos_clients_io::{
     gmt_fem::outputs::OSSM1EdgeSensors,
-    gmt_m1::{assembly, M1RigidBodyMotions},
+    gmt_m1::{M1RigidBodyMotions, assembly},
     mount::{MountEncoders, MountSetPoint, MountTorques},
 };
-use gmt_dos_clients_m1_ctrl::{assembly::M1, Calibration};
+use gmt_dos_clients_m1_ctrl::{Calibration, assembly::M1};
 use gmt_dos_clients_mount::Mount;
 use gmt_fem::FEM;
-use interface::{Data, Read, UniqueIdentifier, Update, Write, UID};
+use interface::{Data, Read, UID, UniqueIdentifier, Update, Write};
 use matio_rs::MatFile;
 use std::{env, path::Path, sync::Arc};
 
@@ -90,7 +90,7 @@ async fn main() -> anyhow::Result<()> {
     )?;
     let m1_es_recon: nalgebra::DMatrix<f64> = mat.var("m1_r_es")?;
     // let m1_es_recon: nalgebra::DMatrix<f64> = mat.var("Rm1es")?;
-    let es_2_rbm = m1_es_recon* es_nodes_2_data;
+    let es_2_rbm = m1_es_recon * es_nodes_2_data;
     dbg!(es_2_rbm.shape());
     let mat = MatFile::load(
         Path::new(&env::var("CARGO_MANIFEST_DIR")?)

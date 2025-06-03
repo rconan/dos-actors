@@ -2,9 +2,9 @@ use std::{fmt::Display, hash::Hash};
 
 use proc_macro2::{Literal, Span};
 use quote::quote;
-use syn::{parse::Parse, Expr, Ident, LitInt, LitStr, Token};
+use syn::{Expr, Ident, LitInt, LitStr, Token, parse::Parse};
 
-use crate::{model::ScopeSignal, Expand, Expanded};
+use crate::{Expand, Expanded, model::ScopeSignal};
 
 const LOG_BUFFER_SIZE: usize = 1_000;
 

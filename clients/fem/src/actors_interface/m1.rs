@@ -4,8 +4,9 @@
 pub use super::prelude;
 use super::prelude::*;
 use gmt_dos_clients_io::{
-    gmt_m1::{segment::ModeShapes, M1EdgeSensors, M1ModeShapes, M1RigidBodyMotions},
-    optics, Assembly,
+    Assembly,
+    gmt_m1::{M1EdgeSensors, M1ModeShapes, M1RigidBodyMotions, segment::ModeShapes},
+    optics,
 };
 
 pub mod actuators;

@@ -1,4 +1,4 @@
-use interface::{Data, Read, UniqueIdentifier, Update, UID};
+use interface::{Data, Read, UID, UniqueIdentifier, Update};
 use tracing::info;
 
 #[derive(UID)]

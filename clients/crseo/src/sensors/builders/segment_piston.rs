@@ -1,6 +1,6 @@
 use crseo::{
-    builders::{GmtBuilder, SourceBuilder},
     Builder,
+    builders::{GmtBuilder, SourceBuilder},
 };
 
 use crate::sensors::SegmentPistonSensor;

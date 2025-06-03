@@ -4,24 +4,24 @@ use std::path::Path;
 
 use gmt_dos_actors::system::{Sys, SystemError};
 use gmt_dos_clients_crseo::{
+    OpticalModel, OpticalModelBuilder, OpticalModelError,
     calibration::Reconstructor,
     crseo::{
+        FromBuilder, Source,
         builders::{AtmosphereBuilder, AtmosphereBuilderError, GmtBuilder},
         imaging::{Detector, LensletArray},
-        FromBuilder, Source,
     },
     sensors::{
-        builders::{CameraBuilder, WaveSensorBuilder},
         Camera, WaveSensor,
+        builders::{CameraBuilder, WaveSensorBuilder},
     },
-    OpticalModel, OpticalModelBuilder, OpticalModelError,
 };
 use shack_hartmann::{ShackHartmannBuilder, ShackHartmannBuilderError};
 
 use crate::{
+    Agws,
     agws::{sh24::Sh24, sh48::Sh48},
     kernels::{Kernel, KernelError},
-    Agws,
 };
 
 #[derive(Debug, thiserror::Error)]

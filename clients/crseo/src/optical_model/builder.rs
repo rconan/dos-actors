@@ -1,11 +1,11 @@
 use super::{OpticalModel, OpticalModelError};
 use crate::sensors::{
-    builders::{SensorBuilderProperty, WaveSensorBuilder},
     NoSensor, SensorPropagation,
+    builders::{SensorBuilderProperty, WaveSensorBuilder},
 };
 use crseo::{
-    builders::{AtmosphereBuilder, GmtBuilder, SourceBuilder},
     Builder,
+    builders::{AtmosphereBuilder, GmtBuilder, SourceBuilder},
 };
 use serde::{Deserialize, Serialize};
 

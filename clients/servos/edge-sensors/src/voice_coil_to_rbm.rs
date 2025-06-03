@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use gmt_dos_clients_io::gmt_m2::asm::M2ASMVoiceCoilsMotion;
-use interface::{filing::Codec, Data, Read, UniqueIdentifier, Update, Write};
+use interface::{Data, Read, UniqueIdentifier, Update, Write, filing::Codec};
 use matio_rs::MatFile;
 use nalgebra::{DMatrix, DVector};
 use serde::{Deserialize, Serialize};

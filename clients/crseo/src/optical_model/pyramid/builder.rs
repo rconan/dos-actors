@@ -1,6 +1,6 @@
-use crseo::{wavefrontsensor::PyramidBuilder, Builder, Pyramid, WavefrontSensorBuilder};
+use crseo::{Builder, Pyramid, WavefrontSensorBuilder, wavefrontsensor::PyramidBuilder};
 
-use crate::{optical_model::OpticalModelError, OpticalModel, OpticalModelBuilder};
+use crate::{OpticalModel, OpticalModelBuilder, optical_model::OpticalModelError};
 
 impl OpticalModelBuilder<PyramidBuilder> {
     pub fn build(self) -> Result<OpticalModel<Pyramid>, OpticalModelError> {

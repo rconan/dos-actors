@@ -13,7 +13,7 @@ use apache_arrow::{
 };
 use interface::print_info;
 use parquet::{
-    arrow::{arrow_reader::ParquetRecordBatchReaderBuilder, ArrowWriter},
+    arrow::{ArrowWriter, arrow_reader::ParquetRecordBatchReaderBuilder},
     file::properties::WriterProperties,
 };
 

@@ -2,8 +2,8 @@ use gmt_dos_clients_transceiver::{Monitor, On, Transceiver, Transmitter, Transmi
 use interface::{Data, Read, UniqueIdentifier};
 
 use crate::{
-    payload::{Payload, ScopeData},
     GmtScope, ImageScope, ImageScopeKind,
+    payload::{Payload, ScopeData},
 };
 
 use super::XScope;

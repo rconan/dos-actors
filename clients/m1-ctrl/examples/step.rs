@@ -1,19 +1,19 @@
 use gmt_dos_actors::actorscript;
 use gmt_dos_clients::{Logging, Signal, Signals};
 use gmt_dos_clients_fem::{
-    fem_io::actors_outputs::OSSM1Lcl, DiscreteModalSolver, ExponentialMatrix,
+    DiscreteModalSolver, ExponentialMatrix, fem_io::actors_outputs::OSSM1Lcl,
 };
 use gmt_dos_clients_io::{
     gmt_m1::{
+        M1RigidBodyMotions,
         segment::{
             ActuatorAppliedForces, ActuatorCommandForces, HardpointsForces, HardpointsMotion, M1S,
             RBM,
         },
-        M1RigidBodyMotions,
     },
     mount::{MountEncoders, MountSetPoint, MountTorques},
 };
-use gmt_dos_clients_m1_ctrl::{subsystems::M1Assembly, Calibration};
+use gmt_dos_clients_m1_ctrl::{Calibration, subsystems::M1Assembly};
 use gmt_dos_clients_mount::Mount;
 use gmt_fem::FEM;
 use interface::units::{self, Arcsec, MuM};

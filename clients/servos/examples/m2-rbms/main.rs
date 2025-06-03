@@ -30,8 +30,8 @@ use std::{env, path::Path};
 use gmt_dos_actors::actorscript;
 use gmt_dos_clients::Tick;
 use gmt_dos_clients::{Signals, Timer};
-use gmt_dos_clients_io::gmt_m2::{asm::segment::FaceSheetFigure, M2RigidBodyMotions};
-use gmt_dos_clients_servos::{asms_servo, AsmsServo, GmtFem}; //asms_servo
+use gmt_dos_clients_io::gmt_m2::{M2RigidBodyMotions, asm::segment::FaceSheetFigure};
+use gmt_dos_clients_servos::{AsmsServo, GmtFem, asms_servo}; //asms_servo
 use gmt_dos_clients_servos::{GmtM2Hex, GmtServoMechanisms};
 use gmt_fem::FEM;
 use nanorand::{Rng, WyRand};

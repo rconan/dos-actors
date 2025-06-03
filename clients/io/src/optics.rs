@@ -1,4 +1,4 @@
-use interface::{OperatorLeftRight, UniqueIdentifier, UID};
+use interface::{OperatorLeftRight, UID, UniqueIdentifier};
 use std::{marker::PhantomData, sync::Arc};
 
 /// Source wavefront error RMS `[m]`
@@ -170,7 +170,7 @@ impl UniqueIdentifier for Frame<Host> {
 }
 
 pub mod dispersed_fringe_sensor {
-    use interface::{UniqueIdentifier, UID};
+    use interface::{UID, UniqueIdentifier};
 
     use super::{Cuda, Frame, Host};
 

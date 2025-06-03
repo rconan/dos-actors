@@ -83,7 +83,7 @@ use apache_arrow::{
 use interface::{Data, Read, UniqueIdentifier, Update};
 use std::sync::Arc;
 use std::{
-    any::{type_name, Any},
+    any::{Any, type_name},
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
@@ -217,7 +217,7 @@ pub trait BufferDataType {
 }
 use paste::paste;
 macro_rules! impl_buffer_types {
-    ( $( ($rs:ty,$arw:expr) ),+ ) => {
+    ( $( ($rs:ty,$arw:expr_2021) ),+ ) => {
 	    $(
         paste! {
 impl BufferDataType for $rs {

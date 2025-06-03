@@ -1,7 +1,7 @@
 #[cfg(topend = "ASM")]
 use gmt_dos_clients_fem::fem_io::actors_outputs::M2EdgeSensors;
 use gmt_dos_clients_fem::{
-    fem_io::actors_outputs::OSSM1EdgeSensors, solvers::ExponentialMatrix, DiscreteStateSpace,
+    DiscreteStateSpace, fem_io::actors_outputs::OSSM1EdgeSensors, solvers::ExponentialMatrix,
 };
 use nalgebra as na;
 

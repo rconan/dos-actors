@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{HexToRbm, M2EdgeSensorsToRbm, RbmToShell, N_ACTUATOR};
+use crate::{HexToRbm, M2EdgeSensorsToRbm, N_ACTUATOR, RbmToShell};
 use gmt_dos_actors::{
     actor::{Actor, PlainActor},
     framework::{

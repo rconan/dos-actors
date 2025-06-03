@@ -5,7 +5,7 @@ use apache_arrow::{
     datatypes::{ArrowNativeType, DataType},
     record_batch::RecordBatch,
 };
-use interface::{print_info, Entry, UniqueIdentifier};
+use interface::{Entry, UniqueIdentifier, print_info};
 
 use crate::{
     ArrowBuffer, BufferDataType, BufferObject, DropOption, FileFormat, LogData, MAX_CAPACITY_BYTE,

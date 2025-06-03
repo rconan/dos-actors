@@ -1,6 +1,6 @@
 use gmt_dos_clients_dcs::{
-    mount_trajectory::{MountTrajectory, OcsMountTrajectory},
     Dcs, Pull, Push,
+    mount_trajectory::{MountTrajectory, OcsMountTrajectory},
 };
 use nanomsg::Socket;
 

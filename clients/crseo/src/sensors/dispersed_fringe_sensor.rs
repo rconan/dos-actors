@@ -1,7 +1,7 @@
-use super::{builders::DispersedFringeSensorBuilder, SensorPropagation};
+use super::{SensorPropagation, builders::DispersedFringeSensorBuilder};
 use crate::OpticalModel;
 use crseo::{FromBuilder, SegmentPistonSensor};
-use gmt_dos_clients_io::optics::{dispersed_fringe_sensor::DfsFftFrame, Dev, Frame, Host};
+use gmt_dos_clients_io::optics::{Dev, Frame, Host, dispersed_fringe_sensor::DfsFftFrame};
 use interface::{Data, Size, Write};
 use skyangle::Conversion;
 use std::{

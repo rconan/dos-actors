@@ -1,4 +1,4 @@
-use gmt_dos_actors::{prelude::*, actorscript};
+use gmt_dos_actors::{actorscript, prelude::*};
 use gmt_dos_clients::Signals;
 use gmt_dos_clients_transceiver::{Monitor, Transceiver};
 
@@ -54,7 +54,7 @@ async fn main() -> anyhow::Result<()> {
         .run()
         .await?;
 
-/*     actorscript!{
+    /*     actorscript!{
         #[transceiver(server="127.0.0.1")]
         1: sin[Sin] 5001
         1: isin[ISin] 5002

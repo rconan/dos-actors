@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use gmt_dos_clients_io::optics::WfeRms;
 use gmt_dos_clients_lom::LinearOpticalModel;
-use interface::{Data, Read, UniqueIdentifier, Update, Write, UID};
+use interface::{Data, Read, UID, UniqueIdentifier, Update, Write};
 
 #[derive(UID)]
 #[alias(name = WfeRms<-6>, port = 55991, client = LinearOpticalModel, traits = Write)]

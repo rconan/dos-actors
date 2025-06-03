@@ -41,7 +41,6 @@ impl IntoIterator for &PlainModel {
     type IntoIter = std::vec::IntoIter<Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.0.to_vec()
-            .into_iter()
+        self.0.to_vec().into_iter()
     }
 }

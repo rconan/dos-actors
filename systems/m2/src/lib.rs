@@ -49,7 +49,7 @@ mod tests {
 
     use gmt_dos_actors::actorscript;
     use gmt_dos_clients::signals::Signals;
-    use gmt_dos_clients_fem::{solvers::ExponentialMatrix, DiscreteModalSolver};
+    use gmt_dos_clients_fem::{DiscreteModalSolver, solvers::ExponentialMatrix};
 
     use super::*;
 

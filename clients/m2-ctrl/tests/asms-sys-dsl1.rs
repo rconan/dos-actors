@@ -2,13 +2,13 @@ use gmt_dos_actors::actorscript;
 use gmt_dos_actors::system::Sys;
 use gmt_dos_clients::Signals;
 use gmt_dos_clients_io::gmt_m2::asm::{
-    segment::VoiceCoilsMotion, M2ASMAsmCommand, M2ASMFluidDampingForces, M2ASMVoiceCoilsForces,
-    M2ASMVoiceCoilsMotion,
+    M2ASMAsmCommand, M2ASMFluidDampingForces, M2ASMVoiceCoilsForces, M2ASMVoiceCoilsMotion,
+    segment::VoiceCoilsMotion,
 };
 use gmt_dos_clients_m2_ctrl::assembly::ASMS;
 
 use gmt_dos_clients_fem::{DiscreteModalSolver, ExponentialMatrix, Model, Switch};
-use interface::{Data, Read, Update, Write, UID};
+use interface::{Data, Read, UID, Update, Write};
 use matio_rs::MatFile;
 use nalgebra as na;
 use std::sync::Arc;

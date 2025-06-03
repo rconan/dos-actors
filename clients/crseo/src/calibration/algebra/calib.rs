@@ -1,6 +1,6 @@
 use crate::calibration::{
-    mode::{MixedMirrorMode, Modality},
     MirrorMode,
+    mode::{MixedMirrorMode, Modality},
 };
 
 use super::{Block, CalibPinv, CalibProps, CalibrationMode};
@@ -293,11 +293,7 @@ where
     #[inline]
     fn n_rows(&self) -> usize {
         let n_cols = self.n_cols();
-        if n_cols > 0 {
-            self.c.len() / n_cols
-        } else {
-            0
-        }
+        if n_cols > 0 { self.c.len() / n_cols } else { 0 }
     }
     /// Returns a reference to the calibration matrix
     /// Return the number of rows
@@ -400,7 +396,7 @@ where
             .chunks(self.c.len() / self.n_cols())
             .flat_map(|c| {
                 c.iter()
-                    .zip(filter.iter().zip(&self.mask).filter(|(_, &m)| m))
+                    .zip(filter.iter().zip(&self.mask).filter(|&(_, &m)| m))
                     .filter_map(|(c, (f, _))| f.then_some(*c))
                     .collect::<Vec<_>>()
             })

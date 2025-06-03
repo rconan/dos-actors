@@ -1,10 +1,10 @@
 use crseo::{
+    Builder,
     builders::ImagingBuilder,
     imaging::{Detector, LensletArray},
-    Builder,
 };
 
-use crate::{sensors::Camera, OpticalModel, OpticalModelBuilder, OpticalModelError};
+use crate::{OpticalModel, OpticalModelBuilder, OpticalModelError, sensors::Camera};
 
 use super::SensorBuilderProperty;
 

@@ -8,7 +8,7 @@ use skyangle::Conversion;
 
 use crate::OpticalModel;
 
-use super::{builders::CameraBuilder, SensorPropagation};
+use super::{SensorPropagation, builders::CameraBuilder};
 
 mod interface;
 
@@ -98,7 +98,7 @@ impl<const I: usize> Display for OpticalModel<Camera<I>> {
 #[cfg(test)]
 mod tests {
     use ::interface::{Update, Write};
-    use crseo::{builders::ImagingBuilder, imaging::LensletArray, Builder, Gmt, Source};
+    use crseo::{Builder, Gmt, Source, builders::ImagingBuilder, imaging::LensletArray};
     use gmt_dos_clients_io::optics::{Frame, Host};
 
     use super::*;

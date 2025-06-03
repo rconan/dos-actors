@@ -3,7 +3,7 @@ use std::fmt::Display;
 use crate::OpticalModel;
 use crseo::{Builder, CrseoError, FromBuilder};
 
-use super::{builders::SensorBuilderProperty, SensorPropagation};
+use super::{SensorPropagation, builders::SensorBuilderProperty};
 
 /// A sensor that is not
 ///

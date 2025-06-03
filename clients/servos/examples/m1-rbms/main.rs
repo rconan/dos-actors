@@ -34,9 +34,9 @@ use gmt_dos_clients_io::{
         M1Segment1AxialD, M1Segment2AxialD, M1Segment3AxialD, M1Segment4AxialD, M1Segment5AxialD,
         M1Segment6AxialD, M1Segment7AxialD,
     },
-    gmt_m1::{assembly, segment::ModeShapes, M1RigidBodyMotions},
+    gmt_m1::{M1RigidBodyMotions, assembly, segment::ModeShapes},
 };
-use gmt_dos_clients_servos::{asms_servo, GmtFem, GmtM1, GmtServoMechanisms, M1SegmentFigure};
+use gmt_dos_clients_servos::{GmtFem, GmtM1, GmtServoMechanisms, M1SegmentFigure, asms_servo};
 //asms_servo
 use gmt_fem::FEM;
 use interface::filing::Filing;

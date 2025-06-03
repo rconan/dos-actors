@@ -4,7 +4,7 @@ use crate::{
     solvers::Solver,
 };
 
-use gmt_fem::{fem_io::Inputs, fem_io::Outputs, FEM};
+use gmt_fem::{FEM, fem_io::Inputs, fem_io::Outputs};
 use interface::UniqueIdentifier;
 use na::DMatrixView;
 use nalgebra as na;
@@ -486,15 +486,19 @@ impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
             });
         }
         let n_modes = match self.max_eigen_frequency {
-            Some(max_ef) => {
-                fem.eigen_frequencies
-                    .iter()
-                    .fold(0, |n, ef| if ef <= &max_ef { n + 1 } else { n })
-            }
+            Some(max_ef) => fem
+                .eigen_frequencies
+                .iter()
+                .fold(0, |n, ef| if ef <= &max_ef { n + 1 } else { n }),
             None => fem.n_modes(),
         };
         if let Some(max_ef) = self.max_eigen_frequency {
-            log::info!("Eigen frequencies truncated to {:.3}Hz, hence reducing the number of modes from {} down to {}",max_ef,fem.n_modes(),n_modes)
+            log::info!(
+                "Eigen frequencies truncated to {:.3}Hz, hence reducing the number of modes from {} down to {}",
+                max_ef,
+                fem.n_modes(),
+                n_modes
+            )
         }
         let zeta = match self.zeta {
             Some(zeta) => {

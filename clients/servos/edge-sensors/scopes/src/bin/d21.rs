@@ -8,10 +8,10 @@ use std::env;
 async fn main() -> anyhow::Result<()> {
     env::set_var("SCOPE_SERVER_IP", "100.21.63.28");
     loop {
-            Scope::new()
-                .name("Segment 21 Differential Piston RSS")
-                .signal::<SegmentD21PistonRSS<-9>>()?
-                .show();
+        Scope::new()
+            .name("Segment 21 Differential Piston RSS")
+            .signal::<SegmentD21PistonRSS<-9>>()?
+            .show();
     }
     Ok(())
 }

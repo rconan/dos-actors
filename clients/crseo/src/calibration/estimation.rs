@@ -41,16 +41,16 @@ use std::fmt::Display;
 
 use crseo::FromBuilder;
 use gmt_dos_clients_io::optics::{
-    dispersed_fringe_sensor::{DfsFftFrame, Intercepts},
     Dev, Frame, SegmentTipTilt, SensorData, Wavefront,
+    dispersed_fringe_sensor::{DfsFftFrame, Intercepts},
 };
 use interface::{Read, UniqueIdentifier, Update, Write};
 
 use crate::{
+    DeviceInitialize, DispersedFringeSensorProcessing, OpticalModel, OpticalModelBuilder,
     calibration::{Calib, CalibrationError, Modality},
     centroiding::{CentroidKind, CentroidsProcessing},
     sensors::{Camera, DispersedFringeSensor, SegmentGradientSensor, WaveSensor},
-    DeviceInitialize, DispersedFringeSensorProcessing, OpticalModel, OpticalModelBuilder,
 };
 
 use super::Reconstructor;

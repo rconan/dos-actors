@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use gmt_dos_clients_m1_ctrl::{Actuators, Hardpoints, LoadCells};
 
-use crate::{subsystems::SegmentControl, Calibration};
+use crate::{Calibration, subsystems::SegmentControl};
 
 use super::dispatch::{DispatchIn, DispatchOut};
 

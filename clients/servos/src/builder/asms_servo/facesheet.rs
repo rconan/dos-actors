@@ -1,5 +1,5 @@
 use gmt_dos_clients_fem::{
-    fem_io, solvers::ExponentialMatrix, DiscreteStateSpace, StateSpaceError,
+    DiscreteStateSpace, StateSpaceError, fem_io, solvers::ExponentialMatrix,
 };
 use matio_rs::MatFile;
 use nalgebra as na;
@@ -12,7 +12,6 @@ use std::{
 };
 
 use crate::builder::Include;
-
 
 #[derive(Debug, thiserror::Error)]
 pub enum FacesheetError {

@@ -1,10 +1,10 @@
-use crate::{actors_interface::fem_io, DiscreteModalSolver, Get, Set, Solver};
+use crate::{DiscreteModalSolver, Get, Set, Solver, actors_interface::fem_io};
 use gmt_dos_clients_io::{
+    Assembly,
     gmt_m2::asm::{
         M2ASMFaceSheetFigure, M2ASMFluidDampingForces, M2ASMVoiceCoilsForces, M2ASMVoiceCoilsMotion,
     },
     optics::{self, MirrorState},
-    Assembly,
 };
 use interface::{Data, Read, Size, Write};
 use std::sync::Arc;

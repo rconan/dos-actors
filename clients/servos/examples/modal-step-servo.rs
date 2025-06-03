@@ -11,10 +11,8 @@ use std::{env, path::Path};
 
 use gmt_dos_actors::actorscript;
 use gmt_dos_clients::Signals;
-use gmt_dos_clients_servos::{asms_servo, AsmsServo, GmtM2, GmtServoMechanisms};
-use gmt_dos_clients_io::gmt_m2::asm::{
-    M2ASMAsmCommand, segment::FaceSheetFigure
-    };
+use gmt_dos_clients_io::gmt_m2::asm::{M2ASMAsmCommand, segment::FaceSheetFigure};
+use gmt_dos_clients_servos::{AsmsServo, GmtM2, GmtServoMechanisms, asms_servo};
 //use gmt_dos_clients_arrow;
 use gmt_fem::FEM;
 
@@ -39,15 +37,13 @@ async fn main() -> anyhow::Result<()> {
     // ASMS modal commands
     let mat_file = MatFile::load(&fem_path.join("KLmodesGS36p90.mat"))?;
     let kl_mat: Vec<na::DMatrix<f64>> = (1..=7)
-                 .map(|i| mat_file.var(format!("KL_{i}")).unwrap())
-                 .collect();
+        .map(|i| mat_file.var(format!("KL_{i}")).unwrap())
+        .collect();
     let asms_mode_cmd_vec: Vec<usize> = vec![7, 6, 5, 4, 3, 2, 1];
     let asms_cmd_vec: Vec<_> = kl_mat
         .into_iter()
         .zip(asms_mode_cmd_vec.into_iter()) // Create the tuples (kl_mat[i], asms_mode_cmd_vec[i])
-        .flat_map(|(kl_mat, i)| { 
-            kl_mat.column(i-1).as_slice().to_vec()
-        })
+        .flat_map(|(kl_mat, i)| kl_mat.column(i - 1).as_slice().to_vec())
         .collect();
     let asms_cmd: Signals<_> = Signals::from((asms_cmd_vec, n_step));
     //let asms_cmd: Signals<_> = Signals::new(675 * 7, n_step);
@@ -64,7 +60,7 @@ async fn main() -> anyhow::Result<()> {
             )
             .build()?;
 
-actorscript! {
+    actorscript! {
     // 1: setpoint[MountSetPoint] -> {gmt_servos::GmtMount}
     // 1: m1_rbm[assembly::M1RigidBodyMotions] -> {gmt_servos::GmtM1}
     // 1: actuators[assembly::M1ActuatorCommandForces] -> {gmt_servos::GmtM1}

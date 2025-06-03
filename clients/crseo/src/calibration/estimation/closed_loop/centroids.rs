@@ -5,10 +5,10 @@ use gmt_dos_clients_io::{
 use interface::{Read, UniqueIdentifier, Update, Write};
 
 use crate::{
-    calibration::{algebra::CalibProps, CalibrationError, Modality, Reconstructor},
-    centroiding::{CentroidKind, CentroidsProcessing, ZeroMean},
-    sensors::{builders::CameraBuilder, Camera},
     DeviceInitialize, OpticalModel, OpticalModelBuilder,
+    calibration::{CalibrationError, Modality, Reconstructor, algebra::CalibProps},
+    centroiding::{CentroidKind, CentroidsProcessing, ZeroMean},
+    sensors::{Camera, builders::CameraBuilder},
 };
 
 use super::ClosedLoopEstimation;

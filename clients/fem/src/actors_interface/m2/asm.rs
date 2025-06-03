@@ -1,6 +1,6 @@
 //! M2 ASM
 
-use crate::{actors_interface::fem_io, DiscreteModalSolver, Get, Solver};
+use crate::{DiscreteModalSolver, Get, Solver, actors_interface::fem_io};
 use gmt_dos_clients_io::gmt_m2::M2EdgeSensors;
 use interface::{Data, Write};
 

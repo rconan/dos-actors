@@ -1,21 +1,21 @@
 use crate::{
+    OpticalModelBuilder,
     ngao::DetectorFrame,
     sensors::{NoSensor, SensorPropagation},
-    OpticalModelBuilder,
 };
 use crseo::{Atmosphere, FromBuilder, Gmt, SegmentWiseSensor, Source};
 use gmt_dos_clients_io::{
     gmt_m1::{
+        M1ModeShapes, M1RigidBodyMotions,
         assembly::M1ModeCoefficients,
         segment::{ModeShapes, RBM},
-        M1ModeShapes, M1RigidBodyMotions,
     },
     gmt_m2::{
-        asm::{
-            segment::{AsmCommand, FaceSheetFigure},
-            M2ASMAsmCommand, M2ASMFaceSheetFigure,
-        },
         M2RigidBodyMotions,
+        asm::{
+            M2ASMAsmCommand, M2ASMFaceSheetFigure,
+            segment::{AsmCommand, FaceSheetFigure},
+        },
     },
     optics::{
         M1GlobalTipTilt, M1Modes, M1State, M2GlobalTipTilt, M2Modes, M2State, SegmentD7Piston,

@@ -2,13 +2,10 @@ use std::{env, path::Path};
 
 use gmt_dos_actors::actorscript;
 use gmt_dos_clients::signals::{Signal, Signals};
-use gmt_dos_clients_fem::{
-    fem_io::actors_outputs::*, solvers::ExponentialMatrix, DiscreteModalSolver,
-};
 use gmt_dos_clients_io::{
     gmt_m1::M1RigidBodyMotions,
     gmt_m2::M2RigidBodyMotions,
-    mount::{MountEncoders, MountSetPoint, MountTorques},
+    mount::MountSetPoint,
     optics::TipTilt,
 };
 use gmt_dos_clients_lom::LinearOpticalModel;
@@ -29,14 +26,15 @@ MOUNT_MODEL=MOUNT_PDR_8kHz FEM_REPO=`pwd`/20230131_1605_zen_30_M1_202110_ASM_202
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    env::set_var(
-        "DATA_REPO",
-        Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("src")
-            .join("bin")
-            .join("step-mount"),
-    );
-
+    unsafe {
+        env::set_var(
+            "DATA_REPO",
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("src")
+                .join("bin")
+                .join("step-mount"),
+        );
+    }
     // simulation sampling frequency
     let sim_sampling_frequency = gmt_dos_clients_mount::sampling_frequency(); // Hz
 

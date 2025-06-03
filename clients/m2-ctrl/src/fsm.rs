@@ -6,12 +6,12 @@ pub use controller::{FsmSegmentInnerController, PiezoStackController};
 mod tests {
     use std::error::Error;
 
-    use gmt_dos_clients_fem::{solvers::ExponentialMatrix, DiscreteModalSolver};
+    use gmt_dos_clients_fem::{DiscreteModalSolver, solvers::ExponentialMatrix};
     use gmt_dos_clients_io::{
         gmt_fem::{inputs::MCM2PZTF, outputs::MCM2PZTD},
         gmt_m2::fsm::{
-            segment::{FsmCommand, PiezoForces, PiezoNodes},
             M2FSMPiezoForces, M2FSMPiezoNodes,
+            segment::{FsmCommand, PiezoForces, PiezoNodes},
         },
     };
     use interface::{Read, Update, Write};

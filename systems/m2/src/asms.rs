@@ -4,7 +4,7 @@ use gmt_fem::FEM;
 
 mod assembly;
 mod builder;
-pub use assembly::{AsmsInnerControllers, DispatchIn, DispatchOut, ASMS};
+pub use assembly::{ASMS, AsmsInnerControllers, DispatchIn, DispatchOut};
 pub use builder::AsmsBuilder;
 
 use crate::M2Error;

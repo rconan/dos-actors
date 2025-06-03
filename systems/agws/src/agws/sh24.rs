@@ -5,7 +5,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use gmt_dos_clients_crseo::{sensors::Camera, OpticalModel};
+use gmt_dos_clients_crseo::{OpticalModel, sensors::Camera};
 use gmt_dos_clients_io::optics::SensorData;
 use interface::{Data, Read, UniqueIdentifier, Update, Write};
 

@@ -4,7 +4,7 @@ use gmt_dos_clients_fem::{DiscreteModalSolver, ExponentialMatrix};
 use gmt_dos_clients_io::{
     gmt_fem::{
         inputs::MCM2SmHexF,
-        outputs::{MCM2Lcl6D, MCM2SmHexD, MCM2RB6D},
+        outputs::{MCM2Lcl6D, MCM2RB6D, MCM2SmHexD},
     },
     gmt_m2::{M2PositionerForces, M2PositionerNodes, M2RigidBodyMotions},
     mount::{MountEncoders, MountSetPoint, MountTorques},

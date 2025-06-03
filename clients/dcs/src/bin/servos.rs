@@ -1,20 +1,20 @@
 use gmt_dos_actors::{actorscript, system::Sys};
 use gmt_dos_clients::timer::Timer;
 use gmt_dos_clients_dcs::{
+    Dcs, Pull, Push,
     mount_trajectory::{
         ImMountTrajectory, MountTrajectory, OcsMountTrajectory, RelativeMountTrajectory,
     },
-    Dcs, Pull, Push,
 };
 use gmt_dos_clients_io::{
+    M12RigidBodyMotions,
     cfd_wind_loads::{CFDM1WindLoads, CFDM2WindLoads, CFDMountWindLoads},
     mount::{AverageMountEncoders, MountSetPoint},
-    M12RigidBodyMotions,
 };
 use gmt_dos_clients_servos::{GmtFem, GmtMount, GmtServoMechanisms};
 use gmt_dos_clients_transceiver::{Monitor, Transceiver};
-use gmt_dos_clients_windloads::system::{Mount, SigmoidCfdLoads, M1, M2};
-use interface::{filing::Filing, Tick};
+use gmt_dos_clients_windloads::system::{M1, M2, Mount, SigmoidCfdLoads};
+use interface::{Tick, filing::Filing};
 use nanomsg::Socket;
 
 const PULL: &str = "tcp://127.0.0.1:5001";

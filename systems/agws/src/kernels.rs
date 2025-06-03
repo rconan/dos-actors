@@ -1,7 +1,7 @@
 use std::{any::type_name, fmt::Display, io, marker::PhantomData};
 
 use gmt_dos_clients_crseo::{
-    centroiding::CentroidsError, crseo::FromBuilder, OpticalModel, OpticalModelBuilder,
+    OpticalModel, OpticalModelBuilder, centroiding::CentroidsError, crseo::FromBuilder,
 };
 use interface::{Data, Read, UniqueIdentifier, Update, Write};
 

@@ -5,22 +5,22 @@ use gmt_dos_clients::{
     signals::{OneSignal, Signal, Signals},
     smooth::{Smooth, Weight},
 };
-use gmt_dos_clients_fem::{solvers::ExponentialMatrix, DiscreteModalSolver};
+use gmt_dos_clients_fem::{DiscreteModalSolver, solvers::ExponentialMatrix};
 use gmt_dos_clients_io::{
     cfd_wind_loads::{CFDM1WindLoads, CFDM2WindLoads, CFDMountWindLoads},
     gmt_fem::{
-        inputs::{MCM2Lcl6F, MCM2SmHexF, OSSM1Lcl6F, CFD2021106F},
-        outputs::{MCM2Lcl6D, MCM2SmHexD, OSSM1Lcl, MCM2RB6D},
+        inputs::{CFD2021106F, MCM2Lcl6F, MCM2SmHexF, OSSM1Lcl6F},
+        outputs::{MCM2Lcl6D, MCM2RB6D, MCM2SmHexD, OSSM1Lcl},
     },
-    gmt_m1::{assembly, M1RigidBodyMotions},
+    gmt_m1::{M1RigidBodyMotions, assembly},
     gmt_m2::{
+        M2PositionerForces, M2PositionerNodes, M2RigidBodyMotions,
         asm::{
             M2ASMAsmCommand, M2ASMFluidDampingForces, M2ASMVoiceCoilsForces, M2ASMVoiceCoilsMotion,
         },
-        M2PositionerForces, M2PositionerNodes, M2RigidBodyMotions,
     },
     mount::{MountEncoders, MountSetPoint, MountTorques},
-    optics::{SegmentPiston, SegmentTipTilt, TipTilt, WfeRms},
+    optics::{SegmentPiston, SegmentTipTilt, TipTilt},
 };
 use gmt_dos_clients_lom::LinearOpticalModel;
 use gmt_dos_clients_m2_ctrl::Positioners;
@@ -45,14 +45,15 @@ name of block diagram:
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    env::set_var(
-        "DATA_REPO",
-        Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("src")
-            .join("bin")
-            .join("windloaded-mount-m1-asms-lom"),
-    );
-
+    unsafe {
+        env::set_var(
+            "DATA_REPO",
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("src")
+                .join("bin")
+                .join("windloaded-mount-m1-asms-lom"),
+        );
+    }
     let sim_sampling_frequency = 8000;
     let bootstrap_duration = 5_usize; // second
     let sim_duration = 30_usize; // second

@@ -1,8 +1,8 @@
 use gmt_dos_clients_crseo::{
-    calibration::Reconstructor,
-    crseo::{builders::SourceBuilder, FromBuilder, Source},
-    sensors::{builders::CameraBuilder, Camera},
     OpticalModel, OpticalModelBuilder, OpticalModelError,
+    calibration::Reconstructor,
+    crseo::{FromBuilder, Source, builders::SourceBuilder},
+    sensors::{Camera, builders::CameraBuilder},
 };
 use skyangle::Conversion;
 

@@ -1,7 +1,7 @@
-use crseo::FromBuilder;
 use arrow::Arrow;
-use gmt_dos_clients_crseo::{OpticalModel, OpticalModelOptions, Wavefront, WfeRms};
+use crseo::FromBuilder;
 use dos_actors::prelude::*;
+use gmt_dos_clients_crseo::{OpticalModel, OpticalModelOptions, Wavefront, WfeRms};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

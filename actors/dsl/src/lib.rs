@@ -212,8 +212,9 @@ and
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
+    Attribute,
     parse::{Parse, ParseStream},
-    parse_macro_input, Attribute,
+    parse_macro_input,
 };
 
 /**

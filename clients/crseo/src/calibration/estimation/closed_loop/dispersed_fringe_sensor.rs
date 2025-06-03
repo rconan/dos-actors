@@ -1,20 +1,20 @@
 use gmt_dos_clients_io::{
     gmt_m2::asm::M2ASMAsmCommand,
     optics::{
-        dispersed_fringe_sensor::{DfsFftFrame, Intercepts},
         Dev, Frame, SensorData,
+        dispersed_fringe_sensor::{DfsFftFrame, Intercepts},
     },
 };
 use interface::{Read, UniqueIdentifier, Update, Write};
 
 use crate::{
-    calibration::{algebra::CalibProps, CalibrationError, Modality, Reconstructor},
+    DeviceInitialize, DispersedFringeSensorProcessing, OpticalModel, OpticalModelBuilder,
+    calibration::{CalibrationError, Modality, Reconstructor, algebra::CalibProps},
     centroiding::{CentroidKind, CentroidsProcessing},
     sensors::{
-        builders::{CameraBuilder, DispersedFringeSensorBuilder},
         Camera, DispersedFringeSensor,
+        builders::{CameraBuilder, DispersedFringeSensorBuilder},
     },
-    DeviceInitialize, DispersedFringeSensorProcessing, OpticalModel, OpticalModelBuilder,
 };
 
 use super::ClosedLoopEstimation;

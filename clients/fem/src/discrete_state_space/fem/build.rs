@@ -1,4 +1,4 @@
-use crate::{solvers::Solver, DiscreteModalSolver, DiscreteStateSpace, StateSpaceError};
+use crate::{DiscreteModalSolver, DiscreteStateSpace, StateSpaceError, solvers::Solver};
 
 type Result<T> = std::result::Result<T, StateSpaceError>;
 

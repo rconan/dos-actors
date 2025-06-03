@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use gmt_dos_clients_io::{
-    gmt_m2::fsm::{
-        segment::{FsmCommand, PiezoForces, PiezoNodes},
-        M2FSMFsmCommand, M2FSMPiezoForces, M2FSMPiezoNodes,
-    },
     Assembly,
+    gmt_m2::fsm::{
+        M2FSMFsmCommand, M2FSMPiezoForces, M2FSMPiezoNodes,
+        segment::{FsmCommand, PiezoForces, PiezoNodes},
+    },
 };
 use interface::{Data, Read, Update, Write};
 use serde::{Deserialize, Serialize};

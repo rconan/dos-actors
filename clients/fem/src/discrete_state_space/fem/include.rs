@@ -1,6 +1,6 @@
 use nalgebra::DMatrixView;
 
-use crate::{solvers::Solver, DiscreteStateSpace, StateSpaceError};
+use crate::{DiscreteStateSpace, StateSpaceError, solvers::Solver};
 
 type Result<T> = std::result::Result<T, StateSpaceError>;
 

@@ -326,7 +326,7 @@ dependencies = [
  "objc2 0.6.1",
  "objc2-app-kit 0.3.1",
  "objc2-foundation 0.3.1",
- "parking_lot 0.12.3",
+ "parking_lot 0.12.4",
  "percent-encoding",
  "x11rb",
 ]
@@ -981,29 +981,6 @@ dependencies = [
 
 [[package]]
 name = "bindgen"
-version = "0.59.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bd2a9a458e8f4304c52c43ebb0cfbd520289f8379a52e329a38afda99bf8eb8"
-dependencies = [
- "bitflags 1.3.2",
- "cexpr",
- "clang-sys",
- "clap 2.34.0",
- "env_logger 0.9.3",
- "lazy_static",
- "lazycell",
- "log",
- "peeking_take_while",
- "proc-macro2",
- "quote",
- "regex",
- "rustc-hash 1.1.0",
- "shlex",
- "which",
-]
-
-[[package]]
-name = "bindgen"
 version = "0.69.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "271383c67ccabffb7381723dea0672a673f292304fcb45c01cc648c7a8d58088"
@@ -1148,7 +1125,7 @@ dependencies = [
  "anyhow",
  "clap 4.5.39",
  "complot",
- "env_logger 0.11.8",
+ "env_logger",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
  "gmt_dos-clients",
@@ -1309,9 +1286,9 @@ checksum = "37b2a672a2cb129a2e41c10b1224bb368f9f37a2b16b612598138befd7b37eb5"
 
 [[package]]
 name = "cc"
-version = "1.2.24"
+version = "1.2.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16595d3be041c03b09d08d0858631facccee9221e579704070e6e9e4915d3bc7"
+checksum = "d0fc897dc1e865cc67c0e05a836d9d3f1df3cbe442aa4a9473b18e12624a4951"
 dependencies = [
  "jobserver",
  "libc",
@@ -1841,7 +1818,7 @@ dependencies = [
  "crossterm_winapi",
  "libc",
  "mio 0.8.11",
- "parking_lot 0.12.3",
+ "parking_lot 0.12.4",
  "signal-hook",
  "signal-hook-mio",
  "winapi",
@@ -1855,7 +1832,7 @@ checksum = "829d955a0bb380ef178a640b91779e3987da38c9aea133b20614cfed8cdea9c6"
 dependencies = [
  "bitflags 2.9.1",
  "crossterm_winapi",
- "parking_lot 0.12.3",
+ "parking_lot 0.12.4",
  "rustix 0.38.44",
  "winapi",
 ]
@@ -1948,7 +1925,7 @@ name = "demos"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "env_logger 0.11.8",
+ "env_logger",
  "gmt-fem",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
@@ -2156,7 +2133,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "crseo",
- "env_logger 0.11.8",
+ "env_logger",
  "faer",
  "faer-ext",
  "gmt-fem",
@@ -2220,7 +2197,7 @@ dependencies = [
  "objc2 0.5.2",
  "objc2-app-kit 0.2.2",
  "objc2-foundation 0.2.2",
- "parking_lot 0.12.3",
+ "parking_lot 0.12.4",
  "percent-encoding",
  "profiling",
  "raw-window-handle",
@@ -2402,19 +2379,6 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.9.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a12e6657c4c97ebab115a42dcee77225f7f482cdd841cf7088c657a42e9e00e7"
-dependencies = [
- "atty",
- "humantime",
- "log",
- "regex",
- "termcolor",
-]
-
-[[package]]
-name = "env_logger"
 version = "0.11.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13c863f0904021b108aa8b2f55046443e6b1ebde8fd4a15c399893aae4fa069f"
@@ -2440,7 +2404,7 @@ dependencies = [
  "epaint_default_fonts",
  "log",
  "nohash-hasher",
- "parking_lot 0.12.3",
+ "parking_lot 0.12.4",
  "profiling",
  "serde",
 ]
@@ -3215,7 +3179,7 @@ dependencies = [
 
 [[package]]
 name = "gmt-fem"
-version = "5.1.2"
+version = "5.2.0"
 dependencies = [
  "anyhow",
  "arrow",
@@ -3283,7 +3247,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "complot",
- "env_logger 0.11.8",
+ "env_logger",
  "flume",
  "futures",
  "gmt_dos-actors-clients_interface",
@@ -3338,7 +3302,7 @@ dependencies = [
  "bincode 2.0.1",
  "colorous",
  "complot",
- "env_logger 0.11.8",
+ "env_logger",
  "faer",
  "faer-ext",
  "faer-traits",
@@ -3369,7 +3333,7 @@ name = "gmt_dos-clients_arrow"
 version = "2.1.1"
 dependencies = [
  "arrow",
- "env_logger 0.11.8",
+ "env_logger",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
  "gmt_dos-clients",
@@ -3415,7 +3379,7 @@ name = "gmt_dos-clients_dcs"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "env_logger 0.11.8",
+ "env_logger",
  "gmt-fem",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
@@ -3512,7 +3476,7 @@ version = "5.0.0"
 dependencies = [
  "anyhow",
  "bincode 2.0.1",
- "env_logger 0.11.8",
+ "env_logger",
  "gmt-fem",
  "gmt-lom",
  "gmt_dos-actors",
@@ -3543,7 +3507,7 @@ dependencies = [
  "anyhow",
  "bincode 2.0.1",
  "complot",
- "env_logger 0.11.8",
+ "env_logger",
  "gmt-fem",
  "gmt-fem-code-builder",
  "gmt-lom",
@@ -3579,7 +3543,7 @@ name = "gmt_dos-clients_mount"
 version = "4.1.1"
 dependencies = [
  "anyhow",
- "env_logger 0.11.8",
+ "env_logger",
  "gmt-fem",
  "gmt-fem-code-builder",
  "gmt-lom",
@@ -3653,7 +3617,7 @@ version = "3.0.0"
 dependencies = [
  "complot",
  "crseo",
- "env_logger 0.11.8",
+ "env_logger",
  "gmt-fem",
  "gmt-fem-code-builder",
  "gmt_dos-actors",
@@ -3688,7 +3652,7 @@ dependencies = [
  "anyhow",
  "bincode 2.0.1",
  "bytesize",
- "env_logger 0.11.8",
+ "env_logger",
  "flate2",
  "flume",
  "futures",
@@ -3713,7 +3677,7 @@ name = "gmt_dos-clients_windloads"
 version = "3.0.1"
 dependencies = [
  "anyhow",
- "env_logger 0.11.8",
+ "env_logger",
  "geotrans 0.2.2",
  "gmt-fem",
  "gmt-fem-code-builder",
@@ -4825,9 +4789,9 @@ checksum = "b4ce301924b7887e9d637144fdade93f9dfff9b60981d4ac161db09720d39aa5"
 
 [[package]]
 name = "lock_api"
-version = "0.4.12"
+version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07af8b9cdd281b7915f413fa73f29ebd5d55d0d3f0155584dade1ff18cea1b17"
+checksum = "96936507f153605bddfcda068dd804796c84324ed2510809e5b2a624c81da765"
 dependencies = [
  "autocfg",
  "scopeguard",
@@ -4896,24 +4860,24 @@ dependencies = [
 
 [[package]]
 name = "matio-rs"
-version = "1.4.0"
+version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba11508fb5ba93bee0634836aa0a3f752d46649e92445f20eb238b2e8e5c176d"
+checksum = "25bfeeead68e848f597d89c8242425a2745bfb2b12e6b02b7277b98e16582021"
 dependencies = [
  "matio-rs-sys",
  "matio-rs_derive",
  "nalgebra 0.33.2",
  "paste",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
 name = "matio-rs-sys"
-version = "0.2.4"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38885c9b2a39641b7c9a08abff16f4ec7b6dffb6a7ecac95a81c5fd803b86c30"
+checksum = "af95692e9b16ceb6ab22f9adc5320e2bda83efec0f918ffbe256b9a3d72a5c08"
 dependencies = [
- "bindgen 0.59.2",
+ "bindgen 0.71.1",
  "cmake",
 ]
 
@@ -4953,7 +4917,7 @@ name = "mechanics"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "env_logger 0.11.8",
+ "env_logger",
  "gmt-fem",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
@@ -5949,12 +5913,12 @@ dependencies = [
 
 [[package]]
 name = "parking_lot"
-version = "0.12.3"
+version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1bf18183cf54e8d6059647fc3063646a1801cf30896933ec2311622cc4b9a27"
+checksum = "70d58bf43669b5795d1576d0641cfb6fbb2057bf629506267a92807158584a13"
 dependencies = [
  "lock_api",
- "parking_lot_core 0.9.10",
+ "parking_lot_core 0.9.11",
 ]
 
 [[package]]
@@ -5973,9 +5937,9 @@ dependencies = [
 
 [[package]]
 name = "parking_lot_core"
-version = "0.9.10"
+version = "0.9.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e401f977ab385c9e4e3ab30627d6f26d00e2c73eef317493c4ec6d468726cf8"
+checksum = "bc838d2a56b5b1a6c25f55575dfc605fabb63bb2365f6c2353ef9159aa69e4a5"
 dependencies = [
  "cfg-if",
  "libc",
@@ -6054,7 +6018,7 @@ dependencies = [
  "anyhow",
  "colorous",
  "csv",
- "env_logger 0.11.8",
+ "env_logger",
  "flate2",
  "geotrans 0.2.2",
  "glob",
@@ -6130,12 +6094,6 @@ dependencies = [
  "password-hash",
  "sha2",
 ]
-
-[[package]]
-name = "peeking_take_while"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19b17cddbe7ec3f8bc800887bab5e717348c95ea2ca0b1bf0837fb964dc67099"
 
 [[package]]
 name = "pem"
@@ -6862,9 +6820,9 @@ dependencies = [
 
 [[package]]
 name = "prettyplease"
-version = "0.2.32"
+version = "0.2.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "664ec5419c51e34154eec046ebcba56312d5a2fc3b09a06da188e1ad21afadf6"
+checksum = "9dee91521343f4c5c6a63edd65e54f31f5c92fe8978c40a4282f8372194c6a7d"
 dependencies = [
  "proc-macro2",
  "syn 2.0.101",
@@ -8461,7 +8419,7 @@ dependencies = [
  "bytes",
  "libc",
  "mio 1.0.4",
- "parking_lot 0.12.3",
+ "parking_lot 0.12.4",
  "pin-project-lite",
  "signal-hook-registry",
  "socket2",
@@ -9136,7 +9094,7 @@ dependencies = [
  "document-features",
  "js-sys",
  "log",
- "parking_lot 0.12.3",
+ "parking_lot 0.12.4",
  "profiling",
  "raw-window-handle",
  "smallvec",
@@ -9164,7 +9122,7 @@ dependencies = [
  "log",
  "naga",
  "once_cell",
- "parking_lot 0.12.3",
+ "parking_lot 0.12.4",
  "profiling",
  "raw-window-handle",
  "rustc-hash 1.1.0",
@@ -9201,7 +9159,7 @@ dependencies = [
  "ndk-sys 0.5.0+25.2.9519653",
  "objc",
  "once_cell",
- "parking_lot 0.12.3",
+ "parking_lot 0.12.4",
  "profiling",
  "raw-window-handle",
  "renderdoc-sys",

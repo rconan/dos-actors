@@ -56,8 +56,8 @@ mod optical_model;
 pub mod processing;
 pub mod sensors;
 
-pub use optical_model::{builder::OpticalModelBuilder, OpticalModel, OpticalModelError};
-pub use processing::{centroiding, DispersedFringeSensorProcessing};
+pub use optical_model::{OpticalModel, OpticalModelError, builder::OpticalModelBuilder};
+pub use processing::{DispersedFringeSensorProcessing, centroiding};
 
 impl<T> TimerMarker for OpticalModel<T> {}
 

@@ -2,27 +2,27 @@ use crate::calibration::{CalibProps, Modality};
 use std::sync::Arc;
 
 use crseo::{
-    gmt::{GmtM1, GmtM2},
     FromBuilder,
+    gmt::{GmtM1, GmtM2},
 };
 use faer::ColRef;
 use gmt_dos_clients_io::{
     gmt_m1::segment::{ModeShapes, RBM},
-    gmt_m2::asm::{segment::AsmCommand, M2ASMAsmCommand},
+    gmt_m2::asm::{M2ASMAsmCommand, segment::AsmCommand},
     optics::{
-        dispersed_fringe_sensor::{DfsFftFrame, Intercepts},
         Dev, Wavefront, WfeRms,
+        dispersed_fringe_sensor::{DfsFftFrame, Intercepts},
     },
 };
 use interface::{Read, UniqueIdentifier, Update, Write};
 
 use crate::{
+    DeviceInitialize, DispersedFringeSensorProcessing, OpticalModel, OpticalModelBuilder,
     calibration::{
-        algebra::Collapse, estimation::closed_loop::ClosedLoopEstimation, CalibrateAssembly,
-        CalibrationError, CalibrationSegment, ClosedLoopCalib, Reconstructor,
+        CalibrateAssembly, CalibrationError, CalibrationSegment, ClosedLoopCalib, Reconstructor,
+        algebra::Collapse, estimation::closed_loop::ClosedLoopEstimation,
     },
     sensors::{DispersedFringeSensor, NoSensor, WaveSensor},
-    DeviceInitialize, DispersedFringeSensorProcessing, OpticalModel, OpticalModelBuilder,
 };
 
 use super::{

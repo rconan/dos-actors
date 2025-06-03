@@ -119,7 +119,7 @@ impl<U: UniqueIdentifier + 'static> Transceiver<U, Receiver> {
         } = self;
         let endpoint = endpoint.take().unwrap();
         let tx = tx.take().unwrap();
-        let address = SocketAddr::new(server_address.parse().unwrap(),U::PORT as u16);
+        let address = SocketAddr::new(server_address.parse().unwrap(), U::PORT as u16);
         let server_name: String = crypto.name.clone();
         let name = crate::trim(type_name::<U>());
         let handle = tokio::spawn(async move {

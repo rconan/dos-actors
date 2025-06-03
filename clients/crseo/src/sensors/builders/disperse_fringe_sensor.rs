@@ -1,8 +1,8 @@
-use crseo::{segment_piston_sensor::SegmentPistonSensorBuilder, Builder};
+use crseo::{Builder, segment_piston_sensor::SegmentPistonSensorBuilder};
 
 use crate::{
-    sensors::DispersedFringeSensor, DeviceInitialize, DispersedFringeSensorProcessing,
-    OpticalModel, OpticalModelBuilder,
+    DeviceInitialize, DispersedFringeSensorProcessing, OpticalModel, OpticalModelBuilder,
+    sensors::DispersedFringeSensor,
 };
 
 use super::SensorBuilderProperty;

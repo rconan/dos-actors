@@ -5,7 +5,7 @@ use crseo::{FromBuilder, Source};
 use gmt_dos_clients_io::optics::{SegmentPiston, SegmentTipTilt, Wavefront, WfeRms};
 use interface::{Data, Size, Update, Write};
 
-use super::{builders::WaveSensorBuilder, NoSensor, SensorPropagation};
+use super::{NoSensor, SensorPropagation, builders::WaveSensorBuilder};
 
 /// Complex amplitude sensor
 ///

@@ -1,12 +1,12 @@
 use crseo::{
-    builders::{GmtBuilder, SourceBuilder},
     Builder, CrseoError,
+    builders::{GmtBuilder, SourceBuilder},
 };
 use interface::Update;
 
 use crate::{
-    sensors::{NoSensor, WaveSensor},
     OpticalModel, OpticalModelBuilder,
+    sensors::{NoSensor, WaveSensor},
 };
 
 use super::SensorBuilderProperty;

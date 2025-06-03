@@ -5,8 +5,8 @@ use quote::format_ident;
 use syn::{Expr, Ident, Type};
 
 use crate::{
-    model::{Scope, ScopeSignal},
     Expand, Expanded,
+    model::{Scope, ScopeSignal},
 };
 
 use super::{Client, ClientKind, System};

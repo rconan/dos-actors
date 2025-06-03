@@ -1,7 +1,7 @@
 use gmt_dos_actors::prelude::*;
 use gmt_dos_clients::{Logging, Signal, Signals};
 use gmt_dos_clients_fem::{
-    fem_io::actors_outputs::OSSM1Lcl, DiscreteModalSolver, ExponentialMatrix,
+    DiscreteModalSolver, ExponentialMatrix, fem_io::actors_outputs::OSSM1Lcl,
 };
 use gmt_dos_clients_io::gmt_m1::M1RigidBodyMotions;
 use gmt_dos_clients_m1_ctrl::{Calibration, Segment};

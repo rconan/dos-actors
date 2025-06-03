@@ -4,9 +4,9 @@ use std::{
 };
 
 use crseo::{
+    Builder,
     imaging::LensletArray,
     wavefrontsensor::{Pyramid, PyramidBuilder},
-    Builder,
 };
 use interface::UniqueIdentifier;
 use serde::Serialize;

@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use gmt_dos_actors::prelude::*;
 use gmt_dos_clients_transceiver::{Monitor, Transceiver};
-use interface::{Data, Read, Update, UID};
+use interface::{Data, Read, UID, Update};
 
 #[derive(UID)]
 #[uid(data = Vec<u8>)]

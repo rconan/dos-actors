@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use gmt_dos_clients_io::gmt_m2::{asm::M2ASMReferenceBodyNodes, M2EdgeSensors};
+use gmt_dos_clients_io::gmt_m2::{M2EdgeSensors, asm::M2ASMReferenceBodyNodes};
 use interface::{Data, Read, Update, Write};
 use matio_rs::MatFile;
 use std::{env, path::Path, sync::Arc};

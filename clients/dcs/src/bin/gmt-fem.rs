@@ -1,4 +1,4 @@
-use gmt_dos_clients_fem::{solvers::ExponentialMatrix, DiscreteModalSolver};
+use gmt_dos_clients_fem::{DiscreteModalSolver, solvers::ExponentialMatrix};
 use gmt_dos_clients_io::gmt_fem::outputs::{MCM2Lcl6D, OSSM1Lcl};
 
 fn main() -> anyhow::Result<()> {

@@ -1,4 +1,4 @@
-pub use assembly::{DispatchIn, DispatchOut, FsmsInnerControllers, FSMS};
+pub use assembly::{DispatchIn, DispatchOut, FSMS, FsmsInnerControllers};
 use gmt_dos_actors::system::{Sys, SystemError};
 use gmt_dos_clients_io::Assembly;
 

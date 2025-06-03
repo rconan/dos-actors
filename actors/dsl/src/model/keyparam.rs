@@ -3,8 +3,8 @@ use std::{collections::VecDeque, ops::Deref};
 use proc_macro2::Span;
 use quote::quote;
 use syn::{
-    parse::{Parse, ParseStream},
     Ident, LitStr, Token,
+    parse::{Parse, ParseStream},
 };
 
 use crate::Expand;

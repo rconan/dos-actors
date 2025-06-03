@@ -1,7 +1,7 @@
 use faer::{linalg::solvers::SolveLstsqCore, prelude::*};
 use faer_ext::IntoFaer;
 use gmt_dos_clients_fem::{Model, Switch};
-use gmt_fem::{FemError, FEM};
+use gmt_fem::{FEM, FemError};
 
 #[derive(thiserror::Error, Debug)]
 pub enum TransformError {

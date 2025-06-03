@@ -102,11 +102,11 @@ assert_eq!(recon.pinv().last().unwrap().mat_ref().shape(),(14,36));
 */
 
 use crate::{
-    centroiding::CentroidsError, optical_model::OpticalModelError, OpticalModel,
-    OpticalModelBuilder,
+    OpticalModel, OpticalModelBuilder, centroiding::CentroidsError,
+    optical_model::OpticalModelError,
 };
 use algebra::CalibProps;
-use crseo::{gmt::GmtMx, CrseoError, FromBuilder, Propagation};
+use crseo::{CrseoError, FromBuilder, Propagation, gmt::GmtMx};
 use gmt_dos_clients_io::gmt_m1::segment::{ModeShapes, RBM};
 use interface::{Read, UniqueIdentifier, Update, Write};
 use std::{fmt::Debug, sync::Arc, thread};
@@ -149,16 +149,16 @@ pub trait CalibrateAssembly<M: GmtMx, S: FromBuilder>:
 }
 
 impl<
-        M: GmtMx,
-        S: FromBuilder,
-        T: CalibrationSegment<M, 1, Sensor = S>
-            + CalibrationSegment<M, 2, Sensor = S>
-            + CalibrationSegment<M, 3, Sensor = S>
-            + CalibrationSegment<M, 4, Sensor = S>
-            + CalibrationSegment<M, 5, Sensor = S>
-            + CalibrationSegment<M, 6, Sensor = S>
-            + CalibrationSegment<M, 7, Sensor = S>,
-    > CalibrateAssembly<M, S> for T
+    M: GmtMx,
+    S: FromBuilder,
+    T: CalibrationSegment<M, 1, Sensor = S>
+        + CalibrationSegment<M, 2, Sensor = S>
+        + CalibrationSegment<M, 3, Sensor = S>
+        + CalibrationSegment<M, 4, Sensor = S>
+        + CalibrationSegment<M, 5, Sensor = S>
+        + CalibrationSegment<M, 6, Sensor = S>
+        + CalibrationSegment<M, 7, Sensor = S>,
+> CalibrateAssembly<M, S> for T
 {
 }
 
@@ -333,10 +333,10 @@ where
                     }
                 })
             }); // let mut ci = vec![];
-                // for c in [c1, c2, c3, c4, c5, c6, c7] {
-                //     ci.push(c.join().unwrap().unwrap());
-                // }
-                // ci
+            // for c in [c1, c2, c3, c4, c5, c6, c7] {
+            //     ci.push(c.join().unwrap().unwrap());
+            // }
+            // ci
             [c1, c2, c3, c4, c5, c6, c7]
                 .into_iter()
                 .filter_map(|c| c.map(|c| c.join().unwrap()))
@@ -410,10 +410,10 @@ where
                 <Self as CalibrationSegment<M, 7>>::calibrate(optical_model.clone(), calib_mode)
             }
         }); // let mut ci = vec![];
-            // for c in [c1, c2, c3, c4, c5, c6, c7] {
-            //     ci.push(c.join().unwrap().unwrap());
-            // }
-            // ci
+        // for c in [c1, c2, c3, c4, c5, c6, c7] {
+        //     ci.push(c.join().unwrap().unwrap());
+        // }
+        // ci
         let ci: Result<Vec<_>> = [c1, c2, c3, c4, c5, c6, c7]
             .into_iter()
             .filter_map(|c| c.map(|c| c))

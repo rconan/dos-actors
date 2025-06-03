@@ -1,4 +1,4 @@
-use gmt_dos_clients_fem::{solvers::ExponentialMatrix, DiscreteStateSpace};
+use gmt_dos_clients_fem::{DiscreteStateSpace, solvers::ExponentialMatrix};
 use nalgebra as na;
 
 use super::Include;
