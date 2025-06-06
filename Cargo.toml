@@ -47,7 +47,7 @@ gmt_dos-clients_arrow = { version = "2.1", path = "clients/arrow/" }
 gmt_dos-clients_domeseeing = { version = "2.1", path = "clients/domeseeing/" }
 gmt_dos-clients_windloads = { version = "3.0", path = "clients/windloads/" }
 gmt_dos-clients_lom = { version = "1.2", path = "clients/lom/" }
-gmt_dos-clients_crseo = { version = "4.4", path = "clients/crseo/" }
+gmt_dos-clients_crseo = { version = "5.0", path = "clients/crseo/" }
 gmt_dos-clients_transceiver = { version = "2.0", path = "clients/transceiver" }
 gmt_dos-clients_scope = { version = "3.1", path = "clients/scope" }
 gmt_dos-clients_scope-client = { version = "0.2.2", path = "clients/scope/client" }

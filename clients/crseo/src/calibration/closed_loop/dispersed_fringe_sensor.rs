@@ -101,7 +101,7 @@ where
         // println!("{m1_to_closed_loop_sensor}");
         // print!("M1->M2 computation...");
         // let now = Instant::now();
-        let m1_to_m2 = m2_to_closed_loop_sensor.pinv().next().unwrap()
+        let m1_to_m2 = m2_to_closed_loop_sensor.pinv_iter_mut().next().unwrap()
             * &m1_to_closed_loop_sensor.calib_slice()[0];
         // println!(
         //     " ({},{}) in {:.3?}",

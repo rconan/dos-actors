@@ -3348,7 +3348,7 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-clients_crseo"
-version = "4.4.0"
+version = "5.0.0"
 dependencies = [
  "anyhow",
  "bincode 2.0.1",

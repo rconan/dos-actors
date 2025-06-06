@@ -115,7 +115,7 @@ where
     ///
     /// [Self] is A and `B` is another reconstructor
     pub fn least_square_solve(&mut self, b: &Reconstructor<M, C>) -> Vec<Mat<f64>> {
-        self.pinv()
+        self.pinv_iter_mut()
             .zip(&b.calib)
             .map(|(pinv, calib)| pinv * calib)
             .collect()
@@ -127,12 +127,16 @@ where
     pub fn calib(&self) -> impl Iterator<Item = &C> {
         self.calib.iter()
     }
-    /// Returns an iterator over the pseudo-inverse of the calibration matrices
-    pub fn pinv(&mut self) -> impl Iterator<Item = &mut CalibPinv<M>> {
+    /// Returns a mutable iterator over the pseudo-inverse of the calibration matrices
+    pub fn pinv_iter_mut(&mut self) -> impl Iterator<Item = &mut CalibPinv<M>> {
         self.pinv.iter_mut().filter_map(|p| p.as_mut())
         // .zip(&self.calib)
         // .map(|(p, c)| p.get_or_insert_with(|| c.pseudoinverse()))
         // .map(|p| p)
+    }
+    /// Returns a vector of references to the pseudo-inverse of the calibration matrices
+    pub fn pinv_as_ref(&self) -> Vec<Option<&CalibPinv<M>>> {
+        self.pinv.iter().map(|x| x.as_ref()).collect()
     }
     /// Returns an iterator over the calibration matrices and their pseudo-inverse
     pub fn calib_pinv(&mut self) -> impl Iterator<Item = (&C, &CalibPinv<M>)> {
@@ -471,11 +475,45 @@ impl Mul<Vec<Mat<f64>>> for &Reconstructor {
     }
 }
 
+impl Mul<&Reconstructor> for &[Mat<f64>] {
+    type Output = Vec<Mat<f64>>;
+
+    fn mul(self, rhs: &Reconstructor) -> Self::Output {
+        self.iter()
+            .zip(rhs.calib.iter())
+            .map(|(m, rhs)| m * rhs.mat_ref())
+            .collect()
+    }
+}
+
+impl Mul<&Reconstructor> for Vec<Mat<f64>> {
+    type Output = Vec<Mat<f64>>;
+
+    fn mul(self, rhs: &Reconstructor) -> Self::Output {
+        self.iter()
+            .zip(rhs.calib.iter())
+            .map(|(m, rhs)| m * rhs.mat_ref())
+            .collect()
+    }
+}
+
 impl Mul<MatRef<'_, f64>> for &Reconstructor {
     type Output = Vec<Mat<f64>>;
 
     fn mul(self, rhs: MatRef<'_, f64>) -> Self::Output {
         self.calib.iter().map(|c| c * rhs).collect()
+    }
+}
+
+impl<M: Modality, C: CalibProps<M>> Mul<Vec<Option<&CalibPinv<M>>>> for &Reconstructor<M, C> {
+    type Output = Vec<Mat<f64>>;
+
+    fn mul(self, rhs: Vec<Option<&CalibPinv<M>>>) -> Self::Output {
+        self.calib
+            .iter()
+            .zip(&rhs)
+            .map(|(c, rhs)| c.mat_ref() * rhs.expect("no inverse matrix").mat_ref())
+            .collect()
     }
 }
 
@@ -501,7 +539,7 @@ impl<M: Modality, C: CalibProps<M>> Div<&mut Reconstructor<M, C>> for MatRef<'_,
     }
 }
 
-impl SubAssign<Vec<Mat<f64>>> for &mut Reconstructor {
+impl SubAssign<Vec<Mat<f64>>> for Reconstructor {
     fn sub_assign(&mut self, rhs: Vec<Mat<f64>>) {
         self.calib
             .iter_mut()
