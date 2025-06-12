@@ -23,7 +23,6 @@ serde-pickle = { version = "1.2.0", optional = true }
 [features]
 filing = ["serde", "bincode/serde"]
 serde-pickle = ["dep:serde-pickle"]
-pickling = ["serde", "serde-pickle"]
 
 [dev-dependencies]
 criterion = "0.5.1"
@@ -33,4 +32,4 @@ name = "main"
 harness = false
 
 [package.metadata.docs.rs]
-all-features = true
+features = ["filing"]

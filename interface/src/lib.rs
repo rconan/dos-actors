@@ -21,7 +21,7 @@ pub mod units;
 
 pub mod select;
 
-#[cfg(any(feature = "filing", feature = "pickling"))]
+#[cfg(feature = "filing")]
 pub mod filing;
 
 pub type Assoc<U> = <U as UniqueIdentifier>::DataType;
@@ -72,6 +72,7 @@ impl<U: UniqueIdentifier> Quote for U {
         inner(type_name::<U>())
     }
 }
+
 impl UniqueIdentifier for () {
     type DataType = ();
 }

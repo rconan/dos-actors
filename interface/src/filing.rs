@@ -20,13 +20,13 @@ pub enum FilingError {
     Create(#[source] std::io::Error, PathBuf),
     #[error("can't open file {0:?}")]
     Open(#[source] std::io::Error, PathBuf),
-    #[cfg(feature = "filing")]
+    #[cfg(not(feature = "serde-pickle"))]
     #[error("decoder error")]
     Decoder(#[from] bincode::error::DecodeError),
-    #[cfg(all(feature = "pickling", not(feature = "filing")))]
+    #[cfg(feature = "serde-pickle")]
     #[error("decoder error")]
     PickleCodec(#[from] serde_pickle::error::Error),
-    #[cfg(feature = "filing")]
+    #[cfg(not(feature = "serde-pickle"))]
     #[error("encoder error")]
     Encoder(#[from] bincode::error::EncodeError),
     #[error("builder error: {0}")]
@@ -44,7 +44,7 @@ where
 {
     /// Decodes object from [std::io::Read]
     #[inline]
-    #[cfg(feature = "filing")]
+    #[cfg(not(feature = "serde-pickle"))]
     fn decode<R>(reader: &mut R) -> Result<Self>
     where
         R: Read,
@@ -55,7 +55,7 @@ where
         )?)
     }
     #[inline]
-    #[cfg(all(feature = "pickling", not(feature = "filing")))]
+    #[cfg(feature = "serde-pickle")]
     fn decode<R>(reader: &mut R) -> Result<Self>
     where
         R: Read,
@@ -65,7 +65,7 @@ where
 
     /// Encodes object to [std::io::Write]
     #[inline]
-    #[cfg(feature = "filing")]
+    #[cfg(not(feature = "serde-pickle"))]
     fn encode<W>(&self, writer: &mut W) -> Result<()>
     where
         W: Write,
@@ -74,7 +74,7 @@ where
         Ok(())
     }
     #[inline]
-    #[cfg(all(feature = "pickling", not(feature = "filing")))]
+    #[cfg(feature = "serde-pickle")]
     fn encode<W>(&self, writer: &mut W) -> Result<()>
     where
         W: Write,
@@ -193,7 +193,7 @@ where
     /// Loads an object and builder pair from a given path and returns the object
     /// only if the builder match the current one, or creates a new object from the
     /// current builder then encodes the new object and builder pair to the given path
-    /// and finally returns the new object.
+    /// and fin ject.
     fn from_path_or<P, B>(path: P, current_builder: B) -> Result<Self>
     where
         P: AsRef<Path> + Debug,
@@ -219,7 +219,7 @@ where
     /// Loads an object and builder pair from a given file and returns the object
     /// only if the builder match the current one, or creates a new object from the
     /// current builder then encodes the new object and builder pair to the given file
-    /// and finally returns the new object.
+    /// and fin ject.
     /// The file is read from the directory specified by the `DATA_REPO` environment variable.
     fn from_data_repo_or<P, B>(file_name: P, current_builder: B) -> Result<Self>
     where

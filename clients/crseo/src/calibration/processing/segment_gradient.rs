@@ -155,6 +155,7 @@ mod tests {
         Source,
         gmt::{GmtM1, GmtM2},
     };
+    use interface::filing::Filing;
     use skyangle::Conversion;
 
     use crate::{OpticalModel, calibration::algebra::CalibProps};
@@ -191,6 +192,8 @@ mod tests {
                     .collect::<Vec<_>>()
             )
         });
+
+        recon.to_path("recon.pkl")?;
 
         Ok(())
     }
