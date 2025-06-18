@@ -11,8 +11,8 @@ use gmt_dos_clients_io::{
     gmt_m1::M1RigidBodyMotions,
     gmt_m2::{M2RigidBodyMotions, asm::M2ASMReferenceBodyNodes},
     optics::{
-        MaskedWavefront, SegmentD21PistonRSS, SegmentPiston, SegmentTipTilt, SegmentWfeRms,
-        TipTilt, Wavefront, WfeRms,
+        M1State, M2State, MaskedWavefront, SegmentD21PistonRSS, SegmentPiston, SegmentTipTilt,
+        SegmentWfeRms, TipTilt, Wavefront, WfeRms,
     },
 };
 use gmt_lom::{LOM, LinearOpticalModelError, Loader};
@@ -72,9 +72,19 @@ impl interface::Read<M1RigidBodyMotions> for LinearOpticalModel {
         self.m1_rbm = data.into_arc();
     }
 }
+impl interface::Read<M1State> for LinearOpticalModel {
+    fn read(&mut self, data: Data<M1State>) {
+        self.m1_rbm = data.rbms.clone().unwrap_or_default();
+    }
+}
 impl interface::Read<M2RigidBodyMotions> for LinearOpticalModel {
     fn read(&mut self, data: Data<M2RigidBodyMotions>) {
         self.m2_rbm = data.into_arc();
+    }
+}
+impl interface::Read<M2State> for LinearOpticalModel {
+    fn read(&mut self, data: Data<M2State>) {
+        self.m2_rbm = data.rbms.clone().unwrap_or_default();
     }
 }
 impl interface::Read<M2ASMReferenceBodyNodes> for LinearOpticalModel {
