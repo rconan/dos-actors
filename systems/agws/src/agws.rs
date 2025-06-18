@@ -77,7 +77,13 @@ impl<const SH48_I: usize, const SH24_I: usize> System for Agws<SH48_I, SH24_I> {
                     .outputs()
                     .unwrap()
                     .into_iter()
-                    .chain(self.sh48_kernel.as_plain().outputs().unwrap().into_iter())
+                    .chain(
+                        self.sh48_kernel
+                            .as_plain()
+                            .outputs()
+                            .unwrap_or_default()
+                            .into_iter(),
+                    )
                     .collect(),
             )
             .graph(self.graph())
