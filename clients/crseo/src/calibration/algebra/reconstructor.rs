@@ -471,7 +471,17 @@ impl Mul<Vec<Mat<f64>>> for &Reconstructor {
     type Output = Vec<Mat<f64>>;
 
     fn mul(self, rhs: Vec<Mat<f64>>) -> Self::Output {
-        self.calib.iter().zip(rhs).map(|(c, m)| c * m).collect()
+        self.calib
+            .iter()
+            .zip(rhs)
+            .map(|(c, m)| {
+                if c.mat_ref().ncols() == m.nrows() {
+                    c * m
+                } else {
+                    Mat::<f64>::new()
+                }
+            })
+            .collect()
     }
 }
 
@@ -481,7 +491,13 @@ impl Mul<&Reconstructor> for &[Mat<f64>] {
     fn mul(self, rhs: &Reconstructor) -> Self::Output {
         self.iter()
             .zip(rhs.calib.iter())
-            .map(|(m, rhs)| m * rhs.mat_ref())
+            .map(|(m, rhs)| {
+                if m.ncols() == rhs.mat_ref().nrows() {
+                    m * rhs.mat_ref()
+                } else {
+                    Mat::<f64>::new()
+                }
+            })
             .collect()
     }
 }
@@ -492,7 +508,13 @@ impl Mul<&Reconstructor> for Vec<Mat<f64>> {
     fn mul(self, rhs: &Reconstructor) -> Self::Output {
         self.iter()
             .zip(rhs.calib.iter())
-            .map(|(m, rhs)| m * rhs.mat_ref())
+            .map(|(m, rhs)| {
+                if m.ncols() == rhs.mat_ref().nrows() {
+                    m * rhs.mat_ref()
+                } else {
+                    Mat::<f64>::new()
+                }
+            })
             .collect()
     }
 }
@@ -501,7 +523,16 @@ impl Mul<MatRef<'_, f64>> for &Reconstructor {
     type Output = Vec<Mat<f64>>;
 
     fn mul(self, rhs: MatRef<'_, f64>) -> Self::Output {
-        self.calib.iter().map(|c| c * rhs).collect()
+        self.calib
+            .iter()
+            .map(|c| {
+                if c.mat_ref().ncols() == rhs.nrows() {
+                    c * rhs
+                } else {
+                    Mat::<f64>::new()
+                }
+            })
+            .collect()
     }
 }
 
