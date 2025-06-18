@@ -5,7 +5,7 @@ use std::path::Path;
 use gmt_dos_actors::system::{Sys, SystemError};
 use gmt_dos_clients_crseo::{
     OpticalModel, OpticalModelBuilder, OpticalModelError,
-    calibration::Reconstructor,
+    calibration::{CalibrationMode, ClosedLoopCalib, Reconstructor},
     crseo::{
         FromBuilder, Source,
         builders::{AtmosphereBuilder, AtmosphereBuilderError, GmtBuilder},
@@ -64,10 +64,10 @@ impl AgwsShackHartmann {
 /// [Agws] builder
 #[derive(Debug, Clone)]
 pub struct AgwsBuilder<const SH48_I: usize = 1, const SH24_I: usize = 1> {
-    sh48: ShackHartmannBuilder<SH48_I>,
+    sh48: ShackHartmannBuilder<Reconstructor<CalibrationMode, ClosedLoopCalib>, SH48_I>,
     // sh24: OpticalModelBuilder<CameraBuilder<SH24_I>>,
     // sh24_recon: Option<Reconstructor>,
-    sh24: ShackHartmannBuilder<SH24_I>,
+    sh24: ShackHartmannBuilder<Reconstructor, SH24_I>,
     gmt: Option<GmtBuilder>,
     atm: Option<(AtmosphereBuilder, f64)>,
 }
@@ -75,8 +75,8 @@ pub struct AgwsBuilder<const SH48_I: usize = 1, const SH24_I: usize = 1> {
 impl<const SH48_I: usize, const SH24_I: usize> Default for AgwsBuilder<SH48_I, SH24_I> {
     fn default() -> Self {
         Self {
-            sh48: ShackHartmannBuilder::<SH48_I>::sh48(),
-            sh24: ShackHartmannBuilder::<SH24_I>::sh24(),
+            sh48: ShackHartmannBuilder::<Reconstructor<CalibrationMode,ClosedLoopCalib>,SH48_I>::sh48(),
+            sh24: ShackHartmannBuilder::<Reconstructor,SH24_I>::sh24(),
             gmt: None,
             atm: None,
         }
@@ -103,12 +103,15 @@ impl<const SH48_I: usize, const SH24_I: usize> AgwsBuilder<SH48_I, SH24_I> {
         Ok(self)
     }
     /// Sets the AGWS SH48 builder
-    pub fn sh48(mut self, sh48: ShackHartmannBuilder<SH48_I>) -> Self {
+    pub fn sh48(
+        mut self,
+        sh48: ShackHartmannBuilder<Reconstructor<CalibrationMode, ClosedLoopCalib>, SH48_I>,
+    ) -> Self {
         self.sh48 = sh48;
         self
     }
     /// Sets the AGWS SH24 builder
-    pub fn sh24(mut self, sh24: ShackHartmannBuilder<SH24_I>) -> Self {
+    pub fn sh24(mut self, sh24: ShackHartmannBuilder<Reconstructor, SH24_I>) -> Self {
         self.sh24 = sh24;
         self
     }
@@ -118,7 +121,10 @@ impl<const SH48_I: usize, const SH24_I: usize> AgwsBuilder<SH48_I, SH24_I> {
         self
     }
     /// Sets the reconstructor for AGWS SH48
-    pub fn sh48_calibration(mut self, sh48_recon: Reconstructor) -> Self {
+    pub fn sh48_calibration(
+        mut self,
+        sh48_recon: Reconstructor<CalibrationMode, ClosedLoopCalib>,
+    ) -> Self {
         self.sh48 = self.sh48.reconstructor(sh48_recon);
         self
     }

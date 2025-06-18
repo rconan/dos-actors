@@ -1,8 +1,7 @@
 use gmt_dos_clients_crseo::{
+    crseo::{builders::SourceBuilder, FromBuilder, Source},
+    sensors::{builders::CameraBuilder, Camera},
     OpticalModel, OpticalModelBuilder, OpticalModelError,
-    calibration::Reconstructor,
-    crseo::{FromBuilder, Source, builders::SourceBuilder},
-    sensors::{Camera, builders::CameraBuilder},
 };
 use skyangle::Conversion;
 
@@ -43,14 +42,14 @@ pub enum ShackHartmannBuilderError {
 
 /// AGWS Shack-Hartmann wavefront sensor builder
 #[derive(Debug, Default, Clone)]
-pub struct ShackHartmannBuilder<const I: usize = 1> {
+pub struct ShackHartmannBuilder<R: Default, const I: usize = 1> {
     sh: CameraBuilder<I>,
     pub(crate) src: SourceBuilder,
-    recon: Option<Reconstructor>,
+    recon: Option<R>,
     calibration_src_fwhm: Option<f64>,
     use_calibration_src: bool,
 }
-impl<const I: usize> ShackHartmannBuilder<I> {
+impl<R: Default, const I: usize> ShackHartmannBuilder<R, I> {
     /// Creates a new default instance
     pub fn new() -> Self {
         Default::default()
@@ -80,7 +79,7 @@ impl<const I: usize> ShackHartmannBuilder<I> {
         self
     }
     /// Sets the sensor reconstructor
-    pub fn reconstructor(mut self, recon: Reconstructor) -> Self {
+    pub fn reconstructor(mut self, recon: R) -> Self {
         self.recon = Some(recon);
         self
     }
@@ -96,8 +95,10 @@ impl<const I: usize> ShackHartmannBuilder<I> {
         self
     }
 }
-impl<const I: usize> From<ShackHartmannBuilder<I>> for OpticalModelBuilder<CameraBuilder<I>> {
-    fn from(value: ShackHartmannBuilder<I>) -> Self {
+impl<R: Default, const I: usize> From<ShackHartmannBuilder<R, I>>
+    for OpticalModelBuilder<CameraBuilder<I>>
+{
+    fn from(value: ShackHartmannBuilder<R, I>) -> Self {
         OpticalModel::<Camera<I>>::builder()
             .sensor(value.sh)
             .source(if value.use_calibration_src {
@@ -110,20 +111,20 @@ impl<const I: usize> From<ShackHartmannBuilder<I>> for OpticalModelBuilder<Camer
     }
 }
 
-impl<const I: usize> TryFrom<ShackHartmannBuilder<I>> for OpticalModel<Camera<I>> {
+impl<R: Default, const I: usize> TryFrom<ShackHartmannBuilder<R, I>> for OpticalModel<Camera<I>> {
     type Error = OpticalModelError;
 
-    fn try_from(value: ShackHartmannBuilder<I>) -> Result<Self, Self::Error> {
+    fn try_from(value: ShackHartmannBuilder<R, I>) -> Result<Self, Self::Error> {
         OpticalModelBuilder::<CameraBuilder<I>>::from(value).build()
     }
 }
-impl<T, const I: usize> TryFrom<&ShackHartmannBuilder<I>> for Kernel<T>
+impl<R: Clone + Default, T, const I: usize> TryFrom<&ShackHartmannBuilder<R, I>> for Kernel<T>
 where
-    T: KernelSpecs<Sensor = Camera<I>, Estimator = Reconstructor>,
+    T: KernelSpecs<Sensor = Camera<I>, Estimator = R>,
 {
     type Error = ShackHartmannBuilderError;
 
-    fn try_from(value: &ShackHartmannBuilder<I>) -> Result<Self, Self::Error> {
+    fn try_from(value: &ShackHartmannBuilder<R, I>) -> Result<Self, Self::Error> {
         let ShackHartmannBuilder {
             sh,
             mut src,
@@ -136,7 +137,7 @@ where
         }
         let model = OpticalModel::<Camera<I>>::builder().sensor(sh).source(src);
         if let Some(estimator) = recon {
-            Ok(Kernel::new(&model)?.estimator(estimator))
+            Ok(Kernel::new(&model)?.estimator(estimator.clone()))
         } else {
             Ok(Kernel::new(&model)?)
         }
