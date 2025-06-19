@@ -152,4 +152,7 @@ impl SingularModes {
     pub fn shape(&self) -> (usize, usize) {
         self.shape
     }
+    pub fn raw_modes_iter(&self) -> impl Iterator<Item = &f64> {
+        self.raw_modes.iter()
+    }
 }
