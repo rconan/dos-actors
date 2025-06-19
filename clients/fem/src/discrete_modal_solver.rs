@@ -64,6 +64,7 @@ pub struct DiscreteModalSolver<T: Solver + Default> {
     pub outs: Vec<Box<dyn GetOut>>,
     pub facesheet_nodes: Option<RbmRemoval>,
     pub m1_figure_nodes: Option<RbmRemoval>,
+    pub m1_figure_transforms: Option<Vec<na::DMatrix<f64>>>,
 }
 impl<T: Solver + Default> DiscreteModalSolver<T> {
     /*

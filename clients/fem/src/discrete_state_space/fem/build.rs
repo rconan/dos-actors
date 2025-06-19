@@ -110,6 +110,9 @@ are set to zero."
                     psi_dcg: psi_dcg.map(|psi_dcg| Arc::new(psi_dcg)),
                     facesheet_nodes: self.facesheet_nodes,
                     m1_figure_nodes: self.m1_figure_nodes,
+                    m1_figure_transforms: self
+                        .m1_figure_transforms
+                        .map(|t| t.into_iter().map(|x| x.into_owned()).collect()),
                     ..Default::default()
                 })
             }

@@ -104,7 +104,19 @@ where
         } else {
             Some(data)
         }
-        .map(|x| x.into_iter().flatten().collect::<Vec<_>>())
+        .map(|x| {
+            if let Some(transforms) = &self.m1_figure_transforms {
+                x.into_iter()
+                    .zip(transforms)
+                    .flat_map(|(x, mat)| {
+                        let y = mat * nalgebra::DVector::from_column_slice(&x);
+                        y.as_slice().to_vec()
+                    })
+                    .collect()
+            } else {
+                x.into_iter().flatten().collect()
+            }
+        })
         .map(|modes| Data::new(optics::MirrorState::new(rbms, modes)))
     }
 }

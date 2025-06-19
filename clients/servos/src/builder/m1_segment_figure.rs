@@ -77,7 +77,8 @@ impl<'a> Include<'a, M1SegmentFigure> for DiscreteStateSpace<'a, ExponentialMatr
             (false, None) => self.set_m1_figure_nodes()?.outs_by_name(names),
             (false, Some(transforms)) => self
                 .set_m1_figure_nodes()?
-                .outs_with_by_name(names, transforms),
+                .set_m1_figure_transforms(transforms)
+                .outs_by_name(names),
         }
     }
 }

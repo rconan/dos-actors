@@ -57,8 +57,9 @@ pub struct DiscreteStateSpace<'a, T: Solver + Default> {
     outs: Vec<Box<dyn GetOut>>,
     ins_transform: Vec<Option<DMatrixView<'a, f64>>>,
     outs_transform: Vec<Option<DMatrixView<'a, f64>>>,
-    pub facesheet_nodes: Option<RbmRemoval>,
-    pub m1_figure_nodes: Option<RbmRemoval>,
+    facesheet_nodes: Option<RbmRemoval>,
+    m1_figure_nodes: Option<RbmRemoval>,
+    m1_figure_transforms: Option<Vec<na::DMatrixView<'a, f64>>>,
 }
 impl<'a, T: Solver + Default> From<FEM> for DiscreteStateSpace<'a, T> {
     /// Creates a state space model builder from a FEM structure
@@ -81,6 +82,11 @@ impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
         let fem = self.fem.as_ref().unwrap();
         self.m1_figure_nodes = Some(RbmRemoval::new(fem, "M1_segment_#_axial_d")?);
         Ok(self)
+    }
+    pub fn set_m1_figure_transforms(mut self, transforms: Vec<na::DMatrixView<'a, f64>>) -> Self {
+        log::info!("setting m1 figure transforms");
+        self.m1_figure_transforms = Some(transforms);
+        self
     }
     /// Prints information about the FEM
     pub fn fem_info(&self) -> &Self {
