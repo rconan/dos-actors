@@ -39,7 +39,7 @@
 //! # }
 //! ```
 
-use interface::UniqueIdentifier;
+use interface::{doublet::UidTuple, UniqueIdentifier};
 use std::{any::type_name, ops::Range};
 
 mod discrete_state_space;
@@ -66,6 +66,8 @@ pub trait Solver: serde::Serialize + for<'a> serde::Deserialize<'a> {
     ) -> Self;
     fn solve(&mut self, u: &[f64]) -> &[f64];
 } */
+
+impl<S: Default + Solver> UidTuple for DiscreteModalSolver<S> {}
 
 pub trait Get<U: UniqueIdentifier> {
     fn get(&self) -> Option<Vec<f64>>;
