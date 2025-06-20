@@ -17,6 +17,7 @@ The macro [chain] conveniently allows to invoke the sequence of [Read], [Update]
 use std::any::type_name;
 
 mod data;
+pub mod doublet;
 pub use data::Data;
 pub use dos_uid_derive::UID;
 pub mod units;
