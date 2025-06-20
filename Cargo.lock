@@ -3452,13 +3452,14 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-clients_io"
-version = "4.2.2"
+version = "4.3.0"
 dependencies = [
  "anyhow",
  "crseo",
  "gmt-fem-code-builder",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
+ "serde",
 ]
 
 [[package]]

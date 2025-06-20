@@ -105,6 +105,7 @@ pub enum M1Modes {}
 pub enum M2Modes {}
 
 /// GMT mirror optical state (rigid body motion and surface figure)
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone)]
 pub struct MirrorState {
     pub rbms: Option<Arc<Vec<f64>>>,
