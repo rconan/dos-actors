@@ -27,7 +27,7 @@ pub use sensor::SensorBuilder;
 use std::ops::{Deref, DerefMut};
 
 pub use crseo;
-use interface::{Data, TimerMarker, UniqueIdentifier, Update, Write};
+use interface::{doublet::UidTuple, Data, TimerMarker, UniqueIdentifier, Update, Write};
 
 mod error;
 pub use error::{CeoError, Result};
@@ -60,6 +60,7 @@ pub use optical_model::{OpticalModel, OpticalModelError, builder::OpticalModelBu
 pub use processing::{DispersedFringeSensorProcessing, centroiding};
 
 impl<T> TimerMarker for OpticalModel<T> {}
+impl<T> UidTuple for OpticalModel<T> {}
 
 /// Interface for initialization of data processing pipeline
 pub trait DeviceInitialize<D> {
