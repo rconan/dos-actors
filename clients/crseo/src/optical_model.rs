@@ -3,7 +3,7 @@ use crate::{
     ngao::DetectorFrame,
     sensors::{NoSensor, SensorPropagation},
 };
-use crseo::{Atmosphere, FromBuilder, Gmt, SegmentWiseSensor, Source};
+use crseo::{Atmosphere, FromBuilder, Gmt, PSSnEstimates, SegmentWiseSensor, Source};
 use gmt_dos_clients_io::{
     gmt_m1::{
         M1ModeShapes, M1RigidBodyMotions,
@@ -18,7 +18,7 @@ use gmt_dos_clients_io::{
         },
     },
     optics::{
-        M1GlobalTipTilt, M1Modes, M1State, M2GlobalTipTilt, M2Modes, M2State, SegmentD7Piston,
+        M1GlobalTipTilt, M1Modes, M1State, M2GlobalTipTilt, M2Modes, M2State, PSSn, SegmentD7Piston,
     },
 };
 use interface::{Data, Read, UniqueIdentifier, Units, Update, Write};
@@ -57,6 +57,7 @@ pub struct OpticalModel<T = NoSensor> {
     pub(crate) src: Source,
     pub(crate) atm: Option<Atmosphere>,
     pub(crate) sensor: Option<T>,
+    pub(crate) pssn: Option<Box<dyn PSSnEstimates>>,
     pub(crate) tau: f64,
     pub(crate) phase_offset: Option<Vec<f64>>,
 }
@@ -99,6 +100,7 @@ where
             src,
             atm_builder,
             sampling_frequency,
+            pssn,
             ..
         } = OpticalModelBuilder::<NoSensor>::default();
         OpticalModelBuilder {
@@ -107,6 +109,7 @@ where
             atm_builder,
             sensor: Some(T::builder()),
             sampling_frequency,
+            pssn,
         }
     }
 }
@@ -120,6 +123,9 @@ impl<T: SensorPropagation> Update for OpticalModel<T> {
         }
         if let Some(phase) = self.phase_offset.as_ref() {
             self.src.add(phase);
+        }
+        if let Some(pssn) = &mut self.pssn {
+            self.src.through(pssn);
         }
         if let Some(sensor) = &mut self.sensor {
             sensor.propagate(&mut self.src);
@@ -295,6 +301,12 @@ impl<T: SegmentWiseSensor, const E: i32> Write<SegmentD7Piston<E>> for OpticalMo
                 .collect::<Vec<_>>()
                 .into(),
         )
+    }
+}
+
+impl<T: SensorPropagation> Write<PSSn> for OpticalModel<T> {
+    fn write(&mut self) -> Option<Data<PSSn>> {
+        self.pssn.as_mut().map(|pssn| pssn.estimates().into())
     }
 }
 

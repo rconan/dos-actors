@@ -145,6 +145,11 @@ impl UniqueIdentifier for M2State {
     const PORT: u16 = 50_013;
 }
 
+/// PSSn estimates
+#[derive(UID)]
+#[uid(port = 55_014)]
+pub enum PSSn {}
+
 /// M2 Rx and Ry rigid body motions
 #[derive(UID)]
 #[uid(port = 55_010)]

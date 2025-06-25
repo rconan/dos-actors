@@ -1,22 +1,23 @@
 [workspace]
 members = [
-    "clients/scope/client",
-    "actors/dsl/examples/demo",
-    "actors/dsl/examples/scope",
-    "actors/dsl/examples/scopes",
-    "clients/crseo/tms",
-    "clients/lom",
-    "book",
-    "clients/fem/mech",
-    "clients/fem/fem-cuda-solver",
-    "clients/servos/edge-sensors",
-    "clients/servos/edge-sensors/scopes",
-    "clients/servos/edge-sensors/io",
-    "demos",
-    "clients/dcs",
-    "clients/dcs/servos-scopes", "systems/agws",  
-    "systems/m1/modes",
-    "clients/scope/hub"
+  "clients/scope/client",
+  "actors/dsl/examples/demo",
+  "actors/dsl/examples/scope",
+  "actors/dsl/examples/scopes",
+  "clients/crseo/tms",
+  "clients/lom",
+  "book",
+  "clients/fem/mech",
+  "clients/fem/fem-cuda-solver",
+  "clients/servos/edge-sensors",
+  "clients/servos/edge-sensors/scopes",
+  "clients/servos/edge-sensors/io",
+  "demos",
+  "clients/dcs",
+  "clients/dcs/servos-scopes",
+  "systems/agws",
+  "systems/m1/modes",
+  "clients/scope/hub",
 ]
 resolver = "2"
 
@@ -31,8 +32,8 @@ keywords = ["telescope", "astronomy"]
 [workspace.dependencies]
 gmt_dos-actors = { version = "11.1", path = "actors/" }
 gmt_dos-clients = { version = "5.0", default-features = false, path = "clients/core" }
- interface = { version = "1.5", path = "interface", package = "gmt_dos-actors-clients_interface" }
- gmt-fem = { version = "5.2", path = "clients/fem/model" }
+interface = { version = "1.5", path = "interface", package = "gmt_dos-actors-clients_interface" }
+gmt-fem = { version = "5.1", path = "clients/fem/model" }
 gmt-fem-code-builder = { version = "2.3", path = "clients/fem/builder" }
 dos-uid-derive = { version = "5.0", path = "interface/uid-derive/" }
 gmt_dos-clients_io = { version = "4.2", path = "clients/io" }
@@ -80,3 +81,4 @@ faer = "0.21.7"
 
 [profile.release]
 lto = "thin"
+

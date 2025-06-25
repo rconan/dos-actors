@@ -4,10 +4,17 @@ use crate::sensors::{
     builders::{SensorBuilderProperty, WaveSensorBuilder},
 };
 use crseo::{
-    Builder,
+    Builder, PSSnEstimates,
     builders::{AtmosphereBuilder, GmtBuilder, SourceBuilder},
+    pssn::{AtmosphereTelescopeError, PSSnBuilder, TelescopeError},
 };
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum PSSnKind {
+    TelescopeError(PSSnBuilder<TelescopeError>),
+    AtmosphereTelescopeError(PSSnBuilder<AtmosphereTelescopeError>),
+}
 
 /// GMT optical model builder
 ///
@@ -29,6 +36,7 @@ pub struct OpticalModelBuilder<S = NoSensor> {
     pub(crate) src: SourceBuilder,
     pub(crate) atm_builder: Option<AtmosphereBuilder>,
     pub(crate) sensor: Option<S>,
+    pub(crate) pssn: Option<PSSnKind>,
     pub(crate) sampling_frequency: Option<f64>,
 }
 
@@ -80,6 +88,13 @@ where
     /// ```
     pub fn atmosphere(self, atm_builder: AtmosphereBuilder) -> Self {
         Self {
+            pssn: self.pssn.map(|kind| {
+                if let PSSnKind::TelescopeError(_) = kind {
+                    PSSnKind::AtmosphereTelescopeError(PSSnBuilder::from(&atm_builder))
+                } else {
+                    kind
+                }
+            }),
             atm_builder: Some(atm_builder),
             ..self
         }
@@ -97,6 +112,14 @@ where
     /// ```
     pub fn sensor(mut self, builder: S) -> Self {
         self.sensor = Some(builder);
+        self
+    }
+    /// Enables PSSn estimator
+    pub fn with_pssn(mut self) -> Self {
+        self.pssn = self.pssn.or(Some(self.atm_builder.as_ref().map_or(
+            PSSnKind::TelescopeError(PSSnBuilder::new()),
+            |atm_builder| PSSnKind::AtmosphereTelescopeError(PSSnBuilder::from(atm_builder)),
+        )));
         self
     }
     /// Sets the sampling frequency in Hz
@@ -132,6 +155,7 @@ where
             src,
             atm_builder,
             sampling_frequency,
+            pssn,
             ..
         } = self;
         OpticalModelBuilder {
@@ -140,6 +164,7 @@ where
             atm_builder: atm_builder.clone(),
             sensor: Some(sensor),
             sampling_frequency: sampling_frequency.clone(),
+            pssn: pssn.clone(),
         }
     }
     pub fn get_pupil_size_px(&self) -> usize {
@@ -163,6 +188,18 @@ where
                 self.src.pupil_sampling(n).build()?
             } else {
                 self.src.build()?
+            },
+            pssn: if let Some(kind) = self.pssn {
+                match kind {
+                    PSSnKind::TelescopeError(pssn_builder) => {
+                        Some(Box::new(pssn_builder.build()?) as Box<dyn PSSnEstimates>)
+                    }
+                    PSSnKind::AtmosphereTelescopeError(pssn_builder) => {
+                        Some(Box::new(pssn_builder.build()?) as Box<dyn PSSnEstimates>)
+                    }
+                }
+            } else {
+                None
             },
             atm: match self.atm_builder {
                 Some(atm) => {
@@ -190,5 +227,29 @@ where
 {
     fn from(builder: &OpticalModelBuilder<S>) -> Self {
         builder.clone_with_sensor(WaveSensorBuilder::from(builder.clone_with_sensor(NoSensor)))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::error::Error;
+
+    use gmt_dos_clients_io::optics::PSSn;
+    use interface::{Update, Write};
+
+    use super::*;
+
+    #[test]
+    fn builder() {
+        assert!(OpticalModel::<NoSensor>::builder().build().is_ok());
+    }
+
+    #[test]
+    fn pssn() -> Result<(), Box<dyn Error>> {
+        let mut om = OpticalModel::<NoSensor>::builder().with_pssn().build()?;
+        om.update();
+        let pssn = <_ as Write<PSSn>>::write(&mut om).unwrap();
+        assert_eq!(pssn[0], 1.0);
+        Ok(())
     }
 }
