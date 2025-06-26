@@ -89,6 +89,16 @@ where
             log::info!("Capacity limit of 1GB exceeded, reduced to : {}", capacity);
         }
         let buffer: LogData<ArrowBuffer<U>> = LogData::new(BufferBuilder::<T>::new(capacity));
+        
+        // checking if a buffer with the same name already exists
+        let name = buffer.who();
+        if let Some(_) = self.buffers.iter().find(|buffer| buffer.0.who() == name) {
+            log::info!(
+                r#"found existing entry with same name in Arrow buffers, skipping "{name}""#
+            );
+            return;
+        }
+
         self.buffers.push((Box::new(buffer), T::buffer_data_type()));
         self.capacities.push(size);
         self.n_entry += 1;
