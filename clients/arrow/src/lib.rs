@@ -35,7 +35,6 @@ let logging = Arrow::builder(1000)
 ```
 Logging an output into an [Arrow] logger:
 ```
-# tokio_test::block_on(async {
 use gmt_dos_actors::prelude::*;
 use gmt_dos_clients::signals::Signals;
 use gmt_dos_clients_arrow::Arrow;
@@ -46,13 +45,11 @@ let mut sink = Terminator::<_>::new(logging);
 let mut source: Initiator<_> = Signals::new(1, 100).into();
 #[derive(UID)]
 enum Source {};
-source.add_output().build::<Source>().logn(&mut sink, 42).await;
+source.add_output().build::<Source>().logn(&mut sink, 42);
 # Ok::<(), gmt_dos_actors::model::ModelError>(())
-# });
 ```
 or if `Signals` implements the trait: `Size<Source>`
 ```
-# tokio_test::block_on(async {
 use gmt_dos_actors::prelude::*;
 use gmt_dos_clients::signals::Signals;
 use gmt_dos_clients_arrow::Arrow;
@@ -68,9 +65,8 @@ impl Size<Source> for Signals {
         42
     }
 }
-source.add_output().build::<Source>().log(&mut sink).await;
+source.add_output().build::<Source>().log(&mut sink);
 # Ok::<(), gmt_dos_actors::model::ModelError>(())
-# });
 ```
 */
 

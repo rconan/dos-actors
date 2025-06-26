@@ -1,6 +1,6 @@
 [package]
 name = "gmt_dos-clients_arrow"
-version = "2.1.1"
+version = "2.2.0"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -26,7 +26,6 @@ regex = "1.8.1"
 env_logger.workspace = true
 gmt_dos-actors.workspace = true
 gmt_dos-clients.workspace = true
-tokio-test.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true
