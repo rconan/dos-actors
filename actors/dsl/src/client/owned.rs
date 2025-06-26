@@ -66,11 +66,11 @@ impl Client {
         match &self.kind {
             ClientKind::Logger(_, None) => quote!(
                 // .log(&mut #actor).await?;
-                gmt_dos_actors::framework::network::IntoLogs::log(output, &mut #actor).await?;
+                gmt_dos_actors::framework::network::IntoLogs::log(output, &mut #actor)?;
             ),
             ClientKind::Logger(_, Some(size)) => quote!(
                 // .logn(&mut #actor, #size).await?;
-                gmt_dos_actors::framework::network::IntoLogsN::logn(output, &mut #actor, #size).await?;
+                gmt_dos_actors::framework::network::IntoLogsN::logn(output, &mut #actor, #size)?;
             ),
             ClientKind::SubSystem(System { io: Some(io), .. }) => quote!(
                 // .into_input(&mut #actor)?;
