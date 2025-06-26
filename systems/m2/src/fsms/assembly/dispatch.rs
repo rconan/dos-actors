@@ -7,7 +7,7 @@ use gmt_dos_clients_io::{
         segment::{FsmCommand, PiezoForces, PiezoNodes},
     },
 };
-use interface::{Data, Read, Update, Write};
+use interface::{Data, Read, Size, Update, Write, WriteFlatten};
 use serde::{Deserialize, Serialize};
 
 impl Assembly for DispatchIn {}
@@ -104,3 +104,11 @@ impl Write<M2FSMPiezoForces> for DispatchOut {
         ))
     }
 }
+
+impl Size<M2FSMPiezoForces> for DispatchOut {
+    fn len(&self) -> usize {
+        42
+    }
+}
+
+impl WriteFlatten for DispatchOut {}

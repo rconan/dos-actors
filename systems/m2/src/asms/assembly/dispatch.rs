@@ -7,7 +7,7 @@ use gmt_dos_clients_io::{
         segment::{AsmCommand, FluidDampingForces, VoiceCoilsForces, VoiceCoilsMotion},
     },
 };
-use interface::{Data, Read, Update, Write};
+use interface::{Data, Read, Size, Update, Write, WriteFlatten};
 use serde::{Deserialize, Serialize};
 
 impl Assembly for DispatchIn {}
@@ -139,6 +139,12 @@ impl Write<M2ASMVoiceCoilsForces> for DispatchOut {
     }
 }
 
+impl Size<M2ASMVoiceCoilsForces> for DispatchOut {
+    fn len(&self) -> usize {
+        Self::NA * 7
+    }
+}
+
 impl<const ID: u8> Read<FluidDampingForces<ID>> for DispatchOut {
     fn read(&mut self, data: Data<FluidDampingForces<ID>>) {
         if let Some(idx) = <Self as Assembly>::position::<ID>() {
@@ -152,6 +158,14 @@ impl Write<M2ASMFluidDampingForces> for DispatchOut {
         Some(Data::new(self.asms_fluid_damping_forces.clone()))
     }
 }
+
+impl Size<M2ASMFluidDampingForces> for DispatchOut {
+    fn len(&self) -> usize {
+        Self::NA * 7
+    }
+}
+
+impl WriteFlatten for DispatchOut {}
 
 #[cfg(test)]
 mod tests {

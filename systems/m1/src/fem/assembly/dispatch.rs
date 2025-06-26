@@ -13,7 +13,7 @@ use gmt_dos_clients_io::{
         },
     },
 };
-use interface::{Data, Read, UniqueIdentifier, Update, Write};
+use interface::{Data, Read, Size, UniqueIdentifier, Update, Write, WriteFlatten};
 use serde::{Deserialize, Serialize};
 
 const NA: [usize; 7] = [335, 335, 335, 335, 335, 335, 306];
@@ -184,3 +184,17 @@ impl Write<M1HardpointsForces> for DispatchOut {
         Some(Data::new(self.m1_hardpoints_forces.clone()))
     }
 }
+
+impl Size<M1HardpointsForces> for DispatchOut {
+    fn len(&self) -> usize {
+        42
+    }
+}
+
+impl Size<M1ActuatorAppliedForces> for DispatchOut {
+    fn len(&self) -> usize {
+        335 * 6 + 306
+    }
+}
+
+impl WriteFlatten for DispatchOut {}

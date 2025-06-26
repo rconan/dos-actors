@@ -14,7 +14,7 @@ The macro [chain] conveniently allows to invoke the sequence of [Read], [Update]
 [actor]: https://docs.rs/gmt_dos-actors
 */
 
-use std::any::type_name;
+use std::{any::type_name, marker::PhantomData, sync::Arc};
 
 mod data;
 pub mod doublet;
@@ -154,3 +154,44 @@ pub fn trim_type_name<T>() -> String {
 }
 
 mod chain;
+
+/// UID to flatten `Vec<Arc<Vec<f64>>>` into `Vec<f64>`
+///
+/// The flattening happened within [Write]`<Flatten<U>>` that
+/// get the data from invoking [Write]`<U>` on `Self`
+pub struct Flatten<U: UniqueIdentifier<DataType = Vec<Arc<Vec<f64>>>>>(PhantomData<U>);
+impl<U> UniqueIdentifier for Flatten<U>
+where
+    U: UniqueIdentifier<DataType = Vec<Arc<Vec<f64>>>>,
+{
+    type DataType = Vec<f64>;
+    const PORT: u16 = <U as UniqueIdentifier>::PORT;
+}
+
+/// Marker trait for clients implementing [Write]`<`[Flatten]`<U>>` 
+pub trait WriteFlatten {}
+
+impl<U, C> Write<Flatten<U>> for C
+where
+    U: UniqueIdentifier<DataType = Vec<Arc<Vec<f64>>>>,
+    C: WriteFlatten + Write<U>,
+{
+    fn write(&mut self) -> Option<Data<Flatten<U>>> {
+        <_ as Write<U>>::write(self).map(|data| {
+            data.into_arc()
+                .iter()
+                .flat_map(|data| data.as_slice().to_vec())
+                .collect::<Vec<f64>>()
+                .into()
+        })
+    }
+}
+impl<U, C> Size<Flatten<U>> for C
+where
+    U: UniqueIdentifier<DataType = Vec<Arc<Vec<f64>>>>,
+    C: WriteFlatten + Size<U>,
+{
+    fn len(&self) -> usize {
+        <_ as Size<U>>::len(self)
+    }
+}
