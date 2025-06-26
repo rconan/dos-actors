@@ -115,6 +115,7 @@ mod fem {
     impl<const M1_RATE: usize, const M2_RATE: usize> ServosBuilder<M1_RATE, M2_RATE> {
         /// Build the system
         pub fn build(self) -> Result<Sys<GmtServoMechanisms<M1_RATE, M2_RATE>>, SystemError> {
+            log::info!("building ServosBuilder");
             Ok(Sys::new(GmtServoMechanisms::<M1_RATE, M2_RATE>::try_from(self)?).build()?)
         }
     }
@@ -140,6 +141,26 @@ mod fem {
     pub type GmtM2Hex = gmt_dos_clients_m2_ctrl::Positioners;
     /// GMT M2 mirror client
     pub type GmtM2 = gmt_dos_systems_m2::DispatchIn;
+
+    #[cfg(test)]
+    mod tests {
+        use std::error::Error;
+
+        use gmt_dos_actors::actorscript;
+        use gmt_dos_clients::timer::Timer;
+        use interface::Tick;
+
+        pub use super::*;
+
+        #[test]
+        fn builder() {
+            let frequency = 1000_f64; // Hz
+            let fem = gmt_fem::FEM::from_env().unwrap();
+            assert!(GmtServoMechanisms::<10, 1>::new(frequency, fem)
+                .build()
+                .is_ok());
+        }
+    }
 }
 #[cfg(fem)]
 pub use fem::*;

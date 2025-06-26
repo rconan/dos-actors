@@ -22,6 +22,13 @@ impl<'a, const M1_RATE: usize, const M2_RATE: usize> IntoIterator
             Box::new(&self.m2 as &dyn Check),
         ]
         .into_iter()
+        .chain(
+            self.telemetry
+                .as_ref()
+                .map(|telemetry| Box::new(telemetry as &dyn Check)),
+        )
+        .collect::<Vec<_>>()
+        .into_iter()
     }
 }
 
@@ -32,7 +39,7 @@ impl<const M1_RATE: usize, const M2_RATE: usize> IntoIterator
 
     type IntoIter = std::vec::IntoIter<Self::Item>;
 
-    fn into_iter(self) -> Self::IntoIter {
+    fn into_iter(mut self) -> Self::IntoIter {
         vec![
             Box::new(self.fem) as Box<dyn Task>,
             Box::new(self.mount) as Box<dyn Task>,
@@ -40,6 +47,13 @@ impl<const M1_RATE: usize, const M2_RATE: usize> IntoIterator
             Box::new(self.m2_positioners) as Box<dyn Task>,
             Box::new(self.m2) as Box<dyn Task>,
         ]
+        .into_iter()
+        .chain(
+            self.telemetry
+                .take()
+                .map(|telemetry| Box::new(telemetry) as Box<dyn Task>),
+        )
+        .collect::<Vec<_>>()
         .into_iter()
     }
 }

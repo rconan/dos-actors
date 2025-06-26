@@ -1,4 +1,5 @@
 use gmt_dos_actors::{ArcMutex, prelude::Actor, system::SystemError};
+use gmt_dos_clients_arrow::Arrow;
 use gmt_dos_clients_fem::{DiscreteModalSolver, StateSpaceError, solvers::ExponentialMatrix};
 #[cfg(topend = "FSM")]
 use gmt_dos_clients_io::gmt_fem::{inputs::MCM2PZTF, outputs::MCM2PZTD};
@@ -23,6 +24,13 @@ pub use edge_sensors::EdgeSensors;
 mod m1_segment_figure;
 pub use m1_segment_figure::M1SegmentFigure;
 
+#[derive(Debug, Clone, Default)]
+#[non_exhaustive]
+pub enum Telemetry {
+    #[default]
+    Full,
+}
+
 /// [GmtServoMechanisms](crate::GmtServoMechanisms) builder
 #[derive(Debug, Clone, Default)]
 pub struct ServosBuilder<const M1_RATE: usize, const M2_RATE: usize> {
@@ -33,6 +41,7 @@ pub struct ServosBuilder<const M1_RATE: usize, const M2_RATE: usize> {
     pub(crate) wind_loads: Option<WindLoads>,
     pub(crate) edge_sensors: Option<EdgeSensors>,
     pub(crate) m1_segment_figure: Option<M1SegmentFigure>,
+    pub(crate) telemetry: Option<Telemetry>,
 }
 
 impl<const M1_RATE: usize, const M2_RATE: usize> ServosBuilder<M1_RATE, M2_RATE> {
@@ -55,6 +64,11 @@ impl<const M1_RATE: usize, const M2_RATE: usize> ServosBuilder<M1_RATE, M2_RATE>
     /// Sets the [M1SegmentFigure] builder
     pub fn m1_segment_figure(mut self, m1_segment_figure: M1SegmentFigure) -> Self {
         self.m1_segment_figure = Some(m1_segment_figure);
+        self
+    }
+    /// Enables the telemetry
+    pub fn with_telemetry(mut self) -> Self {
+        self.telemetry = Some(Telemetry::Full);
         self
     }
 }
@@ -87,6 +101,7 @@ impl<'a, const M1_RATE: usize, const M2_RATE: usize> TryFrom<ServosBuilder<M1_RA
     type Error = ServosBuilderError;
 
     fn try_from(mut builder: ServosBuilder<M1_RATE, M2_RATE>) -> Result<Self, Self::Error> {
+        log::info!("converting ServosBuilder into GmtServoMechanism");
         let mut fem = builder.fem;
 
         #[cfg(topend = "ASM")]
@@ -156,7 +171,6 @@ impl<'a, const M1_RATE: usize, const M2_RATE: usize> TryFrom<ServosBuilder<M1_RA
             .including(builder.wind_loads.as_mut())?
             .including(builder.edge_sensors.as_mut())?
             .build()?;
-
         Ok(Self {
             fem: Actor::new(state_space.into_arcx())
                 .name("GMT Structural\nDynamic Model")
@@ -165,6 +179,15 @@ impl<'a, const M1_RATE: usize, const M2_RATE: usize> TryFrom<ServosBuilder<M1_RA
             m1,
             m2_positioners: (positioners, "M2 Positioners\nController").into(),
             m2,
+            telemetry: builder.telemetry.and(Some(
+                (
+                    Arrow::builder(10_000)
+                        .filename("servos_telemetry.parquet")
+                        .build(),
+                    "Telemetry",
+                )
+                    .into(),
+            )),
         })
     }
 }

@@ -13,6 +13,7 @@
 //! `Gateway` is a system's actor that receives inputs from other clients to this system ([SystemInput]`<Gateway>`)
 //! or send outputs from the system to other clients (([SystemOutput]`<Gateway>`))
 
+use std::any::type_name;
 use std::marker::PhantomData;
 use std::{
     fmt::Display,
@@ -92,11 +93,12 @@ impl<T: System> Sys<T, New> {
     }
 
     pub fn build(self) -> Result<Sys<T>, SystemError> {
+        log::info!("building Sys<{}>", type_name::<T>());
         let mut this: Sys<T> = Sys {
             sys: self.sys,
             state: PhantomData,
         };
-        this.sys.build()?;
+        <T as System>::build(&mut this.sys)?;
         Ok(this)
     }
 }

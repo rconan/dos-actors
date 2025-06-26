@@ -1,12 +1,13 @@
 use gmt_dos_actors::{
-    actor::PlainActor,
+    actor::{PlainActor, Terminator},
     framework::{
         model::FlowChart,
         network::{AddActorOutput, AddOuput, TryIntoInputs},
     },
-    prelude::Actor,
+    prelude::{Actor, IntoLogs, IntoLogsN},
     system::{Sys, System, SystemError},
 };
+use gmt_dos_clients_arrow::Arrow;
 use gmt_dos_clients_fem::DiscreteModalSolver;
 #[cfg(topend = "ASM")]
 use gmt_dos_clients_io::gmt_m2::asm::{
@@ -24,6 +25,7 @@ use gmt_dos_clients_mount::Mount;
 use gmt_dos_systems_m1::assembly::M1;
 use gmt_dos_systems_m2::M2;
 
+use interface::Flatten;
 use serde::{Deserialize, Serialize};
 
 use crate::FemSolver;
@@ -33,11 +35,13 @@ pub mod traits;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct GmtServoMechanisms<const M1_RATE: usize, const M2_RATE: usize = 1> {
-    pub fem: Actor<DiscreteModalSolver<FemSolver>>,
-    pub mount: Actor<Mount>,
-    pub m1: Sys<M1<M1_RATE>>,
-    pub m2_positioners: Actor<Positioners>,
-    pub m2: Sys<M2<1>>,
+    pub(crate) fem: Actor<DiscreteModalSolver<FemSolver>>,
+    pub(crate) mount: Actor<Mount>,
+    pub(crate) m1: Sys<M1<M1_RATE>>,
+    pub(crate) m2_positioners: Actor<Positioners>,
+    pub(crate) m2: Sys<M2<1>>,
+    #[serde(skip)]
+    pub(crate) telemetry: Option<Terminator<Arrow>>,
 }
 
 impl<const M1_RATE: usize, const M2_RATE: usize> System for GmtServoMechanisms<M1_RATE, M2_RATE> {
@@ -45,6 +49,7 @@ impl<const M1_RATE: usize, const M2_RATE: usize> System for GmtServoMechanisms<M
         format!("GMT Servo-Mechanisms")
     }
     fn build(&mut self) -> Result<&mut Self, SystemError> {
+        log::info!("building GmtServoMechanisms System");
         self.mount
             .add_output()
             .build::<MountTorques>()
@@ -80,6 +85,29 @@ impl<const M1_RATE: usize, const M2_RATE: usize> System for GmtServoMechanisms<M
             .build::<M2PositionerNodes>()
             .into_input(&mut self.m2_positioners)?;
 
+        if let Some(telemetry) = &mut self.telemetry {
+            self.mount
+                .add_output()
+                .unbounded()
+                .build::<MountTorques>()
+                .log(telemetry)?;
+            self.m1
+                .add_output()
+                .unbounded()
+                .build::<Flatten<assembly::M1HardpointsForces>>()
+                .log(telemetry)?;
+            self.m1
+                .add_output()
+                .unbounded()
+                .build::<Flatten<assembly::M1ActuatorAppliedForces>>()
+                .log(telemetry)?;
+            self.m2_positioners
+                .add_output()
+                .unbounded()
+                .build::<M2PositionerForces>()
+                .logn(telemetry, 42)?;
+        }
+
         #[cfg(topend = "ASM")]
         {
             self.m2
@@ -95,6 +123,18 @@ impl<const M1_RATE: usize, const M2_RATE: usize> System for GmtServoMechanisms<M
                 .bootstrap()
                 .build::<M2ASMVoiceCoilsMotion>()
                 .into_input(&mut self.m2)?;
+            if let Some(telemetry) = &mut self.telemetry {
+                self.m2
+                    .add_output()
+                    .unbounded()
+                    .build::<Flatten<M2ASMVoiceCoilsForces>>()
+                    .log(telemetry)?;
+                self.m2
+                    .add_output()
+                    .unbounded()
+                    .build::<Flatten<M2ASMFluidDampingForces>>()
+                    .log(telemetry)?;
+            }
         }
 
         #[cfg(topend = "FSM")]
@@ -108,6 +148,13 @@ impl<const M1_RATE: usize, const M2_RATE: usize> System for GmtServoMechanisms<M
                 .bootstrap()
                 .build::<M2FSMPiezoNodes>()
                 .into_input(&mut self.m2)?;
+            if let Some(telemetry) = &mut self.telemetry {
+                self.m2
+                    .add_output()
+                    .unbounded()
+                    .build::<M2FSMPiezoForces>()
+                    .log(telemetry)?;
+            }
         }
 
         Ok(self)
