@@ -411,7 +411,7 @@ mod tests {
         dbg!(merged_data);
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn model() -> Result<(), Box<dyn Error>> {
         use gmt_dos_actors::prelude::*;
 

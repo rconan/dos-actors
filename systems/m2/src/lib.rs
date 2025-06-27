@@ -55,7 +55,7 @@ mod tests {
 
     // cargo t -r --lib -- tests::asms --exact --nocapture
     #[cfg(topend = "ASM")]
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn asms() -> Result<(), Box<dyn Error>> {
         let fem = gmt_fem::FEM::from_env()?;
         let plant = DiscreteModalSolver::<ExponentialMatrix>::from_fem(fem)
@@ -69,7 +69,7 @@ mod tests {
 
     // cargo t -r --lib -- tests::fsms --exact --nocapture
     #[cfg(topend = "FSM")]
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn fsms() -> Result<(), Box<dyn Error>> {
         use gmt_dos_clients_io::{
             gmt_fem::{inputs::MCM2PZTF, outputs::MCM2PZTD},

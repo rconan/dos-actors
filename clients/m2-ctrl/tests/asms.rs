@@ -16,7 +16,7 @@ export FEM_REPO=/home/ubuntu/projects/dos-actors/grsim/20230131_1605_zen_30_M1_2
 cargo test --release  --package gmt_dos-clients_m2-ctrl --features serde --test asms -- asms --exact --nocapture
  */
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn asms() -> anyhow::Result<()> {
     env_logger::init();
 

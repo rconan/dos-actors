@@ -60,7 +60,7 @@ export FEM_REPO=/home/rconan/mnt/20230131_1605_zen_30_M1_202110_ASM_202208_Mount
 cargo test --release  --package gmt_dos-clients_m1-ctrl --no-default-features --features mount-pdr --test mount-m1a-es_dsl -- main --exact --nocapture
  */
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     env_logger::builder().format_timestamp(None).init();
 

@@ -65,7 +65,7 @@ impl<U: UniqueIdentifier<DataType = Vec<Arc<Vec<f64>>>>> Write<U> for Multiplex 
 export FEM_REPO=/home/rconan/mnt/20230131_1605_zen_30_M1_202110_ASM_202208_Mount_202111/
 cargo test  --release  --package gmt_dos-clients_m2-ctrl --features serde --test mount-m2-es_dsl -- main --exact --nocapture */
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     env_logger::builder().format_timestamp(None).init();
 

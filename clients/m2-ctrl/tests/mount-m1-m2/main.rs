@@ -18,7 +18,7 @@ cargo test --release  --package gmt_dos-clients_m2-ctrl --features serde --test 
 
 const ACTUATOR_RATE: usize = 80;
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     env_logger::init();
 

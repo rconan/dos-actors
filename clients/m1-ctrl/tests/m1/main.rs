@@ -8,7 +8,7 @@ use std::env;
 
 const ACTUATOR_RATE: usize = 10;
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn segment() -> anyhow::Result<()> {
     env_logger::init();
 

@@ -220,7 +220,7 @@ macro_rules! segment_model {
     };
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn segment() -> anyhow::Result<()> {
     {
         const S1: u8 = 1;

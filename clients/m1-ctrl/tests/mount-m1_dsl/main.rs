@@ -23,7 +23,7 @@ export FEM_REPO=/home/ubuntu/mnt/20230530_1756_zen_30_M1_202110_FSM_202305_Mount
 cargo test --release  --package gmt_dos-clients_m1-ctrl --test mount-m1_dsl -- main --exact --nocapture
  */
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     env_logger::builder().format_timestamp(None).init();
 

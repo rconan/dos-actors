@@ -18,7 +18,7 @@ use std::{path::Path, time::Instant};
 export FEM_REPO=...
 cargo test --release  --package gmt_dos-clients_m2-ctrl --features serde --test asms-sys-dsl1 -- --exact --nocapture
 */
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
     let now = Instant::now();
     let mut fem = gmt_fem::FEM::from_env().unwrap();

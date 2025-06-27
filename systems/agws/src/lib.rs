@@ -17,7 +17,7 @@ mod test {
 
     use super::*;
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn sh24() {
         let mut agws = Agws::<1, 1>::builder()
             .sh24(ShackHartmannBuilder::sh24().use_calibration_src())

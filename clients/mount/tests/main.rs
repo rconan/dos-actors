@@ -248,7 +248,7 @@ async fn set_mount(sim_sampling_frequency: usize, setpoint: Signals) -> anyhow::
 /// Moves the mount 1arcsec along the elevation axis of the telescope
 ///
 /// The test is succesfull if the mount has settled to the target within 2% of the step after 3.5s
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn elevation() -> anyhow::Result<()> {
     let sim_sampling_frequency = gmt_dos_clients_mount::sampling_frequency();
     let sim_duration = 4_usize; // second
@@ -266,7 +266,7 @@ async fn elevation() -> anyhow::Result<()> {
 /// Moves the mount 1arcsec along the azimuth axis of the telescope
 ///
 /// The test is succesfull if the mount has settled to the target within 2% of the step after 3.5s
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn azimuth() -> anyhow::Result<()> {
     let sim_sampling_frequency = gmt_dos_clients_mount::sampling_frequency();
     let sim_duration = 4_usize; // second
@@ -284,7 +284,7 @@ async fn azimuth() -> anyhow::Result<()> {
 /// Moves the mount 1arcsec along the GIR axis of the telescope
 ///
 /// The test is succesfull if the mount has settled to the target within 2% of the step after 3.5s
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn gir() -> anyhow::Result<()> {
     let sim_sampling_frequency = gmt_dos_clients_mount::sampling_frequency();
     let sim_duration = 4_usize; // second
@@ -302,7 +302,7 @@ async fn gir() -> anyhow::Result<()> {
 /// Zero command test
 ///
 /// The test is succesfull if the last position of the 3 axis is less than 1mas to zero
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn zero() -> anyhow::Result<()> {
     let sim_sampling_frequency = gmt_dos_clients_mount::sampling_frequency();
     let sim_duration = 4_usize; // second
