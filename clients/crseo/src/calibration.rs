@@ -45,7 +45,7 @@ let mut recon = <CentroidsProcessing as Calibration<GmtM2>>::calibrate(&(omb.int
 assert_eq!(recon.len(),7);
 recon.calib_slice().iter().for_each(|c| assert_eq!(c.n_cols(),2));
 recon.pseudoinverse();
-recon.pinv().for_each(|c| assert_eq!(c.mat_ref().nrows(),2));
+recon.pinv_iter().for_each(|c| assert_eq!(c.mat_ref().nrows(),2));
 # Ok::<(),Box<dyn std::error::Error>>(())
 ```
 
@@ -95,7 +95,7 @@ assert_eq!(recon.len(),1);
 assert_eq!(recon.calib_slice()[0].shape(),(36,14));
 
 recon.pseudoinverse();
-assert_eq!(recon.pinv().last().unwrap().mat_ref().shape(),(14,36));
+assert_eq!(recon.pinv_iter().last().unwrap().mat_ref().shape(),(14,36));
 # Ok::<(),Box<dyn std::error::Error>>(())
 ```
 

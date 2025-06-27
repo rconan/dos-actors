@@ -127,12 +127,13 @@ where
     pub fn calib(&self) -> impl Iterator<Item = &C> {
         self.calib.iter()
     }
+    /// Returns an iterator over the pseudo-inverse of the calibration matrices
+    pub fn pinv_iter(&mut self) -> impl Iterator<Item = &CalibPinv<M>> {
+        self.pinv.iter().filter_map(|p| p.as_ref())
+    }
     /// Returns a mutable iterator over the pseudo-inverse of the calibration matrices
     pub fn pinv_iter_mut(&mut self) -> impl Iterator<Item = &mut CalibPinv<M>> {
         self.pinv.iter_mut().filter_map(|p| p.as_mut())
-        // .zip(&self.calib)
-        // .map(|(p, c)| p.get_or_insert_with(|| c.pseudoinverse()))
-        // .map(|p| p)
     }
     /// Returns a vector of references to the pseudo-inverse of the calibration matrices
     pub fn pinv_as_ref(&self) -> Vec<Option<&CalibPinv<M>>> {
