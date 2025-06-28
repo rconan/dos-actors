@@ -19,8 +19,9 @@ Per default, the rigid body motions are removed from the mirror figures.
  **/
 #[derive(Debug, Default, Clone)]
 pub struct M1SegmentFigure {
-    transforms: Option<Vec<na::DMatrix<f64>>>,
-    keep_rbm: bool,
+    pub(crate) transforms: Option<Vec<na::DMatrix<f64>>>,
+    pub(crate) keep_rbm: bool,
+    pub(crate) mode_2_force_transforms: Option<Vec<na::DMatrix<f64>>>,
 }
 
 impl M1SegmentFigure {
@@ -38,6 +39,11 @@ impl M1SegmentFigure {
     /// Disables the removal of the rigid body motions for the mirror figures
     pub fn keep_rigid_body_motions(mut self) -> Self {
         self.keep_rbm = true;
+        self
+    }
+    /// Sets the matrices that convert modal shape coefficients to actuator forces
+    pub fn modes_to_forces(mut self, transforms: Vec<na::DMatrix<f64>>) -> Self {
+        self.mode_2_force_transforms = Some(transforms);
         self
     }
     pub(crate) fn transforms_view<'a>(&'a mut self) -> Option<Vec<na::DMatrixView<'a, f64>>> {
