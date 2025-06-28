@@ -7,7 +7,7 @@ use gmt_dos_actors::{
         network::ActorOutputsError,
     },
     graph::Graph,
-    system::{System, SystemError, SystemInput, SystemOutput},
+    system::{Sys, System, SystemError, SystemInput, SystemOutput},
 };
 
 use gmt_dos_clients_io::Assembly;
@@ -21,6 +21,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::Calibration;
 
+use super::M1Builder;
+
 impl<const R: usize> Assembly for M1<R> {}
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -28,7 +30,7 @@ pub struct M1<const R: usize>
 where
     Self: Assembly,
 {
-    segments: Vec<SegmentControls<R>>,
+    pub(crate) segments: Vec<SegmentControls<R>>,
     pub dispatch_in: Actor<DispatchIn>,
     pub dispatch_out: Actor<DispatchOut>,
 }
@@ -139,6 +141,24 @@ impl<const R: usize> M1<R> {
             dispatch_in: DispatchIn::new().into(),
             dispatch_out: DispatchOut::new().into(),
         })
+    }
+}
+impl<const R: usize> M1Builder<R> {
+    pub fn build(self) -> std::result::Result<Sys<M1<R>>, SystemError> {
+        let m1 = M1 {
+            segments: <M1<R> as Assembly>::SIDS
+                .into_iter()
+                .map(|sid| SegmentControls::new(sid, &self.calibration))
+                .collect::<Result<Vec<_>, SystemError>>()?,
+            dispatch_in: if let Some(mats) = self.mode_2_force_transforms {
+                DispatchIn::new().modes_to_forces(mats)
+            } else {
+                DispatchIn::new()
+            }
+            .into(),
+            dispatch_out: DispatchOut::new().into(),
+        };
+        Sys::new(m1).build()
     }
 }
 
