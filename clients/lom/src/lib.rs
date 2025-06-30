@@ -74,7 +74,7 @@ impl interface::Read<M1RigidBodyMotions> for LinearOpticalModel {
 }
 impl interface::Read<M1State> for LinearOpticalModel {
     fn read(&mut self, data: Data<M1State>) {
-        self.m1_rbm = data.rbms.clone().unwrap_or_default();
+        self.m1_rbm = Arc::new(data.into_rbms().unwrap_or_default());
     }
 }
 impl interface::Read<M2RigidBodyMotions> for LinearOpticalModel {
@@ -84,7 +84,7 @@ impl interface::Read<M2RigidBodyMotions> for LinearOpticalModel {
 }
 impl interface::Read<M2State> for LinearOpticalModel {
     fn read(&mut self, data: Data<M2State>) {
-        self.m2_rbm = data.rbms.clone().unwrap_or_default();
+        self.m2_rbm = Arc::new(data.into_rbms().unwrap_or_default());
     }
 }
 impl interface::Read<M2ASMReferenceBodyNodes> for LinearOpticalModel {
