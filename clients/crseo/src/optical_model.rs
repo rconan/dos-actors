@@ -18,7 +18,8 @@ use gmt_dos_clients_io::{
         },
     },
     optics::{
-        M1GlobalTipTilt, M1Modes, M1State, M2GlobalTipTilt, M2Modes, M2State, PSSn, SegmentD7Piston,
+        M1GlobalTipTilt, M1Modes, M1State, M2GlobalTipTilt, M2Modes, M2State, PSSn,
+        SegmentD7Piston, state::SegmentState,
     },
 };
 use interface::{Data, Read, UniqueIdentifier, Units, Update, Write};
@@ -164,12 +165,25 @@ impl<T: SensorPropagation> Read<M1Modes> for OpticalModel<T> {
 impl<T: SensorPropagation> Read<M1State> for OpticalModel<T> {
     fn read(&mut self, data: Data<M1State>) {
         let state = data.into_arc();
-        if let Some(rbms) = &state.rbms {
-            <Self as Read<M1RigidBodyMotions>>::read(self, rbms.into());
+        for (sid, SegmentState { rbms, modes }) in state
+            .iter()
+            .enumerate()
+            .filter_map(|(i, state)| state.map(|state| (i + 1, state)))
+        {
+            if let Some(data) = rbms {
+                self.gmt
+                    .m1_segment_state(sid as i32, &data[..3], &data[3..]);
+            }
+            if let Some(data) = modes {
+                self.gmt.m1_segment_modes(sid as u8, &data);
+            }
         }
-        if let Some(modes) = &state.modes {
-            <Self as Read<M1ModeShapes>>::read(self, modes.into());
-        }
+        // if let Some(rbms) = state.into_rbms() {
+        //     <Self as Read<M1RigidBodyMotions>>::read(self, rbms.into());
+        // }
+        // if let Some(modes) = state.into_modes() {
+        //     <Self as Read<M1ModeShapes>>::read(self, modes.into());
+        // }
     }
 }
 impl<T: SensorPropagation> Read<M1ModeShapes> for OpticalModel<T> {
@@ -267,11 +281,18 @@ impl<T: SensorPropagation> Read<M2Modes> for OpticalModel<T> {
 impl<T: SensorPropagation> Read<M2State> for OpticalModel<T> {
     fn read(&mut self, data: Data<M2State>) {
         let state = data.into_arc();
-        if let Some(rbms) = &state.rbms {
-            <Self as Read<M2RigidBodyMotions>>::read(self, rbms.into());
-        }
-        if let Some(modes) = &state.modes {
-            <Self as Read<M2Modes>>::read(self, modes.into());
+        for (sid, SegmentState { rbms, modes }) in state
+            .iter()
+            .enumerate()
+            .filter_map(|(i, state)| state.map(|state| (i + 1, state)))
+        {
+            if let Some(data) = rbms {
+                self.gmt
+                    .m2_segment_state(sid as i32, &data[..3], &data[3..]);
+            }
+            if let Some(data) = modes {
+                self.gmt.m2_segment_modes(sid as u8, &data);
+            }
         }
     }
 }
