@@ -4,7 +4,7 @@ use gmt_dos_clients_io::{
     gmt_m2::asm::{
         M2ASMFaceSheetFigure, M2ASMFluidDampingForces, M2ASMVoiceCoilsForces, M2ASMVoiceCoilsMotion,
     },
-    optics::{self, MirrorState},
+    optics::{M2State, state::MirrorState},
 };
 use interface::{Data, Read, Size, Write};
 use std::sync::Arc;
@@ -185,12 +185,12 @@ where
         }
     }
 }
-impl<S> Write<optics::M2State> for DiscreteModalSolver<S>
+impl<S> Write<M2State> for DiscreteModalSolver<S>
 where
     DiscreteModalSolver<S>: Iterator,
     S: Solver + Default,
 {
-    fn write(&mut self) -> Option<Data<optics::M2State>> {
+    fn write(&mut self) -> Option<Data<M2State>> {
         let data: Vec<_> = <M2ASMVoiceCoilsForces as Assembly>::SIDS
             .into_iter()
             .filter_map(|sid| match sid {
@@ -206,6 +206,9 @@ where
             .collect();
         let rbms = <DiscreteModalSolver<S> as Get<fem_io::MCM2RB6D>>::get(self)
             .expect("failed to get rigid body motion from ASMS reference bodies");
+        if data.is_empty() {
+            return Some(Data::new(MirrorState::from_rbms(&rbms)));
+        }
         if self.facesheet_nodes.is_some() {
             self.facesheet_nodes.as_mut().map(|facesheet| {
                 facesheet
@@ -219,7 +222,7 @@ where
         } else {
             Some(data)
         }
-        .map(|x| x.into_iter().flatten().collect::<Vec<_>>())
-        .map(|modes| Data::new(MirrorState::new(rbms, modes)))
+        .map(|modes| MirrorState::new(rbms.chunks(6), modes))
+        .map(|state| Data::new(state))
     }
 }

@@ -6,7 +6,10 @@ use super::prelude::*;
 use gmt_dos_clients_io::{
     Assembly,
     gmt_m1::{M1EdgeSensors, M1ModeShapes, M1RigidBodyMotions, segment::ModeShapes},
-    optics,
+    optics::{
+        M1State,
+        state::{MirrorState, SegmentState},
+    },
 };
 
 pub mod actuators;
@@ -71,15 +74,15 @@ where
         } else {
             Some(data)
         }
-        .map(|x| x.into_iter().flatten().collect::<Vec<_>>().into())
+        .map(|x| { x.into_iter().flatten().collect::<Vec<_>>() }.into())
     }
 }
-impl<S> Write<optics::M1State> for DiscreteModalSolver<S>
+impl<S> Write<M1State> for DiscreteModalSolver<S>
 where
     DiscreteModalSolver<S>: Iterator,
     S: Solver + Default,
 {
-    fn write(&mut self) -> Option<Data<optics::M1State>> {
+    fn write(&mut self) -> Option<Data<M1State>> {
         let data: Vec<_> = <M1ModeShapes as Assembly>::SIDS
             .into_iter()
             .filter_map(|sid| match sid {
@@ -94,30 +97,42 @@ where
             })
             .collect();
         let rbms = <DiscreteModalSolver<S> as Get<fem_io::OSSM1Lcl>>::get(self)
-            .expect("failed to get rigid body motion from ASMS reference bodies");
-        if self.m1_figure_nodes.is_some() {
-            self.m1_figure_nodes.as_mut().map(|m1_figure| {
-                m1_figure
-                    .from_assembly(<M1ModeShapes as Assembly>::SIDS.into_iter(), &data, &rbms)
-                    .expect("failed to remove RBM from ASM m1_figure")
-            })
+            .expect("failed to get M1 rigid body motions");
+        let state = if data.is_empty() {
+            MirrorState::from_rbms(&rbms)
         } else {
-            Some(data)
-        }
-        .map(|x| {
-            if let Some(transforms) = &self.m1_figure_transforms {
-                x.into_iter()
-                    .zip(transforms)
-                    .flat_map(|(x, mat)| {
+            let modes = if self.m1_figure_nodes.is_some() {
+                self.m1_figure_nodes.as_mut().map(|m1_figure| {
+                    m1_figure
+                        .from_assembly(<M1ModeShapes as Assembly>::SIDS.into_iter(), &data, &rbms)
+                        .expect("failed to remove RBM from ASM m1_figure")
+                })
+            } else {
+                Some(data)
+            }
+            .map(|x| {
+                if let Some(transforms) = &self.m1_figure_transforms {
+                    Box::new(x.into_iter().zip(transforms).map(|(x, mat)| {
                         let y = mat * nalgebra::DVector::from_column_slice(&x);
                         y.as_slice().to_vec()
-                    })
-                    .collect()
-            } else {
-                x.into_iter().flatten().collect()
-            }
-        })
-        .map(|modes| Data::new(optics::MirrorState::new(rbms, modes)))
+                    }))
+                } else {
+                    Box::new(x.into_iter()) as Box<dyn Iterator<Item = Vec<f64>>>
+                }
+            });
+            let rbms_chunks = rbms.chunks(6);
+            let state: MirrorState = match modes {
+                Some(modes) => rbms_chunks
+                    .zip(modes)
+                    .map(|(rbms, modes)| SegmentState::new(rbms.to_vec(), modes))
+                    .collect(),
+                None => rbms_chunks
+                    .map(|rbms| SegmentState::rbms(rbms.to_vec()))
+                    .collect(),
+            };
+            state
+        };
+        Some(Data::new(state))
     }
 }
 impl<const ID: u8, S> Write<ModeShapes<ID>> for DiscreteModalSolver<S>

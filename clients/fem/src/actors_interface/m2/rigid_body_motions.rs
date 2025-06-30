@@ -1,10 +1,16 @@
 //! M2 rigid body motions
 
 use super::prelude::*;
+#[cfg(all(fem, topend = "ASM"))]
+use gmt_dos_clients_io::gmt_m2::M2RigidBodyMotions;
+#[cfg(all(fem, topend = "FSM"))]
 use gmt_dos_clients_io::{
     Assembly,
     gmt_m2::{M2RigidBodyMotions, fsm::M2FSMPiezoForces},
-    optics::{self, MirrorState},
+    optics::{
+        M2State,
+        state::{MirrorState, SegmentState},
+    },
 };
 
 impl<S> Size<M2RigidBodyMotions> for DiscreteModalSolver<S>
@@ -27,12 +33,12 @@ where
     }
 }
 #[cfg(all(fem, topend = "FSM"))]
-impl<S> Write<optics::M2State> for DiscreteModalSolver<S>
+impl<S> Write<M2State> for DiscreteModalSolver<S>
 where
     DiscreteModalSolver<S>: Iterator,
     S: Solver + Default,
 {
-    fn write(&mut self) -> Option<Data<optics::M2State>> {
+    fn write(&mut self) -> Option<Data<M2State>> {
         let data: Vec<_> = <M2FSMPiezoForces as Assembly>::SIDS
             .into_iter()
             .filter_map(|sid| match sid {
@@ -48,24 +54,35 @@ where
             .collect();
         let rbms = <DiscreteModalSolver<S> as Get<fem_io::MCM2Lcl6D>>::get(self)
             .expect("failed to get rigid body motion from ASMS reference bodies");
-        if data.is_empty() {
-            return Some(Data::new(MirrorState::rbms(rbms)));
-        }
-        if self.facesheet_nodes.is_some() {
-            self.facesheet_nodes.as_mut().map(|facesheet| {
-                facesheet
-                    .from_assembly(
-                        <M2FSMPiezoForces as Assembly>::SIDS.into_iter(),
-                        &data,
-                        &rbms,
-                    )
-                    .expect("failed to remove RBM from ASM m1_figure")
-            })
+        let state = if data.is_empty() {
+            MirrorState::from_rbms(&rbms)
         } else {
-            Some(data)
-        }
-        .map(|x| x.into_iter().flatten().collect::<Vec<_>>())
-        .map(|modes| Data::new(MirrorState::new(rbms, modes)))
+            let modes = if self.facesheet_nodes.is_some() {
+                self.facesheet_nodes.as_mut().map(|facesheet| {
+                    facesheet
+                        .from_assembly(
+                            <M2FSMPiezoForces as Assembly>::SIDS.into_iter(),
+                            &data,
+                            &rbms,
+                        )
+                        .expect("failed to remove RBM from ASM m1_figure")
+                })
+            } else {
+                Some(data)
+            };
+            let rbms_chunks = rbms.chunks(6);
+            let state: MirrorState = match modes {
+                Some(modes) => rbms_chunks
+                    .zip(modes)
+                    .map(|(rbms, modes)| SegmentState::new(rbms.to_vec(), modes))
+                    .collect(),
+                None => rbms_chunks
+                    .map(|rbms| SegmentState::rbms(rbms.to_vec()))
+                    .collect(),
+            };
+            state
+        };
+        Some(Data::new(state))
     }
 }
 #[cfg(all(fem, topend = "ASM"))]
