@@ -97,32 +97,40 @@ actorscript! {
 
 #[cfg(fem)]
 mod fem;
+use std::ops::Deref;
+
 #[cfg(fem)]
 pub use fem::*;
 
-/// M1 singular modes (aka bending modes)
+/// M1 segment singular modes (aka bending modes)
 #[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
-pub struct SingularModes {
+pub struct SegmentSingularModes {
     /// segmennt meshes vertex coordinates `[x,y,z]`
     mode_nodes: Vec<Vec<f64>>,
     /// segment actuator location `[x,y,z]`
     actuator_nodes: Vec<Vec<f64>>,
-    /// segment singular modes
+    /// segment left singular modes
     raw_modes: Vec<f64>,
-    /// segment singular modes restricted to the rigid body motions null space
+    /// segment left singular modes restricted to the rigid body motions null space
     modes: Vec<f64>,
     /// modes to forces matrix transform
     mode_2_force: Vec<f64>,
+    // /// segment right singular modes
+    // right_modes: Vec<f64>,
+    // /// segment singular values
+    // singular_values: Vec<f64>,
     /// modes shape `[n_points,n_actuators]`
     shape: (usize, usize),
 }
-impl SingularModes {
+
+impl SegmentSingularModes {
     pub fn new(
         mode_nodes: Vec<Vec<f64>>,
         actuator_nodes: Vec<Vec<f64>>,
         raw_modes: Vec<f64>,
         modes: Vec<f64>,
         mode_2_force: Vec<f64>,
+        // singular_values: Vec<f64>,
         shape: (usize, usize),
     ) -> Self {
         Self {
@@ -131,6 +139,8 @@ impl SingularModes {
             raw_modes,
             modes,
             mode_2_force,
+            // right_modes,
+            // singular_values,
             shape,
         }
     }
@@ -145,14 +155,60 @@ impl SingularModes {
         let ns = self.mode_2_force.len() / na;
         faer::mat::MatRef::from_column_major_slice(&self.mode_2_force, na, ns)
     }
-    pub fn dmatrix(&self) -> nalgebra::DMatrix<f64> {
+    pub fn mode2force(&self) -> nalgebra::DMatrix<f64> {
+        // let n = self.singular_values.len();
+        // let singular_values_inverse =
+        //     nalgebra::DMatrix::from_diagonal(&nalgebra::DVector::from_iterator(
+        //         self.singular_values.len(),
+        //         self.singular_values.iter().map(|x| x.recip()),
+        //     ));
+        // nalgebra::DMatrix::from_column_slice(self.right_modes.len() / n, n, &self.right_modes)
+        //     * singular_values_inverse
+        let (_, na) = self.shape;
+        let ns = self.mode_2_force.len() / na;
+        nalgebra::DMatrix::from_column_slice(na, ns, &self.mode_2_force)
+    }
+    pub fn raw_modes_into_mat(&self) -> nalgebra::DMatrix<f64> {
         let (ns, na) = self.shape;
         nalgebra::DMatrix::from_column_slice(ns, na, &self.raw_modes)
+    }
+    pub fn modes_into_mat(&self) -> nalgebra::DMatrix<f64> {
+        let (ns, ..) = self.shape;
+        nalgebra::DMatrix::from_column_slice(ns, self.modes.len() / ns, &self.modes)
     }
     pub fn shape(&self) -> (usize, usize) {
         self.shape
     }
     pub fn raw_modes_iter(&self) -> impl Iterator<Item = &f64> {
         self.raw_modes.iter()
+    }
+}
+
+/// M1 singular modes (aka bending modes)
+#[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
+pub struct SingularModes(Vec<SegmentSingularModes>);
+impl Deref for SingularModes {
+    type Target = [SegmentSingularModes];
+
+    fn deref(&self) -> &Self::Target {
+        self.0.as_slice()
+    }
+}
+impl SingularModes {
+    pub fn push(&mut self, segment: SegmentSingularModes) {
+        self.0.push(segment);
+    }
+    pub fn modes_into_mat(&self) -> Vec<nalgebra::DMatrix<f64>> {
+        self.iter()
+            .map(|segment| segment.modes_into_mat())
+            .collect()
+    }
+    pub fn raw_modes_into_mat(&self) -> Vec<nalgebra::DMatrix<f64>> {
+        self.iter()
+            .map(|segment| segment.raw_modes_into_mat())
+            .collect()
+    }
+    pub fn mode2force(&self) -> Vec<nalgebra::DMatrix<f64>> {
+        self.iter().map(|segment| segment.mode2force()).collect()
     }
 }

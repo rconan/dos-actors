@@ -4,7 +4,7 @@ use clap::{Parser, ValueEnum};
 use faer::Mat;
 use faer_ext::IntoFaer;
 use gmt_dos_clients_fem::{Model, Switch, fem_io};
-use gmt_dos_systems_m1::SingularModes;
+use gmt_dos_systems_m1::{SegmentSingularModes, SingularModes};
 use gmt_fem::FEM;
 
 /// M1 singular modes (a.k.a. bending modes) computation
@@ -64,7 +64,7 @@ fn main() -> anyhow::Result<()> {
     // let gain_rbm = gain.subrows(gain.nrows() - NR, NR);
     // println!("RBM gain matrix {:?}", gain_rbm.shape());
 
-    let mut m1_sms = vec![];
+    let mut m1_sms = SingularModes::default();
 
     for sid in 1..=7u8 {
         println!("Segment #{sid}");
@@ -167,10 +167,13 @@ fn main() -> anyhow::Result<()> {
         let svd_d = gain_d.svd().unwrap();
         let u_d = svd_d.U().subcols(0, svd_d.S().column_vector().nrows());
         let v_d = svd_d.V();
+        let s_d = svd_d.S().column_vector();
+        let mut s_d_inverse = s_d.cloned();
+        s_d_inverse.iter_mut().for_each(|x| *x = x.recip());
         println!(
             "  SVD D gain: U {:?}, S ({:}), V {:?}",
             u_d.shape(),
-            svd_d.S().column_vector().nrows(),
+            s_d.nrows(),
             v_d.shape()
         );
 
@@ -200,7 +203,7 @@ fn main() -> anyhow::Result<()> {
 
         let raw_modes = u_d.to_owned();
         let modes = u_rd.to_owned();
-        let mode_2_force = v_rd * s_rd.as_diagonal();
+        let mode_2_force = v_d * s_d_inverse.as_diagonal() * u_d.transpose() * u_rd;
 
         /* let modes_coefs = modes.transpose() * gain_d * &mode_2_force;
         println!(
@@ -213,7 +216,7 @@ fn main() -> anyhow::Result<()> {
         println!("{:5.2}", rbms.subcols(0, 10).into_nalgebra());
         println!("{:5.2}", rbms.subcols(319, 10).into_nalgebra()); */
 
-        let sms = SingularModes::new(
+        let sms = SegmentSingularModes::new(
             xyz,
             in_xyz,
             raw_modes
@@ -228,6 +231,7 @@ fn main() -> anyhow::Result<()> {
                 .col_iter()
                 .flat_map(|c| c.iter().cloned().collect::<Vec<_>>())
                 .collect(),
+            // s_rd.iter().cloned().collect::<Vec<_>>(),
             gain_d.shape(),
         );
         m1_sms.push(sms);

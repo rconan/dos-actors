@@ -7,7 +7,7 @@ use gmt_dos_clients_io::gmt_m1::segment::{
     ActuatorAppliedForces, BarycentricForce, HardpointsMotion,
 };
 use gmt_dos_clients_m1_ctrl::{Actuators, LoadCells};
-use gmt_dos_systems_m1::{Calibration, SingularModes};
+use gmt_dos_systems_m1::{Calibration, SegmentSingularModes};
 use gmt_fem::{FEM, FemError};
 use interface::{Data, Read, Update, Write};
 use serde::{Deserialize, Serialize};
@@ -23,7 +23,7 @@ fn main() -> anyhow::Result<()> {
 
     println!("loading the modes...");
     let now = Instant::now();
-    let modes: Vec<SingularModes> =
+    let modes: Vec<SegmentSingularModes> =
         serde_pickle::from_reader(File::open("m1_singular_modes.pkl")?, Default::default())?;
     println!("elapsed: {:}s", now.elapsed().as_micros());
     dbg!(modes[0].shape());

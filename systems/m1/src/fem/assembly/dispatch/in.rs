@@ -1,15 +1,14 @@
 use std::sync::Arc;
 
-use gmt_dos_clients::operator;
 use gmt_dos_clients_io::{
     Assembly,
     gmt_m1::{
         M1ModeShapes,
         assembly::{M1ActuatorCommandForces, M1HardpointsMotion, M1RigidBodyMotions},
-        segment::{ActuatorCommandForces, HardpointsMotion, RBM},
+        segment::{ActuatorCommandForces, HardpointsMotion, ModeShapes, RBM},
     },
 };
-use interface::{Data, Read, UniqueIdentifier, Update, Write};
+use interface::{Data, Left, Read, Right, UniqueIdentifier, Update, Write};
 use serde::{Deserialize, Serialize};
 
 use super::NA;
@@ -69,21 +68,21 @@ impl Read<M1RigidBodyMotions> for DispatchIn {
     }
 }
 
-impl<U> Read<operator::Left<U>> for DispatchIn
+impl<U> Read<Left<U>> for DispatchIn
 where
     U: UniqueIdentifier,
     DispatchIn: Read<U>,
 {
-    fn read(&mut self, data: Data<operator::Left<U>>) {
+    fn read(&mut self, data: Data<Left<U>>) {
         <Self as Read<U>>::read(self, data.transmute());
     }
 }
-impl<U> Read<operator::Right<U>> for DispatchIn
+impl<U> Read<Right<U>> for DispatchIn
 where
     U: UniqueIdentifier,
     DispatchIn: Read<U>,
 {
-    fn read(&mut self, data: Data<operator::Right<U>>) {
+    fn read(&mut self, data: Data<Right<U>>) {
         <Self as Read<U>>::read(self, data.transmute());
     }
 }
@@ -145,6 +144,19 @@ impl<const ID: u8> Write<ActuatorCommandForces<ID>> for DispatchIn {
                 .clone()
                 .into(),
         )
+    }
+}
+impl<const ID: u8> Read<ModeShapes<ID>> for DispatchIn {
+    fn read(&mut self, data: Data<ModeShapes<ID>>) {
+        let data = data.into_arc();
+        let i = ID as usize - 1;
+        let mat = &self
+            .mode_2_force_transforms
+            .as_ref()
+            .expect("missing modal to zonal forces matrices in systems::m1::DispatchIn")[i];
+        let b = nalgebra::DVector::from_column_slice(&data);
+        let y = mat * b;
+        self.m1_actuator_command_forces[i] = y.as_slice().to_vec().into();
     }
 }
 
