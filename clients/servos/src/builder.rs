@@ -112,15 +112,17 @@ impl<'a, const M1_RATE: usize, const M2_RATE: usize> TryFrom<ServosBuilder<M1_RA
         let mount = Mount::new();
 
         log::info!("Calibrating M1");
-
-        let m1 = match builder.m1_segment_figure {
-            Some(M1SegmentFigure {
-                mode_2_force_transforms,
-                ..
-            }) => gmt_dos_systems_m1::M1::<M1_RATE>::builder(&mut fem).modes_to_forces(transforms),
-            None => gmt_dos_systems_m1::M1::<M1_RATE>::builder(&mut fem),
+        let m1 = if let Some(transforms) = builder
+            .m1_segment_figure
+            .as_mut()
+            .and_then(|q| q.mode_2_force_transforms.take())
+        {
+            gmt_dos_systems_m1::M1::<M1_RATE>::builder(&mut fem).modes_to_forces(transforms)
+        } else {
+            gmt_dos_systems_m1::M1::<M1_RATE>::builder(&mut fem)
         }
         .build()?;
+
         log::info!("Calibrating ASMS positioners");
         let positioners = Positioners::new(&mut fem)?;
 
