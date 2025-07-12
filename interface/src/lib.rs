@@ -18,6 +18,7 @@ use std::{any::type_name, marker::PhantomData, sync::Arc};
 
 mod data;
 pub mod doublet;
+pub mod optics;
 pub use data::Data;
 pub use dos_uid_derive::UID;
 pub mod units;
@@ -168,7 +169,7 @@ where
     const PORT: u16 = <U as UniqueIdentifier>::PORT;
 }
 
-/// Marker trait for clients implementing [Write]`<`[Flatten]`<U>>` 
+/// Marker trait for clients implementing [Write]`<`[Flatten]`<U>>`
 pub trait WriteFlatten {}
 
 impl<U, C> Write<Flatten<U>> for C
@@ -195,3 +196,24 @@ where
         <_ as Size<U>>::len(self)
     }
 }
+
+pub struct Left<U: UniqueIdentifier>(PhantomData<U>);
+impl<U> UniqueIdentifier for Left<U>
+where
+    U: UniqueIdentifier,
+{
+    type DataType = <U as UniqueIdentifier>::DataType;
+
+    const PORT: u16 = <U as UniqueIdentifier>::PORT;
+}
+
+pub struct Right<U: UniqueIdentifier>(PhantomData<U>);
+impl<U> UniqueIdentifier for Right<U>
+where
+    U: UniqueIdentifier,
+{
+    type DataType = <U as UniqueIdentifier>::DataType;
+
+    const PORT: u16 = <U as UniqueIdentifier>::PORT;
+}
+

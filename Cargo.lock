@@ -3181,7 +3181,7 @@ dependencies = [
 
 [[package]]
 name = "gmt-fem"
-version = "5.2.0"
+version = "5.1.1"
 dependencies = [
  "anyhow",
  "arrow",
