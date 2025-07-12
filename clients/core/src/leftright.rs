@@ -72,7 +72,7 @@ assert_eq!(*merged_data,data);
 
 use std::{marker::PhantomData, ops::Deref, sync::Arc};
 
-use interface::{Data, Read, UniqueIdentifier, Update, Write};
+use interface::{Data, Left, Read, Right, UniqueIdentifier, Update, Write};
 
 /// Splitting state for [LeftRight] client
 pub enum Split {}
@@ -253,17 +253,17 @@ where
     }
 }
 
-/// Identifier for the left part of the splitted data
-pub struct Left<U: UniqueIdentifier>(PhantomData<U>);
-impl<U: UniqueIdentifier> UniqueIdentifier for Left<U> {
-    type DataType = U::DataType;
-}
+// /// Identifier for the left part of the splitted data
+// pub struct Left<U: UniqueIdentifier>(PhantomData<U>);
+// impl<U: UniqueIdentifier> UniqueIdentifier for Left<U> {
+//     type DataType = U::DataType;
+// }
 
-/// Identifier for the right part of the splitted data
-pub struct Right<U: UniqueIdentifier>(PhantomData<U>);
-impl<U: UniqueIdentifier> UniqueIdentifier for Right<U> {
-    type DataType = U::DataType;
-}
+// /// Identifier for the right part of the splitted data
+// pub struct Right<U: UniqueIdentifier>(PhantomData<U>);
+// impl<U: UniqueIdentifier> UniqueIdentifier for Right<U> {
+//     type DataType = U::DataType;
+// }
 
 impl<T, U, V> Write<Left<U>> for LeftRight<U, Split, V>
 where
