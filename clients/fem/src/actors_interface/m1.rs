@@ -141,7 +141,7 @@ where
     S: Solver + Default,
 {
     fn write(&mut self) -> Option<Data<ModeShapes<ID>>> {
-        let figure = match ID {
+        let mut figure = match ID {
             1 => <DiscreteModalSolver<S> as Get<fem_io::M1Segment1AxialD>>::get(self),
             2 => <DiscreteModalSolver<S> as Get<fem_io::M1Segment2AxialD>>::get(self),
             3 => <DiscreteModalSolver<S> as Get<fem_io::M1Segment3AxialD>>::get(self),
@@ -154,17 +154,25 @@ where
         if self.m1_figure_nodes.is_some() {
             let rbms = <DiscreteModalSolver<S> as Get<fem_io::OSSM1Lcl>>::get(self)
                 .expect("failed to get rigid body motion from M1 segments");
-            self.m1_figure_nodes.as_mut().map(|m1_figure| {
-                m1_figure
-                    .from_segment(ID, &figure, &rbms)
-                    .expect("failed to remove RBM from M1 segment #{ID}")
-                    .into()
-            })
-        } else {
-            Some(figure.into())
+            let y = self
+                .m1_figure_nodes
+                .as_mut()
+                .unwrap()
+                .from_segment(ID, &figure, &rbms)
+                .expect("failed to remove RBM from M1 segment #{ID}");
+            figure.copy_from_slice(&y);
         }
+        if let Some(transforms) = &self.m1_figure_transforms {
+            let mat = &transforms[ID as usize - 1];
+            let y = mat * nalgebra::DVector::from_column_slice(&figure);
+            let y_slice = y.as_slice();
+            figure.resize(y_slice.len(), Default::default());
+            figure.copy_from_slice(y_slice);
+        };
+        Some(figure.into())
     }
 }
+
 //  * M1 rigid body motions
 impl<S> Size<M1RigidBodyMotions> for DiscreteModalSolver<S>
 where

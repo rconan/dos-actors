@@ -16,8 +16,7 @@ pub mod prelude {
     pub use std::sync::Arc;
 }
 
-use gmt_dos_clients::operator;
-use interface::Units;
+use interface::{Left, Right, Units};
 use prelude::*;
 
 #[cfg(all(fem, any(cfd2021, cfd2025)))]
@@ -90,28 +89,32 @@ where
     }
 }
 
-impl<S, U: UniqueIdentifier<DataType = Vec<f64>>> Write<operator::Left<U>>
-    for DiscreteModalSolver<S>
+impl<S, U> Write<Left<U>> for DiscreteModalSolver<S>
 where
-    DiscreteModalSolver<S>: Iterator,
-    Vec<Option<gmt_fem::fem_io::Outputs>>: crate::fem_io::FemIo<U>,
-    S: Solver + Default + Send + Sync,
-    U: 'static,
+    // DiscreteModalSolver<S>: Iterator,
+    // Vec<Option<gmt_fem::fem_io::Outputs>>: crate::fem_io::FemIo<U>,
+    S: Solver + Default,
+    // U: 'static,
+    Self: Write<U>,
+    U: UniqueIdentifier,
 {
-    fn write(&mut self) -> Option<Data<operator::Left<U>>> {
-        <DiscreteModalSolver<S> as Get<U>>::get(self).map(|data| Data::new(data))
+    fn write(&mut self) -> Option<Data<Left<U>>> {
+        <_ as Write<U>>::write(self).map(|data| data.transmute())
+        // <DiscreteModalSolver<S> as Get<U>>::get(self).map(|data| Data::new(data))
     }
 }
 
-impl<S, U: UniqueIdentifier<DataType = Vec<f64>>> Write<operator::Right<U>>
-    for DiscreteModalSolver<S>
+impl<S, U> Write<Right<U>> for DiscreteModalSolver<S>
 where
-    DiscreteModalSolver<S>: Iterator,
-    Vec<Option<gmt_fem::fem_io::Outputs>>: crate::fem_io::FemIo<U>,
-    S: Solver + Default + Send + Sync,
-    U: 'static,
+    // DiscreteModalSolver<S>: Iterator,
+    // Vec<Option<gmt_fem::fem_io::Outputs>>: crate::fem_io::FemIo<U>,
+    Self: Write<U>,
+    S: Solver + Default, //+ Send + Sync,
+    // U: 'static,
+    U: UniqueIdentifier,
 {
-    fn write(&mut self) -> Option<Data<operator::Right<U>>> {
-        <DiscreteModalSolver<S> as Get<U>>::get(self).map(|data| Data::new(data))
+    fn write(&mut self) -> Option<Data<Right<U>>> {
+        <_ as Write<U>>::write(self).map(|data| data.transmute())
+        // <DiscreteModalSolver<S> as Get<U>>::get(self).map(|data| Data::new(data))
     }
 }

@@ -1,16 +1,17 @@
 use crate::{
     DiscreteStateSpace,
     actors_interface::RbmRemoval,
-    fem_io::{GetIn, GetOut},
+    fem_io::{self, GetIn, GetOut},
     solvers::{Exponential, ExponentialMatrix, Solver},
 };
 
 use gmt_fem::{FEM, Result};
-use interface::TimerMarker;
+use interface::{TimerMarker, UniqueIdentifier};
 use nalgebra as na;
 use rayon::prelude::*;
 use std::{
     fmt,
+    ops::Range,
     sync::Arc,
     thread::{self, JoinHandle},
 };
@@ -81,6 +82,26 @@ impl<T: Solver + Default> DiscreteModalSolver<T> {
     pub fn from_env() -> Result<DiscreteStateSpace<'static, T>> {
         let fem = FEM::from_env()?;
         Ok(DiscreteModalSolver::from_fem(fem))
+    }
+    /// Returns the range of the indices of input `U`
+    pub fn in_range<U>(&self) -> Option<Range<usize>>
+    where
+        for<'a> U: UniqueIdentifier<DataType = Vec<f64>> + 'a,
+    {
+        self.ins
+            .iter()
+            .find(|&x| x.as_any().is::<fem_io::SplitFem<U>>())
+            .map(|io| io.range())
+    }
+    /// Returns the range of the indices of output `U`
+    pub fn out_range<U>(&self) -> Option<Range<usize>>
+    where
+        for<'a> U: UniqueIdentifier<DataType = Vec<f64>> + 'a,
+    {
+        self.outs
+            .iter()
+            .find(|&x| x.as_any().is::<fem_io::SplitFem<U>>())
+            .map(|io| io.range())
     }
 }
 impl Iterator for DiscreteModalSolver<Exponential> {
