@@ -16,7 +16,7 @@ use gmt_dos_clients_io::{
     },
 };
 use gmt_lom::{LOM, LinearOpticalModelError, Loader};
-use interface::{self, Data, Size, Units, Update, Write};
+use interface::{self, Data, Size, Units, Update, Write, optics::Optics};
 
 mod optical_sensitivity;
 pub use optical_sensitivity::OpticalSensitivities;
@@ -59,6 +59,7 @@ impl LinearOpticalModel {
 }
 
 impl Units for LinearOpticalModel {}
+impl Optics for LinearOpticalModel {}
 
 impl Update for LinearOpticalModel {
     fn update(&mut self) {

@@ -22,7 +22,7 @@ mod transmitter;
 
 use std::{any::type_name, marker::PhantomData};
 
-use interface::{Data, Read, UniqueIdentifier, Update, Write};
+use interface::{Data, Read, UniqueIdentifier, Update, Write, optics::Optics};
 use quinn::Endpoint;
 
 pub use crypto::Crypto;
@@ -183,6 +183,8 @@ impl<U: UniqueIdentifier, F, S> std::fmt::Display for Transceiver<U, F, S> {
         Ok(())
     }
 }
+
+impl<U: UniqueIdentifier, F> Optics for Transceiver<U, F, On> {}
 
 /* impl<U: UniqueIdentifier, V: UniqueIdentifier, F> From<&Transceiver<U, F>> for Transceiver<V, F> {
     fn from(other: &Transceiver<U, F>) -> Self {

@@ -22,7 +22,7 @@ use gmt_dos_clients_io::{
         SegmentD7Piston, state::SegmentState,
     },
 };
-use interface::{Data, Read, UniqueIdentifier, Units, Update, Write};
+use interface::{Data, Read, UniqueIdentifier, Units, Update, Write, optics::Optics};
 
 pub mod builder;
 mod imaging;
@@ -89,6 +89,7 @@ unsafe impl<T> Send for OpticalModel<T> {}
 unsafe impl<T> Sync for OpticalModel<T> {}
 
 impl<T> Units for OpticalModel<T> {}
+impl<T> Optics for OpticalModel<T> {}
 
 impl<T> OpticalModel<T>
 where
