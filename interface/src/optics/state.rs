@@ -1,6 +1,8 @@
+use std::ops::Add;
+
 use crate::{Data, Left, Read, Right, Update, Write};
 
-use super::{M1State, M2State};
+use super::{M1State, M2State, OpticsState};
 
 mod mirror;
 mod segment;
@@ -97,5 +99,62 @@ impl Write<M1State> for OpticalState {
 impl Write<M2State> for OpticalState {
     fn write(&mut self) -> Option<Data<M2State>> {
         self.m2.as_ref().map(|x| Data::new(x.to_owned()))
+    }
+}
+
+impl Write<OpticsState> for OpticalState {
+    fn write(&mut self) -> Option<Data<OpticsState>> {
+        Some(Data::new(self.clone()))
+    }
+}
+impl Write<Right<OpticsState>> for OpticalState {
+    fn write(&mut self) -> Option<Data<Right<OpticsState>>> {
+        Some(Data::new(self.clone()))
+    }
+}
+impl Write<Left<OpticsState>> for OpticalState {
+    fn write(&mut self) -> Option<Data<Left<OpticsState>>> {
+        Some(Data::new(self.clone()))
+    }
+}
+
+impl Add for OpticalState {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            m1: match (self.m1, rhs.m1) {
+                (None, None) => None,
+                (None, Some(s1)) => Some(s1),
+                (Some(s1), None) => Some(s1),
+                (Some(s1), Some(rhs_s1)) => Some(s1 + rhs_s1),
+            },
+            m2: match (self.m2, rhs.m2) {
+                (None, None) => None,
+                (None, Some(s2)) => Some(s2),
+                (Some(s2), None) => Some(s2),
+                (Some(s2), Some(rhs_s2)) => Some(s2 + rhs_s2),
+            },
+        }
+    }
+}
+impl Add for &OpticalState {
+    type Output = OpticalState;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        OpticalState {
+            m1: match (&self.m1, &rhs.m1) {
+                (None, None) => None,
+                (None, Some(s1)) => Some(s1.clone()),
+                (Some(s1), None) => Some(s1.clone()),
+                (Some(s1), Some(rhs_s1)) => Some(s1 + rhs_s1),
+            },
+            m2: match (&self.m2, &rhs.m2) {
+                (None, None) => None,
+                (None, Some(s2)) => Some(s2.clone()),
+                (Some(s2), None) => Some(s2.clone()),
+                (Some(s2), Some(rhs_s2)) => Some(s2 + rhs_s2),
+            },
+        }
     }
 }

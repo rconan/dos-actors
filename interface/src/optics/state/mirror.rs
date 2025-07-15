@@ -121,7 +121,12 @@ impl Add for MirrorState {
                 .segment
                 .into_iter()
                 .zip(rhs.segment.into_iter())
-                .map(|(sl, sr)| sl.zip(sr).map(|(sl, sr)| sr + sl))
+                .map(|(sl, sr)| match (sl, sr) {
+                    (None, None) => None,
+                    (None, Some(value)) => Some(value),
+                    (Some(value), None) => Some(value),
+                    (Some(sl), Some(sr)) => Some(sl + sr),
+                })
                 .collect(),
         }
     }
@@ -135,10 +140,11 @@ impl Add for &MirrorState {
                 .segment
                 .iter()
                 .zip(rhs.segment.iter())
-                .map(|(sl, sr)| {
-                    sl.as_ref()
-                        .zip(sr.as_ref())
-                        .map(|(sl, sr)| sr.to_owned() + sl.to_owned())
+                .map(|(sl, sr)| match (sl, sr) {
+                    (None, None) => None,
+                    (None, Some(value)) => Some(value.clone()),
+                    (Some(value), None) => Some(value.clone()),
+                    (Some(sl), Some(sr)) => Some(sl + sr),
                 })
                 .collect(),
         }
@@ -153,7 +159,12 @@ impl Sub for MirrorState {
                 .segment
                 .into_iter()
                 .zip(rhs.segment.into_iter())
-                .map(|(sl, sr)| sl.zip(sr).map(|(sl, sr)| sr + sl))
+                .map(|(sl, sr)| match (sl, sr) {
+                    (None, None) => None,
+                    (None, Some(value)) => Some(-value),
+                    (Some(value), None) => Some(value),
+                    (Some(sl), Some(sr)) => Some(sl - sr),
+                })
                 .collect(),
         }
     }
@@ -167,10 +178,11 @@ impl Sub for &MirrorState {
                 .segment
                 .iter()
                 .zip(rhs.segment.iter())
-                .map(|(sl, sr)| {
-                    sl.as_ref()
-                        .zip(sr.as_ref())
-                        .map(|(sl, sr)| sr.to_owned() + sl.to_owned())
+                .map(|(sl, sr)| match (sl, sr) {
+                    (None, None) => None,
+                    (None, Some(value)) => Some(-value.clone()),
+                    (Some(value), None) => Some(value.clone()),
+                    (Some(sl), Some(sr)) => Some(sl - sr),
                 })
                 .collect(),
         }

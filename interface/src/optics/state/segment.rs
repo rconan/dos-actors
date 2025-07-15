@@ -1,5 +1,5 @@
 use std::{
-    ops::{Add, Mul},
+    ops::{Add, Mul, Neg, Sub},
     sync::Arc,
 };
 
@@ -49,27 +49,130 @@ impl Add for SegmentState {
 
     fn add(self, rhs: Self) -> Self::Output {
         Self {
-            rbms: self
-                .rbms
-                .zip(rhs.rbms)
-                .map(|(rbms, rhs)| {
-                    rbms.iter()
-                        .zip(rhs.iter())
+            rbms: match (self.rbms, rhs.rbms) {
+                (None, None) => None,
+                (None, Some(value)) => Some(value),
+                (Some(value), None) => Some(value),
+                (Some(l), Some(r)) => Some(
+                    l.iter()
+                        .zip(r.iter())
                         .map(|(&a, &b)| a + b)
-                        .collect::<Vec<_>>()
-                })
+                        .collect::<Vec<_>>(),
+                )
                 .map(|rbms| Arc::new(rbms)),
-            modes: self
-                .modes
-                .zip(rhs.modes)
-                .map(|(modes, rhs)| {
-                    modes
-                        .iter()
-                        .zip(rhs.iter())
+            },
+            modes: match (self.modes, rhs.modes) {
+                (None, None) => None,
+                (None, Some(value)) => Some(value),
+                (Some(value), None) => Some(value),
+                (Some(l), Some(r)) => Some(
+                    l.iter()
+                        .zip(r.iter())
                         .map(|(&a, &b)| a + b)
-                        .collect::<Vec<_>>()
-                })
+                        .collect::<Vec<_>>(),
+                )
                 .map(|modes| Arc::new(modes)),
+            },
+        }
+    }
+}
+impl Sub for SegmentState {
+    type Output = SegmentState;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self {
+            rbms: match (self.rbms, rhs.rbms) {
+                (None, None) => None,
+                (None, Some(value)) => Some(value.iter().map(|x| *x * -1f64).collect::<Vec<_>>())
+                    .map(|rbms| Arc::new(rbms)),
+                (Some(value), None) => Some(value),
+                (Some(l), Some(r)) => Some(
+                    l.iter()
+                        .zip(r.iter())
+                        .map(|(&a, &b)| a - b)
+                        .collect::<Vec<_>>(),
+                )
+                .map(|rbms| Arc::new(rbms)),
+            },
+            modes: match (self.modes, rhs.modes) {
+                (None, None) => None,
+                (None, Some(value)) => Some(value.iter().map(|x| *x * -1f64).collect::<Vec<_>>())
+                    .map(|rbms| Arc::new(rbms)),
+                (Some(value), None) => Some(value),
+                (Some(l), Some(r)) => Some(
+                    l.iter()
+                        .zip(r.iter())
+                        .map(|(&a, &b)| a - b)
+                        .collect::<Vec<_>>(),
+                )
+                .map(|modes| Arc::new(modes)),
+            },
+        }
+    }
+}
+impl Add for &SegmentState {
+    type Output = SegmentState;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        SegmentState {
+            rbms: match (self.rbms.clone(), rhs.rbms.clone()) {
+                (None, None) => None,
+                (None, Some(value)) => Some(value),
+                (Some(value), None) => Some(value),
+                (Some(l), Some(r)) => Some(
+                    l.iter()
+                        .zip(r.iter())
+                        .map(|(&a, &b)| a + b)
+                        .collect::<Vec<_>>(),
+                )
+                .map(|rbms| Arc::new(rbms)),
+            },
+            modes: match (self.modes.clone(), rhs.modes.clone()) {
+                (None, None) => None,
+                (None, Some(value)) => Some(value),
+                (Some(value), None) => Some(value),
+                (Some(l), Some(r)) => Some(
+                    l.iter()
+                        .zip(r.iter())
+                        .map(|(&a, &b)| a + b)
+                        .collect::<Vec<_>>(),
+                )
+                .map(|modes| Arc::new(modes)),
+            },
+        }
+    }
+}
+impl Sub for &SegmentState {
+    type Output = SegmentState;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        SegmentState {
+            rbms: match (self.rbms.clone(), rhs.rbms.clone()) {
+                (None, None) => None,
+                (None, Some(value)) => Some(value.iter().map(|x| *x * -1f64).collect::<Vec<_>>())
+                    .map(|rbms| Arc::new(rbms)),
+                (Some(value), None) => Some(value),
+                (Some(l), Some(r)) => Some(
+                    l.iter()
+                        .zip(r.iter())
+                        .map(|(&a, &b)| a - b)
+                        .collect::<Vec<_>>(),
+                )
+                .map(|rbms| Arc::new(rbms)),
+            },
+            modes: match (self.modes.clone(), rhs.modes.clone()) {
+                (None, None) => None,
+                (None, Some(value)) => Some(value.iter().map(|x| *x * -1f64).collect::<Vec<_>>())
+                    .map(|rbms| Arc::new(rbms)),
+                (Some(value), None) => Some(value),
+                (Some(l), Some(r)) => Some(
+                    l.iter()
+                        .zip(r.iter())
+                        .map(|(&a, &b)| a - b)
+                        .collect::<Vec<_>>(),
+                )
+                .map(|modes| Arc::new(modes)),
+            },
         }
     }
 }
@@ -88,5 +191,13 @@ impl Mul<f64> for SegmentState {
                 .map(|modes| modes.iter().map(|&a| a * rhs).collect::<Vec<_>>())
                 .map(|modes| Arc::new(modes)),
         }
+    }
+}
+
+impl Neg for SegmentState {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        self * -1f64
     }
 }
