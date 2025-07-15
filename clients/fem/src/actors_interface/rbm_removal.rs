@@ -40,6 +40,15 @@ impl RbmRemoval {
             .zip(self.0.get_mut(&sid))
             .map(|(rbm, nodes)| Self::rbm_removal(rbm, nodes, figure))
     }
+    pub fn rbms_removal(&mut self, sid: u8, figure: &mut [f64], rbms: &[f64]) {
+        Self::rbm_removal_in_place(
+            rbms,
+            self.0
+                .get_mut(&sid)
+                .expect("failed to get segment figure nodes"),
+            figure,
+        );
+    }
     pub fn from_assembly(
         &mut self,
         sids: impl Iterator<Item = u8>,
@@ -67,5 +76,18 @@ impl RbmRemoval {
                 v[2]
             })
             .collect()
+    }
+    fn rbm_removal_in_place(rbm: &[f64], nodes: &mut [f64], figure: &mut [f64]) {
+        let tz = rbm[2];
+        let q = Quaternion::unit(rbm[5], Vector::k())
+            * Quaternion::unit(rbm[4], Vector::j())
+            * Quaternion::unit(rbm[3], Vector::i());
+        nodes.chunks_mut(3).zip(figure).for_each(|(u, dz)| {
+            u[2] = *dz - tz;
+            let p: Quaternion = From::<&[f64]>::from(u);
+            let pp = q.complex_conjugate() * p * &q;
+            let v: Vec<f64> = pp.vector_as_slice().to_vec();
+            *dz = v[2];
+        });
     }
 }
