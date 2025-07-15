@@ -6,7 +6,8 @@ use std::{
 };
 
 use interface::{
-    Data, Left, Read, Right, UniqueIdentifier, Update, Write, optics::state::MirrorState,
+    Data, Left, Read, Right, UniqueIdentifier, Update, Write,
+    optics::state::{MirrorState, OpticalState},
 };
 
 #[derive(Default, Debug, Clone)]
@@ -154,6 +155,11 @@ where
 }
 
 impl Update for Operator<MirrorState, Plus> {
+    fn update(&mut self) {
+        self.output = Arc::new(&*self.left + &*self.right)
+    }
+}
+impl Update for Operator<OpticalState, Plus> {
     fn update(&mut self) {
         self.output = Arc::new(&*self.left + &*self.right)
     }
