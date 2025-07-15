@@ -9,8 +9,8 @@ Splitting the vector `vec![1,2,3,4,5]` into `vec![1,2]` and `vec![3,4,5]`
 and reassembling it
 
 ```
-use gmt_dos_clients::leftright::{self, LeftRight, Split, Merge, Left, Right};
-use interface::{UniqueIdentifier, Data, Read, Write};
+use gmt_dos_clients::leftright::{self, LeftRight, Split, Merge};
+use interface::{UniqueIdentifier, Data, Read, Write, Left, Right};
 
 enum S {}
 impl UniqueIdentifier for S {
@@ -41,8 +41,8 @@ Splitting the vector `vec![1,2,3,1,2,3,1,2,3,1,2,3]` into `vec![1,1,1,1]` and `v
 and reassembling it
 
 ```
-use gmt_dos_clients::leftright::{self, LeftRight, Split, Merge, Left, Right};
-use interface::{UniqueIdentifier, Data, Read, Write};
+use gmt_dos_clients::leftright::{self, LeftRight, Split, Merge};
+use interface::{UniqueIdentifier, Data, Read, Write, Left, Right};
 
 enum S {}
 impl UniqueIdentifier for S {
