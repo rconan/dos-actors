@@ -15,7 +15,7 @@ use gmt_dos_actors::{actorscript, system::Sys};
 use gmt_dos_clients::{
     integrator::Integrator,
     low_pass_filter::LowPassFilter,
-    operator::{Left, Operator, Right},
+    operator::Operator,
     signals::{Signal, Signals},
     timer::Timer,
 };

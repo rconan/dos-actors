@@ -11,20 +11,21 @@ use gmt_dos_actors::{
 };
 use gmt_dos_clients::{
     integrator::Integrator,
-    operator::{Left, Operator},
+    operator::{Operator, Plus},
 };
 use gmt_dos_clients_io::gmt_m1::M1EdgeSensors;
+use interface::Left;
 
 #[derive(Debug, Clone)]
 pub struct M1EdgeSensorsToRbm {
-    adder: Actor<Operator<f64>>,
+    adder: Actor<Operator<Vec<f64>, Plus>>,
     control: Actor<Integrator<M1EdgeSensors>>,
 }
 
 impl M1EdgeSensorsToRbm {
     pub fn new() -> Self {
         Self {
-            adder: (Operator::new("+"), "+").into(),
+            adder: (Operator::plus(), "+").into(),
             control: Integrator::new(42).gain(1e-3).into(),
         }
     }
@@ -97,14 +98,14 @@ impl SystemInput<Integrator<M1EdgeSensors>, 1, 1> for M1EdgeSensorsToRbm {
     }
 }
 
-impl SystemInput<Operator<f64>, 1, 1> for M1EdgeSensorsToRbm {
-    fn input(&mut self) -> &mut Actor<Operator<f64>, 1, 1> {
+impl SystemInput<Operator<Vec<f64>>, 1, 1> for M1EdgeSensorsToRbm {
+    fn input(&mut self) -> &mut Actor<Operator<Vec<f64>>, 1, 1> {
         &mut self.adder
     }
 }
 
-impl SystemOutput<Operator<f64>, 1, 1> for M1EdgeSensorsToRbm {
-    fn output(&mut self) -> &mut Actor<Operator<f64>, 1, 1> {
+impl SystemOutput<Operator<Vec<f64>>, 1, 1> for M1EdgeSensorsToRbm {
+    fn output(&mut self) -> &mut Actor<Operator<Vec<f64>>, 1, 1> {
         &mut self.adder
     }
 }

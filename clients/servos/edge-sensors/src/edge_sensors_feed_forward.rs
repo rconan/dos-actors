@@ -12,9 +12,10 @@ use gmt_dos_actors::{
 };
 use gmt_dos_clients::{
     low_pass_filter::LowPassFilter,
-    operator::{Operator, Right},
+    operator::{Minus, Operator},
 };
 use gmt_dos_clients_io::gmt_m2::asm::{M2ASMAsmCommand, M2ASMReferenceBodyNodes};
+use interface::Right;
 use io::{M2EdgeSensorsAsRbms, RbmAsShell};
 
 #[derive(Debug, Clone)]
@@ -22,7 +23,7 @@ pub struct EdgeSensorsFeedForward {
     hex_to_rbm: Actor<HexToRbm>,
     m2_edge_sensors_to_rbm: Actor<M2EdgeSensorsToRbm>,
     rbm_to_shell: Actor<RbmToShell>,
-    adder: Actor<Operator<f64>>,
+    adder: Actor<Operator<Vec<f64>, Minus>>,
     lowpass_filter: Actor<LowPassFilter<f64>>,
 }
 
@@ -32,7 +33,7 @@ impl EdgeSensorsFeedForward {
             hex_to_rbm: HexToRbm::new()?.into(),
             m2_edge_sensors_to_rbm: M2EdgeSensorsToRbm::new()?.into(),
             rbm_to_shell: RbmToShell::new()?.into(),
-            adder: (Operator::new("-"), "-").into(),
+            adder: (Operator::minus(), "-").into(),
             lowpass_filter: LowPassFilter::new(N_ACTUATOR * 7, lag).into(),
         })
     }
@@ -145,8 +146,8 @@ impl SystemInput<RbmToShell, 1, 1> for EdgeSensorsFeedForward {
     }
 }
 
-impl SystemInput<Operator<f64>, 1, 1> for EdgeSensorsFeedForward {
-    fn input(&mut self) -> &mut Actor<Operator<f64>, 1, 1> {
+impl SystemInput<Operator<Vec<f64>, Minus>, 1, 1> for EdgeSensorsFeedForward {
+    fn input(&mut self) -> &mut Actor<Operator<Vec<f64>, Minus>, 1, 1> {
         &mut self.adder
     }
 }

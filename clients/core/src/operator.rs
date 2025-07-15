@@ -170,30 +170,33 @@ impl Update for Operator<MirrorState, Minus> {
     }
 }
 
-impl<T, U> Read<Left<U>> for Operator<T>
+impl<T, U, K> Read<Left<U>> for Operator<T, K>
 where
     U: UniqueIdentifier<DataType = T>,
-    Operator<T>: Update,
+    Operator<T, K>: Update,
+    K: PlusOrMinus,
 {
     fn read(&mut self, data: Data<Left<U>>) {
         self.left = data.as_arc()
     }
 }
 
-impl<T, U> Read<Right<U>> for Operator<T>
+impl<T, U, K> Read<Right<U>> for Operator<T, K>
 where
     U: UniqueIdentifier<DataType = T>,
-    Operator<T>: Update,
+    Operator<T, K>: Update,
+    K: PlusOrMinus,
 {
     fn read(&mut self, data: Data<Right<U>>) {
         self.right = data.as_arc()
     }
 }
 
-impl<T, U> Write<U> for Operator<T>
+impl<T, U, K> Write<U> for Operator<T, K>
 where
     U: UniqueIdentifier<DataType = T>,
-    Operator<T>: Update,
+    Operator<T, K>: Update,
+    K: PlusOrMinus,
 {
     fn write(&mut self) -> Option<Data<U>> {
         Some(self.output.clone().into())
@@ -201,11 +204,12 @@ where
 }
 
 // // Read left or right any data which UID implements OperatorLeftRight trait
-// impl<T, U> Read<U> for Operator<T>
+// impl<T, U, K> Read<U> for Operator<T,K>
 // where
 //     T: Copy + Add<Output = T> + Sub<Output = T> + Send + Sync + Debug + Default,
 //     U: UniqueIdentifier<DataType = T> + OperatorLeftRight,
-//     Operator<T>: Update,
+//     Operator<T,K>: Update,
+// K: PlusOrMinus
 // {
 //     fn read(&mut self, data: Data<U>) {
 //         if <U as OperatorLeftRight>::LEFT {
