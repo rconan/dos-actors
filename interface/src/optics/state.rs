@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::{mem, ops::Add};
 
 use crate::{Data, Left, Read, Right, Update, Write};
 
@@ -105,6 +105,12 @@ impl Write<M2State> for OpticalState {
 impl Write<OpticsState> for OpticalState {
     fn write(&mut self) -> Option<Data<OpticsState>> {
         Some(Data::new(self.clone()))
+    }
+}
+impl Read<OpticsState> for OpticalState {
+    fn read(&mut self, data: Data<OpticsState>) {
+        let state = &*data;
+        *self = state.clone();
     }
 }
 impl Write<Right<OpticsState>> for OpticalState {
