@@ -213,7 +213,7 @@ impl DomeSeeing {
             std::fs::File::open(&path).map_err(|e| DomeSeeingError::Load(e, path.to_path_buf()))?;
         Ok(bincode::deserialize_from(&file)?)
     }
-    #[cfg(feature = "npyz")]
+    #[cfg(all(feature = "npyz", not(feature = "bincode")))]
     pub fn get(&self, idx: usize) -> Result<Opd> {
         let path = &self
             .data
