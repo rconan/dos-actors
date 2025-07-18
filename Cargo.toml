@@ -58,7 +58,7 @@ tokio-test = "0.4"
 nalgebra = "0.33"
 tokio = { version = "1.25.0" }
 anyhow = "1.0.68"
-crseo = { version = "2.4" }
+crseo = { version = "2.5" }
 rayon = "1.6.1"
 env_logger = "0.11.1"
 matio-rs = "1.4"
