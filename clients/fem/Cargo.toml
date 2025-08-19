@@ -75,9 +75,6 @@ name = "mirror_singular_modes"
 path = "src/bin/mirror_singular_modes.rs"
 required-features = ["serde", "clap"]
 
-[package.metadata.docs.rs]
-all-features = true
-
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(fem)',

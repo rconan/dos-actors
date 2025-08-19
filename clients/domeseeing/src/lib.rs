@@ -85,8 +85,9 @@ impl std::fmt::Debug for DomeSeeing {
 unsafe impl Send for DomeSeeing {}
 unsafe impl Sync for DomeSeeing {}
 
-#[derive(Debug)]
+#[derive(Debug, Default, Clone)]
 enum OpdMapping {
+    #[default]
     Whole,
     Masked,
 }
@@ -225,8 +226,7 @@ mod tests {
     fn time() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let path = Path::new("/home/ubuntu/mnt/CASES/zen30az000_CD_12ms");
         if path.exists() {
-            let dome_seeing =
-                DomeSeeing::builder(path).build()?;
+            let dome_seeing = DomeSeeing::builder(path).build()?;
             assert!(dome_seeing[dome_seeing.len() - 1] > dome_seeing[0]);
         }
         Ok(())

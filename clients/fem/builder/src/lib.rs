@@ -255,18 +255,18 @@ pub fn generate_io(from_crate: &str) -> anyhow::Result<()> {
 
 pub fn rustc_config(from_crate: &str, io: Option<(Names, Names)>) -> anyhow::Result<()> {
     if option_env!("FEM_REPO").is_some() {
-        println!("cargo:rustc-cfg=fem");
+        println!("cargo::rustc-cfg=fem");
         let (input_names, output_names): (Names, Names) = match io {
             Some(io) => Ok(io),
             None => io_names(from_crate),
         }?;
         if input_names.find("MCM2S1VCDeltaF").is_some() {
-            println!("cargo:warning={}: ASM top-end", from_crate);
-            println!(r#"cargo:rustc-cfg=topend="ASM""#)
+            println!("cargo::warning={}: ASM top-end", from_crate);
+            println!(r#"cargo::rustc-cfg=topend="ASM""#)
         }
         if input_names.find("MCM2PZTF").is_some() {
-            println!("cargo:warning={}: FSM top-end", from_crate);
-            println!(r#"cargo:rustc-cfg=topend="FSM""#);
+            println!("cargo::warning={}: FSM top-end", from_crate);
+            println!(r#"cargo::rustc-cfg=topend="FSM""#);
         }
         match (
             input_names.find("MCM2S1VCDeltaF"),
@@ -274,22 +274,22 @@ pub fn rustc_config(from_crate: &str, io: Option<(Names, Names)>) -> anyhow::Res
             input_names.find("MCM2SmHexF"),
         ) {
             (Some(_), None, Some(_)) => {
-                println!("cargo:warning={}: ASMS inputs", from_crate);
-                println!(r#"cargo:rustc-cfg=m2"#)
+                println!("cargo::warning={}: ASMS inputs", from_crate);
+                println!(r#"cargo::rustc-cfg=m2"#)
             }
             (None, Some(_), Some(_)) => {
-                println!("cargo:warning={}: FSMS inputs", from_crate);
-                println!(r#"cargo:rustc-cfg=m2"#)
+                println!("cargo::warning={}: FSMS inputs", from_crate);
+                println!(r#"cargo::rustc-cfg=m2"#)
             }
             _ => (),
         };
         if input_names.find("CFD2021106F").is_some() {
-            println!("cargo:warning={}: CFD inputs", from_crate);
-            println!(r#"cargo:rustc-cfg=cfd2021"#)
+            println!("cargo::warning={}: 2021 CFD inputs", from_crate);
+            println!(r#"cargo::rustc-cfg=cfd2021"#)
         }
         if input_names.find("CFD2025046F").is_some() {
-            println!("cargo:warning={}: CFD inputs", from_crate);
-            println!(r#"cargo:rustc-cfg=cfd2025"#)
+            println!("cargo::warning={}: 2025 CFD inputs", from_crate);
+            println!(r#"cargo::rustc-cfg=cfd2025"#)
         }
         match (
             input_names.find("OSSAzDriveTorque"),
@@ -300,8 +300,8 @@ pub fn rustc_config(from_crate: &str, io: Option<(Names, Names)>) -> anyhow::Res
             output_names.find("OSSRotEncoderAngle"),
         ) {
             (Some(_), Some(_), Some(_), Some(_), Some(_), Some(_)) => {
-                println!("cargo:warning={}: Mount inputs and outputs", from_crate);
-                println!(r#"cargo:rustc-cfg=mount"#)
+                println!("cargo::warning={}: Mount inputs and outputs", from_crate);
+                println!(r#"cargo::rustc-cfg=mount"#)
             }
             _ => (),
         };
@@ -313,22 +313,22 @@ pub fn rustc_config(from_crate: &str, io: Option<(Names, Names)>) -> anyhow::Res
             output_names.find("M1Segment1AxialD"),
         ) {
             (Some(_), Some(_), Some(_), Some(_), Some(_)) => {
-                println!("cargo:warning={}: M1 inputs and outputs", from_crate);
-                println!(r#"cargo:rustc-cfg=m1"#)
+                println!("cargo::warning={}: M1 inputs and outputs", from_crate);
+                println!(r#"cargo::rustc-cfg=m1"#)
             }
             _ => (),
         };
         if input_names.find("OSS00GroundAcc").is_some() {
-            println!("cargo:warning={}: OSS00GroundAcc input", from_crate);
-            println!(r#"cargo:rustc-cfg=ground_acceleration"#)
+            println!("cargo::warning={}: OSS00GroundAcc input", from_crate);
+            println!(r#"cargo::rustc-cfg=ground_acceleration"#)
         }
         if output_names.find("MCM2Lcl6D").is_some() {
-            println!("cargo:warning={}: MCM2Lcl6D as M2 RBM output", from_crate);
-            println!(r#"cargo:rustc-cfg=m2_rbm="MCM2Lcl6D""#)
+            println!("cargo::warning={}: MCM2Lcl6D as M2 RBM output", from_crate);
+            println!(r#"cargo::rustc-cfg=m2_rbm="MCM2Lcl6D""#)
         }
         if output_names.find("MCM2Lcl").is_some() {
-            println!("cargo:warning={}: MCM2Lcl as M2 RBM output", from_crate);
-            println!(r#"cargo:rustc-cfg=m2_rbm="MCM2Lcl""#)
+            println!("cargo::warning={}: MCM2Lcl as M2 RBM output", from_crate);
+            println!(r#"cargo::rustc-cfg=m2_rbm="MCM2Lcl""#)
         }
     }
     Ok(())
