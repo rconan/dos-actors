@@ -317,6 +317,9 @@ name = "arbitrary"
 version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3d036a3c4ab069c7b410a2ce876bd74808d2d0888a82667669f8e783a898bf1"
+dependencies = [
+ "derive_arbitrary",
+]
 
 [[package]]
 name = "arboard"
@@ -1129,7 +1132,7 @@ dependencies = [
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
  "gmt_dos-clients",
- "nanorand",
+ "nanorand 0.8.0",
  "rand_distr",
  "tokio",
 ]
@@ -1243,6 +1246,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bzip2"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bea8dcd42434048e4f7a304411d9273a411f647446c1234a65ce0554923f4cff"
+dependencies = [
+ "libbz2-rs-sys",
+]
+
+[[package]]
 name = "bzip2-sys"
 version = "0.1.13+1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1322,9 +1334,9 @@ dependencies = [
 
 [[package]]
 name = "cfg-if"
-version = "1.0.2"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9aeec81361cbe5564f44e79538fc112002f70a448966f9160591c2bd5706dfad"
+checksum = "2fd1289c04a9ea8cb22300a459a72a385d7c73d3259e2ed7dcb2af674838cfa9"
 
 [[package]]
 name = "cfg_aliases"
@@ -1624,6 +1636,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 
 [[package]]
+name = "constant_time_eq"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c74b8349d32d297c9134b8c88677813a227df8f779daa29bfc29c183fe3dca6"
+
+[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1862,7 +1880,7 @@ dependencies = [
  "roots",
  "serde",
  "serde-pickle 1.2.0",
- "skyangle",
+ "skyangle 0.2.2",
  "thiserror 1.0.69",
  "toml 0.8.23",
 ]
@@ -1921,6 +1939,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f27ae1dd37df86211c42e150270f82743308803d90a6f6e6651cd730d5e1732f"
 
 [[package]]
+name = "deflate64"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da692b8d1080ea3045efaab14434d40468c3d8657e42abddfffca87b428f4c1b"
+
+[[package]]
 name = "demos"
 version = "0.1.0"
 dependencies = [
@@ -1943,7 +1967,7 @@ dependencies = [
  "gmt_dos-clients_windloads",
  "gmt_dos-systems_m1",
  "gmt_dos-systems_m2",
- "skyangle",
+ "skyangle 0.3.1",
  "tokio",
 ]
 
@@ -1954,6 +1978,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c9e6a11ca8224451684bc0d7d5a7adbf8f2fd6887261a1cfc3c0432f9d4068e"
 dependencies = [
  "powerfmt",
+]
+
+[[package]]
+name = "derive_arbitrary"
+version = "1.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e567bd82dcff979e4b03460c307b3cdc9e96fde3d73bed1496d2bc75d9dd62a"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.106",
 ]
 
 [[package]]
@@ -2159,7 +2194,7 @@ dependencies = [
  "nalgebra 0.33.2",
  "rayon",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.15",
  "tokio",
 ]
 
@@ -2654,7 +2689,7 @@ checksum = "da0e4dd2a88388a1f4ccc7c9ce104604dab68d9f408dc34cd45823d5a9069095"
 dependencies = [
  "futures-core",
  "futures-sink",
- "nanorand",
+ "nanorand 0.7.0",
  "spin 0.9.8",
 ]
 
@@ -3179,7 +3214,7 @@ dependencies = [
 
 [[package]]
 name = "gmt-fem"
-version = "5.2.0"
+version = "5.2.1"
 dependencies = [
  "anyhow",
  "arrow",
@@ -3200,21 +3235,21 @@ dependencies = [
  "serde",
  "serde-pickle 0.6.3",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.15",
  "triangle-rs",
- "zip",
+ "zip 4.3.0",
 ]
 
 [[package]]
 name = "gmt-fem-code-builder"
-version = "2.3.5"
+version = "2.3.6"
 dependencies = [
  "anyhow",
  "arrow",
  "bytes",
  "parquet",
- "thiserror 1.0.69",
- "zip",
+ "thiserror 2.0.15",
+ "zip 4.3.0",
 ]
 
 [[package]]
@@ -3233,7 +3268,7 @@ dependencies = [
  "parquet",
  "serde",
  "serde-pickle 1.2.0",
- "skyangle",
+ "skyangle 0.2.2",
  "structopt",
  "thiserror 1.0.69",
  "welch-sde",
@@ -3262,7 +3297,7 @@ dependencies = [
  "serde",
  "serde-pickle 1.2.0",
  "svg",
- "thiserror 1.0.69",
+ "thiserror 2.0.15",
  "tokio",
  "tokio-test",
  "vec_box",
@@ -3279,7 +3314,7 @@ dependencies = [
  "paris",
  "serde",
  "serde-pickle 1.2.0",
- "thiserror 1.0.69",
+ "thiserror 2.0.15",
 ]
 
 [[package]]
@@ -3323,7 +3358,7 @@ dependencies = [
  "rand",
  "rand_distr",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.15",
  "tokio",
  "welch-sde",
 ]
@@ -3342,7 +3377,7 @@ dependencies = [
  "parquet",
  "paste",
  "regex",
- "thiserror 1.0.69",
+ "thiserror 2.0.15",
 ]
 
 [[package]]
@@ -3367,8 +3402,8 @@ dependencies = [
  "rayon",
  "serde",
  "serde-pickle 1.2.0",
- "skyangle",
- "thiserror 1.0.69",
+ "skyangle 0.2.2",
+ "thiserror 2.0.15",
  "tokio",
  "toml 0.8.23",
 ]
@@ -3397,7 +3432,7 @@ dependencies = [
  "rmp-serde",
  "serde",
  "tai-time",
- "thiserror 1.0.69",
+ "thiserror 2.0.15",
  "tokio",
 ]
 
@@ -3412,7 +3447,7 @@ dependencies = [
  "log",
  "npyz",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.15",
 ]
 
 [[package]]
@@ -3443,9 +3478,9 @@ dependencies = [
  "serde",
  "serde-pickle 1.2.0",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.15",
  "toml 0.8.23",
- "zip",
+ "zip 4.3.0",
 ]
 
 [[package]]
@@ -3496,7 +3531,7 @@ dependencies = [
  "matio-rs",
  "nalgebra 0.33.2",
  "serde",
- "skyangle",
+ "skyangle 0.3.1",
  "tokio",
  "tokio-test",
 ]
@@ -3529,13 +3564,13 @@ dependencies = [
  "gmt_m2-ctrl_fsm-piezo-7",
  "gmt_m2-ctrl_fsm_positionner",
  "nalgebra 0.33.2",
- "nanorand",
+ "nanorand 0.8.0",
  "polars 0.35.4",
  "rayon",
  "serde",
  "serde-pickle 1.2.0",
- "skyangle",
- "thiserror 1.0.69",
+ "skyangle 0.3.1",
+ "thiserror 2.0.15",
  "tokio",
 ]
 
@@ -3561,8 +3596,8 @@ dependencies = [
  "matio-rs",
  "serde",
  "serde_json",
- "skyangle",
- "thiserror 1.0.69",
+ "skyangle 0.2.2",
+ "thiserror 2.0.15",
  "tokio",
  "tokio-test",
  "tracing",
@@ -3588,7 +3623,7 @@ dependencies = [
  "log",
  "rand_distr",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.15",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -3638,11 +3673,11 @@ dependencies = [
  "log",
  "matio-rs",
  "nalgebra 0.33.2",
- "nanorand",
+ "nanorand 0.8.0",
  "rayon",
  "serde",
  "serde-pickle 1.2.0",
- "thiserror 1.0.69",
+ "thiserror 2.0.15",
  "tokio",
 ]
 
@@ -3666,7 +3701,7 @@ dependencies = [
  "rcgen",
  "rustls",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.15",
  "tokio",
  "tokio-test",
  "tracing",
@@ -3696,8 +3731,8 @@ dependencies = [
  "parse-monitors",
  "serde",
  "serde-pickle 1.2.0",
- "skyangle",
- "thiserror 1.0.69",
+ "skyangle 0.3.1",
+ "thiserror 2.0.15",
  "tokio",
 ]
 
@@ -3713,8 +3748,8 @@ dependencies = [
  "gmt_dos-clients_io",
  "log",
  "serde-pickle 1.2.0",
- "skyangle",
- "thiserror 1.0.69",
+ "skyangle 0.3.1",
+ "thiserror 2.0.15",
  "tokio",
 ]
 
@@ -3736,7 +3771,7 @@ dependencies = [
  "log",
  "nalgebra 0.33.2",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.15",
  "tokio-test",
 ]
 
@@ -3783,7 +3818,7 @@ dependencies = [
  "polars 0.35.4",
  "rayon",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.15",
  "tokio",
 ]
 
@@ -4719,6 +4754,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "libbz2-rs-sys"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c4a545a15244c7d945065b5d392b2d2d7f21526fba56ce51467b06ed445e8f7"
+
+[[package]]
 name = "libc"
 version = "0.2.175"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4742,6 +4783,26 @@ checksum = "07033963ba89ebaf1584d767badaa2e8fcec21aedea6b8c0346d487d49c28667"
 dependencies = [
  "cfg-if",
  "windows-targets 0.53.3",
+]
+
+[[package]]
+name = "liblzma"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "272b875472a046e39ff7408374a5a050b112d2142211a0f54a295c0bd1c3c757"
+dependencies = [
+ "liblzma-sys",
+]
+
+[[package]]
+name = "liblzma-sys"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "01b9596486f6d60c3bbe644c0e1be1aa6ccc472ad630fe8927b456973d7cb736"
+dependencies = [
+ "cc",
+ "libc",
+ "pkg-config",
 ]
 
 [[package]]
@@ -4950,7 +5011,7 @@ dependencies = [
  "gmt_dos-clients_windloads",
  "matio-rs",
  "nalgebra 0.33.2",
- "nanorand",
+ "nanorand 0.8.0",
  "tokio",
 ]
 
@@ -5263,6 +5324,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "nanorand"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e3d189da485332e96ba8a5ef646a311871abd7915bf06ac848a9117f19cf6e4"
+
+[[package]]
 name = "ndk"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5371,7 +5438,7 @@ dependencies = [
  "byteorder",
  "num-bigint 0.4.6",
  "py_literal",
- "zip",
+ "zip 0.6.6",
 ]
 
 [[package]]
@@ -6114,6 +6181,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pbkdf2"
+version = "0.12.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8ed6a7761f76e3b9f92dfb0a60a6a6477c61024b775147ff0973a02653abaf2"
+dependencies = [
+ "digest",
+ "hmac",
+]
+
+[[package]]
 name = "pem"
 version = "3.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6824,6 +6901,12 @@ name = "powerfmt"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "439ee305def115ba05938db6eb1644ff94165c5ab5e9420d1c1bcedbba909391"
+
+[[package]]
+name = "ppmd-rust"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c834641d8ad1b348c9ee86dec3b9840d805acd5f24daa5f90c788951a52ff59b"
 
 [[package]]
 name = "ppv-lite86"
@@ -7823,6 +7906,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "skyangle"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df90b01ce79c04c9ae50c66e8e4a9c58cff4c863fbef8fe7b7d3584ce8ede157"
+
+[[package]]
 name = "slab"
 version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8424,7 +8513,7 @@ dependencies = [
  "polars 0.27.2",
  "rand",
  "rand_distr",
- "skyangle",
+ "skyangle 0.2.2",
  "tokio",
  "toml 0.7.8",
 ]
@@ -10016,6 +10105,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "zeroize"
+version = "1.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ced3678a2879b30306d323f4542626697a464a97c0a07c9aebf7ebca65cd4dde"
+dependencies = [
+ "zeroize_derive",
+]
+
+[[package]]
+name = "zeroize_derive"
+version = "1.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce36e65b0d2999d2aafac989fb249189a141aee1f53c612c1f37d72631959f69"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.106",
+]
+
+[[package]]
 name = "zerotrie"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10056,16 +10165,43 @@ checksum = "760394e246e4c28189f19d488c058bf16f564016aefac5d32bb1f3b51d5e9261"
 dependencies = [
  "aes",
  "byteorder",
- "bzip2",
- "constant_time_eq",
+ "bzip2 0.4.4",
+ "constant_time_eq 0.1.5",
  "crc32fast",
  "crossbeam-utils",
  "flate2",
  "hmac",
- "pbkdf2",
+ "pbkdf2 0.11.0",
  "sha1",
  "time",
  "zstd 0.11.2+zstd.1.5.2",
+]
+
+[[package]]
+name = "zip"
+version = "4.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9aed4ac33e8eb078c89e6cbb1d5c4c7703ec6d299fc3e7c3695af8f8b423468b"
+dependencies = [
+ "aes",
+ "arbitrary",
+ "bzip2 0.6.0",
+ "constant_time_eq 0.3.1",
+ "crc32fast",
+ "deflate64",
+ "flate2",
+ "getrandom 0.3.3",
+ "hmac",
+ "indexmap 2.10.0",
+ "liblzma",
+ "memchr",
+ "pbkdf2 0.12.2",
+ "ppmd-rust",
+ "sha1",
+ "time",
+ "zeroize",
+ "zopfli",
+ "zstd 0.13.3",
 ]
 
 [[package]]
@@ -10073,6 +10209,18 @@ name = "zlib-rs"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "626bd9fa9734751fc50d6060752170984d7053f5a39061f524cda68023d4db8a"
+
+[[package]]
+name = "zopfli"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "edfc5ee405f504cd4984ecc6f14d02d55cfda60fa4b689434ef4102aae150cd7"
+dependencies = [
+ "bumpalo",
+ "crc32fast",
+ "log",
+ "simd-adler32",
+]
 
 [[package]]
 name = "zstd"
