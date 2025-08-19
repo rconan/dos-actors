@@ -238,3 +238,20 @@ impl<S> fmt::Display for CfdLoads<S> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gmt_fem::FEM;
+    use std::env;
+
+    #[test]
+    fn loading() -> anyhow::Result<()> {
+        let mut fem = FEM::from_env()?;
+        let _cfd_loads = CfdLoads::foh(env::var("MONITORS").unwrap_or(".".to_owned()), 1000)
+            .duration(30.0)
+            .windloads(&mut fem, Default::default())
+            .build()?;
+        Ok(())
+    }
+}

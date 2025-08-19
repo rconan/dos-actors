@@ -1,6 +1,6 @@
 [package]
 name = "gmt_dos-clients_windloads"
-version = "3.0.1"
+version = "3.0.2"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -19,7 +19,7 @@ log.workspace = true
 thiserror = { workspace = true }
 geotrans = "0.2.2"
 gmt-fem = { workspace = true }
-parse-monitors = "0.3.1"
+parse-monitors = "0.3.2"
 nalgebra.workspace = true
 serde.workspace = true
 gmt_dos-clients = { workspace = true, features = ["serde"] }
