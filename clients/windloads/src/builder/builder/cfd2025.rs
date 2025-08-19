@@ -9,7 +9,7 @@ impl<S> Builder<S> {
     pub fn build(self) -> Result<CfdLoads<S>> {
         // println!("Loading the CFD loads from {} ...", self.cfd_case);
         // let now = Instant::now();
-        let mut monitors = if let Some(time_range) = dbg!(self.time_range) {
+        let mut monitors = if let Some(time_range) = self.time_range {
             Monitors::loader::<String, 2025>(self.cfd_case)
                 .start_time(time_range.0)
                 .end_time(time_range.1)
