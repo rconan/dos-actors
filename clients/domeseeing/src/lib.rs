@@ -32,6 +32,9 @@ pub enum DomeSeeingError {
     #[cfg(feature = "object_store")]
     #[error("failed to access remote data")]
     Store(#[from] object_store::Error),
+    #[cfg(feature = "object_store")]
+    #[error("no dome seeing data found in {0}")]
+    MissingData(String),
 }
 
 mod builder;
@@ -395,10 +398,7 @@ mod tests {
                 .build()?,
         );
         if let Ok(path) = env::var("CFD_PATH") {
-            let dome_seeing = DomeSeeing::builder(path)
-                .store(s3.clone())
-                .build()
-                .await?;
+            let dome_seeing = DomeSeeing::builder(path).store(s3.clone()).build().await?;
             assert!(
                 dome_seeing.len() > 1,
                 "expected dome seeing len > 1, found dome seeing len = {}",
@@ -434,10 +434,7 @@ mod tests {
                 .build()?,
         );
         if let Ok(path) = env::var("CFD_PATH") {
-            let dome_seeing = DomeSeeing::builder(path)
-                .store(s3.clone())
-                .build()
-                .await?;
+            let dome_seeing = DomeSeeing::builder(path).store(s3.clone()).build().await?;
             assert!(dome_seeing[dome_seeing.len() - 1].time_stamp > dome_seeing[0].time_stamp);
         } else {
             println!("please set the env var CFD_PATH to the full path to a CFD case");
@@ -473,10 +470,7 @@ mod tests {
                 .build()?,
         );
         if let Ok(path) = env::var("CFD_PATH") {
-            let mut dome_seeing = DomeSeeing::builder(path)
-                .store(s3.clone())
-                .build()
-                .await?;
+            let mut dome_seeing = DomeSeeing::builder(path).store(s3.clone()).build().await?;
             let mut opd = dome_seeing.next().unwrap();
             dbg!(opd.len());
             opd.sort_by(|a, b| a.partial_cmp(b).unwrap());

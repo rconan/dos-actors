@@ -136,14 +136,12 @@ impl DomeSeeingBuilder {
     pub async fn build(self) -> Result<DomeSeeing> {
         let mut data: Vec<DomeSeeingData> = Vec::with_capacity(2005);
 
+        let path = object_store::path::Path::from(format!("{}/optvol", self.cfd_case_path));
         let mut objects = self
             .store
             .as_ref()
             .ok_or(DomeSeeingError::MissingStore)?
-            .list(Some(&object_store::path::Path::from(format!(
-                "{}/optvol",
-                self.cfd_case_path
-            ))));
+            .list(Some(&path));
         while let Some(object) = objects.try_next().await.unwrap() {
             let path = object.location;
             if path.to_string().ends_with(".npz") {
@@ -164,6 +162,9 @@ impl DomeSeeingBuilder {
                     file: path,
                 });
             }
+        }
+        if data.is_empty() {
+            return Err(DomeSeeingError::MissingData(path.into()));
         }
 
         data.sort_by(|a, b| a.time_stamp.partial_cmp(&b.time_stamp).unwrap());
