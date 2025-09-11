@@ -1,6 +1,6 @@
 [package]
 name = "gmt_dos-clients_domeseeing"
-version = "3.0.2"
+version = "3.1.0"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -20,6 +20,13 @@ serde = { version = "1.0.145", features = ["derive"] }
 thiserror.workspace = true
 gmt_dos-clients_io.workspace = true
 npyz = { version = "0.8.4", features = ["npz"], optional = true }
+object_store = { version = "0.12.3", features = ["aws"], optional = true }
+futures = { version = "0.3.31", optional = true }
+tokio = { workspace = true, features = ["rt", "rt-multi-thread"], optional = true }
 
 [features]
 default = ["bincode"]
+object_store = ["dep:object_store", "npyz", "futures", "tokio"]
+npyz = ["dep:npyz"]
+futures = ["dep:futures"]
+tokio = ["dep:tokio"]
