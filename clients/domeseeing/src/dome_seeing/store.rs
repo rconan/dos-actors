@@ -72,6 +72,12 @@ impl DomeSeeing {
         }
         self.step()
     }
+    pub async fn async_next(&mut self) -> Option<Vec<f64>> {
+        let Some(opd) = futures::StreamExt::next(self).await else {
+            return None;
+        };
+        Some(self.async_step(opd).await)
+    }
 }
 
 impl Stream for DomeSeeing {
@@ -81,7 +87,6 @@ impl Stream for DomeSeeing {
         mut self: std::pin::Pin<&mut Self>,
         _cx: &mut std::task::Context<'_>,
     ) -> Poll<Option<Self::Item>> {
-        // let i_cfd = self.i / self.upsampling;
         if self.i % self.upsampling == 0 {
             let y2 = self.y2.clone();
             let _ = std::mem::replace(&mut self.y1, y2);
@@ -171,8 +176,7 @@ mod tests {
         if let Ok(path) = env::var("CFD_PATH") {
             let mut dome_seeing = DomeSeeing::builder(path).store(s3.clone()).build().await?;
             for i in 0..5 {
-                let opd = futures::StreamExt::next(&mut dome_seeing).await.unwrap();
-                let mut opd = dome_seeing.async_step(opd).await;
+                let mut opd = dome_seeing.async_next().await.unwrap();
                 opd.sort_by(|a, b| a.partial_cmp(b).unwrap());
                 println!(
                     "#{i:02}: [{:+6.0},{:+6.0}]nm",
