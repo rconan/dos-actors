@@ -33,12 +33,18 @@ jobs:
       env:
         FEM_REPO: /home/ubuntu/mnt/20230131_1605_zen_30_M1_202110_ASM_202208_Mount_202111/
         MOUNT_MODEL: MOUNT_PDR_8kHz
-      run: cargo build --workspace --all-features --exclude tms --exclude "mechanics" --exclude "scopes" --exclude "edge-sensors" --exclude demos 
+      run: cargo build --workspace --all-features --exclude tms --exclude "mechanics" --exclude "scopes" --exclude "edge-sensors" --exclude demos --exclude "gmt_dos-clients_domeseeing" 
     - name: Build FSMS workspace
       env:
         FEM_REPO: /home/ubuntu/mnt/20230530_1756_zen_30_M1_202110_FSM_202305_Mount_202305_noStairs/
         MOUNT_MODEL: MOUNT_FDR_1kHz
-      run: cargo build --workspace --all-features --exclude tms --exclude "mechanics" --exclude "scopes" --exclude "edge-sensors" --exclude demos 
+      run: cargo build --workspace --all-features --exclude tms --exclude "mechanics" --exclude "scopes" --exclude "edge-sensors" --exclude demos --exclude "gmt_dos-clients_domeseeing" 
+    - name: Build gmt_dos-clients_domeseeing
+      run: cargo build --package gmt_dos-clients_domeseeing 
+    - name: Build gmt_dos-clients_domeseeing (npyz)
+      run: cargo build --package gmt_dos-clients_domeseeing --no-default-features --features npyz
+    - name: Build gmt_dos-clients_domeseeing (object_store)
+      run: cargo build --package gmt_dos-clients_domeseeing --no-default-features --features object_store
       
   build-examples:
     name: Build Examples & Demos
