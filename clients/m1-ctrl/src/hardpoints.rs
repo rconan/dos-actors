@@ -1,5 +1,8 @@
 use gmt_dos_clients_io::gmt_m1::segment::{HardpointsForces, RBM};
+#[cfg(all(m1_hp_force_extension, not(feature = "explicit-loadcells")))]
 use hardpoints_dynamics::HardpointsDynamics;
+#[cfg(any(not(m1_hp_force_extension), feature = "explicit-loadcells"))]
+use hardpoints_dynamics_as_design::HardpointsDynamics;
 use interface::{Data, Read, Size, Update, Write};
 
 mod loadcell;

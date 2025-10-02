@@ -1,6 +1,6 @@
 [package]
 name = "gmt_dos-clients_m1-ctrl"
-version = "5.0.0"
+version = "6.0.0"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -12,9 +12,16 @@ categories.workspace = true
 keywords.workspace = true
 
 [dependencies]
-center = { version = "0.2.1", package = "gmt_m1-ctrl_center-actuators" }
-hardpoints-dynamics = { version = "0.2.1", package = "gmt_m1-ctrl_hardpoints-dynamics" }
-outer = { version = "0.2.1", package = "gmt_m1-ctrl_outer-actuators" }
+# As-design M1 actuators and hardpoints control systems
+center-as-design = { version = "0.2.1", package = "gmt_m1-ctrl_center-actuators" }
+hardpoints-dynamics-as-design = { version = "0.2.1", package = "gmt_m1-ctrl_hardpoints-dynamics" }
+outer-as-design = { version = "0.2.1", package = "gmt_m1-ctrl_outer-actuators" }
+
+# As-built M1 actuators and hardpoints control systems
+center = { version = "1.0", package = "gmt_m1-ctrl_center-actuators" }
+hardpoints-dynamics = { version = "1.0", package = "gmt_m1-ctrl_hardpoints-dynamics" }
+outer = { version = "1.0", package = "gmt_m1-ctrl_outer-actuators" }
+
 interface.workspace = true
 gmt_dos-clients_io.workspace = true
 nalgebra = { workspace = true, features = ["serde", "serde-serialize"] }
@@ -44,10 +51,17 @@ gmt_dos-clients_scope = { workspace = true, features = ["server"] }
 gmt_dos-clients_scope-client.workspace = true
 
 [features]
+explicit-loadcells = []
 serde = ["bincode/serde", "nalgebra/serde-serialize"]
 
 [package.metadata.docs.rs]
 features = ["serde"]
 
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fem)'] }
+unexpected_cfgs = { level = "warn", check-cfg = [
+  'cfg(fem)',
+  'cfg(m1_hp_force_extension)',
+] }
+
+[build-dependencies]
+gmt-fem-code-builder.workspace = true

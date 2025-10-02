@@ -3520,12 +3520,13 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-clients_m1-ctrl"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "anyhow",
  "bincode 2.0.1",
  "env_logger",
  "gmt-fem",
+ "gmt-fem-code-builder",
  "gmt-lom",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
@@ -3536,9 +3537,12 @@ dependencies = [
  "gmt_dos-clients_mount",
  "gmt_dos-clients_scope",
  "gmt_dos-clients_scope-client",
- "gmt_m1-ctrl_center-actuators",
- "gmt_m1-ctrl_hardpoints-dynamics",
- "gmt_m1-ctrl_outer-actuators",
+ "gmt_m1-ctrl_center-actuators 0.2.1",
+ "gmt_m1-ctrl_center-actuators 1.0.0",
+ "gmt_m1-ctrl_hardpoints-dynamics 0.2.1",
+ "gmt_m1-ctrl_hardpoints-dynamics 1.0.0",
+ "gmt_m1-ctrl_outer-actuators 0.2.1",
+ "gmt_m1-ctrl_outer-actuators 1.0.0",
  "log",
  "matio-rs",
  "nalgebra 0.33.2",
@@ -3846,6 +3850,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "gmt_m1-ctrl_center-actuators"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ca948b4af833ca49e6cf5fa96747e2d17f24a176ccc8d43f793ed394e411789"
+dependencies = [
+ "paste",
+ "serde",
+ "simulink-rs",
+]
+
+[[package]]
 name = "gmt_m1-ctrl_hardpoints-dynamics"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3857,10 +3872,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "gmt_m1-ctrl_hardpoints-dynamics"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a027a13d1e79afc01a2f92c3083a16dc89d0c66aa081874cc26ea73ffca53c3c"
+dependencies = [
+ "paste",
+ "serde",
+ "simulink-rs",
+]
+
+[[package]]
 name = "gmt_m1-ctrl_outer-actuators"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3d17ea20c9ea2f0b0b8574542e6ba41b879c45f1bada045d88ee5f394239416"
+dependencies = [
+ "paste",
+ "serde",
+ "simulink-rs",
+]
+
+[[package]]
+name = "gmt_m1-ctrl_outer-actuators"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9c23f33bd2b8ee48cddee533abdc41c606113fa43bbc60de8743206cef35c3e"
 dependencies = [
  "paste",
  "serde",

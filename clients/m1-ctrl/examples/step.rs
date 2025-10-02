@@ -1,7 +1,7 @@
 use gmt_dos_actors::actorscript;
-use gmt_dos_clients::{Logging, Signal, Signals};
+use gmt_dos_clients::signals::{Signal, Signals};
 use gmt_dos_clients_fem::{
-    DiscreteModalSolver, ExponentialMatrix, fem_io::actors_outputs::OSSM1Lcl,
+    DiscreteModalSolver, fem_io::actors_outputs::OSSM1Lcl, solvers::ExponentialMatrix,
 };
 use gmt_dos_clients_io::{
     gmt_m1::{
@@ -106,7 +106,7 @@ async fn main() -> anyhow::Result<()> {
     let mount_setpoint = Signals::new(3, n_step);
     let mount = Mount::new();
 
-    let plant_logging = Logging::<f64>::new(1);
+    // let plant_logging = Logging::<f64>::new(1);
 
     actorscript! {
         1: mount_setpoint[MountSetPoint] -> mount[MountTorques] -> plant[MountEncoders]! -> mount

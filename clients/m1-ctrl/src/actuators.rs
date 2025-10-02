@@ -1,9 +1,15 @@
 //! # M1 segment actuators controller
 
+#[cfg(all(m1_hp_force_extension, not(feature = "explicit-loadcells")))]
 use center::CenterActuatorsController;
+#[cfg(any(not(m1_hp_force_extension), feature = "explicit-loadcells"))]
+use center_as_design::CenterActuatorsController;
 use gmt_dos_clients_io::gmt_m1::segment;
 use interface::{Data, Read, Size, Update, Write};
+#[cfg(all(m1_hp_force_extension, not(feature = "explicit-loadcells")))]
 use outer::OuterActuatorsController;
+#[cfg(any(not(m1_hp_force_extension), feature = "explicit-loadcells"))]
+use outer_as_design::OuterActuatorsController;
 use serde::{Deserialize, Serialize};
 
 /// Actuators center and outer segment control systems
