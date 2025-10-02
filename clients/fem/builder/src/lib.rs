@@ -311,9 +311,19 @@ pub fn rustc_config(from_crate: &str, io: Option<(Names, Names)>) -> anyhow::Res
             output_names.find("OSSHardpointD"),
             output_names.find("OSSM1Lcl"),
             output_names.find("M1Segment1AxialD"),
+            output_names.find("OSSHardpointForce"),
+            input_names.find("OSSHardpointExtension"),
         ) {
-            (Some(_), Some(_), Some(_), Some(_), Some(_)) => {
+            (Some(_), Some(_), Some(_), Some(_), Some(_), None, None) => {
                 println!("cargo::warning={}: M1 inputs and outputs", from_crate);
+                println!(r#"cargo::rustc-cfg=m1"#)
+            }
+            (Some(_), Some(_), Some(_), Some(_), Some(_), Some(_), Some(_)) => {
+                println!(
+                    "cargo::warning={}: M1 inputs and outputs with hardpoints forces and extensions",
+                    from_crate
+                );
+                println!(r#"cargo::rustc-cfg=m1_hp_force_extension"#);
                 println!(r#"cargo::rustc-cfg=m1"#)
             }
             _ => (),

@@ -3251,7 +3251,7 @@ dependencies = [
 
 [[package]]
 name = "gmt-fem-code-builder"
-version = "2.3.6"
+version = "2.3.7"
 dependencies = [
  "anyhow",
  "arrow",
