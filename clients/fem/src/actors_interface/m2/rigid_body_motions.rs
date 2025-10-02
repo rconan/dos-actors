@@ -1,14 +1,7 @@
 //! M2 rigid body motions
 
 use super::prelude::*;
-#[cfg(all(fem, topend = "ASM"))]
 use gmt_dos_clients_io::gmt_m2::M2RigidBodyMotions;
-#[cfg(all(fem, topend = "FSM"))]
-use gmt_dos_clients_io::{
-    Assembly,
-    gmt_m2::{M2RigidBodyMotions, fsm::M2FSMPiezoForces},
-    optics::{M2State, state::SegmentState},
-};
 
 impl<S> Size<M2RigidBodyMotions> for DiscreteModalSolver<S>
 where
