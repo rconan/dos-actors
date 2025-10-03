@@ -39,7 +39,7 @@
 //! # }
 //! ```
 
-use interface::{doublet::UidTuple, UniqueIdentifier};
+use interface::{UniqueIdentifier, doublet::UidTuple};
 use std::{any::type_name, ops::Range};
 
 mod discrete_state_space;
@@ -79,10 +79,17 @@ where
     U: 'static + UniqueIdentifier,
 {
     fn get(&self) -> Option<Vec<f64>> {
-        self.outs
+        let Some(io) = self
+            .outs
             .iter()
             .find(|&x| x.as_any().is::<fem_io::SplitFem<U>>())
-            .map(|io| self.y[io.range()].to_vec())
+        else {
+            panic!(
+                "cannot find {} in DiscreteModalSolver, did you forget to select it?",
+                type_name::<U>()
+            )
+        };
+        Some(self.y[io.range()].to_vec())
     }
 }
 pub trait Set<U: UniqueIdentifier> {
@@ -98,21 +105,25 @@ where
     U: 'static + UniqueIdentifier,
 {
     fn set(&mut self, u: &[f64]) {
-        if let Some(io) = self
+        let Some(io) = self
             .ins
             .iter()
             .find(|&x| x.as_any().is::<fem_io::SplitFem<U>>())
-        {
-            if io.len() != u.len() {
-                panic!(
-                    "{}: expected {} slice, found {}",
-                    type_name::<U>(),
-                    io.len(),
-                    u.len()
-                );
-            }
-            self.u[io.range()].copy_from_slice(u);
+        else {
+            panic!(
+                "cannot find {} in DiscreteModalSolver, did you forget to select it?",
+                type_name::<U>()
+            )
+        };
+        if io.len() != u.len() {
+            panic!(
+                "{}: expected {} slice, found {}",
+                type_name::<U>(),
+                io.len(),
+                u.len()
+            );
         }
+        self.u[io.range()].copy_from_slice(u);
     }
     fn set_slice(&mut self, u: &[f64], range: Range<usize>) {
         if let Some(io) = self

@@ -17,7 +17,7 @@ impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
             .outs::<fem_io::actors_outputs::OSSRotEncoderAngle>()
     }
     pub fn including_m1(self, sids: Option<Vec<u8>>) -> Result<Self> {
-        let mut names: Vec<_> = if let Some(sids) = sids {
+        let mut ins_names: Vec<_> = if let Some(sids) = sids {
             sids.into_iter()
                 .map(|i| {
                     assert!(i > 0 && i < 8, "expected 1≤sid≤7,found sid={}", i);
@@ -29,9 +29,14 @@ impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
                 .map(|i| format!("M1_actuators_segment_{i}"))
                 .collect()
         };
-        names.push("OSS_Harpoint_delta_F".to_string());
-        self.ins_by_name(names)
-            .and_then(|this| this.outs_by_name(vec!["OSS_Hardpoint_D"]))
+        ins_names.push("OSS_Harpoint_delta_F".to_string());
+        #[cfg(m1_hp_force_extension)]
+        ins_names.push("OSS_Hardpoint_extension".to_string());
+        let mut outs_names = vec!["OSS_Hardpoint_D".to_string()];
+        #[cfg(m1_hp_force_extension)]
+        outs_names.push("OSS_Hardpoint_force".to_string());
+        self.ins_by_name(ins_names)
+            .and_then(|this| this.outs_by_name(outs_names))
     }
     pub fn including_asms(
         self,
