@@ -135,6 +135,26 @@ impl<const ID: u8> Read<segment::ActuatorCommandForces<ID>> for Actuators<ID> {
     }
 }
 
+#[cfg(m1_hp_force_extension)]
+impl<const ID: u8> Read<segment::HardpointsForces<ID>> for Actuators<ID> {
+    fn read(&mut self, data: Data<segment::HardpointsForces<ID>>) {
+        match &mut self.controller {
+            ActuatorsController::Outer(OuterActuatorsController { inputs, .. }) => {
+                inputs.LC_FxyzMxyz_CG = (&data)
+                    .as_slice()
+                    .try_into()
+                    .expect("failed to import `BarycentricForce` in `Actuators` input");
+            }
+            ActuatorsController::Center(CenterActuatorsController { inputs, .. }) => {
+                inputs.LC_FxyzMxyz_CG = (&data)
+                    .as_slice()
+                    .try_into()
+                    .expect("failed to import `BarycentricForce` in `Actuators` input");
+            }
+        };
+    }
+}
+
 impl<const ID: u8> Write<segment::ActuatorAppliedForces<ID>> for Actuators<ID> {
     fn write(&mut self) -> Option<Data<segment::ActuatorAppliedForces<ID>>> {
         let data = match &self.controller {
