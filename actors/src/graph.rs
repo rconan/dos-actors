@@ -27,7 +27,6 @@ impl Default for ColorMap {
 
 impl ColorMap {
     pub fn new() -> Self {
-        dbg!("flowchart colormap");
         Self {
             lookup: HashMap::new(),
             colors: (1usize..=8).collect(),
