@@ -114,8 +114,6 @@ pub trait Who<T> {
     }
 }
 
-use log::{info, warn};
-
 /// Pretty prints error message
 pub fn print_info<S: Into<String>>(msg: S, e: Option<&dyn std::error::Error>) {
     if let Some(e) = e {
@@ -126,9 +124,9 @@ pub fn print_info<S: Into<String>>(msg: S, e: Option<&dyn std::error::Error>) {
             msg.push(format!("{}", cause));
             current = cause.source();
         }
-        warn!("{}", msg.join("\n .due to: "))
+        eprintln!("{}", msg.join("\n .due to: "))
     } else {
-        info!("{}", msg.into())
+        log::info!("{}", msg.into())
     }
 }
 
@@ -216,4 +214,3 @@ where
 
     const PORT: u16 = <U as UniqueIdentifier>::PORT;
 }
-
