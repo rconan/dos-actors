@@ -1,9 +1,55 @@
+use std::marker::PhantomData;
+
 use gmt_dos_clients_io::gmt_m1::segment;
 use interface::{Data, Read, Size, Update, Write};
 use serde::{Deserialize, Serialize};
 
 type M = nalgebra::Matrix6<f64>;
 type V = nalgebra::Vector6<f64>;
+
+pub enum New {}
+pub enum LC2CG {}
+
+#[derive(Debug, Clone)]
+pub struct LoadCellsBuilder<T> {
+    lc_2_cg: M,
+    m1_hpk: Option<f64>,
+    checks: PhantomData<T>,
+}
+impl Default for LoadCellsBuilder<New> {
+    fn default() -> Self {
+        Self {
+            lc_2_cg: Default::default(),
+            m1_hpk: None,
+            checks: PhantomData,
+        }
+    }
+}
+impl LoadCellsBuilder<New> {
+    pub fn hardpoints_barycentric_transform(self, lc_2_cg: M) -> LoadCellsBuilder<LC2CG> {
+        LoadCellsBuilder {
+            lc_2_cg,
+            m1_hpk: None,
+            checks: PhantomData,
+        }
+    }
+}
+impl LoadCellsBuilder<LC2CG> {
+    pub fn hardpoints_stiffness(mut self, m1_hk: f64) -> Self {
+        self.m1_hpk = Some(m1_hk);
+        self
+    }
+    pub fn build(self) -> LoadCells {
+        LoadCells {
+            m1_hpk: self.m1_hpk,
+            hp_f_cmd: vec![0f64; 6],
+            hp_d_cell: vec![0f64; 6],
+            hp_d_face: vec![0f64; 6],
+            hp_f_meas: vec![0f64; 6],
+            lc_2_cg: self.lc_2_cg,
+        }
+    }
+}
 
 /// [gmt_dos_actors](https://docs.rs/gmt_dos-actors) client interface for hardpoints loadcells
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -12,7 +58,7 @@ pub struct LoadCells {
     pub(super) hp_d_cell: Vec<f64>,
     pub(super) hp_d_face: Vec<f64>,
     hp_f_meas: Vec<f64>,
-    m1_hpk: f64,
+    m1_hpk: Option<f64>,
     lc_2_cg: M,
 }
 impl LoadCells {
@@ -20,15 +66,19 @@ impl LoadCells {
     ///
     /// The hardpoints stiffness and the matrix transformation
     /// from local to center of gravity coordinates are provided.
+    #[deprecated = "replaced with builder"]
     pub fn new(m1_hpk: f64, lc_2_cg: M) -> Self {
         Self {
-            m1_hpk,
+            m1_hpk: Some(m1_hpk),
             hp_f_cmd: vec![0f64; 6],
             hp_d_cell: vec![0f64; 6],
             hp_d_face: vec![0f64; 6],
             hp_f_meas: vec![0f64; 6],
             lc_2_cg,
         }
+    }
+    pub fn builder() -> LoadCellsBuilder<New> {
+        Default::default()
     }
 }
 
@@ -46,15 +96,19 @@ impl<const ID: u8> Size<segment::BarycentricForce<ID>> for LoadCells {
 
 impl Update for LoadCells {
     fn update(&mut self) {
-        self.hp_d_cell
-            .iter()
-            .zip(self.hp_d_face.iter())
-            .map(|(hp_d_cell, hp_d_face)| hp_d_face - hp_d_cell)
-            .map(|hp_relative_displacements| hp_relative_displacements * self.m1_hpk)
-            .zip(self.hp_f_cmd.iter())
-            .map(|(hp_relative_force, hp_f_cmd)| hp_relative_force - hp_f_cmd)
-            .zip(&mut self.hp_f_meas)
-            .for_each(|(hp_f_diff_force, hp_f_meas)| *hp_f_meas = hp_f_diff_force);
+        if let Some(m1_hpk) = self.m1_hpk {
+            self.hp_d_cell
+                .iter()
+                .zip(self.hp_d_face.iter())
+                .map(|(hp_d_cell, hp_d_face)| hp_d_face - hp_d_cell)
+                .map(|hp_relative_displacements| hp_relative_displacements * m1_hpk)
+                .zip(self.hp_f_cmd.iter())
+                .map(|(hp_relative_force, hp_f_cmd)| hp_relative_force - hp_f_cmd)
+                .zip(&mut self.hp_f_meas)
+                .for_each(|(hp_f_diff_force, hp_f_meas)| *hp_f_meas = hp_f_diff_force);
+        } else {
+            self.hp_f_meas.copy_from_slice(&self.hp_f_cmd);
+        }
     }
 }
 
