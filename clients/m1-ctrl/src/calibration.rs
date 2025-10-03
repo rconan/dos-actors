@@ -10,7 +10,9 @@ use nalgebra as na;
 #[derive(Debug, Clone, Default)]
 pub struct Calibration {
     pub stiffness: f64,
+    // FEM M1 RBM to FEM HP force input
     pub rbm_2_hp: Vec<M>,
+    // HP actuator force to M1 CG (force), derive from FEM HP displacement output
     pub lc_2_cg: Vec<M>,
 }
 
