@@ -1,4 +1,4 @@
-use gmt_dos_clients_io::gmt_m1::segment::{HardpointsForces, RBM};
+use gmt_dos_clients_io::gmt_m1::segment::{HardpointsForces, HardpointsMotion, RBM};
 #[cfg(all(m1_hp_force_extension, not(feature = "explicit-loadcells")))]
 use hardpoints_dynamics::HardpointsDynamics;
 #[cfg(any(not(m1_hp_force_extension), feature = "explicit-loadcells"))]
@@ -16,7 +16,9 @@ type V = nalgebra::Vector6<f64>;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Hardpoints {
     dynamics: HardpointsDynamics,
+    // FEM M1 RBM to FEM HP force input
     rbm_2_hp: M,
+    // hardpoints stiffness (from FEM static gain)
     m1_hpk: f64,
 }
 impl Hardpoints {
@@ -71,5 +73,18 @@ impl<const ID: u8> Write<HardpointsForces<ID>> for Hardpoints {
             .map(|d| *d * self.m1_hpk)
             .collect();
         Some(Data::new(data))
+    }
+}
+#[cfg(m1_hp_force_extension)]
+impl<const ID: u8> Write<HardpointsMotion<ID>> for Hardpoints {
+    fn write(&mut self) -> Option<Data<HardpointsMotion<ID>>> {
+        let data: Vec<f64> = self.dynamics.outputs.Out1.to_vec();
+        Some(Data::new(data))
+    }
+}
+#[cfg(m1_hp_force_extension)]
+impl<const ID: u8> Size<HardpointsMotion<ID>> for Hardpoints {
+    fn len(&self) -> usize {
+        6
     }
 }
