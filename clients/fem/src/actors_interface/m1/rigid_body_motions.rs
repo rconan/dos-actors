@@ -9,7 +9,7 @@ where
     S: Solver + Default,
 {
     fn len(&self) -> usize {
-        42
+        6
     }
 }
 
