@@ -73,6 +73,12 @@ pub trait Model {
         names: Vec<S>,
         switch: Switch,
     ) -> gmt_fem::Result<&mut Self>;
+    fn io_static_gain<Input, Output>(self) -> Option<nalgebra::DMatrix<f64>>
+    where
+        Input: UniqueIdentifier,
+        Vec<Option<gmt_fem::fem_io::Inputs>>: fem_io::FemIo<Input>,
+        Output: UniqueIdentifier,
+        Vec<Option<gmt_fem::fem_io::Outputs>>: fem_io::FemIo<Output>;
 }
 
 impl Model for FEM {
@@ -249,5 +255,19 @@ impl Model for FEM {
                 .map(|i| i.map(|i| self.switch_outputs(switch, Some(&[i]))))?;
         }
         Ok(self)
+    }
+    /// Returns the static gain between a pair of input and output
+    fn io_static_gain<Input, Output>(mut self) -> Option<nalgebra::DMatrix<f64>>
+    where
+        Input: UniqueIdentifier,
+        Vec<Option<gmt_fem::fem_io::Inputs>>: fem_io::FemIo<Input>,
+        Output: UniqueIdentifier,
+        Vec<Option<gmt_fem::fem_io::Outputs>>: fem_io::FemIo<Output>,
+    {
+        self.switch_inputs(Switch::Off, None)
+            .switch_outputs(Switch::Off, None);
+        self.switch_input::<Input>(Switch::On)
+            .and_then(|fem| fem.switch_output::<Output>(Switch::On))
+            .and_then(|fem| fem.reduced_static_gain())
     }
 }
