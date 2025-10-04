@@ -26,10 +26,11 @@ pub enum Estimate {}
 /// Mount
 pub mod mount {
     use super::UID;
-    /// Mount Encoders
+    /// Mount Encoders: Azimuth, Elevation and GIR
     #[derive(UID)]
     #[uid(port = 52_001)]
     pub enum MountEncoders {}
+    /// Mount Encoders averaged on each axis: Azimuth, Elevation and GIR
     #[derive(UID)]
     #[uid(port = 52_011)]
     pub enum AverageMountEncoders<const E: i32 = 0> {}
