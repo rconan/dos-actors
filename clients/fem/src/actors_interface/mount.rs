@@ -71,6 +71,15 @@ where
     }
 }
 
+impl<S, const E: i32> Size<AverageMountEncoders<E>> for DiscreteModalSolver<S>
+where
+    DiscreteModalSolver<S>: Iterator,
+    S: Solver + Default,
+{
+    fn len(&self) -> usize {
+        3
+    }
+}
 /* impl<S: Solver + Default> Set<MountTorques> for DiscreteModalSolver<S> {
     fn set(&mut self, u: &[f64]) {
         let (azimuth, others) = u.split_at(12);
