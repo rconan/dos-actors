@@ -19,7 +19,7 @@ outer-as-design = { version = "0.2.1", package = "gmt_m1-ctrl_outer-actuators" }
 
 # As-built M1 actuators and hardpoints control systems
 center = { version = "1.0", package = "gmt_m1-ctrl_center-actuators" }
-hardpoints-dynamics = { version = "1.0", package = "gmt_m1-ctrl_hardpoints-dynamics" }
+hardpoints-dynamics = { version = "1.1", package = "gmt_m1-ctrl_hardpoints-dynamics" }
 outer = { version = "1.0", package = "gmt_m1-ctrl_outer-actuators" }
 
 interface.workspace = true
@@ -49,6 +49,7 @@ lom = { version = "2.2.1", package = "gmt-lom", features = ["main"] }
 tokio-test.workspace = true
 gmt_dos-clients_scope = { workspace = true, features = ["server"] }
 gmt_dos-clients_scope-client.workspace = true
+serde-pickle = "1.2.0"
 
 [features]
 explicit-loadcells = []

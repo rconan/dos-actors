@@ -47,47 +47,78 @@ impl Calibration {
         log::info!("RBM 2 HP");
         fem.switch_inputs(Switch::Off, None)
             .switch_outputs(Switch::Off, None);
-        let Some(gain) = fem
-            .switch_input::<fem_io::OSSHarpointDeltaF>(Switch::On)
-            .and_then(|fem| fem.switch_output::<fem_io::OSSM1Lcl>(Switch::On))
-            .and_then(|fem| fem.reduced_static_gain())
-        else {
-            panic!(
-                r#"failed to derive hardpoints stiffness, check input "OSSHarpointDeltaF" and output "OSSM1Lcl""#
-            )
-        };
         let mut rbm_2_hp = vec![];
-        for i in 0..7 {
-            let rows = gain.rows(i * 6, 6);
-            let segment = rows
-                .columns(i * 6, 6)
-                .try_inverse()
-                .unwrap()
-                .map(|x| x / stiffness);
-            rbm_2_hp.push(na::Matrix6::from_column_slice(segment.as_slice()))
+        if cfg!(all(
+            m1_hp_force_extension,
+            not(feature = "explicit-loadcells")
+        )) {
+            let hp_disp_2_rbm = gmt_dos_clients_fem::Model::io_static_gain::<
+                fem_io::OSSHardpointExtension,
+                fem_io::OSSM1Lcl,
+            >(fem.clone())
+            .unwrap();
+            for i in 0..7 {
+                let rows = hp_disp_2_rbm.rows(i * 6, 6);
+                let segment = rows.columns(i * 6, 6).try_inverse().unwrap();
+                rbm_2_hp.push(nalgebra::Matrix6::from_column_slice(segment.as_slice()))
+            }
+        } else {
+            let Some(gain) = fem
+                .switch_input::<fem_io::OSSHarpointDeltaF>(Switch::On)
+                .and_then(|fem| fem.switch_output::<fem_io::OSSM1Lcl>(Switch::On))
+                .and_then(|fem| fem.reduced_static_gain())
+            else {
+                panic!(
+                    r#"failed to derive hardpoints stiffness, check input "OSSHarpointDeltaF" and output "OSSM1Lcl""#
+                )
+            };
+            for i in 0..7 {
+                let rows = gain.rows(i * 6, 6);
+                let segment = rows
+                    .columns(i * 6, 6)
+                    .try_inverse()
+                    .unwrap()
+                    .map(|x| x / stiffness);
+                rbm_2_hp.push(na::Matrix6::from_column_slice(segment.as_slice()))
+            }
         }
-
         // LC2CG (include negative feedback)
         log::info!("LC 2 CG");
-        fem.switch_inputs(Switch::Off, None)
-            .switch_outputs(Switch::Off, None);
-        let Some(gain) = fem
-            .switch_input::<fem_io::OSSM1Lcl6F>(Switch::On)
-            .and_then(|fem| fem.switch_output::<fem_io::OSSHardpointD>(Switch::On))
-            .and_then(|fem| fem.reduced_static_gain())
-        else {
-            panic!(
-                r#"failed to derive hardpoints stiffness, check input "OSSM1Lcl6F" and output "OSSHardpointD""#
-            )
-        };
         let mut lc_2_cg = vec![];
-        for i in 0..7 {
-            let rows = gain.rows(i * 12, 12);
-            let segment = rows.columns(i * 6, 6);
-            let cell = segment.rows(0, 6);
-            let face = segment.rows(6, 6);
-            let mat = (cell - face).try_inverse().unwrap().map(|x| x / stiffness);
-            lc_2_cg.push(na::Matrix6::from_column_slice(mat.as_slice()));
+        if cfg!(all(
+            m1_hp_force_extension,
+            not(feature = "explicit-loadcells")
+        )) {
+            let cg_2_hp = gmt_dos_clients_fem::Model::io_static_gain::<
+                fem_io::OSSM1Lcl6F,
+                fem_io::OSSHardpointForce,
+            >(fem.clone())
+            .unwrap();
+            for i in 0..7 {
+                let rows = cg_2_hp.rows(i * 6, 6);
+                let segment = rows.columns(i * 6, 6).try_inverse().unwrap();
+                lc_2_cg.push(-nalgebra::Matrix6::from_column_slice(segment.as_slice()))
+            }
+        } else {
+            fem.switch_inputs(Switch::Off, None)
+                .switch_outputs(Switch::Off, None);
+            let Some(gain) = fem
+                .switch_input::<fem_io::OSSM1Lcl6F>(Switch::On)
+                .and_then(|fem| fem.switch_output::<fem_io::OSSHardpointD>(Switch::On))
+                .and_then(|fem| fem.reduced_static_gain())
+            else {
+                panic!(
+                    r#"failed to derive hardpoints stiffness, check input "OSSM1Lcl6F" and output "OSSHardpointD""#
+                )
+            };
+            for i in 0..7 {
+                let rows = gain.rows(i * 12, 12);
+                let segment = rows.columns(i * 6, 6);
+                let cell = segment.rows(0, 6);
+                let face = segment.rows(6, 6);
+                let mat = (cell - face).try_inverse().unwrap().map(|x| x / stiffness);
+                lc_2_cg.push(na::Matrix6::from_column_slice(mat.as_slice()));
+            }
         }
 
         fem.switch_inputs(Switch::On, None)
