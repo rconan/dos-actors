@@ -27,6 +27,7 @@ impl Modality for CalibrationMode {
                 ..
             } => end_id.unwrap_or(n_mode) - start_idx,
             CalibrationMode::GlobalTipTilt(_) => 2,
+            CalibrationMode::GlobalTxyz(_) => 3,
             CalibrationMode::Mount { .. } => 2,
             _ => unimplemented!(r#""n_cols" not implemented for "CalibrationMode""#),
         }

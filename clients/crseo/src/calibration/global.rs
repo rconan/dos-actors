@@ -4,7 +4,7 @@ use crseo::{
     gmt::{GmtM1, GmtM2, GmtMx},
 };
 use gmt_dos_clients_io::optics::{
-    Dev, Frame, M1GlobalTipTilt, M2GlobalTipTilt, SensorData, Wavefront,
+    Dev, Frame, M1GlobalTipTilt, M1GlobalTxyz, M2GlobalTipTilt, M2GlobalTxyz, SensorData, Wavefront,
 };
 use interface::{Data, Read, UniqueIdentifier, Update, Write};
 
@@ -40,6 +40,15 @@ impl GmtGlobalTipTilt for GmtM1 {
 }
 impl GmtGlobalTipTilt for GmtM2 {
     type UID = M2GlobalTipTilt;
+}
+pub trait GmtGlobalTxyz {
+    type UID: UniqueIdentifier<DataType = Vec<f64>>;
+}
+impl GmtGlobalTxyz for GmtM1 {
+    type UID = M1GlobalTxyz;
+}
+impl GmtGlobalTxyz for GmtM2 {
+    type UID = M2GlobalTxyz;
 }
 
 impl<K, M> GlobalCalibration<M> for CentroidsProcessing<K>
@@ -122,8 +131,8 @@ where
 }
 impl<M> GlobalCalibration<M> for WaveSensor
 where
-    OpticalModel<WaveSensor>: Read<<M as GmtGlobalTipTilt>::UID>,
-    M: GmtMx + GmtGlobalTipTilt,
+    OpticalModel<WaveSensor>: Read<<M as GmtGlobalTipTilt>::UID> + Read<<M as GmtGlobalTxyz>::UID>,
+    M: GmtMx + GmtGlobalTipTilt + GmtGlobalTxyz,
     // CentroidsProcessing<K>: Write<SensorData>,
 {
     type Sensor = WaveSensor;
@@ -131,84 +140,96 @@ where
         builder: &OpticalModelBuilder<WaveSensorBuilder>,
         mode: CalibrationMode,
     ) -> super::Result<Reconstructor> {
-        if let CalibrationMode::GlobalTipTilt(tt) = mode {
-            // let mut centroids =
-            // CentroidsProcessing::<K>::try_from(builder.sensor.as_ref().unwrap())?;
+        let (stroke, dof) = match mode {
+            CalibrationMode::GlobalTipTilt(s) => (s, 2),
+            CalibrationMode::GlobalTxyz(s) => (s, 3),
+            _ => return Err(CalibrationError::GlobalCalibration(mode)),
+        };
+        let mut cmd = vec![0f64; dof];
+        cmd[0] = stroke;
 
-            // builder.initialize(&mut centroids);
+        // let mut centroids =
+        // CentroidsProcessing::<K>::try_from(builder.sensor.as_ref().unwrap())?;
 
-            let mut optical_model = builder.clone().build()?;
+        // builder.initialize(&mut centroids);
 
-            let mut mask = vec![
-                true;
-                (optical_model.src.size * optical_model.src.pupil_sampling.pow(2))
-                    as usize
-            ];
-            let mut c = vec![];
+        let mut optical_model = builder.clone().build()?;
 
-            for mut cmd in [vec![tt, 0f64], vec![0f64, tt]] {
-                <OpticalModel<_> as Read<<M as GmtGlobalTipTilt>::UID>>::read(
-                    &mut optical_model,
-                    Data::new(cmd.clone()),
-                );
-                optical_model.update();
-                // <OpticalModel<_> as Write<Wavefrontc>::write(&mut optical_model)
-                // .map(|data| <Self as Read<Frame<Dev>>>::read(&mut centroids, data));
-                // centroids.update();
-                let push = <OpticalModel<_> as Write<Wavefront>>::write(&mut optical_model)
-                    .unwrap()
-                    .into_arc();
+        let mut mask =
+            vec![true; (optical_model.src.size * optical_model.src.pupil_sampling.pow(2)) as usize];
+        let mut c = vec![];
 
-                mask.iter_mut()
-                    .zip(optical_model.src.amplitude().into_iter())
-                    .for_each(|(m, a)| *m = *m && (a > 0f32));
-                // optical_model
-                //     .sensor_mut()
-                //     .as_mut()
-                //     .map(|sensor| sensor.reset());
+        for _ in 0..dof {
+            cmd.rotate_right(1);
 
-                cmd.iter_mut().for_each(|x| *x *= -1f64);
-                <OpticalModel<_> as Read<<M as GmtGlobalTipTilt>::UID>>::read(
-                    &mut optical_model,
-                    cmd.into(),
-                );
-                optical_model.update();
-                // <OpticalModel<_> as Write<Frame<Dev>>>::write(&mut optical_model)
-                // .map(|data| <Self as Read<Frame<Dev>>>::read(&mut centroids, data));
-                // centroids.update();
-                let pull = <OpticalModel<_> as Write<Wavefront>>::write(&mut optical_model)
-                    .unwrap()
-                    .into_arc();
-
-                mask.iter_mut()
-                    .zip(optical_model.src.amplitude().into_iter())
-                    .for_each(|(m, a)| *m = *m && (a > 0f32));
-
-                // optical_model
-                //     .sensor_mut()
-                //     .as_mut()
-                //     .map(|sensor| sensor.reset());
-
-                let diff: Vec<_> = push
-                    .iter()
-                    .zip(pull.iter())
-                    .zip(&mask)
-                    .filter_map(|((x, y), m)| m.then_some(0.5 * (x - y) / tt))
-                    .collect();
-                c.extend(diff);
-            }
-            let calib = Calib {
-                sid: 0,
-                n_mode: 2,
-                c,
-                mask,
-                mode,
-                runtime: Default::default(),
-                n_cols: Some(2),
+            match mode {
+                CalibrationMode::GlobalTipTilt(_) => <OpticalModel<_> as Read<
+                    <M as GmtGlobalTipTilt>::UID,
+                >>::read(
+                    &mut optical_model, cmd.as_slice().into()
+                ),
+                CalibrationMode::GlobalTxyz(_) => <OpticalModel<_> as Read<
+                    <M as GmtGlobalTxyz>::UID,
+                >>::read(
+                    &mut optical_model, cmd.as_slice().into()
+                ),
+                _ => return Err(CalibrationError::GlobalCalibration(mode)),
             };
-            Ok(Reconstructor::from(calib))
-        } else {
-            Err(CalibrationError::GlobalCalibration(mode))
+            optical_model.update();
+            // <OpticalModel<_> as Write<Wavefrontc>::write(&mut optical_model)
+            // .map(|data| <Self as Read<Frame<Dev>>>::read(&mut centroids, data));
+            // centroids.update();
+            let push = <OpticalModel<_> as Write<Wavefront>>::write(&mut optical_model)
+                .unwrap()
+                .into_arc();
+
+            mask.iter_mut()
+                .zip(optical_model.src.amplitude().into_iter())
+                .for_each(|(m, a)| *m = *m && (a > 0f32));
+            // optical_model
+            //     .sensor_mut()
+            //     .as_mut()
+            //     .map(|sensor| sensor.reset());
+
+            cmd.iter_mut().for_each(|x| *x *= -1f64);
+            <OpticalModel<_> as Read<<M as GmtGlobalTipTilt>::UID>>::read(
+                &mut optical_model,
+                cmd.as_slice().into(),
+            );
+            optical_model.update();
+            // <OpticalModel<_> as Write<Frame<Dev>>>::write(&mut optical_model)
+            // .map(|data| <Self as Read<Frame<Dev>>>::read(&mut centroids, data));
+            // centroids.update();
+            let pull = <OpticalModel<_> as Write<Wavefront>>::write(&mut optical_model)
+                .unwrap()
+                .into_arc();
+
+            mask.iter_mut()
+                .zip(optical_model.src.amplitude().into_iter())
+                .for_each(|(m, a)| *m = *m && (a > 0f32));
+
+            // optical_model
+            //     .sensor_mut()
+            //     .as_mut()
+            //     .map(|sensor| sensor.reset());
+
+            let diff: Vec<_> = push
+                .iter()
+                .zip(pull.iter())
+                .zip(&mask)
+                .filter_map(|((x, y), m)| m.then_some(0.5 * (x - y) / stroke))
+                .collect();
+            c.extend(diff);
         }
+        let calib = Calib {
+            sid: 0,
+            n_mode: dof,
+            c,
+            mask,
+            mode,
+            runtime: Default::default(),
+            n_cols: Some(dof),
+        };
+        Ok(Reconstructor::from(calib))
     }
 }

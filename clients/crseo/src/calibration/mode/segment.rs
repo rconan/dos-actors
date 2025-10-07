@@ -25,6 +25,8 @@ pub enum CalibrationMode {
     },
     /// Mirror global tip-tilt
     GlobalTipTilt(f64),
+    /// Mirror global translatiion (Tx,Ty,Tz)
+    GlobalTxyz(f64),
     /// Mount axis
     Mount { elevation: f64, azimuth: f64 },
     /// Not a segment mode anymore
@@ -79,7 +81,8 @@ impl Display for CalibrationMode {
                     .join(",")
             )?,
             CalibrationMode::Modes { .. } => write!(f, "{:?}", self.mode_range())?,
-            CalibrationMode::GlobalTipTilt(_) => write!(f, "global tip-tilt")?,
+            CalibrationMode::GlobalTipTilt(_) => write!(f, "global tip-tilt (Rx,Ry)")?,
+            CalibrationMode::GlobalTxyz(_) => write!(f, "global translation (Tx,Ty,Tz)")?,
             CalibrationMode::Mount { .. } => write!(f, "mount axis")?,
             CalibrationMode::None => write!(f, "another state of the matrix")?,
         }
