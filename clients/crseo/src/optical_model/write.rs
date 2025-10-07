@@ -1,12 +1,11 @@
 use crate::{
-    OpticalModel,
-    sensors::{Camera, DispersedFringeSensor, NoSensor, SensorPropagation},
+    ngao::DetectorFrame, sensors::{Camera, DispersedFringeSensor, NoSensor, SensorPropagation}, OpticalModel
 };
-use crseo::{Imaging, Pyramid};
+use crseo::{Imaging, Pyramid, SegmentWiseSensor};
 use gmt_dos_clients_io::optics::{
-    SegmentPiston, SegmentTipTilt, SegmentWfe, SegmentWfeRms, TipTilt, Wavefront, WfeRms,
+    PSSn, SegmentD7Piston, SegmentPiston, SegmentTipTilt, SegmentWfe, SegmentWfeRms, TipTilt, Wavefront, WfeRms
 };
-use interface::{Data, Size, Write};
+use interface::{Data, Size, UniqueIdentifier, Write};
 
 impl<T: SensorPropagation, const E: i32> Size<WfeRms<E>> for OpticalModel<T> {
     fn len(&self) -> usize {
@@ -118,5 +117,38 @@ impl<T: SensorPropagation + SourceWavefront> Write<Wavefront> for OpticalModel<T
         Some(Data::new(
             self.src.phase().into_iter().map(|x| *x as f64).collect(),
         ))
+    }
+}
+impl<T> Write<DetectorFrame> for OpticalModel<T>
+where
+    T: SegmentWiseSensor,
+    DetectorFrame: UniqueIdentifier<DataType = crseo::Frame>,
+{
+    fn write(&mut self) -> Option<Data<DetectorFrame>> {
+        self.sensor.as_mut().map(|sensor| {
+            let frame = SegmentWiseSensor::frame(sensor);
+            <T as crseo::WavefrontSensor>::reset(sensor);
+            Data::new(frame)
+        })
+    }
+}
+
+impl<T: SegmentWiseSensor, const E: i32> Write<SegmentD7Piston<E>> for OpticalModel<T> {
+    fn write(&mut self) -> Option<Data<SegmentD7Piston<E>>> {
+        let data = self.src.segment_wfe();
+        let p7 = data[6].0;
+        // let data = &self.segment_wfe;
+        Some(
+            data.into_iter()
+                .map(|(p, _)| (p - p7) * 10_f64.powi(-E))
+                .collect::<Vec<_>>()
+                .into(),
+        )
+    }
+}
+
+impl<T: SensorPropagation> Write<PSSn> for OpticalModel<T> {
+    fn write(&mut self) -> Option<Data<PSSn>> {
+        self.pssn.as_mut().map(|pssn| pssn.estimates().into())
     }
 }
