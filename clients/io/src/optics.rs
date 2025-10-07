@@ -22,15 +22,25 @@ pub enum Wavefront {}
 #[uid(port = 55_002)]
 pub enum TipTilt {}
 
-/// M1 global tip-tilt
+/// M1 global tip-tilt (Rx,Ry)
 #[derive(UID)]
 #[uid(port = 55_101)]
 pub enum M1GlobalTipTilt {}
 
-/// M2 global tip-tilt
+/// M2 global tip-tilt (Rx,Ry)
 #[derive(UID)]
 #[uid(port = 55_102)]
 pub enum M2GlobalTipTilt {}
+
+/// M1 global translation (Tx,Ty,Tz)
+#[derive(UID)]
+#[uid(port = 55_103)]
+pub enum M1GlobalTxyz{}
+
+/// M2 global translation (Tx,Ty,Tz)
+#[derive(UID)]
+#[uid(port = 55_104)]
+pub enum M2GlobalTxyz{}
 
 /// Source segment wavefront piston and standard deviation `([m],[m])x7`
 pub enum SegmentWfe<const E: i32 = 0> {}
