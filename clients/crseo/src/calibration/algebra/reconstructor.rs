@@ -62,6 +62,7 @@ where
     }
 }
 
+
 impl<M, C> Reconstructor<M, C>
 where
     M: Modality + Default,

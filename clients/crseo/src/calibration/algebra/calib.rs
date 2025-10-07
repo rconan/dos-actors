@@ -63,6 +63,50 @@ impl From<&Calib> for Vec<i8> {
             .collect()
     }
 }
+impl From<Calib<CalibrationMode>> for Calib<MixedMirrorMode> {
+    fn from(c: Calib<CalibrationMode>) -> Self {
+        let Calib {
+            sid,
+            n_mode,
+            c,
+            mask,
+            mode,
+            runtime,
+            n_cols,
+        } = c;
+        Self {
+            sid,
+            n_mode,
+            c,
+            mask,
+            mode: mode.into(),
+            runtime,
+            n_cols,
+        }
+    }
+}
+impl From<Calib<MirrorMode>> for Calib<MixedMirrorMode> {
+    fn from(c: Calib<MirrorMode>) -> Self {
+        let Calib {
+            sid,
+            n_mode,
+            c,
+            mask,
+            mode,
+            runtime,
+            n_cols,
+        } = c;
+        Self {
+            sid,
+            n_mode,
+            c,
+            mask,
+            mode: mode.into(),
+            runtime,
+            n_cols,
+        }
+    }
+}
 
 impl<M> CalibProps<M> for Calib<M>
 where
