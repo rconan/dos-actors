@@ -73,6 +73,7 @@ where
     <W as FromBuilder>::ComponentBuilder: Clone,
 {
     type Sensor = DispersedFringeSensor<1, 1>;
+    type Data = Vec<f64>;
 
     fn calibrate(
         optical_model: OpticalModelBuilder<SegmentSensorBuilder<GmtM1, Self, W, SID>>,
@@ -232,9 +233,10 @@ where
 impl<W: FromBuilder> ClosedLoopCalibration<GmtM1, W> for DispersedFringeSensorProcessing
 where
     <W as FromBuilder>::ComponentBuilder: Clone,
-    W: CalibrateAssembly<GmtM2, W> + CalibrateAssembly<GmtM1, W>,
+    W: CalibrateAssembly<GmtM2, W, Vec<f64>> + CalibrateAssembly<GmtM1, W, Vec<f64>>,
 {
     type Sensor = DispersedFringeSensor<1, 1>;
+    type Data = Vec<f64>;
 }
 
 /* impl<W: FromBuilder> ClosedLoopCalibrate<W> for DispersedFringeSensorProcessing

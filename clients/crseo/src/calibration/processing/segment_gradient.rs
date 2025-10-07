@@ -16,6 +16,7 @@ use std::time::Instant;
 
 impl<const SID: u8> PushPull<SID> for SegmentGradientSensor {
     type Sensor = SegmentGradientSensor;
+    type Data = Vec<f64>;
 
     fn push_pull<F>(
         &mut self,
@@ -24,7 +25,7 @@ impl<const SID: u8> PushPull<SID> for SegmentGradientSensor {
         s: f64,
         cmd: &mut [f64],
         cmd_fn: F,
-    ) -> Vec<f64>
+    ) -> Self::Data
     where
         F: Fn(&mut Gmt, u8, &[f64]),
     {
@@ -61,6 +62,7 @@ where
     GmtBuilder: GmtMirrorBuilder<M>,
 {
     type Sensor = SegmentGradientSensor;
+    type Data = Vec<f64>;
 
     fn calibrate(
         builder: OpticalModelBuilder<SegmentSensorBuilder<M, Self, SID>>,
@@ -145,6 +147,7 @@ where
     GmtBuilder: GmtMirrorBuilder<M>,
 {
     type Sensor = SegmentGradientSensor;
+    type Data = Vec<f64>;
 }
 
 #[cfg(test)]

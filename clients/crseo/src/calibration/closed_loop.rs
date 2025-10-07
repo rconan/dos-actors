@@ -66,6 +66,7 @@ where
         >,
 {
     type Sensor: FromBuilder;
+    type Data;
 
     fn calibrate(
         optical_model: OpticalModelBuilder<SegmentSensorBuilder<M, Self, ClosedLoopSensor, SID>>,
@@ -91,6 +92,7 @@ where
         >,
 {
     type Sensor: FromBuilder;
+    type Data;
 
     fn calibrate(
         optical_model: &OpticalModelBuilder<SensorBuilder<M,Self, ClosedLoopSensor>>,

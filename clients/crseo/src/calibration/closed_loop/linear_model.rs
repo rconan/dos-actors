@@ -18,26 +18,31 @@ use super::{ClosedLoopCalibrateSegment, ClosedLoopCalibration};
 pub trait LinearModel {
     type Sensor: FromBuilder;
     type Processing;
+    type Data;
 }
 
 impl LinearModel for WaveSensor {
     type Sensor = WaveSensor;
     type Processing = Self;
+    type Data = Vec<f64>;
 }
 
 impl<K: CentroidKind> LinearModel for CentroidsProcessing<K> {
     type Sensor = Imaging;
     type Processing = Self;
+    type Data = Vec<f64>;
 }
 
 impl LinearModel for SegmentPistonSensor {
     type Sensor = SegmentPistonSensor;
     type Processing = Self;
+    type Data = Vec<f64>;
 }
 
 impl LinearModel for Imaging {
     type Sensor = Self;
     type Processing = CentroidsProcessing;
+    type Data = Vec<f64>;
 }
 
 impl<M: GmtMx, L, W, const SID: u8> ClosedLoopCalibrateSegment<M, W, SID> for L
@@ -52,6 +57,7 @@ where
         + CalibrationSegment<GmtM2, SID, Sensor = <L as LinearModel>::Sensor>,
 {
     type Sensor = <L as LinearModel>::Sensor;
+    type Data = <L as LinearModel>::Data;
 
     fn calibrate(
         optical_model: OpticalModelBuilder<super::SegmentSensorBuilder<M, Self, W, SID>>,
@@ -127,12 +133,14 @@ where
     <W as FromBuilder>::ComponentBuilder: Clone,
     <<L as LinearModel>::Sensor as FromBuilder>::ComponentBuilder: Clone,
     W: FromBuilder + LinearModel,
-    <W as LinearModel>::Processing: CalibrateAssembly<GmtM2, W> + CalibrateAssembly<M, W>,
+    <W as LinearModel>::Processing: CalibrateAssembly<GmtM2, W, <L as LinearModel>::Data>
+        + CalibrateAssembly<M, W, <L as LinearModel>::Data>,
     L: LinearModel
-        + CalibrateAssembly<GmtM2, <L as LinearModel>::Sensor>
-        + CalibrateAssembly<M, <L as LinearModel>::Sensor>,
+        + CalibrateAssembly<GmtM2, <L as LinearModel>::Sensor, <L as LinearModel>::Data>
+        + CalibrateAssembly<M, <L as LinearModel>::Sensor, <L as LinearModel>::Data>,
 {
     type Sensor = <L as LinearModel>::Sensor;
+    type Data = <L as LinearModel>::Data;
 }
 
 #[cfg(test)]

@@ -137,34 +137,36 @@ pub enum CalibrationError {
 type Result<T> = std::result::Result<T, CalibrationError>;
 
 /// Trait alias for M1 or M2 [CalibrationSegment]s
-pub trait CalibrateAssembly<M: GmtMx, S: FromBuilder>:
+pub trait CalibrateAssembly<M: GmtMx, S: FromBuilder, D>:
     CalibrationSegment<M, 1, Sensor = S>
-    + CalibrationSegment<M, 2, Sensor = S>
-    + CalibrationSegment<M, 3, Sensor = S>
-    + CalibrationSegment<M, 4, Sensor = S>
-    + CalibrationSegment<M, 5, Sensor = S>
-    + CalibrationSegment<M, 6, Sensor = S>
-    + CalibrationSegment<M, 7, Sensor = S>
+    + CalibrationSegment<M, 2, Sensor = S, Data = D>
+    + CalibrationSegment<M, 3, Sensor = S, Data = D>
+    + CalibrationSegment<M, 4, Sensor = S, Data = D>
+    + CalibrationSegment<M, 5, Sensor = S, Data = D>
+    + CalibrationSegment<M, 6, Sensor = S, Data = D>
+    + CalibrationSegment<M, 7, Sensor = S, Data = D>
 {
 }
 
 impl<
+    D,
     M: GmtMx,
     S: FromBuilder,
-    T: CalibrationSegment<M, 1, Sensor = S>
-        + CalibrationSegment<M, 2, Sensor = S>
-        + CalibrationSegment<M, 3, Sensor = S>
-        + CalibrationSegment<M, 4, Sensor = S>
-        + CalibrationSegment<M, 5, Sensor = S>
-        + CalibrationSegment<M, 6, Sensor = S>
-        + CalibrationSegment<M, 7, Sensor = S>,
-> CalibrateAssembly<M, S> for T
+    T: CalibrationSegment<M, 1, Sensor = S, Data = D>
+        + CalibrationSegment<M, 2, Sensor = S, Data = D>
+        + CalibrationSegment<M, 3, Sensor = S, Data = D>
+        + CalibrationSegment<M, 4, Sensor = S, Data = D>
+        + CalibrationSegment<M, 5, Sensor = S, Data = D>
+        + CalibrationSegment<M, 6, Sensor = S, Data = D>
+        + CalibrationSegment<M, 7, Sensor = S, Data = D>,
+> CalibrateAssembly<M, S, D> for T
 {
 }
 
 /// Actuator push and pull
 pub trait PushPull<const SID: u8> {
     type Sensor;
+    type Data;
     fn push_pull<F>(
         &mut self,
         optical_model: &mut OpticalModel<<Self as PushPull<SID>>::Sensor>,
@@ -172,7 +174,7 @@ pub trait PushPull<const SID: u8> {
         s: f64,
         cmd: &mut [f64],
         cmd_fn: F,
-    ) -> Vec<f64>
+    ) -> Self::Data
     where
         F: Fn(&mut crseo::Gmt, u8, &[f64]);
 }
@@ -227,6 +229,7 @@ where
     Self: PushPull<SID, Sensor = <Self as CalibrationSegment<M, SID>>::Sensor>,
 {
     type Sensor: FromBuilder;
+    type Data;
     fn calibrate(
         optical_model: OpticalModelBuilder<SegmentSensorBuilder<M, Self, SID>>,
         calib_mode: CalibrationMode,
@@ -237,9 +240,10 @@ where
 pub trait Calibration<M: GmtMx>
 where
     <<Self as Calibration<M>>::Sensor as FromBuilder>::ComponentBuilder: Clone + Send + Sync,
-    Self: CalibrateAssembly<M, <Self as Calibration<M>>::Sensor>,
+    Self: CalibrateAssembly<M, <Self as Calibration<M>>::Sensor, <Self as Calibration<M>>::Data>,
 {
     type Sensor: FromBuilder;
+    type Data;
     fn calibrate(
         optical_model: &OpticalModelBuilder<SensorBuilder<M, Self>>,
         mirror_mode: impl Into<MirrorMode>,

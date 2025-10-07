@@ -15,6 +15,7 @@ use std::time::Instant;
 
 impl<const SID: u8> PushPull<SID> for DispersedFringeSensorProcessing {
     type Sensor = DispersedFringeSensor<1, 1>;
+    type Data = Vec<f64>;
 
     fn push_pull<F>(
         &mut self,
@@ -23,7 +24,7 @@ impl<const SID: u8> PushPull<SID> for DispersedFringeSensorProcessing {
         s: f64,
         cmd: &mut [f64],
         cmd_fn: F,
-    ) -> Vec<f64>
+    ) -> Self::Data
     where
         F: Fn(&mut crseo::Gmt, u8, &[f64]),
     {
@@ -58,6 +59,7 @@ where
     GmtBuilder: GmtMirrorBuilder<M>,
 {
     type Sensor = DispersedFringeSensor<1, 1>;
+    type Data = Vec<f64>;
 
     fn calibrate(
         builder: crate::OpticalModelBuilder<SegmentSensorBuilder<M, Self, SID>>,
@@ -150,6 +152,7 @@ where
     GmtBuilder: GmtMirrorBuilder<M>,
 {
     type Sensor = DispersedFringeSensor<1, 1>;
+    type Data = Vec<f64>;
 
     /*     fn calibrate(
            optical_model: &crate::OpticalModelBuilder<SensorBuilder<M, Self>>,

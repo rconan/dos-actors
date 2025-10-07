@@ -15,6 +15,7 @@ use std::time::Instant;
 
 impl<const SID: u8> PushPull<SID> for WaveSensor {
     type Sensor = WaveSensor;
+    type Data = Vec<(f64, bool)>;
 
     fn push_pull<F>(
         &mut self,
@@ -23,7 +24,7 @@ impl<const SID: u8> PushPull<SID> for WaveSensor {
         s: f64,
         cmd: &mut [f64],
         cmd_fn: F,
-    ) -> Vec<f64>
+    ) -> Self::Data
     where
         F: Fn(&mut Gmt, u8, &[f64]),
     {
@@ -53,7 +54,7 @@ impl<const SID: u8> PushPull<SID> for WaveSensor {
         push.iter()
             .zip(optical_model.sensor().unwrap().phase().iter())
             .zip(mask.into_iter())
-            .map(|((x, y), m)| if m { 0.5 * (x - y) as f64 / s } else { 0. })
+            .map(|((x, y), m)| (if m { 0.5 * (x - y) as f64 / s } else { 0. }, m))
             .collect()
     }
 }
@@ -64,6 +65,7 @@ where
     GmtBuilder: GmtMirrorBuilder<M>,
 {
     type Sensor = WaveSensor;
+    type Data = Vec<(f64, bool)>;
 
     fn calibrate(
         builder: OpticalModelBuilder<SegmentSensorBuilder<M, Self, SID>>,
@@ -128,19 +130,23 @@ where
         };
         let n = calib[0].len();
         let mask = calib.iter().fold(vec![true; n], |mut m, c| {
-            m.iter_mut()
-                .zip(c.iter())
-                .for_each(|(m, c)| *m &= c.abs() > 0.);
+            m.iter_mut().zip(c.iter()).for_each(|(m, (_, mi))| *m &= mi);
             m
         });
+        let c: Vec<_> = calib
+            .into_iter()
+            .flat_map(|c| {
+                c.into_iter()
+                    .zip(&mask)
+                    .filter_map(|((c, _), m)| m.then(|| c))
+                    .collect::<Vec<_>>()
+            })
+            .collect();
 
         Ok(Calib {
             sid: SID,
             n_mode,
-            c: calib
-                .into_iter()
-                .flat_map(|c| c.into_iter().zip(&mask).flat_map(|(c, m)| m.then(|| c)))
-                .collect(),
+            c,
             mask,
             mode: calib_mode,
             runtime: now.elapsed(),
@@ -155,6 +161,7 @@ where
     GmtBuilder: GmtMirrorBuilder<M>,
 {
     type Sensor = WaveSensor;
+    type Data = Vec<(f64, bool)>;
 
     /*     fn calibrate(
         optical_model: OpticalModelBuilder<SensorBuilder<M, Self>>,

@@ -37,6 +37,7 @@ where
     CentroidsProcessing<K>: ValidCentroids,
 {
     type Sensor = Imaging;
+    type Data = Vec<f64>;
     fn push_pull<F>(
         &mut self,
         optical_model: &mut OpticalModel<<Self as PushPull<SID>>::Sensor>,
@@ -44,7 +45,7 @@ where
         s: f64,
         cmd: &mut [f64],
         cmd_fn: F,
-    ) -> Vec<f64>
+    ) -> Self::Data
     where
         F: Fn(&mut Gmt, u8, &[f64]),
     {
@@ -94,6 +95,7 @@ where
     M: GmtMx,
 {
     type Sensor = Imaging;
+    type Data = Vec<f64>;
 
     fn calibrate(
         builder: OpticalModelBuilder<SegmentSensorBuilder<M, Self, SID>>,
@@ -212,6 +214,7 @@ where
     CentroidsProcessing<K>: ValidCentroids,
 {
     type Sensor = Imaging;
+    type Data = Vec<f64>;
 }
 
 #[cfg(test)]
