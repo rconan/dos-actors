@@ -26,6 +26,8 @@ The compilation flags that [rustc_config] creates are:
  - `cfd2021`
  - `cfd2025`
  - `ground_acceleration`
+
+The full path to the FEM data **must be** set to the environment variable `FEM_REPO`.
 */
 
 use std::{
