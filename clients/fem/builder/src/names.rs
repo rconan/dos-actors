@@ -6,8 +6,8 @@ use std::{
 /// FEM inputs/ouputs names & descriptions
 #[derive(Default)]
 pub struct Name {
-    name: String,
-    description: Vec<String>,
+    pub name: String,
+    pub description: Vec<String>,
 }
 impl fmt::Debug for Name {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -43,9 +43,11 @@ impl From<&Name> for String {
     }
 }
 impl Name {
+    /// Adds to the [Name] description
     pub fn push_description(&mut self, description: String) {
         self.description.push(description);
     }
+    /// Returns the input or output `name` as `Enum` variant type
     pub fn variant(&self) -> String {
         self.split("_")
             .map(|s| {
@@ -54,7 +56,13 @@ impl Name {
             })
             .collect::<String>()
     }
-    /// pub enum {variant} {}
+    /**
+    Returns the code representing the input or ouput as an empty `Enum`
+
+    ```ignore
+    pub enum {variant} {}
+    ```
+    */
     pub fn enum_variant(&self) -> String {
         let descriptions: Vec<_> = self
             .description
@@ -81,9 +89,19 @@ impl Name {
             variant = self.variant()
         )
     }
-    /// impl FemIo<{variant}> for Vec<Option<{io}>>
-    ///
-    /// io: Inputs|Outputs
+    /**
+    Returns the code implementing `FemIo<variant>`
+
+    ```ignore
+        impl FemIo<{variant}> for Vec<Option<{io}>> {
+            fn position(&self) -> Option<usize>{
+                self.iter().filter_map(|x| x.as_ref())
+                        .position(|x| if let {io}::{variant}(_) = x {true} else {false})
+            }
+        }
+    ```
+    where `io` is another `Enum` that may have the same `variant`
+    */
     pub fn impl_enum_variant_for_io(&self, io: &str) -> String {
         format!(
             r##"
@@ -100,6 +118,7 @@ impl Name {
     }
 }
 
+/// A list of FEM inputs or outputs [Name]
 #[derive(Debug, Default)]
 pub struct Names(Vec<Name>);
 impl Names {

@@ -1,3 +1,33 @@
+/*!
+# GMT FEM Code Generator
+
+Generate code based on the input and output tables of the GMT Finite Element Model (FEM)
+
+The crate is used by other crates to generate interfaces to the FEM inputs and outputs.
+
+[gmt-fem](https://crates.io/crates/gmt-fem) build script calls upon [generate_fem] to generate the
+FEM [Inputs](https://docs.rs/gmt-fem/latest/gmt_fem/fem_io/enum.Inputs.html) and [Outputs](https://docs.rs/gmt-fem/latest/gmt_fem/fem_io/enum.Outputs.html) enums.
+
+[gmt_dos-clients_io](https://crates.io/crates/gmt_dos-clients_io) build script invokes [generate_io] to generate the UIDs `Enums` that matches the [inputs and outputs](https://docs.rs/gmt_dos-clients_io/latest/gmt_dos_clients_io/gmt_fem/index.html) of the FEM.
+
+[gmt_dos-clients_fem](https://crates.io/crates/gmt_dos-clients_fem) build script uses [generate_interface] to generate the traits implementation for the FEM inputs and outputs `Enum`s in [gmt-dos-clients_io](https://docs.rs/gmt_dos-clients_io/latest/gmt_dos_clients_io/gmt_fem/index.html).
+
+Invoking [rustc_config] in a build script retrieves the FEM inputs and outputs from the inputs and outputs tables using [io_names], and creates some compilation flags to enable conditional compilation according to the availability of some inputs or outputs.
+
+The compilation flags that [rustc_config] creates are:
+ - `mount`
+ - `m1`
+ - `m1_hp_force_extension`
+ - `m2`
+ - `top-end="ASM"`
+ - `top-end="FSM"`
+ - `m2_rbm="MCM2Lcl6D"`
+ - `m2_rbm="MCM2Lcl"`
+ - `cfd2021`
+ - `cfd2025`
+ - `ground_acceleration`
+*/
+
 use std::{
     env,
     fs::{self, File},
@@ -33,13 +63,15 @@ pub enum Error {
 mod names;
 pub use names::{Name, Names};
 mod io;
-pub use io::IO;
+pub(crate) use io::IO;
 mod get_io;
-pub use get_io::GetIO;
+pub(crate) use get_io::GetIO;
 
 use apache_arrow::datatypes::Schema;
 use apache_arrow::record_batch::RecordBatch;
 use std::sync::Arc;
+
+// Parse the Arrow table
 fn get_data(
     field: &str,
     fem_io: &str,
@@ -157,6 +189,7 @@ fn get_fem_io(zip_file: &mut ZipArchive<File>, fem_io: &str) -> Result<Names, Er
         })
 }
 
+/// Returns the list of inputs and outputs of the FEM
 pub fn io_names(from_crate: &str) -> std::result::Result<(Names, Names), Error> {
     Ok(if let Ok(fem_repo) = env::var("FEM_REPO") {
         // Gets the FEM repository
@@ -194,7 +227,7 @@ pub fn io_names(from_crate: &str) -> std::result::Result<(Names, Names), Error> 
     })
 }
 
-/// Generate the code for interfacing [dos-actors] to [gmt-fem]
+/// Generate the code for [gmt_dos-clients_fem](https://crates.io/crates/gmt_dos-clients_fem) interfaces
 pub fn generate_interface(from_crate: &str) -> anyhow::Result<()> {
     let (input_names, output_names): (Names, Names) = io_names(from_crate)?;
 
@@ -233,7 +266,7 @@ pub fn generate_interface(from_crate: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Generate the list of inputs and outputs of the FEM dos-actors
+/// Generate the list of inputs and outputs of the FEM as UIDs `Enum` in [gmt_dos-clients_io](https://crates.io/crates/gmt_dos-clients_io)
 pub fn generate_io(from_crate: &str) -> anyhow::Result<()> {
     let (input_names, output_names): (Names, Names) = io_names(from_crate)?;
 
@@ -253,6 +286,25 @@ pub fn generate_io(from_crate: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
+/**
+Creates rustc compilation flags
+
+The compilations flags are created according to the availability of some inputs and outputs.
+If no inputs and outputs are given, then [io_names] is used to retrieve all of them.
+
+The compilation flags that [rustc_config] creates are:
+ - `mount`
+ - `m1`
+ - `m1_hp_force_extension`
+ - `m2`
+ - `top-end="ASM"`
+ - `top-end="FSM"`
+ - `m2_rbm="MCM2Lcl6D"`
+ - `m2_rbm="MCM2Lcl"`
+ - `cfd2021`
+ - `cfd2025`
+ - `ground_acceleration`
+*/
 pub fn rustc_config(from_crate: &str, io: Option<(Names, Names)>) -> anyhow::Result<()> {
     if option_env!("FEM_REPO").is_some() {
         println!("cargo::rustc-cfg=fem");
@@ -344,7 +396,7 @@ pub fn rustc_config(from_crate: &str, io: Option<(Names, Names)>) -> anyhow::Res
     Ok(())
 }
 
-/// Generate the code for loading and for interacting with FEM data
+/// Generate the FEM [Inputs](https://docs.rs/gmt-fem/latest/gmt_fem/fem_io/enum.Inputs.html) and [Outputs](https://docs.rs/gmt-fem/latest/gmt_fem/fem_io/enum.Outputs.html) enums for [gmt-fem](https://crates.io/crates/gmt-fem)
 pub fn generate_fem(from_crate: &str) -> anyhow::Result<()> {
     let (input_names, output_names): (Names, Names) = io_names(from_crate)?;
 
