@@ -3499,7 +3499,7 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-clients_fem"
-version = "5.1.4"
+version = "5.2.0"
 dependencies = [
  "anyhow",
  "arrow",
