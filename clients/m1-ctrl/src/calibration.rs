@@ -48,10 +48,8 @@ impl Calibration {
         fem.switch_inputs(Switch::Off, None)
             .switch_outputs(Switch::Off, None);
         let mut rbm_2_hp = vec![];
-        if cfg!(all(
-            m1_hp_force_extension,
-            not(feature = "explicit-loadcells")
-        )) {
+        #[cfg(all(m1_hp_force_extension, not(feature = "explicit-loadcells")))]
+        {
             let hp_disp_2_rbm = gmt_dos_clients_fem::Model::io_static_gain::<
                 fem_io::OSSHardpointExtension,
                 fem_io::OSSM1Lcl,
@@ -60,9 +58,11 @@ impl Calibration {
             for i in 0..7 {
                 let rows = hp_disp_2_rbm.rows(i * 6, 6);
                 let segment = rows.columns(i * 6, 6).try_inverse().unwrap();
-                rbm_2_hp.push(nalgebra::Matrix6::from_column_slice(segment.as_slice()))
+                rbm_2_hp.push(na::Matrix6::from_column_slice(segment.as_slice()))
             }
-        } else {
+        }
+        #[cfg(any(not(m1_hp_force_extension), feature = "explicit-loadcells"))]
+        {
             let Some(gain) = fem
                 .switch_input::<fem_io::OSSHarpointDeltaF>(Switch::On)
                 .and_then(|fem| fem.switch_output::<fem_io::OSSM1Lcl>(Switch::On))
@@ -85,10 +85,8 @@ impl Calibration {
         // LC2CG (include negative feedback)
         log::info!("LC 2 CG");
         let mut lc_2_cg = vec![];
-        if cfg!(all(
-            m1_hp_force_extension,
-            not(feature = "explicit-loadcells")
-        )) {
+        #[cfg(all(m1_hp_force_extension, not(feature = "explicit-loadcells")))]
+        {
             let cg_2_hp = gmt_dos_clients_fem::Model::io_static_gain::<
                 fem_io::OSSM1Lcl6F,
                 fem_io::OSSHardpointForce,
@@ -97,9 +95,11 @@ impl Calibration {
             for i in 0..7 {
                 let rows = cg_2_hp.rows(i * 6, 6);
                 let segment = rows.columns(i * 6, 6).try_inverse().unwrap();
-                lc_2_cg.push(-nalgebra::Matrix6::from_column_slice(segment.as_slice()))
+                lc_2_cg.push(-na::Matrix6::from_column_slice(segment.as_slice()))
             }
-        } else {
+        }
+        #[cfg(any(not(m1_hp_force_extension), feature = "explicit-loadcells"))]
+        {
             fem.switch_inputs(Switch::Off, None)
                 .switch_outputs(Switch::Off, None);
             let Some(gain) = fem

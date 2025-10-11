@@ -1,4 +1,4 @@
-use gmt_dos_clients_io::gmt_m1::segment::{HardpointsForces, HardpointsMotion, RBM};
+use gmt_dos_clients_io::gmt_m1::segment::{HardpointsForces, RBM};
 #[cfg(all(m1_hp_force_extension, not(feature = "explicit-loadcells")))]
 use hardpoints_dynamics::HardpointsDynamics;
 #[cfg(any(not(m1_hp_force_extension), feature = "explicit-loadcells"))]
@@ -75,6 +75,8 @@ impl<const ID: u8> Write<HardpointsForces<ID>> for Hardpoints {
         Some(Data::new(data))
     }
 }
+#[cfg(m1_hp_force_extension)]
+use gmt_dos_clients_io::gmt_m1::segment::HardpointsMotion;
 #[cfg(m1_hp_force_extension)]
 impl<const ID: u8> Write<HardpointsMotion<ID>> for Hardpoints {
     fn write(&mut self) -> Option<Data<HardpointsMotion<ID>>> {
