@@ -74,15 +74,9 @@ let hp_setpoint = (0..6).fold(Signals::new(6, n_step), |signals, i| {
     )
 });
 // Hardpoints
-let hardpoints = Hardpoints::new(
-    m1_calibration.stiffness,
-    m1_calibration.rbm_2_hp[S1 as usize - 1],
-);
+let hardpoints = Hardpoints::<S1>::from(&m1_calibration);
 // Loadcells
-let loadcell = LoadCells::new(
-    m1_calibration.stiffness,
-    m1_calibration.lc_2_cg[S1 as usize - 1],
-);
+let loadcell = LoadCells::<S1>::from(&m1_calibration);
 // Actuators
 let actuators = Actuators::<S1>::new();
 let actuators_setpoint = Signals::new(
@@ -159,15 +153,9 @@ let hp_setpoint = (0..6).fold(Signals::new(6, n_step), |signals, i| {
     )
 });
 // Hardpoints
-let hardpoints = Hardpoints::new(
-    m1_calibration.stiffness,
-    m1_calibration.rbm_2_hp[S1 as usize - 1],
-);
+let hardpoints = Hardpoints::<S1>::from(&m1_calibration);
 // Loadcells
-let loadcell = LoadCells::new(
-    m1_calibration.stiffness,
-    m1_calibration.lc_2_cg[S1 as usize - 1],
-);
+let loadcell = LoadCells::<S1>::from(&m1_calibration);
 // Actuators
 let actuators = Actuators::<S1>::new();
 let actuators_setpoint = Signals::new(

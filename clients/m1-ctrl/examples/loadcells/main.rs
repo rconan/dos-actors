@@ -81,12 +81,12 @@ async fn explicit_loadcells(
     let mount = Mount::new();
 
     // Hardpoints
-    let hardpoints = Hardpoints::new(
+    let hardpoints = Hardpoints::<SX>::new(
         m1_calibration.stiffness,
         m1_calibration.rbm_2_hp[SX as usize - 1],
     );
     // Loadcells
-    let loadcell = LoadCells::builder()
+    let loadcell = LoadCells::<SX>::builder()
         .hardpoints_barycentric_transform(m1_calibration.lc_2_cg[SX as usize - 1])
         .hardpoints_stiffness(m1_calibration.stiffness)
         .build();
@@ -149,12 +149,12 @@ async fn implicit_loadcells(
         )
     });
     // Hardpoints
-    let hardpoints = Hardpoints::new(
+    let hardpoints = Hardpoints::<SX>::new(
         m1_calibration.stiffness,
         m1_calibration.rbm_2_hp[SX as usize - 1],
     );
     // Loadcells
-    let loadcell = LoadCells::builder()
+    let loadcell = LoadCells::<SX>::builder()
         .hardpoints_barycentric_transform(m1_calibration.lc_2_cg[SX as usize - 1])
         .build();
     // Actuators

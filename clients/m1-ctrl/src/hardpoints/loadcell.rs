@@ -4,6 +4,8 @@ use gmt_dos_clients_io::gmt_m1::segment;
 use interface::{Data, Read, Size, Update, Write};
 use serde::{Deserialize, Serialize};
 
+use crate::Calibration;
+
 type M = nalgebra::Matrix6<f64>;
 type V = nalgebra::Vector6<f64>;
 
@@ -39,7 +41,7 @@ impl LoadCellsBuilder<LC2CG> {
         self.m1_hpk = Some(m1_hk);
         self
     }
-    pub fn build(self) -> LoadCells {
+    pub fn build<const ID: u8>(self) -> LoadCells<ID> {
         LoadCells {
             m1_hpk: self.m1_hpk,
             hp_f_cmd: vec![0f64; 6],
@@ -53,7 +55,7 @@ impl LoadCellsBuilder<LC2CG> {
 
 /// [gmt_dos_actors](https://docs.rs/gmt_dos-actors) client interface for hardpoints loadcells
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LoadCells {
+pub struct LoadCells<const ID: u8> {
     pub(super) hp_f_cmd: Vec<f64>,
     pub(super) hp_d_cell: Vec<f64>,
     pub(super) hp_d_face: Vec<f64>,
@@ -61,7 +63,33 @@ pub struct LoadCells {
     m1_hpk: Option<f64>,
     lc_2_cg: M,
 }
-impl LoadCells {
+impl<const ID: u8> From<&Calibration> for LoadCells<ID> {
+    fn from(c: &Calibration) -> Self {
+        if cfg!(any(
+            not(m1_hp_force_extension),
+            feature = "explicit-loadcells"
+        )) {
+            Self {
+                m1_hpk: Some(c.stiffness),
+                hp_f_cmd: vec![0f64; 6],
+                hp_d_cell: vec![0f64; 6],
+                hp_d_face: vec![0f64; 6],
+                hp_f_meas: vec![0f64; 6],
+                lc_2_cg: c.lc_2_cg[ID as usize - 1],
+            }
+        } else {
+            Self {
+                m1_hpk: None,
+                hp_f_cmd: vec![0f64; 6],
+                hp_d_cell: vec![0f64; 6],
+                hp_d_face: vec![0f64; 6],
+                hp_f_meas: vec![0f64; 6],
+                lc_2_cg: c.lc_2_cg[ID as usize - 1],
+            }
+        }
+    }
+}
+impl<const ID: u8> LoadCells<ID> {
     /// Creates a new loadcells client
     ///
     /// The hardpoints stiffness and the matrix transformation
@@ -82,19 +110,19 @@ impl LoadCells {
     }
 }
 
-impl<const ID: u8> Size<segment::HardpointsMotion<ID>> for LoadCells {
+impl<const ID: u8> Size<segment::HardpointsMotion<ID>> for LoadCells<ID> {
     fn len(&self) -> usize {
         12
     }
 }
 
-impl<const ID: u8> Size<segment::BarycentricForce<ID>> for LoadCells {
+impl<const ID: u8> Size<segment::BarycentricForce<ID>> for LoadCells<ID> {
     fn len(&self) -> usize {
         6
     }
 }
 
-impl Update for LoadCells {
+impl<const ID: u8> Update for LoadCells<ID> {
     fn update(&mut self) {
         if let Some(m1_hpk) = self.m1_hpk {
             self.hp_d_cell
@@ -112,13 +140,13 @@ impl Update for LoadCells {
     }
 }
 
-impl<const ID: u8> Read<segment::HardpointsForces<ID>> for LoadCells {
+impl<const ID: u8> Read<segment::HardpointsForces<ID>> for LoadCells<ID> {
     fn read(&mut self, data: Data<segment::HardpointsForces<ID>>) {
         self.hp_f_cmd = (**data).to_vec();
     }
 }
 
-impl<const ID: u8> Read<segment::HardpointsMotion<ID>> for LoadCells {
+impl<const ID: u8> Read<segment::HardpointsMotion<ID>> for LoadCells<ID> {
     fn read(&mut self, data: Data<segment::HardpointsMotion<ID>>) {
         let (cell, face) = (&data).split_at(6);
         self.hp_d_cell.copy_from_slice(cell);
@@ -126,7 +154,7 @@ impl<const ID: u8> Read<segment::HardpointsMotion<ID>> for LoadCells {
     }
 }
 
-impl<const ID: u8> Write<segment::BarycentricForce<ID>> for LoadCells {
+impl<const ID: u8> Write<segment::BarycentricForce<ID>> for LoadCells<ID> {
     fn write(&mut self) -> Option<Data<segment::BarycentricForce<ID>>> {
         let cg = self.lc_2_cg * V::from_column_slice(self.hp_f_meas.as_slice());
         Some(Data::new(cg.as_slice().to_vec()))
