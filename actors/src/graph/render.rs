@@ -66,6 +66,8 @@ pub enum RenderError {
     IO(#[from] std::io::Error),
     #[error("failed to convert to string")]
     Utf(#[from] std::string::FromUtf8Error),
+    #[error("flowchart layout is empty")]
+    Layout,
 }
 type Result<T> = std::result::Result<T, RenderError>;
 
@@ -103,15 +105,15 @@ impl Display for GraphLayout {
     }
 }
 impl GraphLayout {
-    pub fn new() -> Self {
+    pub fn new() -> Option<Self> {
         match env::var("FLOWCHART") {
             Ok(var) => match var.to_lowercase().as_str() {
-                "dot" => Self::Dot,
-                "neato" => Self::Neato,
-                "fdp" => Self::Fdp,
-                _ => Self::default(),
+                "dot" => Some(Self::Dot),
+                "neato" => Some(Self::Neato),
+                "fdp" => Some(Self::Fdp),
+                _ => None,
             },
-            Err(_) => Self::default(),
+            Err(_) => Some(Self::default()),
         }
     }
 }
@@ -125,7 +127,7 @@ impl Render {
     }
     /// Renders flowchart to SVG
     pub fn into_svg(&mut self) -> Result<&mut Self> {
-        let mut graph_layout = GraphLayout::new();
+        let mut graph_layout = GraphLayout::new().ok_or(RenderError::Layout)?;
         let result = loop {
             let graph = Command::new("echo")
                 .arg(&self.render)
