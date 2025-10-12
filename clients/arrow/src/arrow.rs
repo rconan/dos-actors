@@ -14,7 +14,7 @@ use crate::{
 mod arrow;
 mod builder;
 // mod get;
-mod iter;
+pub(crate) mod iter;
 pub use builder::ArrowBuilder;
 
 /// Apache [Arrow](https://docs.rs/arrow) client

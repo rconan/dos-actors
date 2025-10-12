@@ -246,7 +246,7 @@ enum DropOption {
 }
 
 mod arrow;
-pub use arrow::{Arrow, ArrowBuilder};
+pub use arrow::{Arrow, ArrowBuilder, iter::ArrowIter};
 
 impl Update for Arrow {}
 impl<T, U> Read<U> for Arrow

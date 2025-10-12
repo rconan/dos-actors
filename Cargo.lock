@@ -3409,7 +3409,7 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-clients_arrow"
-version = "2.2.0"
+version = "2.3.0"
 dependencies = [
  "arrow",
  "env_logger",

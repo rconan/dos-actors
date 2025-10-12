@@ -5,7 +5,7 @@ use apache_arrow::{
     datatypes::ArrowPrimitiveType,
 };
 
-use crate::{Arrow, ArrowError, BufferDataType, Result};
+use crate::{Arrow, ArrowError, BufferDataType, DropOption, Result};
 
 pub struct ArrowIter<T>(VecDeque<Vec<T>>)
 where
@@ -47,7 +47,7 @@ where
 }
 
 impl Arrow {
-    /// Return an iterator over the data in the specified field
+    /// Returns an iterator over the data in the specified field
     pub fn iter<S, T>(&mut self, field_name: S) -> Result<ArrowIter<T>>
     where
         S: AsRef<str>,
@@ -80,5 +80,19 @@ impl Arrow {
             },
             Err(e) => Err(e),
         }.map(|data| ArrowIter(data))
+    }
+    /// Returns an iterator over the data in the specified field consuming [Self]
+    ///
+    /// [Self] won't be written to a file regarless of the original settings
+    pub fn into_iter<S, T>(mut self, field_name: S) -> Result<ArrowIter<T>>
+    where
+        S: AsRef<str>,
+        String: From<S>,
+        T: BufferDataType,
+        <T as BufferDataType>::ArrayType: ArrowPrimitiveType,
+        Vec<T>: FromIterator<<<T as BufferDataType>::ArrayType as ArrowPrimitiveType>::Native>,
+    {
+        self.drop_option = DropOption::NoSave;
+        self.iter(field_name)
     }
 }
