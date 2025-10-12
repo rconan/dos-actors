@@ -45,8 +45,13 @@ impl<C: Update, const NI: usize, const NO: usize> From<&Client<'_, C>> for Actor
 }
 
 impl<'a, T: ArcMutex> Client<'a, T> {
+    /// Locks inner client mutex
     pub async fn lock(&'a self) -> tokio::sync::MutexGuard<'a, T> {
         self.client.lock().await
+    }
+    /// Consumes the [Client], returning the inner client , if the [Arc](https://doc.rust-lang.org/std/sync/struct.Arc.html#method.into_inner) has exactly one strong reference.
+    pub fn into_inner(self) -> Option<T> {
+        Arc::into_inner(self.client).map(|inner| inner.into_inner())
     }
 }
 

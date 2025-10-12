@@ -3320,7 +3320,7 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-actors"
-version = "12.0.1"
+version = "12.1.0"
 dependencies = [
  "anyhow",
  "async-trait",

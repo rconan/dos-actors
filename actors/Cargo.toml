@@ -1,6 +1,6 @@
 [package]
 name = "gmt_dos-actors"
-version = "12.0.1"
+version = "12.1.0"
 authors = ["Rod Conan <rconan@gmto.org>"]
 edition = "2021"
 license = "MIT"
