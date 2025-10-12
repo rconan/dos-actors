@@ -264,7 +264,10 @@ where
 mod tests {
     use std::error::Error;
 
-    use gmt_dos_clients_io::gmt_fem::outputs::{M1Segment1AxialD, M1Segment3AxialD, OSSM1Lcl};
+    use gmt_dos_clients_io::gmt_fem::outputs::{
+        M1Segment1AxialD, M1Segment2AxialD, M1Segment3AxialD, M1Segment4AxialD, M1Segment5AxialD,
+        M1Segment6AxialD, M1Segment7AxialD, OSSM1Lcl,
+    };
 
     use crate::solvers::ExponentialMatrix;
 
@@ -274,8 +277,14 @@ mod tests {
     fn m1_state() -> Result<(), Box<dyn Error>> {
         let mut ss = DiscreteModalSolver::<ExponentialMatrix>::from_env()?
             .sampling(1000.)
-            // .outs::<OSSM1Lcl>()
+            .outs::<OSSM1Lcl>()
+            .outs::<M1Segment1AxialD>()
+            .outs::<M1Segment2AxialD>()
             .outs::<M1Segment3AxialD>()
+            .outs::<M1Segment4AxialD>()
+            .outs::<M1Segment5AxialD>()
+            .outs::<M1Segment6AxialD>()
+            .outs::<M1Segment7AxialD>()
             .build()?;
 
         ss.update();
