@@ -3363,7 +3363,7 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-actors_dsl"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "prettyplease",
  "proc-macro2",

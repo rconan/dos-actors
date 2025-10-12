@@ -279,7 +279,7 @@ if it preceded by another client-output pair it must also implement the `Read<Pr
 #### `labels`
 
 ```ignore
-#[model(<client> = "client label", ...)]
+#[labels(<client> = "client label", ...)]
 ```
 #####  keys
 The key `<client>` is the name of the client identifier that is the variable declared in the main scope.
@@ -288,7 +288,7 @@ The label associated to the key will be display in the flowchart instead of the 
 #### `images`
 
 ```ignore
-#[model(<client> = "<png file>", ...)]
+#[images(<client> = "<png file>", ...)]
 ```
 #####  keys
 The key `<client>` is the name of the client identifier that is the variable declared in the main scope.
