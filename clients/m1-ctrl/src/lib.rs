@@ -35,6 +35,7 @@ The implementation of M1 control system with either the implicit (FEM-based) or 
 // Environment variables:
 //  * FEM_REPO
 
+# #[cfg(m1_hp_force_extension)]
 # tokio_test::block_on(async {
 use gmt_dos_actors::actorscript;
 use interface::Size;
