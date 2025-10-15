@@ -15,7 +15,7 @@ gmt_dos-actors = { workspace = true, features = ["serde"] }
 gmt_dos-clients = { workspace = true, features = ["serde"] }
 interface.workspace = true
 gmt_dos-clients_io.workspace = true
-gmt_dos-clients_fem.workspace = true
+gmt_dos-clients_fem = {workspace = true, features = ["cuda"]}
 nalgebra = { workspace = true, features = ["serde", "serde-serialize"] }
 gmt-fem.workspace = true
 log.workspace = true
@@ -29,9 +29,13 @@ serde = ["bincode/serde", "nalgebra/serde-serialize"]
 faer = ["dep:faer"]
 
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fem)'] }
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(fem)","cfg(m1_hp_force_extension)"] }
 
 [dev-dependencies]
 anyhow.workspace = true
 gmt_dos-clients_arrow.workspace = true
+tokio = { workspace = true, features = ["full"] }
 tokio-test.workspace = true
+
+[build-dependencies]
+gmt-fem-code-builder = "2.3.8"

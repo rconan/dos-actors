@@ -3262,7 +3262,7 @@ dependencies = [
  "complot",
  "csv",
  "geotrans 0.1.1",
- "gmt-fem-code-builder",
+ "gmt-fem-code-builder 2.3.8",
  "log",
  "matio-rs",
  "nalgebra 0.33.2",
@@ -3281,6 +3281,20 @@ dependencies = [
 [[package]]
 name = "gmt-fem-code-builder"
 version = "2.3.8"
+dependencies = [
+ "anyhow",
+ "arrow",
+ "bytes",
+ "parquet",
+ "thiserror 2.0.17",
+ "zip 4.6.1",
+]
+
+[[package]]
+name = "gmt-fem-code-builder"
+version = "2.3.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f426f6ea5ac67772b3aac935ae79b3bf9590e5a6f4d4699ffac0d5a4265614f5"
 dependencies = [
  "anyhow",
  "arrow",
@@ -3512,7 +3526,7 @@ dependencies = [
  "fem-cuda-solver",
  "geotrans 0.2.2",
  "gmt-fem",
- "gmt-fem-code-builder",
+ "gmt-fem-code-builder 2.3.8",
  "gmt_dos-actors-clients_interface",
  "gmt_dos-clients",
  "gmt_dos-clients_io",
@@ -3536,7 +3550,7 @@ version = "4.3.0"
 dependencies = [
  "anyhow",
  "crseo",
- "gmt-fem-code-builder",
+ "gmt-fem-code-builder 2.3.8",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
  "serde",
@@ -3561,7 +3575,7 @@ dependencies = [
  "bincode 2.0.1",
  "env_logger",
  "gmt-fem",
- "gmt-fem-code-builder",
+ "gmt-fem-code-builder 2.3.8",
  "gmt-lom",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
@@ -3597,7 +3611,7 @@ dependencies = [
  "complot",
  "env_logger",
  "gmt-fem",
- "gmt-fem-code-builder",
+ "gmt-fem-code-builder 2.3.8",
  "gmt-lom",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
@@ -3633,7 +3647,7 @@ dependencies = [
  "anyhow",
  "env_logger",
  "gmt-fem",
- "gmt-fem-code-builder",
+ "gmt-fem-code-builder 2.3.8",
  "gmt-lom",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
@@ -3707,7 +3721,7 @@ dependencies = [
  "crseo",
  "env_logger",
  "gmt-fem",
- "gmt-fem-code-builder",
+ "gmt-fem-code-builder 2.3.8",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
  "gmt_dos-clients",
@@ -3768,7 +3782,7 @@ dependencies = [
  "env_logger",
  "geotrans 0.2.2",
  "gmt-fem",
- "gmt-fem-code-builder",
+ "gmt-fem-code-builder 2.3.8",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
  "gmt_dos-clients",
@@ -3813,6 +3827,7 @@ dependencies = [
  "bincode 2.0.1",
  "faer",
  "gmt-fem",
+ "gmt-fem-code-builder 2.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
  "gmt_dos-clients",
@@ -3824,6 +3839,7 @@ dependencies = [
  "nalgebra 0.33.2",
  "serde",
  "thiserror 2.0.17",
+ "tokio",
  "tokio-test",
 ]
 
@@ -3852,7 +3868,7 @@ dependencies = [
  "bincode 2.0.1",
  "complot",
  "gmt-fem",
- "gmt-fem-code-builder",
+ "gmt-fem-code-builder 2.3.8",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
  "gmt_dos-clients",

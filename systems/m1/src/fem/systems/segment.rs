@@ -109,8 +109,8 @@ impl<const S: u8, const R: usize> IntoIterator for Box<SegmentControl<S, R>> {
     }
 }
 
-impl<const S: u8, const R: usize> SystemInput<Hardpoints, 1, 1> for SegmentControl<S, R> {
-    fn input(&mut self) -> &mut Actor<Hardpoints, 1, 1> {
+impl<const S: u8, const R: usize> SystemInput<Hardpoints<S>, 1, 1> for SegmentControl<S, R> {
+    fn input(&mut self) -> &mut Actor<Hardpoints<S>, 1, 1> {
         &mut self.hardpoints
     }
 }
@@ -123,14 +123,14 @@ impl<const S: u8, const R: usize> SystemInput<Sampler<Vec<f64>, ActuatorCommandF
     }
 }
 
-impl<const S: u8, const R: usize> SystemInput<LoadCells, 1, R> for SegmentControl<S, R> {
-    fn input(&mut self) -> &mut Actor<LoadCells, 1, R> {
+impl<const S: u8, const R: usize> SystemInput<LoadCells<S>, 1, R> for SegmentControl<S, R> {
+    fn input(&mut self) -> &mut Actor<LoadCells<S>, 1, R> {
         &mut self.loadcells
     }
 }
 
-impl<const S: u8, const R: usize> SystemOutput<Hardpoints, 1, 1> for SegmentControl<S, R> {
-    fn output(&mut self) -> &mut Actor<Hardpoints, 1, 1> {
+impl<const S: u8, const R: usize> SystemOutput<Hardpoints<S>, 1, 1> for SegmentControl<S, R> {
+    fn output(&mut self) -> &mut Actor<Hardpoints<S>, 1, 1> {
         &mut self.hardpoints
     }
 }

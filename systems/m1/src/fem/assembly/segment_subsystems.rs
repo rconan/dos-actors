@@ -148,31 +148,31 @@ impl<const R: usize> SegmentControls<R> {
             Self::S1(actor) => dispatch
                 .add_output()
                 .build::<RBM<1>>()
-                .into_input::<Hardpoints>(actor)?,
+                .into_input::<Hardpoints<1>>(actor)?,
             Self::S2(actor) => dispatch
                 .add_output()
                 .build::<RBM<2>>()
-                .into_input::<Hardpoints>(actor)?,
+                .into_input::<Hardpoints<2>>(actor)?,
             Self::S3(actor) => dispatch
                 .add_output()
                 .build::<RBM<3>>()
-                .into_input::<Hardpoints>(actor)?,
+                .into_input::<Hardpoints<3>>(actor)?,
             Self::S4(actor) => dispatch
                 .add_output()
                 .build::<RBM<4>>()
-                .into_input::<Hardpoints>(actor)?,
+                .into_input::<Hardpoints<4>>(actor)?,
             Self::S5(actor) => dispatch
                 .add_output()
                 .build::<RBM<5>>()
-                .into_input::<Hardpoints>(actor)?,
+                .into_input::<Hardpoints<5>>(actor)?,
             Self::S6(actor) => dispatch
                 .add_output()
                 .build::<RBM<6>>()
-                .into_input::<Hardpoints>(actor)?,
+                .into_input::<Hardpoints<6>>(actor)?,
             Self::S7(actor) => dispatch
                 .add_output()
                 .build::<RBM<7>>()
-                .into_input::<Hardpoints>(actor)?,
+                .into_input::<Hardpoints<7>>(actor)?,
         };
         Ok(())
     }
@@ -221,31 +221,31 @@ impl<const R: usize> SegmentControls<R> {
             Self::S1(actor) => dispatch
                 .add_output()
                 .build::<HardpointsMotion<1>>()
-                .into_input::<LoadCells>(actor)?,
+                .into_input::<LoadCells<1>>(actor)?,
             Self::S2(actor) => dispatch
                 .add_output()
                 .build::<HardpointsMotion<2>>()
-                .into_input::<LoadCells>(actor)?,
+                .into_input::<LoadCells<2>>(actor)?,
             Self::S3(actor) => dispatch
                 .add_output()
                 .build::<HardpointsMotion<3>>()
-                .into_input::<LoadCells>(actor)?,
+                .into_input::<LoadCells<3>>(actor)?,
             Self::S4(actor) => dispatch
                 .add_output()
                 .build::<HardpointsMotion<4>>()
-                .into_input::<LoadCells>(actor)?,
+                .into_input::<LoadCells<4>>(actor)?,
             Self::S5(actor) => dispatch
                 .add_output()
                 .build::<HardpointsMotion<5>>()
-                .into_input::<LoadCells>(actor)?,
+                .into_input::<LoadCells<5>>(actor)?,
             Self::S6(actor) => dispatch
                 .add_output()
                 .build::<HardpointsMotion<6>>()
-                .into_input::<LoadCells>(actor)?,
+                .into_input::<LoadCells<6>>(actor)?,
             Self::S7(actor) => dispatch
                 .add_output()
                 .build::<HardpointsMotion<7>>()
-                .into_input::<LoadCells>(actor)?,
+                .into_input::<LoadCells<7>>(actor)?,
         };
         Ok(())
     }
@@ -283,25 +283,25 @@ impl<const R: usize> SegmentControls<R> {
         dispatch: &mut Actor<DispatchOut>,
     ) -> Result<(), ActorOutputsError> {
         match self {
-            Self::S1(actor) => AddActorOutput::<'_, Hardpoints, 1, 1>::add_output(actor)
+            Self::S1(actor) => AddActorOutput::<'_, Hardpoints<1>, 1, 1>::add_output(actor)
                 .build::<HardpointsForces<1>>()
                 .into_input(dispatch)?,
-            Self::S2(actor) => AddActorOutput::<'_, Hardpoints, 1, 1>::add_output(actor)
+            Self::S2(actor) => AddActorOutput::<'_, Hardpoints<2>, 1, 1>::add_output(actor)
                 .build::<HardpointsForces<2>>()
                 .into_input(dispatch)?,
-            Self::S3(actor) => AddActorOutput::<'_, Hardpoints, 1, 1>::add_output(actor)
+            Self::S3(actor) => AddActorOutput::<'_, Hardpoints<3>, 1, 1>::add_output(actor)
                 .build::<HardpointsForces<3>>()
                 .into_input(dispatch)?,
-            Self::S4(actor) => AddActorOutput::<'_, Hardpoints, 1, 1>::add_output(actor)
+            Self::S4(actor) => AddActorOutput::<'_, Hardpoints<4>, 1, 1>::add_output(actor)
                 .build::<HardpointsForces<4>>()
                 .into_input(dispatch)?,
-            Self::S5(actor) => AddActorOutput::<'_, Hardpoints, 1, 1>::add_output(actor)
+            Self::S5(actor) => AddActorOutput::<'_, Hardpoints<5>, 1, 1>::add_output(actor)
                 .build::<HardpointsForces<5>>()
                 .into_input(dispatch)?,
-            Self::S6(actor) => AddActorOutput::<'_, Hardpoints, 1, 1>::add_output(actor)
+            Self::S6(actor) => AddActorOutput::<'_, Hardpoints<6>, 1, 1>::add_output(actor)
                 .build::<HardpointsForces<6>>()
                 .into_input(dispatch)?,
-            Self::S7(actor) => AddActorOutput::<'_, Hardpoints, 1, 1>::add_output(actor)
+            Self::S7(actor) => AddActorOutput::<'_, Hardpoints<7>, 1, 1>::add_output(actor)
                 .build::<HardpointsForces<7>>()
                 .into_input(dispatch)?,
         };
