@@ -35,7 +35,8 @@ unexpected_cfgs = { level = "warn", check-cfg = ["cfg(fem)","cfg(m1_hp_force_ext
 anyhow.workspace = true
 gmt_dos-clients_arrow.workspace = true
 tokio = { workspace = true, features = ["full"] }
+gmt_dos-clients_mount.workspace = true
 tokio-test.workspace = true
 
 [build-dependencies]
-gmt-fem-code-builder = "2.3.8"
+gmt-fem-code-builder.workspace = true
