@@ -33,11 +33,11 @@ where
     fn write(&mut self) -> Option<Data<M1HardpointsForces>> {
         let mut data = vec![];
         for id in <M1HardpointsMotion as Assembly>::SIDS {
-            let a: usize = (id * 12).into();
+            let a: usize = (id * 6).into();
             data.push(
                 <DiscreteModalSolver<S> as Get<fem_io::OSSHardpointForce>>::get(self)
                     .as_ref()
-                    .map(|data| data[a - 12..a].to_vec())
+                    .map(|data| data[a - 6..a].to_vec())
                     .map(|data| Arc::new(data))
                     .unwrap(),
             );
