@@ -1,3 +1,19 @@
+/*!
+# M1 RBM command integrated tests
+
+Test that each command applied to the M1 segment hardpoints, given in rigid body displacement, results in the actual rigid body displacement of the segment.
+
+Test all the rigid bodies motion at once for a given segment, and there is one test per segment.
+
+The tests fail if any rigid body displacement is more than 10% of the input command.
+
+## Usage
+```shell
+cargo test -r --test main -- --no-capture
+```
+
+*/
+
 use gmt_dos_actors::actorscript;
 use gmt_dos_clients::signals::Signals;
 use gmt_dos_clients_fem::{DiscreteModalSolver, solvers::ExponentialMatrix};
