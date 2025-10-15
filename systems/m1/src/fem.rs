@@ -3,7 +3,7 @@ pub use gmt_dos_clients_m1_ctrl::Calibration;
 use gmt_fem::FEM;
 
 pub mod assembly;
-pub mod subsystems;
+pub mod segment_control;
 pub mod systems;
 
 pub enum M1<const ACTUATOR_RATE: usize> {}

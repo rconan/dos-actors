@@ -1,15 +1,20 @@
 use std::sync::Arc;
 
+use serde::{Deserialize, Serialize};
+
+#[cfg(m1_hp_force_extension)]
+use gmt_dos_clients_io::gmt_m1::{assembly::M1HardpointsForces, segment::HardpointsForces};
+#[cfg(not(m1_hp_force_extension))]
+use gmt_dos_clients_io::gmt_m1::{assembly::M1HardpointsMotion, segment::HardpointsMotion};
 use gmt_dos_clients_io::{
     Assembly,
     gmt_m1::{
         M1ModeShapes,
-        assembly::{M1ActuatorCommandForces, M1HardpointsMotion, M1RigidBodyMotions},
-        segment::{ActuatorCommandForces, HardpointsMotion, ModeShapes, RBM},
+        assembly::{M1ActuatorCommandForces, M1RigidBodyMotions},
+        segment::{ActuatorCommandForces, ModeShapes, RBM},
     },
 };
 use interface::{Data, Left, Read, Right, UniqueIdentifier, Update, Write};
-use serde::{Deserialize, Serialize};
 
 use super::NA;
 
@@ -20,7 +25,10 @@ where
 {
     m1_rigid_body_motions: Vec<Arc<Vec<f64>>>,
     m1_actuator_command_forces: Vec<Arc<Vec<f64>>>,
+    #[cfg(not(m1_hp_force_extension))]
     m1_hardpoints_motion: Arc<Vec<Arc<Vec<f64>>>>,
+    #[cfg(m1_hp_force_extension)]
+    m1_hardpoints_forces: Arc<Vec<Arc<Vec<f64>>>>,
     idx: Vec<usize>,
     mode_2_force_transforms: Option<Vec<nalgebra::DMatrix<f64>>>,
 }
@@ -44,17 +52,30 @@ impl DispatchIn {
         Self {
             m1_rigid_body_motions,
             m1_actuator_command_forces,
+            #[cfg(not(m1_hp_force_extension))]
             m1_hardpoints_motion: Default::default(),
+            #[cfg(m1_hp_force_extension)]
+            m1_hardpoints_forces: Default::default(),
             idx,
             mode_2_force_transforms: None,
         }
     }
+    // pub fn add_ouput(
+    //     &mut this: Actor<Self>,
+    //     actor: &mut Sys<SegmentControl<1, R>>,
+    // ) -> Result<(), ActorOutputsError> {
+    //     this.add_output()
+    //         .build::<RBM<1>>()
+    //         .into_input::<Hardpoints<1>>(actor)
+    // }
     pub fn modes_to_forces(mut self, transforms: Vec<nalgebra::DMatrix<f64>>) -> Self {
         self.mode_2_force_transforms = Some(transforms);
         self
     }
 }
+
 impl Assembly for DispatchIn {}
+
 impl Update for DispatchIn {}
 
 impl Read<M1RigidBodyMotions> for DispatchIn {
@@ -160,15 +181,33 @@ impl<const ID: u8> Read<ModeShapes<ID>> for DispatchIn {
     }
 }
 
+#[cfg(not(m1_hp_force_extension))]
 impl Read<M1HardpointsMotion> for DispatchIn {
     fn read(&mut self, data: Data<M1HardpointsMotion>) {
         self.m1_hardpoints_motion = data.into_arc();
     }
 }
+#[cfg(not(m1_hp_force_extension))]
 impl<const ID: u8> Write<HardpointsMotion<ID>> for DispatchIn {
     fn write(&mut self) -> Option<Data<HardpointsMotion<ID>>> {
         <Self as Assembly>::position::<ID>().and_then(|idx| {
             self.m1_hardpoints_motion
+                .get(idx)
+                .map(|data| data.clone().into())
+        })
+    }
+}
+#[cfg(m1_hp_force_extension)]
+impl Read<M1HardpointsForces> for DispatchIn {
+    fn read(&mut self, data: Data<M1HardpointsForces>) {
+        self.m1_hardpoints_forces = data.into_arc();
+    }
+}
+#[cfg(m1_hp_force_extension)]
+impl<const ID: u8> Write<HardpointsForces<ID>> for DispatchIn {
+    fn write(&mut self) -> Option<Data<HardpointsForces<ID>>> {
+        <Self as Assembly>::position::<ID>().and_then(|idx| {
+            self.m1_hardpoints_forces
                 .get(idx)
                 .map(|data| data.clone().into())
         })

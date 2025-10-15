@@ -80,6 +80,14 @@ actorscript! {
             -> loadcell
     10: actuators_setpoint[ActuatorCommandForces<S1>] -> actuators
     10: loadcell[BarycentricForce<S1>]! -> actuators
+    1: hp_setpoint[RBM<S1>]
+        -> hardpoints[HardpointsMotion<S1>]
+            -> plant[RBM<S1>]$
+    1: actuators[ActuatorAppliedForces<S1>]
+        -> plant[HardpointsForces<S1>]!
+            -> loadcell
+    10: actuators_setpoint[ActuatorCommandForces<S1>] -> actuators
+    10: loadcell[BarycentricForce<S1>]! -> actuators
 };
 
 # anyhow::Result::<()>::Ok(())

@@ -13,10 +13,10 @@ use gmt_dos_actors::{
 use gmt_dos_clients_io::Assembly;
 
 mod dispatch;
-mod segment_subsystems;
+mod segment_controls;
 pub use dispatch::{DispatchIn, DispatchOut};
 
-use segment_subsystems::SegmentControls;
+use segment_controls::SegmentControls;
 use serde::{Deserialize, Serialize};
 
 use crate::Calibration;
@@ -96,18 +96,31 @@ impl<const R: usize> System for M1<R> {
             .iter_mut()
             .map(|segment| segment.m1_actuator_command_forces(&mut self.dispatch_in))
             .collect::<Result<Vec<()>, ActorOutputsError>>()?;
+
+        #[cfg(not(m1_hp_force_extension))]
         self.segments
             .iter_mut()
             .map(|segment| segment.m1_hardpoints_motion(&mut self.dispatch_in))
+            .collect::<Result<Vec<()>, ActorOutputsError>>()?;
+        #[cfg(m1_hp_force_extension)]
+        self.segments
+            .iter_mut()
+            .map(|segment| segment.m1_hardpoints_forces_in(&mut self.dispatch_in))
             .collect::<Result<Vec<()>, ActorOutputsError>>()?;
 
         self.segments
             .iter_mut()
             .map(|segment| segment.m1_actuator_applied_forces(&mut self.dispatch_out))
             .collect::<Result<Vec<()>, ActorOutputsError>>()?;
+        #[cfg(not(m1_hp_force_extension))]
         self.segments
             .iter_mut()
             .map(|segment| segment.m1_hardpoints_forces(&mut self.dispatch_out))
+            .collect::<Result<Vec<()>, ActorOutputsError>>()?;
+        #[cfg(m1_hp_force_extension)]
+        self.segments
+            .iter_mut()
+            .map(|segment| segment.m1_hardpoints_motion(&mut self.dispatch_out))
             .collect::<Result<Vec<()>, ActorOutputsError>>()?;
         Ok(self)
     }

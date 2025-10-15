@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use gmt_dos_clients_m1_ctrl::{Actuators, Hardpoints, LoadCells};
 
-use crate::{Calibration, subsystems::SegmentControl};
+use crate::{Calibration, segment_control::SegmentControl};
 
 use super::dispatch::{DispatchIn, DispatchOut};
 
@@ -213,6 +213,7 @@ impl<const R: usize> SegmentControls<R> {
         };
         Ok(())
     }
+    #[cfg(not(m1_hp_force_extension))]
     pub fn m1_hardpoints_motion(
         &mut self,
         dispatch: &mut Actor<DispatchIn>,
@@ -249,6 +250,43 @@ impl<const R: usize> SegmentControls<R> {
         };
         Ok(())
     }
+    #[cfg(m1_hp_force_extension)]
+    pub fn m1_hardpoints_forces_in(
+        &mut self,
+        dispatch: &mut Actor<DispatchIn>,
+    ) -> Result<(), ActorOutputsError> {
+        match self {
+            Self::S1(actor) => dispatch
+                .add_output()
+                .build::<HardpointsForces<1>>()
+                .into_input::<LoadCells<1>>(actor)?,
+            Self::S2(actor) => dispatch
+                .add_output()
+                .build::<HardpointsForces<2>>()
+                .into_input::<LoadCells<2>>(actor)?,
+            Self::S3(actor) => dispatch
+                .add_output()
+                .build::<HardpointsForces<3>>()
+                .into_input::<LoadCells<3>>(actor)?,
+            Self::S4(actor) => dispatch
+                .add_output()
+                .build::<HardpointsForces<4>>()
+                .into_input::<LoadCells<4>>(actor)?,
+            Self::S5(actor) => dispatch
+                .add_output()
+                .build::<HardpointsForces<5>>()
+                .into_input::<LoadCells<5>>(actor)?,
+            Self::S6(actor) => dispatch
+                .add_output()
+                .build::<HardpointsForces<6>>()
+                .into_input::<LoadCells<6>>(actor)?,
+            Self::S7(actor) => dispatch
+                .add_output()
+                .build::<HardpointsForces<7>>()
+                .into_input::<LoadCells<7>>(actor)?,
+        };
+        Ok(())
+    }
     pub fn m1_actuator_applied_forces(
         &mut self,
         dispatch: &mut Actor<DispatchOut>,
@@ -278,6 +316,7 @@ impl<const R: usize> SegmentControls<R> {
         };
         Ok(())
     }
+    #[cfg(not(m1_hp_force_extension))]
     pub fn m1_hardpoints_forces(
         &mut self,
         dispatch: &mut Actor<DispatchOut>,
@@ -303,6 +342,36 @@ impl<const R: usize> SegmentControls<R> {
                 .into_input(dispatch)?,
             Self::S7(actor) => AddActorOutput::<'_, Hardpoints<7>, 1, 1>::add_output(actor)
                 .build::<HardpointsForces<7>>()
+                .into_input(dispatch)?,
+        };
+        Ok(())
+    }
+    #[cfg(m1_hp_force_extension)]
+    pub fn m1_hardpoints_motion(
+        &mut self,
+        dispatch: &mut Actor<DispatchOut>,
+    ) -> Result<(), ActorOutputsError> {
+        match self {
+            Self::S1(actor) => AddActorOutput::<'_, Hardpoints<1>, 1, 1>::add_output(actor)
+                .build::<HardpointsMotion<1>>()
+                .into_input(dispatch)?,
+            Self::S2(actor) => AddActorOutput::<'_, Hardpoints<2>, 1, 1>::add_output(actor)
+                .build::<HardpointsMotion<2>>()
+                .into_input(dispatch)?,
+            Self::S3(actor) => AddActorOutput::<'_, Hardpoints<3>, 1, 1>::add_output(actor)
+                .build::<HardpointsMotion<3>>()
+                .into_input(dispatch)?,
+            Self::S4(actor) => AddActorOutput::<'_, Hardpoints<4>, 1, 1>::add_output(actor)
+                .build::<HardpointsMotion<4>>()
+                .into_input(dispatch)?,
+            Self::S5(actor) => AddActorOutput::<'_, Hardpoints<5>, 1, 1>::add_output(actor)
+                .build::<HardpointsMotion<5>>()
+                .into_input(dispatch)?,
+            Self::S6(actor) => AddActorOutput::<'_, Hardpoints<6>, 1, 1>::add_output(actor)
+                .build::<HardpointsMotion<6>>()
+                .into_input(dispatch)?,
+            Self::S7(actor) => AddActorOutput::<'_, Hardpoints<7>, 1, 1>::add_output(actor)
+                .build::<HardpointsMotion<7>>()
                 .into_input(dispatch)?,
         };
         Ok(())

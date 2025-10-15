@@ -1,4 +1,4 @@
-const NA: [usize; 7] = [335, 335, 335, 335, 335, 335, 306];
+pub(self) const NA: [usize; 7] = [335, 335, 335, 335, 335, 335, 306];
 
 mod r#in;
 pub use r#in::DispatchIn;
