@@ -1,11 +1,22 @@
 /*!
-# M1 control system
+# M1 assembly control system
 
-A [gmt_dos-actors] client for the GMT M1 control system.
+A [gmt_dos-actors] client for the GMT M1 assembly control system.
+
+There are 2 implementations of the M1 control system depending on the FEM input and output.
+
+Latest FEM have a new hardpoints input `OSSHardpointExtension` and a new hardpoints output `OSSHardpointForce` that together emulates the behavior of the hardpoints loadcells.
+For older FEM, the loadcells is modeled using the [LoadCells](gmt_dos_clients_m1_ctrl::LoadCells) `struct`.
+
+The hardpoints and actuators controllers are also different according to the FEM model.
+For older FEM, the controllers are modeled following the design implementation whereas
+the latest model use the as-build implementation.
+
+The switch between the controller models is done automatically based on the `m1_hp_force_extension` compiler flag which is enabled when both `OSSHardpointExtension` and `OSSHardpointForce` are available in the FEM inputs and outputs.
 
 ## Examples
 
-### Single segment
+### With a FEM dating from 2025 onward
 
 ```no_run
 // Dependencies:
@@ -19,76 +30,111 @@ A [gmt_dos-actors] client for the GMT M1 control system.
 // Environment variables:
 //  * FEM_REPO
 
+#[cfg(m1_hp_force_extension)]
 # tokio_test::block_on(async {
-use gmt_dos_actors::actorscript;
-use interface::Size;
-use gmt_dos_clients::{logging::Logging, signals::{Signal, Signals}};
-use gmt_dos_clients_fem::{fem_io::actors_inputs::*, fem_io::actors_outputs::*};
-use gmt_dos_clients_fem::{DiscreteModalSolver, solvers::ExponentialMatrix};
-use gmt_dos_clients_io::gmt_m1::segment::{
-    ActuatorAppliedForces, ActuatorCommandForces, BarycentricForce, HardpointsForces,
-    HardpointsMotion, RBM,
-};
-use gmt_dos_clients_m1_ctrl::{Actuators, Calibration, Hardpoints, LoadCells};
-use gmt_fem::FEM;
+use std::env;
+use std::path::Path;
 
-const S1: u8 = 1;
+use gmt_dos_actors::actorscript;
+use gmt_dos_clients::timer::Timer;
+use gmt_dos_clients_fem::{
+    DiscreteModalSolver, DiscreteStateSpace,
+    solvers::{CuStateSpace, ExponentialMatrix},
+};
+use gmt_dos_clients_io::gmt_m1::assembly::{
+    M1ActuatorAppliedForces, M1HardpointsForces, M1HardpointsMotion,
+};
+use gmt_dos_systems_m1::M1;
+use gmt_fem::FEM;
+use interface::Tick;
 
 let sim_sampling_frequency = 1000;
 let sim_duration = 10_usize; // second
-let n_step = sim_sampling_frequency * sim_duration;
-let mut whole_fem = FEM::from_env()?;
-let m1_calibration = Calibration::new(&mut whole_fem);
-let plant = DiscreteModalSolver::<ExponentialMatrix>::from_fem(whole_fem)
-    .sampling(sim_sampling_frequency as f64)
-    .proportional_damping(2. / 100.)
-    .including_m1(Some(vec![1]))?
-    .outs::<OSSM1Lcl>()
-    .use_static_gain_compensation()
-    .build()?;
+let mut fem = FEM::from_env()?;
 
-let rbm_fun = |i| (-1f64).powi(i as i32) * (1 + (i % 3)) as f64;
-let hp_setpoint = (0..6).fold(Signals::new(6, n_step), |signals, i| {
-    signals.channel(
-        i,
-        Signal::Sigmoid {
-            amplitude: rbm_fun(i) * 1e-6,
-            sampling_frequency_hz: sim_sampling_frequency as f64,
-        },
-    )
-});
-// Hardpoints
-let hardpoints = Hardpoints::<S1>::from(&m1_calibration);
-// Loadcells
-let loadcell = LoadCells::<S1>::from(&m1_calibration);
-// Actuators
-let actuators = Actuators::<S1>::new();
-let actuators_setpoint = Signals::new(
-    Size::<ActuatorCommandForces<S1>>::len(&Actuators::<S1>::new()),
-    n_step,
+let m1 = M1::<10>::builder(&mut fem).build()?;
+
+let plant: DiscreteModalSolver<CuStateSpace> =
+    DiscreteStateSpace::<ExponentialMatrix>::from(fem)
+        .sampling(sim_sampling_frequency as f64)
+        .proportional_damping(2. / 100.)
+        // .including_mount()
+        .including_m1(None)?
+        // .outs::<OSSM1Lcl>()
+        .use_static_gain_compensation()
+        .build()?;
+
+let timer: Timer = Timer::new(sim_duration * sim_sampling_frequency);
+
+actorscript!(
+    1: timer[Tick] -> plant
+    1: {m1}[M1ActuatorAppliedForces]
+        -> plant[M1HardpointsForces]!
+            -> {m1}
+    1: {m1}[M1HardpointsMotion] -> plant
 );
-actorscript! {
-    #[model(state=completed)]
-    #[labels(hp_setpoint="RBM",actuators_setpoint="Actuators")]
-    1: hp_setpoint[RBM<S1>]
-        -> hardpoints[HardpointsForces<S1>]
-            -> loadcell
-    1: hardpoints[HardpointsForces<S1>]
-        -> plant[RBM<S1>]$
-    1: actuators[ActuatorAppliedForces<S1>]
-        -> plant[HardpointsMotion<S1>]!
-            -> loadcell
-    10: actuators_setpoint[ActuatorCommandForces<S1>] -> actuators
-    10: loadcell[BarycentricForce<S1>]! -> actuators
-    1: hp_setpoint[RBM<S1>]
-        -> hardpoints[HardpointsMotion<S1>]
-            -> plant[RBM<S1>]$
-    1: actuators[ActuatorAppliedForces<S1>]
-        -> plant[HardpointsForces<S1>]!
-            -> loadcell
-    10: actuators_setpoint[ActuatorCommandForces<S1>] -> actuators
-    10: loadcell[BarycentricForce<S1>]! -> actuators
+
+# anyhow::Result::<()>::Ok(())
+# });
+```
+
+### With a FEM older than 2025
+
+```no_run
+// Dependencies:
+//  * tokio
+//  * gmt_dos_actors
+//  * gmt_dos_clients
+//  * gmt_dos_clients_io
+//  * gmt_dos_clients_fem
+//  * gmt-fem
+//  * gmt_dos_clients_m1_ctrl
+// Environment variables:
+//  * FEM_REPO
+
+#[cfg(not(m1_hp_force_extension))]
+# tokio_test::block_on(async {
+use std::env;
+use std::path::Path;
+
+use gmt_dos_actors::actorscript;
+use gmt_dos_clients::timer::Timer;
+use gmt_dos_clients_fem::{
+    DiscreteModalSolver, DiscreteStateSpace,
+    solvers::{CuStateSpace, ExponentialMatrix},
 };
+use gmt_dos_clients_io::gmt_m1::assembly::{
+    M1ActuatorAppliedForces, M1HardpointsForces, M1HardpointsMotion,
+};
+use gmt_dos_systems_m1::M1;
+use gmt_fem::FEM;
+use interface::Tick;
+
+let sim_sampling_frequency = 1000;
+let sim_duration = 10_usize; // second
+let mut fem = FEM::from_env()?;
+
+let m1 = M1::<10>::builder(&mut fem).build()?;
+
+let plant: DiscreteModalSolver<CuStateSpace> =
+    DiscreteStateSpace::<ExponentialMatrix>::from(fem)
+        .sampling(sim_sampling_frequency as f64)
+        .proportional_damping(2. / 100.)
+        // .including_mount()
+        .including_m1(None)?
+        // .outs::<OSSM1Lcl>()
+        .use_static_gain_compensation()
+        .build()?;
+
+let timer: Timer = Timer::new(sim_duration * sim_sampling_frequency);
+
+actorscript!(
+    1: timer[Tick] -> plant
+    1: {m1}[M1HardpointsForces]
+        -> plant[M1HardpointsMotion]!
+            -> {m1}[M1ActuatorAppliedForces]
+                -> plant
+);
 
 # anyhow::Result::<()>::Ok(())
 # });
