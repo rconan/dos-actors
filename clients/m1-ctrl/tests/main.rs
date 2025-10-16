@@ -31,7 +31,7 @@ use gmt_fem::FEM;
 use interface::Size;
 use std::env;
 
-async fn m1_segment_control_system<const SX: u8>() -> anyhow::Result<()> {
+async fn m1_segment_control_system<const SX: u8>() -> anyhow::Result<Vec<f64>> {
     println!("M1 S{SX}");
 
     unsafe { env::set_var("FLOWCHART", "") };
@@ -114,25 +114,29 @@ async fn m1_segment_control_system<const SX: u8>() -> anyhow::Result<()> {
         .into_iter(format!("RBM<{SX}>"))?
         .last()
         .unwrap();
-    data.iter()
+    let relative_errors: Vec<_> = data
+        .iter()
         .enumerate()
         .map(|(i, x)| (x * 1e6, rbm_fun(i)))
         .map(|(x, x0)| (x - x0).abs() * 1e2 / x0.abs())
         .inspect(|&e| assert!(e < 10f64))
-        .zip(["Tx", "Ty", "Tz", "Rx", "Ry", "Rz"])
-        .for_each(|(e, rbm)| println!("{}: {:5.2}%", rbm, e));
-
-    Ok(())
+        .collect();
+    Ok(relative_errors)
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn main() -> anyhow::Result<()> {
-    m1_segment_control_system::<1>().await?;
-    m1_segment_control_system::<2>().await?;
-    m1_segment_control_system::<3>().await?;
-    m1_segment_control_system::<4>().await?;
-    m1_segment_control_system::<5>().await?;
-    m1_segment_control_system::<6>().await?;
-    m1_segment_control_system::<7>().await?;
+    let mut relative_errors = vec![];
+    relative_errors.push(m1_segment_control_system::<1>().await?);
+    relative_errors.push(m1_segment_control_system::<2>().await?);
+    relative_errors.push(m1_segment_control_system::<3>().await?);
+    relative_errors.push(m1_segment_control_system::<4>().await?);
+    relative_errors.push(m1_segment_control_system::<5>().await?);
+    relative_errors.push(m1_segment_control_system::<6>().await?);
+    relative_errors.push(m1_segment_control_system::<7>().await?);
+    println!("    [   Tx      Ty      Tz      Rx      Ry      Rz ]");
+    for (i, seg_err) in relative_errors.into_iter().enumerate() {
+        println!("S{:}: {seg_err:6.2?}", i + 1);
+    }
     Ok(())
 }
