@@ -60,15 +60,30 @@ impl<const M1_RATE: usize, const M2_RATE: usize> System for GmtServoMechanisms<M
             .build::<MountEncoders>()
             .into_input(&mut self.mount)?;
 
-        self.m1
-            .add_output()
-            .build::<assembly::M1HardpointsForces>()
-            .into_input(&mut self.fem)?;
-        self.fem
-            .add_output()
-            .bootstrap()
-            .build::<assembly::M1HardpointsMotion>()
-            .into_input(&mut self.m1)?;
+        #[cfg(not(m1_hp_force_extension))]
+        {
+            self.m1
+                .add_output()
+                .build::<assembly::M1HardpointsForces>()
+                .into_input(&mut self.fem)?;
+            self.fem
+                .add_output()
+                .bootstrap()
+                .build::<assembly::M1HardpointsMotion>()
+                .into_input(&mut self.m1)?;
+        }
+        #[cfg(m1_hp_force_extension)]
+        {
+            self.m1
+                .add_output()
+                .build::<assembly::M1HardpointsMotion>()
+                .into_input(&mut self.fem)?;
+            self.fem
+                .add_output()
+                .bootstrap()
+                .build::<assembly::M1HardpointsForces>()
+                .into_input(&mut self.m1)?;
+        }
 
         self.m1
             .add_output()
@@ -91,10 +106,17 @@ impl<const M1_RATE: usize, const M2_RATE: usize> System for GmtServoMechanisms<M
                 .unbounded()
                 .build::<MountTorques>()
                 .log(telemetry)?;
+            #[cfg(not(m1_hp_force_extension))]
             self.m1
                 .add_output()
                 .unbounded()
                 .build::<Flatten<assembly::M1HardpointsForces>>()
+                .log(telemetry)?;
+            #[cfg(m1_hp_force_extension)]
+            self.m1
+                .add_output()
+                .unbounded()
+                .build::<Flatten<assembly::M1HardpointsMotion>>()
                 .log(telemetry)?;
             self.m1
                 .add_output()
