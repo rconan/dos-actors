@@ -32,9 +32,14 @@ impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
         ins_names.push("OSS_Harpoint_delta_F".to_string());
         #[cfg(m1_hp_force_extension)]
         ins_names.push("OSS_Hardpoint_extension".to_string());
-        let mut outs_names = vec!["OSS_Hardpoint_D".to_string()];
-        #[cfg(m1_hp_force_extension)]
-        outs_names.push("OSS_Hardpoint_force".to_string());
+        let outs_names = if cfg!(m1_hp_force_extension) {
+            vec![
+                "OSS_Hardpoint_D".to_string(),
+                "OSS_Hardpoint_force".to_string(),
+            ]
+        } else {
+            vec!["OSS_Hardpoint_D".to_string()]
+        };
         self.ins_by_name(ins_names)
             .and_then(|this| this.outs_by_name(outs_names))
     }
