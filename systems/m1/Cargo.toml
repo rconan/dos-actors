@@ -1,6 +1,6 @@
 [package]
 name = "gmt_dos-systems_m1"
-version = "0.1.1"
+version = "1.0.0"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -15,7 +15,7 @@ gmt_dos-actors = { workspace = true, features = ["serde"] }
 gmt_dos-clients = { workspace = true, features = ["serde"] }
 interface.workspace = true
 gmt_dos-clients_io.workspace = true
-gmt_dos-clients_fem = {workspace = true, features = ["cuda"]}
+gmt_dos-clients_fem.workspace = true
 nalgebra = { workspace = true, features = ["serde", "serde-serialize"] }
 gmt-fem.workspace = true
 log.workspace = true
@@ -40,3 +40,8 @@ tokio-test.workspace = true
 
 [build-dependencies]
 gmt-fem-code-builder.workspace = true
+
+[[test]]
+name = "main"
+path = "tests/main.rs"
+required-features = ["gmt_dos-clients_fem/cuda"]
