@@ -160,8 +160,6 @@ where
         let mut c = vec![];
 
         for _ in 0..dof {
-            cmd.rotate_right(1);
-
             match mode {
                 CalibrationMode::GlobalTipTilt(_) => <OpticalModel<_> as Read<
                     <M as GmtGlobalTipTilt>::UID,
@@ -192,10 +190,19 @@ where
             //     .map(|sensor| sensor.reset());
 
             cmd.iter_mut().for_each(|x| *x *= -1f64);
-            <OpticalModel<_> as Read<<M as GmtGlobalTipTilt>::UID>>::read(
-                &mut optical_model,
-                cmd.as_slice().into(),
-            );
+            match mode {
+                CalibrationMode::GlobalTipTilt(_) => <OpticalModel<_> as Read<
+                    <M as GmtGlobalTipTilt>::UID,
+                >>::read(
+                    &mut optical_model, cmd.as_slice().into()
+                ),
+                CalibrationMode::GlobalTxyz(_) => <OpticalModel<_> as Read<
+                    <M as GmtGlobalTxyz>::UID,
+                >>::read(
+                    &mut optical_model, cmd.as_slice().into()
+                ),
+                _ => return Err(CalibrationError::GlobalCalibration(mode)),
+            };
             optical_model.update();
             // <OpticalModel<_> as Write<Frame<Dev>>>::write(&mut optical_model)
             // .map(|data| <Self as Read<Frame<Dev>>>::read(&mut centroids, data));
@@ -220,6 +227,8 @@ where
                 .filter_map(|((x, y), m)| m.then_some(0.5 * (x - y) / stroke))
                 .collect();
             c.extend(diff);
+
+            cmd.rotate_right(1);
         }
         let calib = Calib {
             sid: 0,

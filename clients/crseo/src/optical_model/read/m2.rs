@@ -1,8 +1,10 @@
 use gmt_dos_clients_io::{
     gmt_m2::{
+        M2RigidBodyMotions,
         asm::{
-            segment::{AsmCommand, FaceSheetFigure}, M2ASMAsmCommand, M2ASMFaceSheetFigure
-        }, M2RigidBodyMotions
+            M2ASMAsmCommand, M2ASMFaceSheetFigure,
+            segment::{AsmCommand, FaceSheetFigure},
+        },
     },
     optics::{M2GlobalTipTilt, M2GlobalTxyz, M2Modes},
 };
