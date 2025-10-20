@@ -12,6 +12,7 @@ use gmt_dos_clients_crseo::{
     sensors::{NoSensor, WaveSensor, builders::WaveSensorBuilder},
 };
 use image::{Rgb, RgbImage, imageops};
+use interface::filing::Filing;
 use skyangle::Conversion;
 use std::{
     fmt::Debug,
@@ -42,6 +43,7 @@ fn main() -> anyhow::Result<()> {
         .sensor(OpticalModel::<NoSensor>::builder().source(agws_gs).into());
     println!("{}", omb.clone().build()?);
 
+    // -------------------------------------------------
     println!(" == M1 ==");
     let rbm = MirrorMode::from(CalibrationMode::rbm(1e-6)).remove(7);
     let recon1 = <WaveSensor as Calibration<GmtM1>>::calibrate_serial(&(omb.clone().into()), rbm)?;
@@ -67,7 +69,9 @@ fn main() -> anyhow::Result<()> {
 
     let recon1 = recon1.diagonal();
     println!("{recon1}");
+    recon1.to_path("calib_ws_m1_rbm.pkl")?;
 
+    // -------------------------------------------------
     println!(" == M2 ==");
     let rbm = MirrorMode::from(CalibrationMode::rbm(1e-6)).update((
         7,
@@ -88,6 +92,7 @@ fn main() -> anyhow::Result<()> {
     let mut recon2 = recon2.diagonal();
     recon2.pseudoinverse();
     println!("{recon2}");
+    recon2.to_path("calib_ws_m2_rbm.pkl")?;
 
     let mut mask2 = vec![0u32; N_PX.pow(2) * N_GS];
     recon2.calib().for_each(|c| {
@@ -106,12 +111,15 @@ fn main() -> anyhow::Result<()> {
         .build()
         .save("mask2.png")?;
 
+    // -------------------------------------------------
+    println!(" == M2 global tip-tilt ==");
     let mut recon3 = <WaveSensor as GlobalCalibration<GmtM2>>::calibrate(
         &omb,
         CalibrationMode::GlobalTipTilt(1e-6),
     )?;
     recon3.pseudoinverse();
     println!("{recon3}");
+    recon3.to_path("calib_ws_m2_grxy.pkl")?;
 
     let c = &recon3.calib_slice()[0];
     for i in 0..2 {
@@ -127,13 +135,16 @@ fn main() -> anyhow::Result<()> {
             .build()
             .save(format!("m2_grxy_{i}.png"))?;
     }
-    
+
+    // -------------------------------------------------
+    println!(" == M2 global translations ==");
     let mut recon4 = <WaveSensor as GlobalCalibration<GmtM2>>::calibrate(
         &omb,
         CalibrationMode::GlobalTxyz(1e-6),
     )?;
     recon4.pseudoinverse();
     println!("{recon4}");
+    recon4.to_path("calib_ws_m2_gtxyz.pkl")?;
 
     let c = &recon4.calib_slice()[0];
     for i in 0..3 {
@@ -149,7 +160,8 @@ fn main() -> anyhow::Result<()> {
             .build()
             .save(format!("m2_gtxyz_{i}.png"))?;
     }
-    
+
+    // -------------------------------------------------
     let d2: Calib<MixedMirrorMode> = Calib::<MirrorMode>::from(recon2).into();
     let d3: Calib<MixedMirrorMode> = Calib::<CalibrationMode>::from(recon3).into();
 
