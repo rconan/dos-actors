@@ -9,7 +9,7 @@ The tests fail if any rigid body displacement is more than 25% of the input comm
 
 ## Usage
 ```shell
-cargo test -r --test main -- --show-output
+cargo test -r --features="gmt_dos-clients_fem/cuda" --test main -- --show-output
 ```
 
 */
