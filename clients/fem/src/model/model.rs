@@ -15,6 +15,7 @@ pub trait Model {
     where
         U: UniqueIdentifier,
         Vec<Option<gmt_fem::fem_io::Inputs>>: fem_io::FemIo<U>;
+    fn in_position_by_name<S: Into<String>>(&self, name: S) -> gmt_fem::Result<Option<usize>>;
     fn keep_input<U>(&mut self) -> Option<&mut Self>
     where
         U: UniqueIdentifier,
@@ -28,6 +29,7 @@ pub trait Model {
     where
         U: UniqueIdentifier,
         Vec<Option<gmt_fem::fem_io::Outputs>>: fem_io::FemIo<U>;
+    fn out_position_by_name<S: Into<String>>(&self, name: S) -> gmt_fem::Result<Option<usize>>;
     fn keep_output<U>(&mut self) -> Option<&mut Self>
     where
         U: UniqueIdentifier,
@@ -79,6 +81,12 @@ pub trait Model {
         Vec<Option<gmt_fem::fem_io::Inputs>>: fem_io::FemIo<Input>,
         Output: UniqueIdentifier,
         Vec<Option<gmt_fem::fem_io::Outputs>>: fem_io::FemIo<Output>;
+    fn named_inputs_to_modes<'a, S>(&mut self, names: &'a [S]) -> gmt_fem::Result<Option<Vec<f64>>>
+    where
+        &'a S: Into<String>;
+    fn modes_to_named_outputs<'a, S>(&mut self, names: &'a [S]) -> gmt_fem::Result<Option<Vec<f64>>>
+    where
+        &'a S: Into<String>;
 }
 
 impl Model for FEM {
@@ -269,5 +277,46 @@ impl Model for FEM {
         self.switch_input::<Input>(Switch::On)
             .and_then(|fem| fem.switch_output::<Output>(Switch::On))
             .and_then(|fem| fem.reduced_static_gain())
+    }
+
+    fn out_position_by_name<S: Into<String>>(&self, name: S) -> gmt_fem::Result<Option<usize>> {
+        Box::<dyn fem_io::GetOut>::try_from(name.into()).map(|x| x.position(&self.outputs))
+    }
+
+    fn in_position_by_name<S: Into<String>>(&self, name: S) -> gmt_fem::Result<Option<usize>> {
+        Box::<dyn fem_io::GetIn>::try_from(name.into()).map(|x| x.position(&self.inputs))
+    }
+
+    fn named_inputs_to_modes<'a, S>(&mut self, names: &'a [S]) -> gmt_fem::Result<Option<Vec<f64>>>
+    where
+        &'a S: Into<String>,
+    {
+        let mut mat = vec![];
+        for name in names {
+            let Some(index) = self.in_position_by_name(name)? else {
+                return Ok(None);
+            };
+            let Some(i_mat) = self.input2modes(index) else {
+                return Ok(None);
+            };
+            mat.extend(i_mat);
+        }
+        Ok(Some(mat))
+    }
+
+    fn modes_to_named_outputs<'a, S>(&mut self, names: &'a [S]) -> gmt_fem::Result<Option<Vec<f64>>>
+    where
+        &'a S: Into<String> {
+        let mut mat = vec![];
+        for name in names {
+            let Some(index) = self.out_position_by_name(name)? else {
+                return Ok(None);
+            };
+            let Some(i_mat) = self.modes2output(index) else {
+                return Ok(None);
+            };
+            mat.extend(i_mat);
+        }
+        Ok(Some(mat))
     }
 }
