@@ -84,3 +84,4 @@ lto = "thin"
 
 [patch.crates-io]
 geotrans = {path="/home/rconan/projects/geotrans"}
+crseo = {path="/home/rconan/projects/crseo"}
