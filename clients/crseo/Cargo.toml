@@ -1,6 +1,6 @@
 [package]
 name = "gmt_dos-clients_crseo"
-version = "5.0.0"
+version = "5.0.1"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -28,7 +28,7 @@ bincode = { workspace = true, features = ["serde"] }
 skyangle = "0.2.2"
 faer = { workspace = true, features = ["serde"], optional = true }
 faer-ext = { workspace = true, optional = true }
-geotrans = "1.1.0"
+geotrans = "1.2.0"
 
 [dev-dependencies]
 colorous = "1.0.16"
