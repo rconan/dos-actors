@@ -13,7 +13,9 @@ use gmt_dos_clients_crseo::crseo::FromBuilder;
 use gmt_dos_clients_crseo::sensors::Camera;
 use gmt_dos_clients_io::Estimate;
 use gmt_dos_clients_io::optics::{Dev, Frame, SensorData};
-use interface::{Data, Read, Update, Write};
+use interface::optics::OpticsState;
+use interface::optics::state::{MirrorState, OpticalState};
+use interface::{Data, Read, Right, Update, Write};
 use nalgebra as na;
 use nalgebra::{DMatrix, DVector, SMatrix}; //, SVector
 use osqp::{CscMatrix, Problem, Settings};
@@ -23,6 +25,7 @@ use std::error::Error;
 use std::fmt::Display;
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
+use std::sync::Arc;
 use std::{fs::File, io::BufReader};
 
 use crate::kernels::{Kernel, KernelError, KernelSpecs};
@@ -211,8 +214,9 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
         let dmat = self.data.dmat;
         //assert!(n_mode == N_MODE,"The number of columns ({}) of the calibration matrix do not match the number of modes ({})",n_mode,N_MODE);
         // W2 and W3
-        let w2 = SMatrix::<f64, N_MODE, N_MODE>::from_column_slice(&self.data.w2);
-        let w3 = SMatrix::<f64, N_MODE, N_MODE>::from_column_slice(&self.data.w3);
+        let w2 = DMatrix::from_column_slice(N_MODE, N_MODE, &self.data.w2);
+        // let w3 = SMatrix::<f64, N_MODE, N_MODE>::from_column_slice(&self.data.w3);
+        let w3 = DMatrix::<f64>::from_column_slice(N_MODE, N_MODE, &self.data.w3);
         // W1
         let d_wfs = DMatrix::from_column_slice(dmat.len() / N_MODE, N_MODE, &dmat);
         let d_t_w1_d = {
@@ -221,7 +225,7 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
         };
         // Extract the upper triangular elements of `P`
         let p_utri = {
-            let p = d_t_w1_d + w2 + w3.scale(self.data.rho_3 * self.data.k * self.data.k);
+            let p = d_t_w1_d + &w2 + w3.scale(self.data.rho_3 * self.data.k * self.data.k);
             CscMatrix::from_column_iter_dense(
                 p.nrows(),
                 p.ncols(),
@@ -333,9 +337,9 @@ pub struct ActiveOptics<
         na::ArrayStorage<f64, N_MODE, N_MODE>,
     >,
     /// Controllable mode regularization matrix    
-    w2: SMatrix<f64, N_MODE, N_MODE>,
+    w2: DMatrix<f64>,
     /// Control balance weighting matrix
-    w3: SMatrix<f64, N_MODE, N_MODE>,
+    w3: DMatrix<f64>,
     /// Objective function factor
     rho_3: f64,
     /// Controller gain
@@ -389,7 +393,21 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
     type Item = ();
     /// Updates the quadratic programming problem and computes the new solution
     fn next(&mut self) -> Option<Self::Item> {
+        // dbg!(self.y_valid.iter().sum::<f64>());
+        // dbg!(&self.y_valid[..10]);
         let y_vec = DVector::from_column_slice(&self.y_valid); //VectorNs::from_vec(y_valid);
+
+        // let mut c = vec![0f64; N_MODE];
+        // c[0] = 1.1e-6;
+        // let s = &self.d_wfs * DVector::from_column_slice(&c);
+        // dbg!(&s.as_slice()[..10]);
+
+        // serde_pickle::to_writer(
+        //     &mut File::create("slopes.pkl").unwrap(),
+        //     &(&self.y_valid, s.as_slice()),
+        //     Default::default(),
+        // )
+        // .unwrap();
 
         self.u_ant
             .iter_mut()
@@ -409,10 +427,11 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
             .for_each(|(u, &v)| *u = v);
 
         // QP linear term                                                               // QP linear term
-        let mut q: Vec<f64> = (-y_vec.clone_owned().tr_mul(&self.d_wfs)
-            - self.u_ant.tr_mul(&self.w3).scale(self.rho_3 * self.k))
-        .as_slice()
-        .to_vec();
+        let mut q: Vec<f64> = (-y_vec.clone_owned().tr_mul(&self.d_wfs))
+            // - self.u_ant.tr_mul(&self.w3).scale(self.rho_3 * self.k))
+            .as_slice()
+            .to_vec();
+        // dbg!(&q[..10]);
         self.prob.update_lin_cost(&q);
         // Update bounds to inequality constraints
         let tu_u_ant: Vec<f64> = (&self.tu * &self.u_ant).as_slice().to_vec();
@@ -465,7 +484,7 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
             // Update QP P matrix
             let p_utri = {
                 //println!("New rho_3:{}", format!("{:.4e}", self.rho_3));
-                let p = self.d_t_w1_d + self.w2 + self.w3.scale(self.rho_3 * self.k * self.k);
+                let p = self.d_t_w1_d + &self.w2 + self.w3.scale(self.rho_3 * self.k * self.k);
                 CscMatrix::from_column_iter_dense(
                     p.nrows(),
                     p.ncols(),
@@ -497,7 +516,8 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
             }; //.expect("Failed to solve QP problem!");
         }
         // Control action
-        let k = self.k;
+        // dbg!(c[0]);
+        let k = 0.2; //self.k;
         self.u
             .iter_mut()
             .zip(&c[..M1_RBM])
@@ -510,6 +530,7 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
             .iter_mut()
             .zip(&c[M1_RBM + M2_RBM..])
             .for_each(|(u, c)| *u -= k * c);
+        // dbg!(&self.u[..10]);
         Some(())
     }
 }
@@ -590,12 +611,33 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
     Read<SensorData> for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
 {
     fn read(&mut self, data: Data<SensorData>) {
-        self.y_valid = self
+        let calib = self
             .calib
             .as_ref()
-            .expect("no calibration matrx found in the ActiveOptics struct")
-            .mask(&data);
-        todo!()
+            .expect("no calibration matrix found in the ActiveOptics struct");
+        self.y_valid = calib.mask(&data);
+        // let iter = calib.mask_as_slice().iter();
+        // // self.y_valid = data
+        // //     .iter()
+        // //     // .cycle()
+        // //     .zip(iter)
+        // //     .filter_map(|(x, b)| if *b { Some(*x) } else { None })
+        // //     .collect();
+        // self.y_valid = vec![];
+        // iter.zip(data.iter()).filter(|(m,x)| **m).for_each(|(_,x)| {
+        //     self.y_valid.push(*x);
+        // });
+        // iter.filter(|m| **m).for_each(|_| {
+        //     self.y_valid.push(0f64);
+        // });
+        // let mut iter = data.iter();
+        // for _ in calib.mask_as_slice().iter().filter(|m| **m) {
+        //     if let Some(x) = iter.next() {
+        //         self.y_valid.push(*x);
+        //     } else {
+        //         self.y_valid.push(0f64);
+        //     }
+        // }
     }
 }
 impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize>
@@ -603,6 +645,42 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
 {
     fn write(&mut self) -> Option<Data<Estimate>> {
         Some(self.u.clone().into())
+    }
+}
+
+impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize>
+    Write<OpticsState> for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
+{
+    fn write(&mut self) -> Option<Data<OpticsState>> {
+        let m1 = MirrorState::new(self.u[..42].chunks(6), self.u[84..].chunks(M1_BM));
+        let m2 = MirrorState::from_rbms(&self.u[42..84]);
+        Some(Data::new(OpticalState::new(m1, m2)))
+    }
+}
+
+#[derive(Default)]
+pub struct Estimate2OpticsState {
+    u: Arc<Vec<f64>>,
+}
+
+impl Estimate2OpticsState {
+    pub fn new() -> Self {
+        Self {
+            u: Arc::new(vec![0f64; 84 + 27 * 7]),
+        }
+    }
+}
+impl Update for Estimate2OpticsState {}
+impl Read<Estimate> for Estimate2OpticsState {
+    fn read(&mut self, data: Data<Estimate>) {
+        self.u = data.into_arc();
+    }
+}
+impl Write<Right<OpticsState>> for Estimate2OpticsState {
+    fn write(&mut self) -> Option<Data<Right<OpticsState>>> {
+        let m1 = MirrorState::new(self.u[..42].chunks(6), self.u[84..].chunks(27));
+        let m2 = MirrorState::from_rbms(&self.u[42..84]);
+        Some(Data::new(OpticalState::new(m1, m2)))
     }
 }
 
