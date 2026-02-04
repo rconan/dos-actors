@@ -16,6 +16,9 @@ gmt_dos-clients_crseo.workspace = true
 gmt_dos-clients_io = { workspace = true, features = ["crseo"] }
 interface.workspace = true
 log.workspace = true
+nalgebra = { workspace = true, optional = true }
+osqp = { version = "0.6.2", optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
 serde-pickle = "1.2.0"
 skyangle.workspace = true
 thiserror.workspace = true
@@ -26,4 +29,9 @@ gmt_dos-clients_io.workspace = true
 tokio.workspace = true
 
 [features]
+default = ["qp"]
+qp = ["nalgebra", "osqp", "serde"]
 matio-rs = []
+nalgebra = ["dep:nalgebra"]
+osqp = ["dep:osqp"]
+serde = ["dep:serde"]

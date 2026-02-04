@@ -13,6 +13,7 @@ use crate::kernels::{Kernel, KernelSpecs};
 
 pub struct Sh48<const I: usize>(pub(crate) OpticalModel<Camera<I>>);
 
+
 impl<const I: usize> Display for Sh48<I> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "AGWS SH48")?;

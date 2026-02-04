@@ -1,16 +1,19 @@
 use gmt_dos_clients_crseo::{
+    DeviceInitialize, OpticalModelBuilder,
     calibration::{CalibrationMode, ClosedLoopCalib, Reconstructor},
     centroiding::CentroidsProcessing,
     crseo::FromBuilder,
     sensors::Camera,
-    DeviceInitialize, OpticalModelBuilder,
 };
 use gmt_dos_clients_io::{
-    optics::{Dev, Frame, SensorData},
     Estimate,
+    optics::{Dev, Frame, SensorData},
 };
 
-use crate::kernels::{KernelError, KernelSpecs};
+use crate::{
+    kernels::{KernelError, KernelSpecs},
+    qp::ActiveOptics,
+};
 
 use super::Sh48;
 
@@ -39,3 +42,4 @@ impl<const I: usize> KernelSpecs for Sh48<I> {
         Ok(centroids)
     }
 }
+

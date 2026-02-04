@@ -1,6 +1,7 @@
 pub mod agws;
 pub mod builder;
 pub mod kernels;
+pub mod qp;
 #[doc(inline)]
 pub use agws::Agws;
 #[doc(inline)]
