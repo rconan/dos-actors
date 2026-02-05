@@ -62,7 +62,6 @@ where
     }
 }
 
-
 impl<M, C> Reconstructor<M, C>
 where
     M: Modality + Default,
@@ -296,17 +295,17 @@ impl<C: CalibProps<CalibrationMode>> Reconstructor<CalibrationMode, C> {
             dst.copy_from(mat);
 
             n_mode += calib.n_mode();
-            if mask.is_empty() {
-                mask.extend(calib.mask_as_slice())
-            } else {
-                mask.iter_mut()
-                    .zip(calib.mask_as_slice())
-                    .for_each(|(mask, m)| {
-                        if *m {
-                            *mask = *m
-                        }
-                    });
-            };
+            // if mask.is_empty() {
+            mask.extend(calib.mask_as_slice());
+            // } else {
+            //     mask.iter_mut()
+            //         .zip(calib.mask_as_slice())
+            //         .for_each(|(mask, m)| {
+            //             if *m {
+            //                 *mask = *m
+            //             }
+            //         });
+            // };
             *mode = Some(calib.mode());
 
             ni += mat.nrows();
