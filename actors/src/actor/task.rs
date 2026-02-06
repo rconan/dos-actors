@@ -1,7 +1,7 @@
-use std::any::type_name;
+use std::{any::type_name, convert::Infallible};
 
 use async_trait::async_trait;
-use interface::Update;
+use interface::{TryUpdate };
 
 use crate::framework::model::{Task, TaskError};
 
@@ -9,10 +9,17 @@ use super::{Actor, PlainActor};
 
 type Result<T> = std::result::Result<T, TaskError>;
 
+impl From<Infallible> for TaskError {
+    fn from(_: Infallible) -> Self {
+        TaskError::NoError
+    }
+}
+
 #[async_trait]
 impl<C, const NI: usize, const NO: usize> Task for Actor<C, NI, NO>
 where
-    C: 'static + Update,
+    C: 'static + TryUpdate,
+    TaskError: From<<C as TryUpdate>::Error>
 {
     /// Run the actor loop
     async fn task(mut self: Box<Self>) -> Result<()> {
@@ -54,19 +61,19 @@ where
                         // values is used for the 1st output
                         // For decimation of the input signal there is no delay
                         // and the 1st sample goes through unimpeded
-                        self.collect().await?.client.lock().await.update();
+                        self.collect().await?.client.lock().await.try_update()?;
                         self.distribute().await?;
                     }
                     loop {
                         for _ in 0..NO / NI {
-                            self.collect().await?.client.lock().await.update();
+                            self.collect().await?.client.lock().await.try_update()?;
                         }
                         self.distribute().await?;
                     }
                 } else {
                     // Upsampling
                     loop {
-                        self.collect().await?.client.lock().await.update();
+                        self.collect().await?.client.lock().await.try_update()?;
                         for _ in 0..NI / NO {
                             self.distribute().await?;
                         }
@@ -75,12 +82,12 @@ where
             }
             (None, Some(_)) => loop {
                 // Initiator
-                self.client.lock().await.update();
+                self.client.lock().await.try_update()?;
                 self.distribute().await?;
             },
             (Some(_), None) => loop {
                 // Terminator
-                self.collect().await?.client.lock().await.update();
+                self.collect().await?.client.lock().await.try_update()?;
             },
             (None, None) => Ok(()),
         }

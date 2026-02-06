@@ -1,4 +1,4 @@
-use interface::{Update, Who};
+use interface::{TryUpdate, Who};
 
 use crate::{
     actor::io::{InputObject, OutputObject},
@@ -201,7 +201,7 @@ impl PlainActor {
 
 impl<C, const NI: usize, const NO: usize> From<&Actor<C, NI, NO>> for PlainActor
 where
-    C: Update,
+    C: TryUpdate,
 {
     fn from(actor: &Actor<C, NI, NO>) -> Self {
         Self {

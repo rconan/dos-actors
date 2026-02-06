@@ -59,6 +59,8 @@ pub enum TaskError {
     FromActor(#[from] ActorError),
     #[error("error in Task from Model")]
     FromModel(#[from] model::ModelError),
+    #[error("not an error")]
+    NoError,
 }
 
 /// Interface for running model components

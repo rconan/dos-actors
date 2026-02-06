@@ -4,7 +4,7 @@ use crate::{
     Result,
 };
 use futures::{future::join_all, stream::FuturesUnordered};
-use interface::{Data, Read, UniqueIdentifier, Update, Who};
+use interface::{Data, Read, UniqueIdentifier, TryUpdate, Who};
 use std::{
     fmt::{self, Debug},
     sync::Arc,
@@ -15,7 +15,7 @@ use tokio::sync::Mutex;
 /// Actor model implementation
 pub struct Actor<C, const NI: usize = 1, const NO: usize = 1>
 where
-    C: Update,
+    C: TryUpdate,
 {
     #[cfg_attr(feature = "serde", serde(skip))]
     pub(crate) inputs: Option<Vec<Box<dyn InputObject>>>,
@@ -40,7 +40,7 @@ where
 ///
 /// Cloning an actor preserves the state of the client
 /// but inputs and outputs are deleted and need to be reset
-impl<C: Update, const NI: usize, const NO: usize> Clone for Actor<C, NI, NO> {
+impl<C: TryUpdate, const NI: usize, const NO: usize> Clone for Actor<C, NI, NO> {
     fn clone(&self) -> Self {
         Self {
             inputs: None,
@@ -54,7 +54,7 @@ impl<C: Update, const NI: usize, const NO: usize> Clone for Actor<C, NI, NO> {
 
 impl<C, const NI: usize, const NO: usize> fmt::Display for Actor<C, NI, NO>
 where
-    C: Update,
+    C: TryUpdate,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "{}:", self.who().to_uppercase())?;
@@ -84,7 +84,7 @@ where
 }
 impl<C, const NI: usize, const NO: usize> fmt::Debug for Actor<C, NI, NO>
 where
-    C: Update + Debug,
+    C: TryUpdate + Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Actor")
@@ -99,7 +99,7 @@ where
 
 impl<C, const NI: usize, const NO: usize> From<C> for Actor<C, NI, NO>
 where
-    C: Update,
+    C: TryUpdate,
 {
     /// Creates a new actor for the client
     fn from(client: C) -> Self {
@@ -108,7 +108,7 @@ where
 }
 impl<C, S, const NI: usize, const NO: usize> From<(C, S)> for Actor<C, NI, NO>
 where
-    C: Update,
+    C: TryUpdate,
     S: Into<String>,
 {
     /// Creates a new named actor for the client
@@ -120,7 +120,7 @@ where
 }
 impl<C, const NI: usize, const NO: usize> Who<C> for Actor<C, NI, NO>
 where
-    C: Update,
+    C: TryUpdate,
 {
     fn who(&self) -> String {
         self.name
@@ -132,7 +132,7 @@ where
 
 impl<C, const NI: usize, const NO: usize> Actor<C, NI, NO>
 where
-    C: Update,
+    C: TryUpdate,
 {
     /// Creates a new [Actor] for the given client
     pub fn new(client: Arc<Mutex<C>>) -> Self {
@@ -221,7 +221,7 @@ where
 
 /* impl<C, const NI: usize, const NO: usize> Actor<C, NI, NO>
 where
-    C: 'static + Update + Send + Sync,
+    C: 'static + TryUpdate + Send + Sync,
 {
     /// Adds a new output
     pub fn add_output(&mut self) -> ActorOutput<'_, Actor<C, NI, NO>> {
@@ -230,7 +230,7 @@ where
 } */
 impl<'a, C, const NI: usize, const NO: usize> AddActorOutput<'a, C, NI, NO> for Actor<C, NI, NO>
 where
-    C: Update + 'static,
+    C: TryUpdate + 'static,
 {
     /// Adds a new output
     fn add_output(&'a mut self) -> ActorOutput<'a, Actor<C, NI, NO>> {
@@ -255,7 +255,7 @@ where
 /*
 impl<C, const NI: usize, const NO: usize> Drop for Actor<C, NI, NO>
 where
-    C: Update + Send,
+    C: TryUpdate + Send,
 {
     fn drop(&mut self) {
         log::info!("{} dropped!", self.who());

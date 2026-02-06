@@ -1,4 +1,4 @@
-use interface::{Update, Who};
+use interface::{TryUpdate, Who};
 
 use crate::{
     framework::model::{Check, CheckError},
@@ -11,7 +11,7 @@ type Result<T> = std::result::Result<T, CheckError>;
 
 impl<C, const NI: usize, const NO: usize> Check for Actor<C, NI, NO>
 where
-    C: 'static + Update,
+    C: 'static + TryUpdate,
 {
     fn check_inputs(&self) -> Result<()> {
         match self.inputs {

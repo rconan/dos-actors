@@ -12,7 +12,7 @@ pub mod builder;
 pub use builder::ActorOutputBuilder;
 
 mod outputs;
-use interface::{Quote, UniqueIdentifier, Update, Who, Write};
+use interface::{Quote, TryUpdate, UniqueIdentifier, Who, Write};
 pub use outputs::ActorOutput;
 
 use super::OutputRx;
@@ -20,7 +20,7 @@ use super::OutputRx;
 /// Assign ouputs to actors
 pub trait AddActorOutput<'a, C, const NI: usize, const NO: usize>
 where
-    C: Update,
+    C: TryUpdate,
 {
     /// Adds a new output to an actor
     fn add_output(&'a mut self) -> ActorOutput<'a, Actor<C, NI, NO>>;
@@ -33,7 +33,7 @@ pub trait OutputBuilder {
 /// Actor output construction interface
 pub trait AddOuput<'a, C, const NI: usize, const NO: usize>
 where
-    C: 'static + Update,
+    C: 'static + TryUpdate,
 {
     /// Sets the channel to unbounded
     fn unbounded(mut self) -> Self
@@ -133,7 +133,7 @@ where
 /* impl<'a, C, const NI: usize, const NO: usize> AddOuput<'a, C, NI, NO>
     for (&'a mut Actor<C, NI, NO>, ActorOutputBuilder)
 where
-    C: 'static + Update + Send,
+    C: 'static + TryUpdate + Send,
 {
     fn unbounded(self) -> Self {
         let n = self.1.capacity.len();
@@ -165,7 +165,7 @@ where
     }
     fn legacy_build<U>(self) -> (&'a mut Actor<C, NI, NO>, Vec<Rx<U>>)
     where
-        C: 'static + Update + Send + io::Write<U>,
+        C: 'static + TryUpdate + Send + io::Write<U>,
         U: 'static + Send + Sync + UniqueIdentifier,
         Assoc<U>: Send + Sync,
     {
@@ -197,7 +197,7 @@ where
     }
     fn build<U>(self) -> std::result::Result<(), OutputRx<U, C, NI, NO>>
     where
-        C: 'static + Update + Send + io::Write<U>,
+        C: 'static + TryUpdate + Send + io::Write<U>,
         U: 'static + Send + Sync + UniqueIdentifier,
         Assoc<U>: Send + Sync,
     {
