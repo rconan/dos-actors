@@ -1,6 +1,6 @@
-use interface::{UniqueIdentifier, Update, Write};
+use interface::{UniqueIdentifier, Update, TryWrite};
 
-use crate::actor::Actor;
+use crate::{ActorError, actor::Actor};
 
 use super::{ActorOutputBuilder, AddOuput, OutputBuilder, OutputRx};
 
@@ -31,7 +31,8 @@ where
 {
     fn build<U>(self) -> std::result::Result<(), OutputRx<U, C, NI, NO>>
     where
-        C: Write<U>,
+        C: TryWrite<U>,
+        ActorError: From<<C as TryWrite<U>>::Error>,
         U: 'static + UniqueIdentifier,
     {
         let Self { actor, builder } = self;

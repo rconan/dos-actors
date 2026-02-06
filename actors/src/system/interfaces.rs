@@ -21,7 +21,7 @@ pub trait System: Sized + Clone + Display + Send + Sync + GetName {
 /// System inputs interface
 pub trait SystemInput<C, const NI: usize, const NO: usize>
 where
-    C: interface::Update,
+    C: interface::TryUpdate,
 {
     fn input(&mut self) -> &mut Actor<C, NI, NO>;
 }
@@ -29,7 +29,7 @@ where
 /// System outputs interface
 pub trait SystemOutput<C, const NI: usize, const NO: usize>
 where
-    C: interface::Update,
+    C: interface::TryUpdate,
 {
     fn output(&mut self) -> &mut Actor<C, NI, NO>;
 }

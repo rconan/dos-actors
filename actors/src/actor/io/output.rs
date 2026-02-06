@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use flume::Sender;
 use futures::future::join_all;
 use futures::stream::FuturesUnordered;
-use interface::{Assoc, UniqueIdentifier, Who, Write};
+use interface::{Assoc, TryWrite, UniqueIdentifier, Who};
 use std::any::{type_name, Any};
 use std::fmt::Debug;
 use std::{fmt::Display, sync::Arc};
@@ -13,7 +13,7 @@ use tokio::sync::Mutex;
 pub(crate) struct OutputBuilder<C, U, const N: usize>
 where
     U: UniqueIdentifier,
-    C: Write<U>,
+    C: TryWrite<U>,
 {
     tx: Vec<Sender<S<U>>>,
     client: Arc<Mutex<C>>,
@@ -22,7 +22,7 @@ where
 impl<C, U, const N: usize> OutputBuilder<C, U, N>
 where
     U: UniqueIdentifier,
-    C: Write<U>,
+    C: TryWrite<U>,
 {
     pub fn new(client: Arc<Mutex<C>>) -> Self {
         Self {
@@ -53,7 +53,7 @@ where
 pub(crate) struct Output<C, U, const N: usize>
 where
     U: UniqueIdentifier,
-    C: Write<U>,
+    C: TryWrite<U>,
 {
     data: Option<S<U>>,
     tx: Vec<Sender<S<U>>>,
@@ -64,7 +64,7 @@ where
 impl<C, U, const N: usize> Output<C, U, N>
 where
     U: UniqueIdentifier,
-    C: Write<U>,
+    C: TryWrite<U>,
 {
     /// Creates a new output from a [Sender] and data [Default]
     pub fn builder(client: Arc<Mutex<C>>) -> OutputBuilder<C, U, N> {
@@ -77,14 +77,15 @@ where
 }
 impl<C, U, const N: usize> Who<U> for Output<C, U, N>
 where
-    C: Write<U>,
+    C: TryWrite<U>,
     U: UniqueIdentifier,
 {
 }
 impl<C, U, const N: usize> Display for Output<C, U, N>
 where
-    C: Write<U> + Send + 'static,
+    C: TryWrite<U> + Send + 'static,
     U: UniqueIdentifier + 'static,
+    ActorError: From<<C as TryWrite<U>>::Error>,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -99,7 +100,7 @@ where
 }
 impl<C, U, const N: usize> Debug for Output<C, U, N>
 where
-    C: Write<U> + Debug,
+    C: TryWrite<U> + Debug,
     U: UniqueIdentifier,
     <U as UniqueIdentifier>::DataType: std::fmt::Debug,
 {
@@ -133,16 +134,18 @@ impl Debug for Box<dyn OutputObject> {
     }
 }
 
+
 #[async_trait]
 impl<C, U, const N: usize> OutputObject for Output<C, U, N>
 where
-    C: Write<U> + 'static,
+    C: TryWrite<U> + 'static,
     U: UniqueIdentifier + 'static,
     Assoc<U>: Send + Sync,
+    ActorError: From<<C as TryWrite<U>>::Error>,
 {
     /// Sends output data
     async fn send(&mut self) -> Result<()> {
-        self.data = (*self.client.lock().await).write();
+        self.data = (*self.client.lock().await).try_write()?;
         if let Some(data) = &self.data {
             // log::debug!("{} sending", Who::highlight(self));
             let futures: FuturesUnordered<_> = self

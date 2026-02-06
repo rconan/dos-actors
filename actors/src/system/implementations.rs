@@ -5,6 +5,7 @@ use crate::{
         network::{ActorOutput, AddActorInput},
     },
     prelude::{AddActorOutput, GetName, Model, Unknown},
+    ActorError,
 };
 
 use super::{
@@ -114,7 +115,8 @@ where
     T: System,
     Sys<T>: SystemInput<CI, NI, NO>,
     U: 'static + interface::UniqueIdentifier,
-    CI: interface::Read<U> + 'static,
+    CI: interface::TryRead<U> + 'static,
+    ActorError: From<<CI as interface::TryRead<U>>::Error>,
 {
     fn add_input(&mut self, rx: flume::Receiver<interface::Data<U>>, hash: u64) {
         AddActorInput::add_input(self.input(), rx, hash)

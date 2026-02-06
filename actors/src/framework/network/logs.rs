@@ -1,9 +1,9 @@
 use std::any::type_name;
 
-use interface::{Entry, Read, Size, UniqueIdentifier, Update, Write};
+use interface::{Entry, Size, TryRead, TryWrite, UniqueIdentifier, Update};
 use tokio::task;
 
-use crate::actor::Actor;
+use crate::{actor::Actor, ActorError};
 
 use super::{AddActorInput, OutputRx};
 
@@ -32,8 +32,10 @@ impl<T, U, CI, CO, const N: usize, const NO: usize, const NI: usize> IntoLogsN<C
 where
     T: 'static + Send + Sync,
     U: 'static + UniqueIdentifier<DataType = T>,
-    CI: 'static + Read<U> + Entry<U>,
-    CO: 'static + Write<U>,
+    CI: 'static + TryRead<U> + Entry<U>,
+    CO: 'static + TryWrite<U>,
+    ActorError: From<<CI as TryRead<U>>::Error>,
+    ActorError: From<<CO as TryWrite<U>>::Error>,
 {
     /// Creates a new logging entry for the output
     fn logn(mut self, actor: &mut Actor<CI, NO, N>, size: usize) -> Self {
@@ -66,8 +68,10 @@ impl<T, U, CI, CO, const N: usize, const NO: usize, const NI: usize> IntoLogs<CI
 where
     T: 'static + Send + Sync,
     U: 'static + UniqueIdentifier<DataType = T>,
-    CI: 'static + Read<U> + Entry<U>,
-    CO: 'static + Write<U> + Size<U>,
+    CI: 'static + TryRead<U> + Entry<U>,
+    CO: 'static + TryWrite<U> + Size<U>,
+    ActorError: From<<CI as TryRead<U>>::Error>,
+    ActorError: From<<CO as TryWrite<U>>::Error>,
 {
     /// Creates a new logging entry for the output
     fn log(mut self, actor: &mut Actor<CI, NO, N>) -> Self {

@@ -2,7 +2,7 @@ use super::S;
 use crate::{ActorError, Result};
 use async_trait::async_trait;
 use flume::Receiver;
-use interface::{Read, UniqueIdentifier, Who};
+use interface::{TryRead, UniqueIdentifier, Who};
 use std::any::type_name;
 use std::fmt::Debug;
 use std::{fmt::Display, sync::Arc};
@@ -13,7 +13,7 @@ use tokio::sync::Mutex;
 pub(crate) struct Input<C, U, const N: usize>
 where
     U: UniqueIdentifier,
-    C: Read<U>,
+    C: TryRead<U>,
 {
     rx: Receiver<S<U>>,
     client: Arc<Mutex<C>>,
@@ -22,7 +22,7 @@ where
 impl<C, U, const N: usize> Input<C, U, N>
 where
     U: UniqueIdentifier,
-    C: Read<U>,
+    C: TryRead<U>,
 {
     /// Creates a new intput from a [Receiver], an [Actor] client and an identifier [hash]
     pub fn new(rx: Receiver<S<U>>, client: Arc<Mutex<C>>, hash: u64) -> Self {
@@ -31,13 +31,13 @@ where
 }
 impl<C, U, const N: usize> Who<U> for Input<C, U, N>
 where
-    C: Read<U>,
+    C: TryRead<U>,
     U: UniqueIdentifier,
 {
 }
 impl<C, U, const N: usize> Display for Input<C, U, N>
 where
-    C: Read<U>,
+    C: TryRead<U>,
     U: UniqueIdentifier,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -46,7 +46,7 @@ where
 }
 impl<C, U, const N: usize> Debug for Input<C, U, N>
 where
-    C: Read<U> + Debug,
+    C: TryRead<U> + Debug,
     U: UniqueIdentifier,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -78,7 +78,8 @@ impl Debug for Box<dyn InputObject> {
 #[async_trait]
 impl<C, U, const N: usize> InputObject for Input<C, U, N>
 where
-    C: Read<U>,
+    C: TryRead<U>,
+    ActorError: From<<C as TryRead<U>>::Error>,
     U: UniqueIdentifier,
 {
     async fn recv(&mut self) -> Result<()> {
@@ -86,7 +87,7 @@ where
         // log::debug!("{} receiving (locking client)", Who::who(self));
         let mut client = self.client.lock().await;
         // log::debug!("{} receiving (client locked)", Who::who(self));
-        (*client).read(
+        (*client).try_read(
             self.rx
                 .recv_async()
                 .await
@@ -94,7 +95,7 @@ where
                     msg: format!("input {} to {}", type_name::<U>(), type_name::<C>()), //Who::lite(self),
                     source: e,
                 })?,
-        );
+        )?;
         log::debug!(
             "{} RECV@{N}: {} - {}",
             self.hash,

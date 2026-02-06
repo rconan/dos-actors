@@ -3,16 +3,19 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::actor::{
-    io::{Output, OutputObject, S},
-    Actor,
+use crate::{
+    actor::{
+        io::{Output, OutputObject, S},
+        Actor,
+    },
+    ActorError,
 };
 
 pub mod builder;
 pub use builder::ActorOutputBuilder;
 
 mod outputs;
-use interface::{Quote, TryUpdate, UniqueIdentifier, Who, Write};
+use interface::{Quote, TryUpdate, TryWrite, UniqueIdentifier, Who};
 pub use outputs::ActorOutput;
 
 use super::OutputRx;
@@ -62,15 +65,17 @@ where
     /// Try to build a new output where you must fail to succeed
     fn build<U>(self) -> std::result::Result<(), OutputRx<U, C, NI, NO>>
     where
-        C: Write<U>,
+        C: TryWrite<U>,
+        ActorError: From<<C as TryWrite<U>>::Error>,
         U: 'static + UniqueIdentifier;
     fn build_output<U>(
         actor: &'a mut Actor<C, NI, NO>,
         builder: ActorOutputBuilder,
     ) -> std::result::Result<(), OutputRx<U, C, NI, NO>>
     where
-        C: Write<U>,
+        C: TryWrite<U>,
         U: 'static + UniqueIdentifier,
+        ActorError: From<<C as TryWrite<U>>::Error>,
     {
         let mut txs = vec![];
         let mut rxs = vec![];
@@ -165,7 +170,7 @@ where
     }
     fn legacy_build<U>(self) -> (&'a mut Actor<C, NI, NO>, Vec<Rx<U>>)
     where
-        C: 'static + TryUpdate + Send + io::Write<U>,
+        C: 'static + TryUpdate + Send + io::TryWrite<U>,
         U: 'static + Send + Sync + UniqueIdentifier,
         Assoc<U>: Send + Sync,
     {
@@ -197,7 +202,7 @@ where
     }
     fn build<U>(self) -> std::result::Result<(), OutputRx<U, C, NI, NO>>
     where
-        C: 'static + TryUpdate + Send + io::Write<U>,
+        C: 'static + TryUpdate + Send + io::TryWrite<U>,
         U: 'static + Send + Sync + UniqueIdentifier,
         Assoc<U>: Send + Sync,
     {

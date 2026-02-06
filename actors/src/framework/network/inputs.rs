@@ -1,4 +1,4 @@
-use interface::{Data, Read, UniqueIdentifier, Write};
+use interface::{Data, TryRead, UniqueIdentifier, Write};
 
 use super::OutputRx;
 
@@ -13,7 +13,7 @@ where
     /*     #[must_use = r#"append ".ok()" to squash the "must use" warning"#]
     fn legacy_into_input<CI, const N: usize>(self, actor: &mut Actor<CI, NO, N>) -> Self
     where
-        CI: 'static + Update + Send + io::Read<U>,
+        CI: 'static + Update + Send + io::TryRead<U>,
         Self: Sized; */
     /// Returns an error if there are any unassigned receivers
     ///
@@ -25,7 +25,7 @@ where
 
 pub trait AddActorInput<U, C, const NI: usize, const NO: usize>
 where
-    C: Read<U>,
+    C: TryRead<U>,
     U: 'static + UniqueIdentifier,
 {
     /// Adds a new input to an actor
@@ -41,7 +41,7 @@ where
     /// Try to create a new input for 'actor' from the last 'Receiver'
     fn into_input<CI>(self, actor: &mut impl AddActorInput<U, CI, NO, N>) -> Self
     where
-        CI: 'static + Read<U>,
+        CI: 'static + TryRead<U>,
         Self: Sized;
 }
 
@@ -54,7 +54,7 @@ where
     // fn into_input<CI, const N: usize>(mut self, actor: &mut Actor<CI, NO, N>) -> Self
     fn into_input<CI>(mut self, actor: &mut impl AddActorInput<U, CI, NO, N>) -> Self
     where
-        CI: 'static + Read<U>,
+        CI: 'static + TryRead<U>,
     {
         let Err(OutputRx {
             hash, ref mut rxs, ..
@@ -106,7 +106,7 @@ where
 {
     fn legacy_into_input<CI, const N: usize>(mut self, actor: &mut Actor<CI, NO, N>) -> Self
     where
-        CI: 'static + Update + Send + io::Read<U>,
+        CI: 'static + Update + Send + io::TryRead<U>,
     {
         if let Some(recv) = self.1.pop() {
             actor.add_input(recv, hashio(self.0))

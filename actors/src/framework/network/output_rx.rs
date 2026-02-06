@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use interface::{Data, UniqueIdentifier, Write};
+use interface::{Data, UniqueIdentifier, TryWrite};
 
 type Rx<U> = flume::Receiver<Data<U>>;
 
@@ -16,7 +16,7 @@ type Rx<U> = flume::Receiver<Data<U>>;
 pub struct OutputRx<U, C, const NI: usize, const NO: usize>
 where
     U: UniqueIdentifier,
-    C: Write<U>,
+    C: TryWrite<U>,
 {
     pub actor: String,
     pub output: String,
@@ -28,7 +28,7 @@ where
 impl<U, CO, const NO: usize, const NI: usize> std::error::Error for OutputRx<U, CO, NI, NO>
 where
     U: 'static + UniqueIdentifier,
-    CO: Write<U>,
+    CO: TryWrite<U>,
 {
 }
 /// Type-erased version of [OutputRx]
@@ -52,7 +52,7 @@ impl Display for ActorOutputsError {
 impl<U, CO, const NO: usize, const NI: usize> From<OutputRx<U, CO, NI, NO>> for ActorOutputsError
 where
     U: 'static + UniqueIdentifier,
-    CO: Write<U>,
+    CO: TryWrite<U>,
 {
     fn from(value: OutputRx<U, CO, NI, NO>) -> Self {
         ActorOutputsError {
@@ -64,7 +64,7 @@ where
 impl<U, CO, const NO: usize, const NI: usize> Display for OutputRx<U, CO, NI, NO>
 where
     U: 'static + UniqueIdentifier,
-    CO: Write<U>,
+    CO: TryWrite<U>,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let OutputRx { actor, output, .. } = self;
@@ -78,7 +78,7 @@ where
 impl<U, CO, const NO: usize, const NI: usize> Debug for OutputRx<U, CO, NI, NO>
 where
     U: 'static + UniqueIdentifier,
-    CO: Write<U>,
+    CO: TryWrite<U>,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         <Self as Display>::fmt(self, f)

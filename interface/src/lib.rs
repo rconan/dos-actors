@@ -129,15 +129,14 @@ pub trait Write<U: UniqueIdentifier>: Update {
 }
 /// Client output data writer fallible interface
 pub trait TryWrite<U: UniqueIdentifier>: TryUpdate {
-    type Error;
-    fn try_write(&mut self) -> std::result::Result<&mut Self, <Self as TryWrite<U>>::Error>;
+    type Error: std::error::Error;
+    fn try_write(&mut self) -> std::result::Result<Option<Data<U>>, <Self as TryWrite<U>>::Error>;
 }
 impl<U: UniqueIdentifier, C: Write<U>> TryWrite<U> for C {
     type Error = Infallible;
 
-    fn try_write(&mut self) -> std::result::Result<&mut Self, <Self as TryWrite<U>>::Error> {
-        <Self as Write<U>>::write(self);
-        Ok(self)
+    fn try_write(&mut self) -> std::result::Result<Option<Data<U>>, <Self as TryWrite<U>>::Error> {
+        Ok(<Self as Write<U>>::write(self))
     }
 }
 /// Interface for IO data sizes

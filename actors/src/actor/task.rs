@@ -1,4 +1,4 @@
-use std::{any::type_name, convert::Infallible};
+use std::any::type_name;
 
 use async_trait::async_trait;
 use interface::{TryUpdate };
@@ -9,11 +9,11 @@ use super::{Actor, PlainActor};
 
 type Result<T> = std::result::Result<T, TaskError>;
 
-impl From<Infallible> for TaskError {
-    fn from(_: Infallible) -> Self {
-        TaskError::NoError
-    }
-}
+// impl From<Infallible> for TaskError {
+//     fn from(_: Infallible) -> Self {
+//         TaskError::NoError
+//     }
+// }
 
 #[async_trait]
 impl<C, const NI: usize, const NO: usize> Task for Actor<C, NI, NO>
