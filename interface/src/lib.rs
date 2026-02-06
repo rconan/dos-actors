@@ -14,7 +14,7 @@ The macro [chain] conveniently allows to invoke the sequence of [Read], [Update]
 [actor]: https://docs.rs/gmt_dos-actors
 */
 
-use std::{any::type_name, marker::PhantomData, sync::Arc};
+use std::{any::type_name, convert::Infallible, marker::PhantomData, sync::Arc};
 
 mod data;
 pub mod doublet;
@@ -85,6 +85,20 @@ impl UniqueIdentifier for () {
 pub trait Update: Send + Sync {
     fn update(&mut self) {}
 }
+pub trait TryUpdate: Send + Sync {
+    type Error: std::error::Error;
+    fn try_update(&mut self) -> std::result::Result<&mut Self, Self::Error>;
+}
+impl<C: Update> TryUpdate for C {
+    type Error=Infallible;
+    fn try_update(
+        &mut self,
+    ) -> std::result::Result<&mut Self, Self::Error> {
+        <Self as Update>::update(self);
+        Ok(self)
+    }
+}
+
 /// Client input data reader interface
 pub trait Read<U: UniqueIdentifier>: Update {
     /// Read data from an input
