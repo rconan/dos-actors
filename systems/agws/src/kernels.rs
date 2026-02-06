@@ -175,29 +175,52 @@ where
     <T as KernelSpecs>::Integrator: Read<<T as KernelSpecs>::Output>,
 {
     fn update(&mut self) {
+        log::info!("updating kernel: {}", type_name::<T>());
         self.processor.update();
-        <<T as KernelSpecs>::Processor as Write<<T as KernelSpecs>::Data>>::write(
-            &mut self.processor,
-        )
-        .map(|data| {
-            self.estimator.as_mut().map(|estimator| {
+        self.estimator.as_mut().map(|estimator| {
+            <<T as KernelSpecs>::Processor as Write<<T as KernelSpecs>::Data>>::write(
+                &mut self.processor,
+            )
+            .map(|data| {
                 <<T as KernelSpecs>::Estimator as Read<<T as KernelSpecs>::Data>>::read(
                     estimator, data,
                 );
                 estimator.update();
+            });
+            self.integrator.as_mut().map(|integrator| {
                 <<T as KernelSpecs>::Estimator as Write<<T as KernelSpecs>::Output>>::write(
                     estimator,
                 )
                 .map(|data| {
-                    self.integrator.as_mut().map(|integrator| {
-                        <<T as KernelSpecs>::Integrator as Read<<T as KernelSpecs>::Output>>::read(
-                            integrator, data,
-                        );
-                        integrator.update();
-                    })
+                    <<T as KernelSpecs>::Integrator as Read<<T as KernelSpecs>::Output>>::read(
+                        integrator, data,
+                    );
+                    integrator.update();
                 });
             });
         });
+        // <<T as KernelSpecs>::Processor as Write<<T as KernelSpecs>::Data>>::write(
+        //     &mut self.processor,
+        // )
+        // .map(|data| {
+        //     self.estimator.as_mut().map(|estimator| {
+        //         <<T as KernelSpecs>::Estimator as Read<<T as KernelSpecs>::Data>>::read(
+        //             estimator, data,
+        //         );
+        //         estimator.update();
+        //         <<T as KernelSpecs>::Estimator as Write<<T as KernelSpecs>::Output>>::write(
+        //             estimator,
+        //         )
+        //         .map(|data| {
+        //             self.integrator.as_mut().map(|integrator| {
+        //                 <<T as KernelSpecs>::Integrator as Read<<T as KernelSpecs>::Output>>::read(
+        //                     integrator, data,
+        //                 );
+        //                 integrator.update();
+        //             })
+        //         });
+        //     });
+        // });
     }
 }
 impl<T> Write<<T as KernelSpecs>::Output> for Kernel<T>
