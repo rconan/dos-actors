@@ -85,15 +85,14 @@ impl UniqueIdentifier for () {
 pub trait Update: Send + Sync {
     fn update(&mut self) {}
 }
+/// Actor client state update fallible interface
 pub trait TryUpdate: Send + Sync {
     type Error: std::error::Error;
     fn try_update(&mut self) -> std::result::Result<&mut Self, Self::Error>;
 }
 impl<C: Update> TryUpdate for C {
-    type Error=Infallible;
-    fn try_update(
-        &mut self,
-    ) -> std::result::Result<&mut Self, Self::Error> {
+    type Error = Infallible;
+    fn try_update(&mut self) -> std::result::Result<&mut Self, Self::Error> {
         <Self as Update>::update(self);
         Ok(self)
     }
@@ -103,6 +102,26 @@ impl<C: Update> TryUpdate for C {
 pub trait Read<U: UniqueIdentifier>: Update {
     /// Read data from an input
     fn read(&mut self, data: Data<U>);
+}
+/// Client input data reader fallible interface
+pub trait TryRead<U: UniqueIdentifier>: TryUpdate {
+    type Error: std::error::Error;
+    /// Read data from an input
+    fn try_read(
+        &mut self,
+        data: Data<U>,
+    ) -> std::result::Result<&mut Self, <Self as TryRead<U>>::Error>;
+}
+impl<U: UniqueIdentifier, C: Read<U>> TryRead<U> for C {
+    type Error = Infallible;
+
+    fn try_read(
+        &mut self,
+        data: Data<U>,
+    ) -> std::result::Result<&mut Self, <Self as TryRead<U>>::Error> {
+        <Self as Read<U>>::read(self, data);
+        Ok(self)
+    }
 }
 /// Client output data writer interface
 pub trait Write<U: UniqueIdentifier>: Update {
