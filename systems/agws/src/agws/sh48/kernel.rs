@@ -10,10 +10,7 @@ use gmt_dos_clients_io::{
     optics::{Dev, Frame, SensorData},
 };
 
-use crate::{
-    kernels::{KernelError, KernelSpecs},
-    qp::ActiveOptics,
-};
+use crate::kernels::{KernelError, KernelSpecs};
 
 use super::Sh48;
 

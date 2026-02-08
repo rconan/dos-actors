@@ -1,13 +1,14 @@
 mod kernel;
 
 use std::{
+    convert::Infallible,
     fmt::Display,
     ops::{Deref, DerefMut},
 };
 
 use gmt_dos_clients_crseo::{OpticalModel, sensors::Camera};
 use gmt_dos_clients_io::optics::SensorData;
-use interface::{Data, Read, UniqueIdentifier, Update, Write};
+use interface::{Data, Read, TryRead, TryUpdate, TryWrite, UniqueIdentifier, Update, Write};
 
 use crate::kernels::{Kernel, KernelSpecs};
 
@@ -46,33 +47,50 @@ impl<const I: usize> DerefMut for Sh24TT<I> {
     }
 }
 
-impl<const I: usize> Update for Sh24<I> {
-    fn update(&mut self) {
+impl<const I: usize> TryUpdate for Sh24<I> {
+    type Error = Infallible;
+
+    fn try_update(&mut self) -> std::result::Result<&mut Self, Self::Error> {
         self.0.update();
+        Ok(self)
     }
 }
 
-impl<const I: usize> Write<SensorData> for Kernel<Sh24<I>> {
-    fn write(&mut self) -> Option<Data<SensorData>> {
-        <<Sh24<I> as KernelSpecs>::Processor as Write<_>>::write(&mut self.processor)
+impl<const I: usize> TryWrite<SensorData> for Kernel<Sh24<I>> {
+    type Error = Infallible;
+
+    fn try_write(
+        &mut self,
+    ) -> std::result::Result<Option<Data<SensorData>>, <Self as TryWrite<SensorData>>::Error> {
+        Ok(<<Sh24<I> as KernelSpecs>::Processor as Write<_>>::write(
+            &mut self.processor,
+        ))
     }
 }
 
-impl<U, const I: usize> Read<U> for Sh24<I>
+impl<U, const I: usize> TryRead<U> for Sh24<I>
 where
     U: UniqueIdentifier,
     OpticalModel<Camera<I>>: Read<U>,
 {
-    fn read(&mut self, data: Data<U>) {
+    type Error = Infallible;
+
+    fn try_read(
+        &mut self,
+        data: Data<U>,
+    ) -> std::result::Result<&mut Self, <Self as TryRead<U>>::Error> {
         <_ as Read<U>>::read(&mut self.0, data);
+        Ok(self)
     }
 }
-impl<U, const I: usize> Write<U> for Sh24<I>
+impl<U, const I: usize> TryWrite<U> for Sh24<I>
 where
     U: UniqueIdentifier,
     OpticalModel<Camera<I>>: Write<U>,
 {
-    fn write(&mut self) -> Option<Data<U>> {
-        <_ as Write<U>>::write(&mut self.0)
+    type Error = Infallible;
+
+    fn try_write(&mut self) -> std::result::Result<Option<Data<U>>, <Self as TryWrite<U>>::Error> {
+        Ok(<_ as Write<U>>::write(&mut self.0))
     }
 }

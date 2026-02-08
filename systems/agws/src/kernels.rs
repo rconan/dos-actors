@@ -1,9 +1,9 @@
-use std::{any::type_name, fmt::Display, io, marker::PhantomData};
+use std::{any::type_name, convert::Infallible, fmt::Display, io, marker::PhantomData};
 
 use gmt_dos_clients_crseo::{
     OpticalModel, OpticalModelBuilder, centroiding::CentroidsError, crseo::FromBuilder,
 };
-use interface::{Data, Read, UniqueIdentifier, Update, Write};
+use interface::{Data, TryRead, TryUpdate, TryWrite, UniqueIdentifier, Write};
 
 pub struct KernelFrame<T>(PhantomData<T>)
 where
@@ -29,11 +29,35 @@ where
     <T as KernelSpecs>::Input: UniqueIdentifier,
     Self: Write<<T as KernelSpecs>::Input>,
 {
-    fn write(&mut self) -> Option<Data<KernelFrame<T>>> {
+
+    fn write(
+        &mut self,
+    ) -> Option<Data<KernelFrame<T>>>
+    {
         <Self as Write<<T as KernelSpecs>::Input>>::write(self)
             .map(|data| data.transmute::<KernelFrame<T>>())
     }
 }
+// impl<T> TryWrite<KernelFrame<T>> for OpticalModel<<T as KernelSpecs>::Sensor>
+// where
+//     T: KernelSpecs + Send + Sync,
+//     // OpticalModelBuilder<<T::Sensor as FromBuilder>::ComponentBuilder>:
+//     //     DeviceInitialize<T::Processor>,
+//     KernelFrame<T>:
+//         UniqueIdentifier<DataType = <<T as KernelSpecs>::Input as UniqueIdentifier>::DataType>,
+//     <T as KernelSpecs>::Input: UniqueIdentifier,
+//     Self: Write<<T as KernelSpecs>::Input>,
+// {
+//     type Error = Infallible;
+
+//     fn try_write(
+//         &mut self,
+//     ) -> std::result::Result<Option<Data<KernelFrame<T>>>, <Self as TryWrite<KernelFrame<T>>>::Error>
+//     {
+//         Ok(<Self as Write<<T as KernelSpecs>::Input>>::write(self)
+//             .map(|data| data.transmute::<KernelFrame<T>>()))
+//     }
+// }
 
 #[derive(Debug, thiserror::Error)]
 pub enum KernelError {
@@ -121,25 +145,25 @@ where
     }
 }
 
-// impl<T> Read<<T as KernelSpecs>::Input> for Kernel<T>
+// impl<T> TryRead<<T as KernelSpecs>::Input> for Kernel<T>
 // where
 //     T:  KernelSpecs ,
 //     OpticalModelBuilder<<T::Sensor as FromBuilder>::ComponentBuilder>:
 //         DeviceInitialize<T::Processor>,
 //     <T as KernelSpecs>::Input: UniqueIdentifier,
-//     <T as KernelSpecs>::Processor: Read<<T as KernelSpecs>::Input>,
+//     <T as KernelSpecs>::Processor: TryRead<<T as KernelSpecs>::Input>,
 //     <T as KernelSpecs>::Data: UniqueIdentifier,
-//     <T as KernelSpecs>::Processor: Write<<T as KernelSpecs>::Data>,
-//     <T as KernelSpecs>::Estimator: Read<<T as KernelSpecs>::Data>,
+//     <T as KernelSpecs>::Processor: TryWrite<<T as KernelSpecs>::Data>,
+//     <T as KernelSpecs>::Estimator: TryRead<<T as KernelSpecs>::Data>,
 //     <T as KernelSpecs>::Output: UniqueIdentifier,
-//     <T as KernelSpecs>::Estimator: Write<<T as KernelSpecs>::Output>,
-//     <T as KernelSpecs>::Integrator: Read<<T as KernelSpecs>::Output>,
+//     <T as KernelSpecs>::Estimator: TryWrite<<T as KernelSpecs>::Output>,
+//     <T as KernelSpecs>::Integrator: TryRead<<T as KernelSpecs>::Output>,
 // {
 //     fn read(&mut self, data: Data<<T as KernelSpecs>::Input>) {
-//         <<T as KernelSpecs>::Processor as Read<_>>::read(&mut self.processor, data);
+//         <<T as KernelSpecs>::Processor as TryRead<_>>::read(&mut self.processor, data);
 //     }
 // }
-impl<T> Read<KernelFrame<T>> for Kernel<T>
+impl<T> TryRead<KernelFrame<T>> for Kernel<T>
 where
     T: KernelSpecs,
     // OpticalModelBuilder<<T::Sensor as FromBuilder>::ComponentBuilder>:
@@ -147,105 +171,100 @@ where
     KernelFrame<T>:
         UniqueIdentifier<DataType = <<T as KernelSpecs>::Input as UniqueIdentifier>::DataType>,
     <T as KernelSpecs>::Input: UniqueIdentifier,
-    <T as KernelSpecs>::Processor: Read<<T as KernelSpecs>::Input>,
+    <T as KernelSpecs>::Processor: TryRead<<T as KernelSpecs>::Input>,
     <T as KernelSpecs>::Data: UniqueIdentifier,
-    <T as KernelSpecs>::Processor: Write<<T as KernelSpecs>::Data>,
-    <T as KernelSpecs>::Estimator: Read<<T as KernelSpecs>::Data>,
+    <T as KernelSpecs>::Processor: TryWrite<<T as KernelSpecs>::Data>,
+    <T as KernelSpecs>::Estimator: TryRead<<T as KernelSpecs>::Data>,
     <T as KernelSpecs>::Output: UniqueIdentifier,
-    <T as KernelSpecs>::Estimator: Write<<T as KernelSpecs>::Output>,
-    <T as KernelSpecs>::Integrator: Read<<T as KernelSpecs>::Output>,
+    <T as KernelSpecs>::Estimator: TryWrite<<T as KernelSpecs>::Output>,
+    <T as KernelSpecs>::Integrator: TryRead<<T as KernelSpecs>::Output>,
 {
-    fn read(&mut self, data: Data<KernelFrame<T>>) {
-        <<T as KernelSpecs>::Processor as Read<<T as KernelSpecs>::Input>>::read(
+    type Error = Infallible;
+
+    fn try_read(
+        &mut self,
+        data: Data<KernelFrame<T>>,
+    ) -> std::result::Result<&mut Self, <Self as TryRead<KernelFrame<T>>>::Error> {
+        <<T as KernelSpecs>::Processor as TryRead<<T as KernelSpecs>::Input>>::try_read(
             &mut self.processor,
             data.transmute::<<T as KernelSpecs>::Input>(),
-        );
+        )
+        .unwrap();
+        Ok(self)
     }
 }
-impl<T> Update for Kernel<T>
+impl<T> TryUpdate for Kernel<T>
 where
     T: KernelSpecs,
     // OpticalModelBuilder<<T::Sensor as FromBuilder>::ComponentBuilder>:
     //     DeviceInitialize<T::Processor>,
     <T as KernelSpecs>::Data: UniqueIdentifier,
-    <T as KernelSpecs>::Processor: Write<<T as KernelSpecs>::Data>,
-    <T as KernelSpecs>::Estimator: Read<<T as KernelSpecs>::Data>,
+    <T as KernelSpecs>::Processor: TryWrite<<T as KernelSpecs>::Data>,
+    <T as KernelSpecs>::Estimator: TryRead<<T as KernelSpecs>::Data>,
     <T as KernelSpecs>::Output: UniqueIdentifier,
-    <T as KernelSpecs>::Estimator: Write<<T as KernelSpecs>::Output>,
-    <T as KernelSpecs>::Integrator: Read<<T as KernelSpecs>::Output>,
+    <T as KernelSpecs>::Estimator: TryWrite<<T as KernelSpecs>::Output>,
+    <T as KernelSpecs>::Integrator: TryRead<<T as KernelSpecs>::Output>,
 {
-    fn update(&mut self) {
+    type Error = Infallible;
+
+    fn try_update(&mut self) -> std::result::Result<&mut Self, Self::Error> {
         log::info!("updating kernel: {}", type_name::<T>());
-        self.processor.update();
+        self.processor.try_update().unwrap();
         self.estimator.as_mut().map(|estimator| {
-            <<T as KernelSpecs>::Processor as Write<<T as KernelSpecs>::Data>>::write(
+            <<T as KernelSpecs>::Processor as TryWrite<<T as KernelSpecs>::Data>>::try_write(
                 &mut self.processor,
-            )
+            ).unwrap()
             .map(|data| {
-                <<T as KernelSpecs>::Estimator as Read<<T as KernelSpecs>::Data>>::read(
+                <<T as KernelSpecs>::Estimator as TryRead<<T as KernelSpecs>::Data>>::try_read(
                     estimator, data,
-                );
-                estimator.update();
+                ).unwrap();
+                estimator.try_update().unwrap();
             });
             self.integrator.as_mut().map(|integrator| {
-                <<T as KernelSpecs>::Estimator as Write<<T as KernelSpecs>::Output>>::write(
+                <<T as KernelSpecs>::Estimator as TryWrite<<T as KernelSpecs>::Output>>::try_write(
                     estimator,
-                )
+                ).unwrap()
                 .map(|data| {
-                    <<T as KernelSpecs>::Integrator as Read<<T as KernelSpecs>::Output>>::read(
+                    <<T as KernelSpecs>::Integrator as TryRead<<T as KernelSpecs>::Output>>::try_read(
                         integrator, data,
-                    );
-                    integrator.update();
+                    ).unwrap();
+                    integrator.try_update().unwrap();
                 });
             });
         });
-        // <<T as KernelSpecs>::Processor as Write<<T as KernelSpecs>::Data>>::write(
-        //     &mut self.processor,
-        // )
-        // .map(|data| {
-        //     self.estimator.as_mut().map(|estimator| {
-        //         <<T as KernelSpecs>::Estimator as Read<<T as KernelSpecs>::Data>>::read(
-        //             estimator, data,
-        //         );
-        //         estimator.update();
-        //         <<T as KernelSpecs>::Estimator as Write<<T as KernelSpecs>::Output>>::write(
-        //             estimator,
-        //         )
-        //         .map(|data| {
-        //             self.integrator.as_mut().map(|integrator| {
-        //                 <<T as KernelSpecs>::Integrator as Read<<T as KernelSpecs>::Output>>::read(
-        //                     integrator, data,
-        //                 );
-        //                 integrator.update();
-        //             })
-        //         });
-        //     });
-        // });
+        Ok(self)
     }
 }
-impl<T> Write<<T as KernelSpecs>::Output> for Kernel<T>
+impl<T> TryWrite<<T as KernelSpecs>::Output> for Kernel<T>
 where
     T: KernelSpecs,
     // OpticalModelBuilder<<T::Sensor as FromBuilder>::ComponentBuilder>:
     //     DeviceInitialize<T::Processor>,
     <T as KernelSpecs>::Output: UniqueIdentifier,
-    <T as KernelSpecs>::Integrator: Write<<T as KernelSpecs>::Output>,
+    <T as KernelSpecs>::Integrator: TryWrite<<T as KernelSpecs>::Output>,
     <T as KernelSpecs>::Data: UniqueIdentifier,
-    <T as KernelSpecs>::Processor: Write<<T as KernelSpecs>::Data>,
-    <T as KernelSpecs>::Estimator: Read<<T as KernelSpecs>::Data>,
+    <T as KernelSpecs>::Processor: TryWrite<<T as KernelSpecs>::Data>,
+    <T as KernelSpecs>::Estimator: TryRead<<T as KernelSpecs>::Data>,
     <T as KernelSpecs>::Output: UniqueIdentifier,
-    <T as KernelSpecs>::Estimator: Write<<T as KernelSpecs>::Output>,
-    <T as KernelSpecs>::Integrator: Read<<T as KernelSpecs>::Output>,
+    <T as KernelSpecs>::Estimator: TryWrite<<T as KernelSpecs>::Output>,
+    <T as KernelSpecs>::Integrator: TryRead<<T as KernelSpecs>::Output>,
 {
-    fn write(&mut self) -> Option<Data<<T as KernelSpecs>::Output>> {
-        if let Some(integrator) = self.integrator.as_mut() {
-            <<T as KernelSpecs>::Integrator as Write<_>>::write(integrator)
+    type Error = Infallible;
+
+    fn try_write(
+        &mut self,
+    ) -> std::result::Result<
+        Option<Data<<T as KernelSpecs>::Output>>,
+        <Self as TryWrite<<T as KernelSpecs>::Output>>::Error,
+    > {
+        Ok(if let Some(integrator) = self.integrator.as_mut() {
+            <<T as KernelSpecs>::Integrator as TryWrite<_>>::try_write(integrator).unwrap()
         } else {
             if let Some(estimator) = self.estimator.as_mut() {
-                <<T as KernelSpecs>::Estimator as Write<_>>::write(estimator)
+                <<T as KernelSpecs>::Estimator as TryWrite<_>>::try_write(estimator).unwrap()
             } else {
                 None
             }
-        }
+        })
     }
 }

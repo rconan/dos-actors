@@ -16,7 +16,7 @@ use gmt_dos_clients_io::{
     optics::{Dev, Frame, SensorData},
 };
 use interface::{
-    Data, Read, Right, Update, Write,
+    Data, Read, Right, TryRead, TryUpdate, TryWrite, Update, Write,
     optics::{
         OpticsState,
         state::{MirrorState, OpticalState},
@@ -28,6 +28,7 @@ use osqp::{CscMatrix, Problem, Settings};
 use serde::Deserialize;
 use serde_pickle as pickle;
 use std::{
+    convert::Infallible,
     error::Error,
     fmt::Display,
     fs::File,
@@ -593,42 +594,55 @@ impl<
         Ok(centroids)
     }
 }
-impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize> Update
+impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize> TryUpdate
     for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
 {
-    fn update(&mut self) {
+    type Error = Infallible;
+
+    fn try_update(&mut self) -> std::result::Result<&mut Self, Self::Error> {
         log::info!("updating active optics state");
         self.next();
+        Ok(self)
     }
 }
 impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize>
-    Read<SensorData> for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
+    TryRead<SensorData> for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
 {
-    fn read(&mut self, data: Data<SensorData>) {
+    type Error = Infallible;
+
+    fn try_read(
+        &mut self,
+        data: Data<SensorData>,
+    ) -> std::result::Result<&mut Self, <Self as TryRead<SensorData>>::Error> {
         self.y_valid = self
             .calib
             .as_ref()
             .expect("no calibration matrix found in the ActiveOptics struct")
             .mask(&data);
+        Ok(self)
     }
 }
 impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize>
-    Write<Estimate> for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
+    TryWrite<Estimate> for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
 {
-    fn write(&mut self) -> Option<Data<Estimate>> {
-        Some(self.u.clone().into())
+    type Error = Infallible;
+
+    fn try_write(
+        &mut self,
+    ) -> std::result::Result<Option<Data<Estimate>>, <Self as TryWrite<Estimate>>::Error> {
+        Ok(Some(self.u.clone().into()))
     }
 }
 
-impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize>
-    Write<OpticsState> for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
-{
-    fn write(&mut self) -> Option<Data<OpticsState>> {
-        let m1 = MirrorState::new(self.u[..42].chunks(6), self.u[84..].chunks(M1_BM));
-        let m2 = MirrorState::from_rbms(&self.u[42..84]);
-        Some(Data::new(OpticalState::new(m1, m2)))
-    }
-}
+// impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize>
+//     Write<OpticsState> for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
+// {
+//     fn write(&mut self) -> Option<Data<OpticsState>> {
+//         let m1 = MirrorState::new(self.u[..42].chunks(6), self.u[84..].chunks(M1_BM));
+//         let m2 = MirrorState::from_rbms(&self.u[42..84]);
+//         Some(Data::new(OpticalState::new(m1, m2)))
+//     }
+// }
 
 #[derive(Default)]
 pub struct Estimate2OpticsState {
@@ -662,11 +676,17 @@ impl<
     const M2_RBM: usize,
     const M1_BM: usize,
     const N_MODE: usize,
-> Write<SensorData> for Kernel<AcO<I, M1_RBM, M2_RBM, M1_BM, N_MODE>>
+> TryWrite<SensorData> for Kernel<AcO<I, M1_RBM, M2_RBM, M1_BM, N_MODE>>
 {
-    fn write(&mut self) -> Option<Data<SensorData>> {
-        <<AcO<I, M1_RBM, M2_RBM, M1_BM, N_MODE> as KernelSpecs>::Processor as Write<_>>::write(
-            &mut self.processor,
+    type Error = Infallible;
+
+    fn try_write(
+        &mut self,
+    ) -> std::result::Result<Option<Data<SensorData>>, <Self as TryWrite<SensorData>>::Error> {
+        Ok(
+            <<AcO<I, M1_RBM, M2_RBM, M1_BM, N_MODE> as KernelSpecs>::Processor as Write<_>>::write(
+                &mut self.processor,
+            ),
         )
     }
 }
