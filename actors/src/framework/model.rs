@@ -6,7 +6,6 @@
 //!
 //! [Model]: crate::model::Model
 
-use std::convert::Infallible;
 use std::path::PathBuf;
 
 use crate::graph::GraphError;
@@ -60,8 +59,8 @@ pub enum TaskError {
     FromActor(#[from] ActorError),
     #[error("error in Task from Model")]
     FromModel(#[from] model::ModelError),
-    #[error("not an error")]
-    NoError(#[from] Infallible),
+    #[error(transparent)]
+    Other(#[from] Box<dyn std::error::Error + Send + Sync>),
 }
 
 /// Interface for running model components

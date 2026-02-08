@@ -3,13 +3,10 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::{
-    actor::{
+use crate::actor::{
         io::{Output, OutputObject, S},
         Actor,
-    },
-    ActorError,
-};
+    };
 
 pub mod builder;
 pub use builder::ActorOutputBuilder;
@@ -66,7 +63,6 @@ where
     fn build<U>(self) -> std::result::Result<(), OutputRx<U, C, NI, NO>>
     where
         C: TryWrite<U>,
-        ActorError: From<<C as TryWrite<U>>::Error>,
         U: 'static + UniqueIdentifier;
     fn build_output<U>(
         actor: &'a mut Actor<C, NI, NO>,
@@ -75,7 +71,6 @@ where
     where
         C: TryWrite<U>,
         U: 'static + UniqueIdentifier,
-        ActorError: From<<C as TryWrite<U>>::Error>,
     {
         let mut txs = vec![];
         let mut rxs = vec![];

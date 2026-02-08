@@ -76,10 +76,10 @@ impl Debug for Box<dyn InputObject> {
 }
 
 #[async_trait]
-impl<C, U, const N: usize> InputObject for Input<C, U, N>
+impl<'a, C, U, const N: usize> InputObject for Input<C, U, N>
 where
     C: TryRead<U>,
-    ActorError: From<<C as TryRead<U>>::Error>,
+    <C as TryRead<U>>::Error: 'static,
     U: UniqueIdentifier,
 {
     async fn recv(&mut self) -> Result<()> {
@@ -87,15 +87,12 @@ where
         // log::debug!("{} receiving (locking client)", Who::who(self));
         let mut client = self.client.lock().await;
         // log::debug!("{} receiving (client locked)", Who::who(self));
-        (*client).try_read(
-            self.rx
-                .recv_async()
-                .await
-                .map_err(|e| ActorError::DropRecv {
-                    msg: format!("input {} to {}", type_name::<U>(), type_name::<C>()), //Who::lite(self),
-                    source: e,
-                })?,
-        )?;
+        (*client).boxed_try_read(self.rx.recv_async().await.map_err(|e| {
+            ActorError::DropRecv {
+                msg: format!("input {} to {}", type_name::<U>(), type_name::<C>()), //Who::lite(self),
+                source: e,
+            }
+        })?)?;
         log::debug!(
             "{} RECV@{N}: {} - {}",
             self.hash,

@@ -3,7 +3,7 @@ use std::any::type_name;
 use interface::{Entry, Size, TryRead, TryWrite, UniqueIdentifier, TryUpdate};
 use tokio::task;
 
-use crate::{actor::Actor, ActorError};
+use crate::actor::Actor;
 
 use super::{AddActorInput, OutputRx};
 
@@ -34,8 +34,6 @@ where
     U: 'static + UniqueIdentifier<DataType = T>,
     CI: 'static + TryRead<U> + Entry<U>,
     CO: 'static + TryWrite<U>,
-    ActorError: From<<CI as TryRead<U>>::Error>,
-    ActorError: From<<CO as TryWrite<U>>::Error>,
 {
     /// Creates a new logging entry for the output
     fn logn(mut self, actor: &mut Actor<CI, NO, N>, size: usize) -> Self {
@@ -70,8 +68,6 @@ where
     U: 'static + UniqueIdentifier<DataType = T>,
     CI: 'static + TryRead<U> + Entry<U>,
     CO: 'static + TryWrite<U> + Size<U>,
-    ActorError: From<<CI as TryRead<U>>::Error>,
-    ActorError: From<<CO as TryWrite<U>>::Error>,
 {
     /// Creates a new logging entry for the output
     fn log(mut self, actor: &mut Actor<CI, NO, N>) -> Self {

@@ -29,11 +29,7 @@ where
     <T as KernelSpecs>::Input: UniqueIdentifier,
     Self: Write<<T as KernelSpecs>::Input>,
 {
-
-    fn write(
-        &mut self,
-    ) -> Option<Data<KernelFrame<T>>>
-    {
+    fn write(&mut self) -> Option<Data<KernelFrame<T>>> {
         <Self as Write<<T as KernelSpecs>::Input>>::write(self)
             .map(|data| data.transmute::<KernelFrame<T>>())
     }
@@ -163,6 +159,7 @@ where
 //         <<T as KernelSpecs>::Processor as TryRead<_>>::read(&mut self.processor, data);
 //     }
 // }
+
 impl<T> TryRead<KernelFrame<T>> for Kernel<T>
 where
     T: KernelSpecs,
@@ -179,7 +176,7 @@ where
     <T as KernelSpecs>::Estimator: TryWrite<<T as KernelSpecs>::Output>,
     <T as KernelSpecs>::Integrator: TryRead<<T as KernelSpecs>::Output>,
 {
-    type Error = Infallible;
+    type Error = KernelError;
 
     fn try_read(
         &mut self,

@@ -85,7 +85,6 @@ impl<C, U, const N: usize> Display for Output<C, U, N>
 where
     C: TryWrite<U> + Send + 'static,
     U: UniqueIdentifier + 'static,
-    ActorError: From<<C as TryWrite<U>>::Error>,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -141,11 +140,10 @@ where
     C: TryWrite<U> + 'static,
     U: UniqueIdentifier + 'static,
     Assoc<U>: Send + Sync,
-    ActorError: From<<C as TryWrite<U>>::Error>,
 {
     /// Sends output data
     async fn send(&mut self) -> Result<()> {
-        self.data = (*self.client.lock().await).try_write()?;
+        self.data = (*self.client.lock().await).boxed_try_write()?;
         if let Some(data) = &self.data {
             // log::debug!("{} sending", Who::highlight(self));
             let futures: FuturesUnordered<_> = self

@@ -1,7 +1,6 @@
 use super::io::{Input, InputObject, OutputObject};
 use crate::{
-    framework::network::{ActorOutput, ActorOutputBuilder, AddActorInput, AddActorOutput},
-    ActorError, Result,
+    framework::network::{ActorOutput, ActorOutputBuilder, AddActorInput, AddActorOutput}, Result,
 };
 use futures::{future::join_all, stream::FuturesUnordered};
 use interface::{Data, TryRead, TryUpdate, UniqueIdentifier, Who};
@@ -240,7 +239,6 @@ where
 impl<U, C, const NI: usize, const NO: usize> AddActorInput<U, C, NI, NO> for Actor<C, NI, NO>
 where
     C: TryRead<U> + 'static,
-    ActorError: From<<C as TryRead<U>>::Error>,
     U: 'static + UniqueIdentifier,
 {
     /// Adds an input to an actor

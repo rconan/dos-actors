@@ -70,7 +70,7 @@ An integrated model is build as follows:
 */
 
 use interface::TryUpdate;
-use std::{convert::Infallible, sync::Arc};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 pub use gmt_dos_actors_dsl::actorscript;
@@ -117,8 +117,8 @@ pub enum ActorError {
     NoOutputsPositiveRate(String),
     #[error(r#"Orphan output "{0}" in "{1}" actor"#)]
     OrphanOutput(String, String),
-    #[error("not an error")]
-    NoError(#[from] Infallible),
+    #[error(transparent)]
+    Other(#[from] Box<dyn std::error::Error + Send + Sync>),
 }
 pub(crate) type Result<R> = std::result::Result<R, ActorError>;
 

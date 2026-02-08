@@ -87,8 +87,16 @@ pub trait Update: Send + Sync {
 }
 /// Actor client state update fallible interface
 pub trait TryUpdate: Send + Sync {
-    type Error: std::error::Error;
+    type Error: std::error::Error + Send + Sync;
     fn try_update(&mut self) -> std::result::Result<&mut Self, Self::Error>;
+    fn boxed_try_update<'a, 'b>(
+        &'a mut self,
+    ) -> std::result::Result<&'a mut Self, Box<dyn std::error::Error + Send + Sync + 'b>>
+    where
+        <Self as TryUpdate>::Error: 'b,
+    {
+        self.try_update().map_err(|e| e.into())
+    }
 }
 impl<C: Update> TryUpdate for C {
     type Error = Infallible;
@@ -105,12 +113,21 @@ pub trait Read<U: UniqueIdentifier>: Update {
 }
 /// Client input data reader fallible interface
 pub trait TryRead<U: UniqueIdentifier>: TryUpdate {
-    type Error: std::error::Error;
+    type Error: std::error::Error + Send + Sync;
     /// Read data from an input
     fn try_read(
         &mut self,
         data: Data<U>,
     ) -> std::result::Result<&mut Self, <Self as TryRead<U>>::Error>;
+    fn boxed_try_read<'a, 'b>(
+        &'a mut self,
+        data: Data<U>,
+    ) -> std::result::Result<&'a mut Self, Box<dyn std::error::Error + Send + Sync + 'b>>
+    where
+        <Self as TryRead<U>>::Error: 'b,
+    {
+        self.try_read(data).map_err(move |e| e.into())
+    }
 }
 impl<U: UniqueIdentifier, C: Read<U>> TryRead<U> for C {
     type Error = Infallible;
@@ -129,8 +146,16 @@ pub trait Write<U: UniqueIdentifier>: Update {
 }
 /// Client output data writer fallible interface
 pub trait TryWrite<U: UniqueIdentifier>: TryUpdate {
-    type Error: std::error::Error;
+    type Error: std::error::Error + Send + Sync;
     fn try_write(&mut self) -> std::result::Result<Option<Data<U>>, <Self as TryWrite<U>>::Error>;
+    fn boxed_try_write<'a, 'b>(
+        &'a mut self,
+    ) -> std::result::Result<Option<Data<U>>, Box<dyn std::error::Error + Send + Sync + 'b>>
+    where
+        <Self as TryWrite<U>>::Error: 'b,
+    {
+        self.try_write().map_err(move |e| e.into())
+    }
 }
 impl<U: UniqueIdentifier, C: Write<U>> TryWrite<U> for C {
     type Error = Infallible;
