@@ -1,6 +1,6 @@
 use std::any::type_name;
 
-use interface::{Entry, Size, TryRead, TryWrite, UniqueIdentifier, Update};
+use interface::{Entry, Size, TryRead, TryWrite, UniqueIdentifier, TryUpdate};
 use tokio::task;
 
 use crate::{actor::Actor, ActorError};
@@ -10,7 +10,7 @@ use super::{AddActorInput, OutputRx};
 /// Assign a new entry to a logging actor
 pub trait IntoLogsN<CI, const N: usize, const NO: usize>
 where
-    CI: Update,
+    CI: TryUpdate,
 {
     fn logn(self, actor: &mut Actor<CI, NO, N>, size: usize) -> Self
     where
@@ -20,7 +20,7 @@ where
 /// Assign a new entry to a logging actor
 pub trait IntoLogs<CI, const N: usize, const NO: usize>
 where
-    CI: Update,
+    CI: TryUpdate,
 {
     fn log(self, actor: &mut Actor<CI, NO, N>) -> Self
     where

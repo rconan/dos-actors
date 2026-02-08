@@ -1,4 +1,4 @@
-use interface::{Data, TryRead, UniqueIdentifier, Write};
+use interface::{Data, TryRead, UniqueIdentifier, TryWrite};
 
 use super::OutputRx;
 
@@ -7,13 +7,13 @@ use super::OutputRx;
 where
     T: 'static + Send + Sync,
     U: 'static + Send + Sync + UniqueIdentifier<DataType = T>,
-    CO: 'static + Update + Send + Sync + Write<U>,
+    CO: 'static + TryUpdate + Send + Sync + TryWrite<U>,
 {
     /// Creates a new input for 'actor' from the last 'Receiver'
     /*     #[must_use = r#"append ".ok()" to squash the "must use" warning"#]
     fn legacy_into_input<CI, const N: usize>(self, actor: &mut Actor<CI, NO, N>) -> Self
     where
-        CI: 'static + Update + Send + io::TryRead<U>,
+        CI: 'static + TryUpdate + Send + io::TryRead<U>,
         Self: Sized; */
     /// Returns an error if there are any unassigned receivers
     ///
@@ -36,7 +36,7 @@ where
 pub trait TryIntoInputs<U, CO, const NO: usize, const N: usize>
 where
     U: 'static + UniqueIdentifier,
-    CO: 'static + Write<U>,
+    CO: 'static + TryWrite<U>,
 {
     /// Try to create a new input for 'actor' from the last 'Receiver'
     fn into_input<CI>(self, actor: &mut impl AddActorInput<U, CI, NO, N>) -> Self
@@ -49,7 +49,7 @@ impl<U, CO, const NO: usize, const NI: usize, const N: usize> TryIntoInputs<U, C
     for std::result::Result<(), OutputRx<U, CO, NI, NO>>
 where
     U: 'static + UniqueIdentifier,
-    CO: 'static + Write<U>,
+    CO: 'static + TryWrite<U>,
 {
     // fn into_input<CI, const N: usize>(mut self, actor: &mut Actor<CI, NO, N>) -> Self
     fn into_input<CI>(mut self, actor: &mut impl AddActorInput<U, CI, NO, N>) -> Self
@@ -76,7 +76,7 @@ where
 // Unique hash for a pair of input/output
 /* fn hashio<CO, const NO: usize, const NI: usize>(output_actor: &mut Actor<CO, NI, NO>) -> u64
 where
-    CO: Update + Send + Sync,
+    CO: TryUpdate + Send + Sync,
 {
     let mut hasher = DefaultHasher::new();
     output_actor.who().hash(&mut hasher);
@@ -102,11 +102,11 @@ where
 where
     T: 'static + Send + Sync,
     U: 'static + Send + Sync + UniqueIdentifier<DataType = T>,
-    CO: 'static + Update + Send + io::Write<U>,
+    CO: 'static + TryUpdate + Send + io::TryWrite<U>,
 {
     fn legacy_into_input<CI, const N: usize>(mut self, actor: &mut Actor<CI, NO, N>) -> Self
     where
-        CI: 'static + Update + Send + io::TryRead<U>,
+        CI: 'static + TryUpdate + Send + io::TryRead<U>,
     {
         if let Some(recv) = self.1.pop() {
             actor.add_input(recv, hashio(self.0))

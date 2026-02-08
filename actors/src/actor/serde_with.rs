@@ -1,16 +1,16 @@
-use interface::Update;
+use interface::TryUpdate;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::sync::Arc;
 use tokio::{sync::Mutex, task};
 
-pub fn serialize<S, C: Update + Serialize>(client: &Arc<Mutex<C>>, s: S) -> Result<S::Ok, S::Error>
+pub fn serialize<S, C: TryUpdate + Serialize>(client: &Arc<Mutex<C>>, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
     task::block_in_place(move || client.blocking_lock().serialize(s))
 }
 
-pub fn deserialize<'de, D, C: Update + Deserialize<'de>>(
+pub fn deserialize<'de, D, C: TryUpdate + Deserialize<'de>>(
     deserializer: D,
 ) -> Result<Arc<Mutex<C>>, D::Error>
 where
@@ -26,7 +26,7 @@ mod tests {
 
     #[derive(Debug, Serialize, Deserialize)]
     pub struct Client();
-    impl Update for Client {}
+    impl interface::Update for Client {}
 
     #[test]
     fn serde() {

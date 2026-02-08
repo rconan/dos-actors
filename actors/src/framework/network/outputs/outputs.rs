@@ -1,6 +1,6 @@
-use interface::{UniqueIdentifier, Update, TryWrite};
+use interface::{TryUpdate, TryWrite, UniqueIdentifier};
 
-use crate::{ActorError, actor::Actor};
+use crate::{actor::Actor, ActorError};
 
 use super::{ActorOutputBuilder, AddOuput, OutputBuilder, OutputRx};
 
@@ -27,7 +27,7 @@ impl<T> OutputBuilder for ActorOutput<'_, T> {
 impl<'a, C, const NI: usize, const NO: usize> AddOuput<'a, C, NI, NO>
     for ActorOutput<'a, Actor<C, NI, NO>>
 where
-    C: 'static + Update,
+    C: 'static + TryUpdate,
 {
     fn build<U>(self) -> std::result::Result<(), OutputRx<U, C, NI, NO>>
     where

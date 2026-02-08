@@ -49,7 +49,7 @@ A client must be assigned to an [Actor]
 and the client must implement some of the following traits:
  - [Write] if the actor has some outputs,
  - [Read] if the actor has some inputs,
- - [Update], this trait must always be implemented (but the default empty implementation is acceptable)
+ - [TryUpdate], this trait must always be implemented (but the default empty implementation is acceptable)
 
 ## Model
 
@@ -65,11 +65,11 @@ An integrated model is build as follows:
 [Actor]: crate::actor::Actor
 [Write]: interface::Write
 [Read]: interface::Read
-[Update]: interface::Update
+[TryUpdate]: interface::TryUpdate
 [Model]: crate::model::Model
 */
 
-use interface::Update;
+use interface::TryUpdate;
 use std::{convert::Infallible, sync::Arc};
 use tokio::sync::Mutex;
 
@@ -133,7 +133,7 @@ pub trait ArcMutex {
         Arc::new(Mutex::new(self))
     }
 }
-impl<C: Update> ArcMutex for C {}
+impl<C: TryUpdate> ArcMutex for C {}
 
 /// Actors macros
 mod macros;

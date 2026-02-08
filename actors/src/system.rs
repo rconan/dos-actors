@@ -14,6 +14,7 @@
 //! or send outputs from the system to other clients (([SystemOutput]`<Gateway>`))
 
 use std::any::type_name;
+use std::convert::Infallible;
 use std::marker::PhantomData;
 use std::{
     fmt::Display,
@@ -39,11 +40,13 @@ pub enum SystemError {
     Ouputs(#[from] ActorOutputsError),
     #[error("{0}")]
     SubSystem(String),
+    #[error("not an error")]
+    NoError(#[from] Infallible),
 }
 impl<U, CO, const NO: usize, const NI: usize> From<OutputRx<U, CO, NI, NO>> for SystemError
 where
     U: 'static + interface::UniqueIdentifier,
-    CO: interface::Write<U>,
+    CO: interface::TryWrite<U>,
 {
     fn from(value: OutputRx<U, CO, NI, NO>) -> Self {
         SystemError::Ouputs(ActorOutputsError {
@@ -158,7 +161,7 @@ where
 
 impl<
         T: System + SystemInput<C, NI, NO>,
-        C: interface::Update,
+        C: interface::TryUpdate,
         const NI: usize,
         const NO: usize,
     > SystemInput<C, NI, NO> for Sys<T>
@@ -170,7 +173,7 @@ impl<
 
 impl<
         T: System + SystemOutput<C, NI, NO>,
-        C: interface::Update,
+        C: interface::TryUpdate,
         const NI: usize,
         const NO: usize,
     > SystemOutput<C, NI, NO> for Sys<T>

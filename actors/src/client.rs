@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, sync::Arc};
 
-use interface::Update;
+use interface::TryUpdate;
 use tokio::sync::Mutex;
 
 use crate::{actor::Actor, ArcMutex};
@@ -12,7 +12,7 @@ pub struct Client<'a, T: ArcMutex> {
     lifetime: PhantomData<&'a T>,
 }
 
-impl<T: Update> Client<'_, T> {
+impl<T: TryUpdate> Client<'_, T> {
     pub fn set_label(&mut self, label: impl ToString) {
         self.label = Some(label.to_string());
     }
@@ -21,7 +21,7 @@ impl<T: Update> Client<'_, T> {
     }
 }
 
-impl<T: Update> From<T> for Client<'_, T> {
+impl<T: TryUpdate> From<T> for Client<'_, T> {
     fn from(value: T) -> Self {
         Self {
             client: value.into_arcx(),
@@ -32,7 +32,7 @@ impl<T: Update> From<T> for Client<'_, T> {
     }
 }
 
-impl<C: Update, const NI: usize, const NO: usize> From<&Client<'_, C>> for Actor<C, NI, NO> {
+impl<C: TryUpdate, const NI: usize, const NO: usize> From<&Client<'_, C>> for Actor<C, NI, NO> {
     fn from(client: &Client<C>) -> Self {
         let actor = Actor::new(client.client.clone());
         match (client.label.as_ref(), client.image.as_ref()) {
@@ -61,12 +61,12 @@ mod tests {
     fn client() {
         use crate::{
             actor::Actor,
-            client::{Client, Update},
+            client::{Client, TryUpdate},
         };
 
         struct TestClient;
 
-        impl Update for TestClient {}
+        impl TryUpdate for TestClient {}
 
         let test_client = TestClient;
 

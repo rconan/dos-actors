@@ -103,7 +103,7 @@ impl<'a, T, CO, const NI: usize, const NO: usize> AddActorOutput<'a, CO, NI, NO>
 where
     T: System,
     Sys<T>: SystemOutput<CO, NI, NO>,
-    CO: interface::Update + 'static,
+    CO: interface::TryUpdate + 'static,
 {
     fn add_output(&'a mut self) -> ActorOutput<'a, Actor<CO, NI, NO>> {
         AddActorOutput::add_output(self.output())
