@@ -29,10 +29,9 @@ use serde::Deserialize;
 use serde_pickle as pickle;
 use std::{
     convert::Infallible,
-    error::Error,
     fmt::Display,
     fs::File,
-    io::BufReader,
+    io::{self, BufReader},
     ops::{Deref, DerefMut},
     path::Path,
     sync::Arc,
@@ -118,6 +117,20 @@ pub struct QP<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, cons
     calib: Option<Calib<MixedMirrorMode>>,
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum QpError {
+    #[error("failed to open data file {filename:?}")]
+    Open { filename: String, source: io::Error },
+    #[error("failed to deserialize QP data file")]
+    Pickle(#[from] serde_pickle::Error),
+    #[error("failed to setup QP problem")]
+    QpSetup(#[from] osqp::SetupError),
+    #[error("failed to solve QP problem")]
+    QpSolve,
+    #[error("expected some calibration matrix, found none")]
+    MissingCalibration,
+}
+
 impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize>
     QP<M1_RBM, M2_RBM, M1_BM, N_MODE>
 {
@@ -126,14 +139,17 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
         qp_filename: impl AsRef<Path>,
         //calib_matrix: (&'a [f64], usize),
         //coefs2forces: (&'a [Vec<f64>], Vec<usize>),
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    ) -> Result<Self, QpError> {
         assert!(
             M1_RBM + M2_RBM + 7 * M1_BM == N_MODE,
             "The number of modes {} do not match the expected value {} (M1_RBM + M2_RBM + 7 * M1_BM)x",
             N_MODE,
             M1_RBM + M2_RBM + 7 * M1_BM
         );
-        let file = File::open(qp_filename)?;
+        let file = File::open(&qp_filename).map_err(|e| QpError::Open {
+            filename: qp_filename.as_ref().to_str().unwrap().to_string(),
+            source: e,
+        })?;
         let rdr = BufReader::with_capacity(10_000, file);
         let this: Self = pickle::from_reader(rdr, Default::default())?;
         Ok(Self {
@@ -145,14 +161,20 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
             ..this
         })
     }
-    pub fn update_dmat(mut self, path: impl AsRef<Path>) -> Result<Self, Box<dyn Error>> {
-        let file = File::open(path)?;
+    pub fn update_dmat(mut self, path: impl AsRef<Path>) -> Result<Self, QpError> {
+        let file = File::open(&path).map_err(|e| QpError::Open {
+            filename: path.as_ref().to_str().unwrap().to_string(),
+            source: e,
+        })?;
         let buffer = BufReader::new(file);
         self.data.dmat = serde_pickle::from_reader(buffer, Default::default())?;
         Ok(self)
     }
-    pub fn update_calib(mut self, path: impl AsRef<Path>) -> Result<Self, Box<dyn Error>> {
-        let file = File::open(path)?;
+    pub fn update_calib(mut self, path: impl AsRef<Path>) -> Result<Self, QpError> {
+        let file = File::open(&path).map_err(|e| QpError::Open {
+            filename: path.as_ref().to_str().unwrap().to_string(),
+            source: e,
+        })?;
         let buffer = BufReader::new(file);
         let calib: Calib<MixedMirrorMode> = serde_pickle::from_reader(buffer, Default::default())?;
         self.data.dmat = calib
@@ -221,7 +243,7 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
         }
     }
     /// Builds the quadratic programming problem
-    pub fn build(self) -> ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE> {
+    pub fn build(self) -> Result<ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>, QpError> {
         let dmat = self.data.dmat;
         //assert!(n_mode == N_MODE,"The number of columns ({}) of the calibration matrix do not match the number of modes ({})",n_mode,N_MODE);
         // W2 and W3
@@ -289,10 +311,8 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
             .verbose(self.verbose);
 
         // Create an OSQP problem
-        let prob = Problem::new(p_utri, &q, a_in, &umin, &umax, &settings)
-            .expect("Failed to setup AcO problem!");
-
-        ActiveOptics {
+        let prob = Problem::new(p_utri, &q, a_in, &umin, &umax, &settings)?;
+        Ok(ActiveOptics {
             prob,
             u: vec![0f64; 84 + 7 * M1_BM],
             y_valid: Vec::with_capacity(d_wfs.nrows()),
@@ -320,7 +340,7 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
                     .collect()
             }),
             */
-        }
+        })
     }
 }
 
@@ -597,18 +617,137 @@ impl<
 impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize> TryUpdate
     for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
 {
-    type Error = Infallible;
+    type Error = QpError;
 
     fn try_update(&mut self) -> std::result::Result<&mut Self, Self::Error> {
         log::info!("updating active optics state");
-        self.next();
+        let y_vec = DVector::from_column_slice(&self.y_valid); //VectorNs::from_vec(y_valid);
+
+        self.u_ant
+            .iter_mut()
+            .zip(&self.u)
+            .take(M1_RBM)
+            .for_each(|(u, &v)| *u = v);
+        self.u_ant
+            .iter_mut()
+            .skip(M1_RBM)
+            .zip(&self.u[42..])
+            .take(M2_RBM)
+            .for_each(|(u, &v)| *u = v);
+        self.u_ant
+            .iter_mut()
+            .skip(M1_RBM + M2_RBM)
+            .zip(&self.u[84..])
+            .for_each(|(u, &v)| *u = v);
+
+        // QP linear term                                                               // QP linear term
+        let mut q: Vec<f64> = (-y_vec.clone_owned().tr_mul(&self.d_wfs))
+            // - self.u_ant.tr_mul(&self.w3).scale(self.rho_3 * self.k))
+            .as_slice()
+            .to_vec();
+        self.prob.update_lin_cost(&q);
+        // Update bounds to inequality constraints
+        let tu_u_ant: Vec<f64> = (&self.tu * &self.u_ant).as_slice().to_vec();
+        let lb: Vec<f64> = tu_u_ant
+            .iter()
+            .zip(self.umin.iter())
+            .map(|(v, w)| w - v)
+            .collect();
+        let ub: Vec<f64> = tu_u_ant
+            .iter()
+            .zip(self.umax.iter())
+            .map(|(v, w)| w - v)
+            .collect();
+        self.prob.update_bounds(&lb, &ub);
+        let mut result = self.prob.solve();
+        let mut c = match result.x() {
+            Some(x) => x,
+            None => {
+                pickle::to_writer(
+                    &mut File::create("OSQP_log.pkl").unwrap(),
+                    &(self.y_valid.clone(), self.u_ant.as_slice().to_vec()),
+                    Default::default(),
+                )?;
+                return Err(QpError::QpSolve);
+            }
+        }; //.expect("Failed to solve QP problem!");
+        // Compute costs to set up the 2nd QP iteration
+        let c_vec = SMatrix::<f64, N_MODE, 1>::from_vec(c.to_vec());
+        let j_1na = {
+            let epsilon = &y_vec - (&self.d_wfs * &c_vec);
+            // Still need to account for W1
+            epsilon.tr_mul(&epsilon)
+        };
+        // Control effort cost
+        let j_3na = {
+            let delta = c_vec.scale(self.k) - self.u_ant;
+            delta.tr_mul(&self.w3) * &delta
+        };
+        // nalgebra object to f64 scalar conversion
+        let j_1 = j_1na.get(0).unwrap();
+        let j_3 = j_3na.get(0).unwrap();
+        //println!(" ===>>> J3: {:}:, J1: {:},RHO_3: {:}", j_3, j_1, self.rho_3);
+        if *j_3 != 0f64 {
+            self.rho_3 = j_1 / (j_3 * J1_J3_RATIO);
+            if self.rho_3 < MIN_RHO3 {
+                self.rho_3 = MIN_RHO3
+            };
+
+            // Update QP P matrix
+            let p_utri = {
+                //println!("New rho_3:{}", format!("{:.4e}", self.rho_3));
+                let p = self.d_t_w1_d + &self.w2 + self.w3.scale(self.rho_3 * self.k * self.k);
+                CscMatrix::from_column_iter_dense(
+                    p.nrows(),
+                    p.ncols(),
+                    p.as_slice().to_vec().into_iter(),
+                )
+                .into_upper_tri()
+            };
+            self.prob.update_P(p_utri);
+            // Update QP linear term
+            q = (-y_vec.clone_owned().tr_mul(&self.d_wfs)
+                - self.u_ant.tr_mul(&self.w3).scale(self.rho_3 * self.k))
+            .as_slice()
+            .to_vec();
+            self.prob.update_lin_cost(&q);
+
+            // Solve problem - 2nd iteration
+            result = self.prob.solve();
+            c = match result.x() {
+                Some(x) => x,
+                None => {
+                    pickle::to_writer(
+                        &mut File::create("OSQP_log.pkl").unwrap(),
+                        &(self.y_valid.clone(), self.u_ant.as_slice().to_vec()),
+                        Default::default(),
+                    )?;
+                    return Err(QpError::QpSolve);
+                }
+            }; //.expect("Failed to solve QP problem!");
+        }
+        // Control action
+        // dbg!(c[0]);
+        let k = 0.2; //self.k;
+        self.u
+            .iter_mut()
+            .zip(&c[..M1_RBM])
+            .for_each(|(u, c)| *u -= k * c); // u = u - k * c
+        self.u[42..]
+            .iter_mut()
+            .zip(&c[M1_RBM..M1_RBM + M2_RBM])
+            .for_each(|(u, c)| *u -= k * c);
+        self.u[84..]
+            .iter_mut()
+            .zip(&c[M1_RBM + M2_RBM..])
+            .for_each(|(u, c)| *u -= k * c);
         Ok(self)
     }
 }
 impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize>
     TryRead<SensorData> for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
 {
-    type Error = Infallible;
+    type Error = QpError;
 
     fn try_read(
         &mut self,
@@ -617,7 +756,7 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
         self.y_valid = self
             .calib
             .as_ref()
-            .expect("no calibration matrix found in the ActiveOptics struct")
+            .ok_or_else(|| QpError::MissingCalibration)?
             .mask(&data);
         Ok(self)
     }
