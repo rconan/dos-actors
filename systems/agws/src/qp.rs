@@ -52,7 +52,7 @@ pub enum QpError {
     MissingCalibration,
 }
 
-pub struct AcO<
+pub struct ActiveOptics<
     const I: usize,
     const M1_RBM: usize,
     const M2_RBM: usize,
@@ -65,7 +65,7 @@ impl<
     const M2_RBM: usize,
     const M1_BM: usize,
     const N_MODE: usize,
-> Deref for AcO<I, M1_RBM, M2_RBM, M1_BM, N_MODE>
+> Deref for ActiveOptics<I, M1_RBM, M2_RBM, M1_BM, N_MODE>
 {
     type Target = active_optics::ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>;
 
@@ -79,7 +79,7 @@ impl<
     const M2_RBM: usize,
     const M1_BM: usize,
     const N_MODE: usize,
-> DerefMut for AcO<I, M1_RBM, M2_RBM, M1_BM, N_MODE>
+> DerefMut for ActiveOptics<I, M1_RBM, M2_RBM, M1_BM, N_MODE>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
@@ -92,7 +92,7 @@ impl<
     const M2_RBM: usize,
     const M1_BM: usize,
     const N_MODE: usize,
-> KernelSpecs for AcO<I, M1_RBM, M2_RBM, M1_BM, N_MODE>
+> KernelSpecs for ActiveOptics<I, M1_RBM, M2_RBM, M1_BM, N_MODE>
 {
     type Sensor = Camera<I>;
 
@@ -158,7 +158,7 @@ impl<
     const M2_RBM: usize,
     const M1_BM: usize,
     const N_MODE: usize,
-> TryWrite<SensorData> for Kernel<AcO<I, M1_RBM, M2_RBM, M1_BM, N_MODE>>
+> TryWrite<SensorData> for Kernel<ActiveOptics<I, M1_RBM, M2_RBM, M1_BM, N_MODE>>
 {
     type Error = Infallible;
 
@@ -166,7 +166,7 @@ impl<
         &mut self,
     ) -> std::result::Result<Option<Data<SensorData>>, <Self as TryWrite<SensorData>>::Error> {
         Ok(
-            <<AcO<I, M1_RBM, M2_RBM, M1_BM, N_MODE> as KernelSpecs>::Processor as Write<_>>::write(
+            <<ActiveOptics<I, M1_RBM, M2_RBM, M1_BM, N_MODE> as KernelSpecs>::Processor as Write<_>>::write(
                 &mut self.processor,
             ),
         )
