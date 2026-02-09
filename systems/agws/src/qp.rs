@@ -5,10 +5,7 @@
 //! Document" (GMT-DOC-04426)
 
 use gmt_dos_clients_crseo::{
-    DeviceInitialize, OpticalModelBuilder,
-    calibration::{Calib, MixedMirrorMode, algebra::CalibProps},
-    centroiding::CentroidsProcessing,
-    crseo::FromBuilder,
+    DeviceInitialize, OpticalModelBuilder, centroiding::CentroidsProcessing, crseo::FromBuilder,
     sensors::Camera,
 };
 use gmt_dos_clients_io::{
@@ -16,106 +13,30 @@ use gmt_dos_clients_io::{
     optics::{Dev, Frame, SensorData},
 };
 use interface::{
-    Data, Read, Right, TryRead, TryUpdate, TryWrite, Update, Write,
+    Data, Read, Right, TryWrite, Update, Write,
     optics::{
         OpticsState,
         state::{MirrorState, OpticalState},
     },
 };
-use nalgebra::{self as na, DMatrix, DVector, SMatrix};
-//, SVector
-use osqp::{CscMatrix, Problem, Settings};
-use serde::Deserialize;
-use serde_pickle as pickle;
 use std::{
     convert::Infallible,
-    fmt::Display,
-    fs::File,
-    io::{self, BufReader},
+    io::{self},
     ops::{Deref, DerefMut},
-    path::Path,
     sync::Arc,
 };
 
 use crate::kernels::{Kernel, KernelError, KernelSpecs};
 
-// Matrix type definitions
-type DynMatrix = DMatrix<f64>;
-// Ratio between cost J1 (WFS slope fitting) and J3 (control effort).
-const J1_J3_RATIO: f64 = 10.0;
-// Minimum value assigned to rho3 factor
-const MIN_RHO3: f64 = 1.0e-6;
+pub mod active_optics;
+pub mod qp;
+#[doc(inline)]
+pub use qp::QP;
 
-/*
-/// Data structure for the quadratic programming algorithm
-#[derive(Deserialize)]
-struct QPData {
-    /// Controllable mode regularization matrix
-    #[serde(rename = "W2")]
-    w2: Vec<f64>,
-    /// Control balance weighting matrix
-    #[serde(rename = "W3")]
-    w3: Vec<f64>,
-    /// Controller gain
-    #[serde(rename = "K")]
-    k: f64,
-    /// Objective function factor
-    rho_3: f64,
-}*/
-#[derive(Deserialize)]
-struct QPData {
-    #[serde(rename = "D")]
-    dmat: Vec<f64>,
-    #[serde(rename = "W2")]
-    w2: Vec<f64>,
-    #[serde(rename = "W3")]
-    w3: Vec<f64>,
-    #[serde(rename = "K")]
-    k: f64,
-    //#[serde(rename = "wfsMask")]
-    //wfs_mask: Vec<Vec<bool>>,
-    //umin: Vec<f64>,
-    //umax: Vec<f64>,
-    //rm_mean_slopes: bool,
-    #[serde(rename = "_Tu")]
-    tu: Vec<f64>,
-    rho_3: f64,
-    end2end_ordering: bool,
-}
-/// Quadratic programming stucture
-///
-/// It requires 4 generic constants:
-///  - `M1_RBM`: the number of controlled M1 segment rigid body motions (at most 41 as S7 Rz is a blind mode)
-///  - `M2_RBM`: the number of controlled M2 segment rigid body motions (at most 41 as S7 Rz is a blind mode)
-///  - `M1_BM` : the number of controlled M1 segment eigen modes
-///  - `N_MODE` = M1_RBM + M2_RBM + 7 * M1_BM
-#[derive(Deserialize)]
-//pub struct QP<'a, const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize>
-pub struct QP<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize> {
-    /// Quadratic programming data
-    #[serde(rename = "SHAcO_qp")]
-    data: QPData,
-    /*
-    /// calibration matrix (column wise) as (data,n_cols)
-    #[serde(skip)]
-    dmat: (&'a [f64], usize),
-    /// segment bending modes coefficients to segment actuators forces  (column wise) as ([data],[n_rows])
-    #[serde(skip)]
-    coefs2forces: (&'a [Vec<f64>], Vec<usize>),
-    */
-    /// OSQP verbosity
-    #[serde(skip)]
-    verbose: bool,
-    /// convert bending modes coefficients to forces if true
-    #[serde(skip)]
-    #[allow(unused)]
-    m1_actuator_forces_outputs: bool,
-    /// OSQP convergence tolerances (absolute=1e-8,relative=1e-6)
-    #[serde(skip)]
-    convergence_tolerances: (f64, f64),
-    #[serde(skip)]
-    calib: Option<Calib<MixedMirrorMode>>,
-}
+// Ratio between cost J1 (WFS slope fitting) and J3 (control effort).
+pub const J1_J3_RATIO: f64 = 10.0;
+// Minimum value assigned to rho3 factor
+pub const MIN_RHO3: f64 = 1.0e-6;
 
 #[derive(Debug, thiserror::Error)]
 pub enum QpError {
@@ -131,432 +52,13 @@ pub enum QpError {
     MissingCalibration,
 }
 
-impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize>
-    QP<M1_RBM, M2_RBM, M1_BM, N_MODE>
-{
-    /// Creates a new quadratic programming object
-    pub fn new(
-        qp_filename: impl AsRef<Path>,
-        //calib_matrix: (&'a [f64], usize),
-        //coefs2forces: (&'a [Vec<f64>], Vec<usize>),
-    ) -> Result<Self, QpError> {
-        assert!(
-            M1_RBM + M2_RBM + 7 * M1_BM == N_MODE,
-            "The number of modes {} do not match the expected value {} (M1_RBM + M2_RBM + 7 * M1_BM)x",
-            N_MODE,
-            M1_RBM + M2_RBM + 7 * M1_BM
-        );
-        let file = File::open(&qp_filename).map_err(|e| QpError::Open {
-            filename: qp_filename.as_ref().to_str().unwrap().to_string(),
-            source: e,
-        })?;
-        let rdr = BufReader::with_capacity(10_000, file);
-        let this: Self = pickle::from_reader(rdr, Default::default())?;
-        Ok(Self {
-            //dmat: calib_matrix,
-            //coefs2forces,
-            verbose: false,
-            m1_actuator_forces_outputs: false,
-            convergence_tolerances: (1.0e-8, 1.0e-6),
-            ..this
-        })
-    }
-    pub fn update_dmat(mut self, path: impl AsRef<Path>) -> Result<Self, QpError> {
-        let file = File::open(&path).map_err(|e| QpError::Open {
-            filename: path.as_ref().to_str().unwrap().to_string(),
-            source: e,
-        })?;
-        let buffer = BufReader::new(file);
-        self.data.dmat = serde_pickle::from_reader(buffer, Default::default())?;
-        Ok(self)
-    }
-    pub fn update_calib(mut self, path: impl AsRef<Path>) -> Result<Self, QpError> {
-        let file = File::open(&path).map_err(|e| QpError::Open {
-            filename: path.as_ref().to_str().unwrap().to_string(),
-            source: e,
-        })?;
-        let buffer = BufReader::new(file);
-        let calib: Calib<MixedMirrorMode> = serde_pickle::from_reader(buffer, Default::default())?;
-        self.data.dmat = calib
-            .mat_ref()
-            .col_iter()
-            .flat_map(|c| c.iter().cloned().collect::<Vec<_>>())
-            .collect();
-        self.calib = Some(calib);
-        Ok(self)
-    }
-    /// Sets OSQP verbosity
-    pub fn verbose(self) -> Self {
-        Self {
-            verbose: true,
-            ..self
-        }
-    }
-    /// Outputs the forces of M1 actuators instead of M1 bending modes coefficients
-    pub fn as_m1_actuator_forces(self) -> Self {
-        Self {
-            m1_actuator_forces_outputs: true,
-            ..self
-        }
-    }
-    /*
-    /// Computes the control balance weighting matrix
-    fn balance_weighting(&self) -> DynMatrix {
-        let (data, n_actuators) = &self.coefs2forces;
-        let n_actuators_sum = n_actuators.iter().sum::<usize>();
-        let fz = 10e-5;
-        let coefs2forces: Vec<_> = data
-            .iter()
-            .zip(n_actuators.iter())
-            .map(|(c2f, &n)| DMatrix::from_column_slice(n, c2f.len() / n, c2f) * fz)
-            .collect();
-        //    println!("coefs2forces: {:?}", coefs2force.shape());
-        let tu_nrows = M1_RBM * M2_RBM + n_actuators_sum;
-        let tu_ncols = N_MODE;
-        let mut tu = DMatrix::<f64>::zeros(tu_nrows, tu_ncols);
-        for (i, mut row) in tu.row_iter_mut().take(M1_RBM).enumerate() {
-            row[(i)] = 1f64;
-        }
-        for (i, mut row) in tu.row_iter_mut().skip(M1_RBM).take(M2_RBM).enumerate() {
-            row[(i + M1_RBM)] = 1f64;
-        }
-        let mut n_skip_row = M1_RBM + M2_RBM;
-        for c2f in coefs2forces {
-            for (mut tu_row, c2f_row) in tu.row_iter_mut().skip(n_skip_row).zip(c2f.row_iter()) {
-                tu_row
-                    .iter_mut()
-                    .zip(c2f_row.iter())
-                    .for_each(|(tu, &c2f)| {
-                        *tu = c2f;
-                    });
-                n_skip_row += c2f.nrows();
-            }
-        }
-        tu
-    }
-    */
-    /// Sets OSQP convergence tolerances: (absolute,relative)
-    pub fn convergence_tolerances(self, convergence_tolerances: (f64, f64)) -> Self {
-        Self {
-            convergence_tolerances,
-            ..self
-        }
-    }
-    /// Builds the quadratic programming problem
-    pub fn build(self) -> Result<ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>, QpError> {
-        let dmat = self.data.dmat;
-        //assert!(n_mode == N_MODE,"The number of columns ({}) of the calibration matrix do not match the number of modes ({})",n_mode,N_MODE);
-        // W2 and W3
-        let w2 = DMatrix::from_column_slice(N_MODE, N_MODE, &self.data.w2);
-        // let w3 = SMatrix::<f64, N_MODE, N_MODE>::from_column_slice(&self.data.w3);
-        let w3 = DMatrix::<f64>::from_column_slice(N_MODE, N_MODE, &self.data.w3);
-        // W1
-        let d_wfs = DMatrix::from_column_slice(dmat.len() / N_MODE, N_MODE, &dmat);
-        let d_t_w1_d = {
-            let d_t_w1_d_dyn = d_wfs.tr_mul(&d_wfs);
-            SMatrix::<f64, N_MODE, N_MODE>::from_vec(d_t_w1_d_dyn.as_slice().to_vec())
-        };
-        // Extract the upper triangular elements of `P`
-        let p_utri = {
-            let p = d_t_w1_d + &w2 + w3.scale(self.data.rho_3 * self.data.k * self.data.k);
-            CscMatrix::from_column_iter_dense(
-                p.nrows(),
-                p.ncols(),
-                p.as_slice().to_vec().into_iter(),
-            )
-            .into_upper_tri()
-        };
-
-        // Remove S7Rz from T_u matrix
-        // Indices to insert (or remove) S7Rz columns of matrix Tu
-        let i_m1_s7_rz: u8 = if self.data.end2end_ordering {
-            41
-        } else {
-            (((12 + M1_BM) * 6) + 5).try_into().unwrap()
-        };
-        let i_m2_s7_rz: u8 = if self.data.end2end_ordering {
-            // Add 1 (+1) to delete
-            82 + 1
-        } else {
-            (((12 + M1_BM) * 6) + 10 + 1).try_into().unwrap()
-        };
-        let tu = DynMatrix::from_vec(273, 1228, self.data.tu)
-            .transpose()
-            .remove_columns_at(&[i_m1_s7_rz.into(), i_m2_s7_rz.into()]);
-
-        //let tu = balance_weighting();
-
-        let a_in = {
-            let tus = tu.scale(self.data.k);
-            CscMatrix::from(
-                &tus.row_iter()
-                    .map(|x| x.clone_owned().as_slice().to_vec())
-                    .collect::<Vec<Vec<f64>>>(),
-            )
-        };
-
-        // QP linear term
-        let q: Vec<f64> = vec![0f64; N_MODE];
-
-        // Inequality constraints
-        let umin = vec![f64::NEG_INFINITY; tu.nrows()];
-        let umax = vec![f64::INFINITY; tu.nrows()];
-
-        // QP settings
-        let settings = Settings::default()
-            .eps_abs(self.convergence_tolerances.0)
-            .eps_rel(self.convergence_tolerances.1)
-            .max_iter((500 * N_MODE).try_into().unwrap())
-            .warm_start(true)
-            .verbose(self.verbose);
-
-        // Create an OSQP problem
-        let prob = Problem::new(p_utri, &q, a_in, &umin, &umax, &settings)?;
-        Ok(ActiveOptics {
-            prob,
-            u: vec![0f64; 84 + 7 * M1_BM],
-            y_valid: Vec::with_capacity(d_wfs.nrows()),
-            d_wfs,
-            u_ant: SMatrix::zeros(),
-            d_t_w1_d,
-            w2,
-            w3,
-            rho_3: self.data.rho_3,
-            k: self.data.k,
-            umin: vec![f64::NEG_INFINITY; tu.nrows()],
-            umax: vec![f64::INFINITY; tu.nrows()],
-            tu,
-            calib: self.calib,
-            /*
-            coefs2forces: self.m1_actuator_forces_outputs.then(|| {
-                let (data, n_actuators) = &self.coefs2forces;
-                data.iter()
-                    .zip(n_actuators)
-                    .map(|(c2f, &n)| {
-                        DMatrix::from_column_slice(n, c2f.len() / n, c2f)
-                            .columns(0, M1_BM)
-                            .into_owned()
-                    })
-                    .collect()
-            }),
-            */
-        })
-    }
-}
-
-pub struct ActiveOptics<
-    const M1_RBM: usize,
-    const M2_RBM: usize,
-    const M1_BM: usize,
-    const N_MODE: usize,
-> {
-    /// Quadratic programming problem
-    prob: Problem,
-    /// Calibration matrix
-    d_wfs: DynMatrix,
-    /// Previous quadratic programming solution
-    u_ant: SMatrix<f64, N_MODE, 1>,
-    /// Current quadratic programming solution
-    u: Vec<f64>,
-    /// Wavefront sensor data
-    y_valid: Vec<f64>,
-    /// Wavefront error weighting matrix
-    d_t_w1_d: na::Matrix<
-        f64,
-        na::Const<N_MODE>,
-        na::Const<N_MODE>,
-        na::ArrayStorage<f64, N_MODE, N_MODE>,
-    >,
-    /// Controllable mode regularization matrix    
-    w2: DMatrix<f64>,
-    /// Control balance weighting matrix
-    w3: DMatrix<f64>,
-    /// Objective function factor
-    rho_3: f64,
-    /// Controller gain
-    k: f64,
-    /// QP solution lower bound
-    umin: Vec<f64>,
-    /// QP solution upper bound
-    umax: Vec<f64>,
-    /// Control balance weighting matrix
-    tu: DynMatrix,
-    // /// segment bending modes coefficients to segment actuators forces  (column wise) as ([data],[n_rows])
-    //coefs2forces: Option<Vec<DynMatrix>>,
-    calib: Option<Calib<MixedMirrorMode>>,
-}
-
-impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize> Display
-    for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Active Optics Quadratic Programming Algorithm:")?;
-        writeln!(f, " * M1: RBM={M1_RBM}, M2: BM={M1_BM}")?;
-        writeln!(f, " * M2: RBM={M2_RBM}")?;
-        writeln!(f, " * objective function factor: {:.3e}", self.rho_3)?;
-        writeln!(f, " * controller gain: {:.3e}", self.k)?;
-        Ok(())
-    }
-}
-
-impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize>
-    ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
-{
-    /// Returns AcO controller gain
-    pub fn controller_gain(&self) -> f64 {
-        self.k
-    }
-
-    /// Returns AcO interacion matrix (stacked) version
-    pub fn get_d_wfs(&self) -> DynMatrix {
-        println!(
-            "Cloning [{}x{}] WFS interaction matrix.",
-            &self.d_wfs.nrows(),
-            &self.d_wfs.ncols()
-        );
-        self.d_wfs.clone()
-    }
-}
-
-impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize> Iterator
-    for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
-{
-    type Item = ();
-    /// Updates the quadratic programming problem and computes the new solution
-    fn next(&mut self) -> Option<Self::Item> {
-        let y_vec = DVector::from_column_slice(&self.y_valid); //VectorNs::from_vec(y_valid);
-
-        self.u_ant
-            .iter_mut()
-            .zip(&self.u)
-            .take(M1_RBM)
-            .for_each(|(u, &v)| *u = v);
-        self.u_ant
-            .iter_mut()
-            .skip(M1_RBM)
-            .zip(&self.u[42..])
-            .take(M2_RBM)
-            .for_each(|(u, &v)| *u = v);
-        self.u_ant
-            .iter_mut()
-            .skip(M1_RBM + M2_RBM)
-            .zip(&self.u[84..])
-            .for_each(|(u, &v)| *u = v);
-
-        // QP linear term                                                               // QP linear term
-        let mut q: Vec<f64> = (-y_vec.clone_owned().tr_mul(&self.d_wfs))
-            // - self.u_ant.tr_mul(&self.w3).scale(self.rho_3 * self.k))
-            .as_slice()
-            .to_vec();
-        self.prob.update_lin_cost(&q);
-        // Update bounds to inequality constraints
-        let tu_u_ant: Vec<f64> = (&self.tu * &self.u_ant).as_slice().to_vec();
-        let lb: Vec<f64> = tu_u_ant
-            .iter()
-            .zip(self.umin.iter())
-            .map(|(v, w)| w - v)
-            .collect();
-        let ub: Vec<f64> = tu_u_ant
-            .iter()
-            .zip(self.umax.iter())
-            .map(|(v, w)| w - v)
-            .collect();
-        self.prob.update_bounds(&lb, &ub);
-        let mut result = self.prob.solve();
-        let mut c = match result.x() {
-            Some(x) => x,
-            None => {
-                pickle::to_writer(
-                    &mut File::create("OSQP_log.pkl").unwrap(),
-                    &(self.y_valid.clone(), self.u_ant.as_slice().to_vec()),
-                    Default::default(),
-                )
-                .unwrap();
-                panic!("Failed to solve QP problem!");
-            }
-        }; //.expect("Failed to solve QP problem!");
-        // Compute costs to set up the 2nd QP iteration
-        let c_vec = SMatrix::<f64, N_MODE, 1>::from_vec(c.to_vec());
-        let j_1na = {
-            let epsilon = &y_vec - (&self.d_wfs * &c_vec);
-            // Still need to account for W1
-            epsilon.tr_mul(&epsilon)
-        };
-        // Control effort cost
-        let j_3na = {
-            let delta = c_vec.scale(self.k) - self.u_ant;
-            delta.tr_mul(&self.w3) * &delta
-        };
-        // nalgebra object to f64 scalar conversion
-        let j_1 = j_1na.get(0).unwrap();
-        let j_3 = j_3na.get(0).unwrap();
-        //println!(" ===>>> J3: {:}:, J1: {:},RHO_3: {:}", j_3, j_1, self.rho_3);
-        if *j_3 != 0f64 {
-            self.rho_3 = j_1 / (j_3 * J1_J3_RATIO);
-            if self.rho_3 < MIN_RHO3 {
-                self.rho_3 = MIN_RHO3
-            };
-
-            // Update QP P matrix
-            let p_utri = {
-                //println!("New rho_3:{}", format!("{:.4e}", self.rho_3));
-                let p = self.d_t_w1_d + &self.w2 + self.w3.scale(self.rho_3 * self.k * self.k);
-                CscMatrix::from_column_iter_dense(
-                    p.nrows(),
-                    p.ncols(),
-                    p.as_slice().to_vec().into_iter(),
-                )
-                .into_upper_tri()
-            };
-            self.prob.update_P(p_utri);
-            // Update QP linear term
-            q = (-y_vec.clone_owned().tr_mul(&self.d_wfs)
-                - self.u_ant.tr_mul(&self.w3).scale(self.rho_3 * self.k))
-            .as_slice()
-            .to_vec();
-            self.prob.update_lin_cost(&q);
-
-            // Solve problem - 2nd iteration
-            result = self.prob.solve();
-            c = match result.x() {
-                Some(x) => x,
-                None => {
-                    pickle::to_writer(
-                        &mut File::create("OSQP_log.pkl").unwrap(),
-                        &(self.y_valid.clone(), self.u_ant.as_slice().to_vec()),
-                        Default::default(),
-                    )
-                    .unwrap();
-                    panic!("Failed to solve QP problem!");
-                }
-            }; //.expect("Failed to solve QP problem!");
-        }
-        // Control action
-        // dbg!(c[0]);
-        let k = 0.2; //self.k;
-        self.u
-            .iter_mut()
-            .zip(&c[..M1_RBM])
-            .for_each(|(u, c)| *u -= k * c); // u = u - k * c
-        self.u[42..]
-            .iter_mut()
-            .zip(&c[M1_RBM..M1_RBM + M2_RBM])
-            .for_each(|(u, c)| *u -= k * c);
-        self.u[84..]
-            .iter_mut()
-            .zip(&c[M1_RBM + M2_RBM..])
-            .for_each(|(u, c)| *u -= k * c);
-        Some(())
-    }
-}
-
 pub struct AcO<
     const I: usize,
     const M1_RBM: usize,
     const M2_RBM: usize,
     const M1_BM: usize,
     const N_MODE: usize,
->(ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>);
+>(active_optics::ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>);
 impl<
     const I: usize,
     const M1_RBM: usize,
@@ -565,7 +67,7 @@ impl<
     const N_MODE: usize,
 > Deref for AcO<I, M1_RBM, M2_RBM, M1_BM, N_MODE>
 {
-    type Target = ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>;
+    type Target = active_optics::ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -596,7 +98,7 @@ impl<
 
     type Processor = CentroidsProcessing;
 
-    type Estimator = ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>;
+    type Estimator = active_optics::ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>;
 
     type Integrator = gmt_dos_clients::integrator::Integrator<Estimate>;
 
@@ -614,165 +116,6 @@ impl<
         Ok(centroids)
     }
 }
-impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize> TryUpdate
-    for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
-{
-    type Error = QpError;
-
-    fn try_update(&mut self) -> std::result::Result<&mut Self, Self::Error> {
-        log::info!("updating active optics state");
-        let y_vec = DVector::from_column_slice(&self.y_valid); //VectorNs::from_vec(y_valid);
-
-        self.u_ant
-            .iter_mut()
-            .zip(&self.u)
-            .take(M1_RBM)
-            .for_each(|(u, &v)| *u = v);
-        self.u_ant
-            .iter_mut()
-            .skip(M1_RBM)
-            .zip(&self.u[42..])
-            .take(M2_RBM)
-            .for_each(|(u, &v)| *u = v);
-        self.u_ant
-            .iter_mut()
-            .skip(M1_RBM + M2_RBM)
-            .zip(&self.u[84..])
-            .for_each(|(u, &v)| *u = v);
-
-        // QP linear term                                                               // QP linear term
-        let mut q: Vec<f64> = (-y_vec.clone_owned().tr_mul(&self.d_wfs))
-            // - self.u_ant.tr_mul(&self.w3).scale(self.rho_3 * self.k))
-            .as_slice()
-            .to_vec();
-        self.prob.update_lin_cost(&q);
-        // Update bounds to inequality constraints
-        let tu_u_ant: Vec<f64> = (&self.tu * &self.u_ant).as_slice().to_vec();
-        let lb: Vec<f64> = tu_u_ant
-            .iter()
-            .zip(self.umin.iter())
-            .map(|(v, w)| w - v)
-            .collect();
-        let ub: Vec<f64> = tu_u_ant
-            .iter()
-            .zip(self.umax.iter())
-            .map(|(v, w)| w - v)
-            .collect();
-        self.prob.update_bounds(&lb, &ub);
-        let mut result = self.prob.solve();
-        let mut c = match result.x() {
-            Some(x) => x,
-            None => {
-                pickle::to_writer(
-                    &mut File::create("OSQP_log.pkl").unwrap(),
-                    &(self.y_valid.clone(), self.u_ant.as_slice().to_vec()),
-                    Default::default(),
-                )?;
-                return Err(QpError::QpSolve);
-            }
-        }; //.expect("Failed to solve QP problem!");
-        // Compute costs to set up the 2nd QP iteration
-        let c_vec = SMatrix::<f64, N_MODE, 1>::from_vec(c.to_vec());
-        let j_1na = {
-            let epsilon = &y_vec - (&self.d_wfs * &c_vec);
-            // Still need to account for W1
-            epsilon.tr_mul(&epsilon)
-        };
-        // Control effort cost
-        let j_3na = {
-            let delta = c_vec.scale(self.k) - self.u_ant;
-            delta.tr_mul(&self.w3) * &delta
-        };
-        // nalgebra object to f64 scalar conversion
-        let j_1 = j_1na.get(0).unwrap();
-        let j_3 = j_3na.get(0).unwrap();
-        //println!(" ===>>> J3: {:}:, J1: {:},RHO_3: {:}", j_3, j_1, self.rho_3);
-        if *j_3 != 0f64 {
-            self.rho_3 = j_1 / (j_3 * J1_J3_RATIO);
-            if self.rho_3 < MIN_RHO3 {
-                self.rho_3 = MIN_RHO3
-            };
-
-            // Update QP P matrix
-            let p_utri = {
-                //println!("New rho_3:{}", format!("{:.4e}", self.rho_3));
-                let p = self.d_t_w1_d + &self.w2 + self.w3.scale(self.rho_3 * self.k * self.k);
-                CscMatrix::from_column_iter_dense(
-                    p.nrows(),
-                    p.ncols(),
-                    p.as_slice().to_vec().into_iter(),
-                )
-                .into_upper_tri()
-            };
-            self.prob.update_P(p_utri);
-            // Update QP linear term
-            q = (-y_vec.clone_owned().tr_mul(&self.d_wfs)
-                - self.u_ant.tr_mul(&self.w3).scale(self.rho_3 * self.k))
-            .as_slice()
-            .to_vec();
-            self.prob.update_lin_cost(&q);
-
-            // Solve problem - 2nd iteration
-            result = self.prob.solve();
-            c = match result.x() {
-                Some(x) => x,
-                None => {
-                    pickle::to_writer(
-                        &mut File::create("OSQP_log.pkl").unwrap(),
-                        &(self.y_valid.clone(), self.u_ant.as_slice().to_vec()),
-                        Default::default(),
-                    )?;
-                    return Err(QpError::QpSolve);
-                }
-            }; //.expect("Failed to solve QP problem!");
-        }
-        // Control action
-        // dbg!(c[0]);
-        let k = 0.2; //self.k;
-        self.u
-            .iter_mut()
-            .zip(&c[..M1_RBM])
-            .for_each(|(u, c)| *u -= k * c); // u = u - k * c
-        self.u[42..]
-            .iter_mut()
-            .zip(&c[M1_RBM..M1_RBM + M2_RBM])
-            .for_each(|(u, c)| *u -= k * c);
-        self.u[84..]
-            .iter_mut()
-            .zip(&c[M1_RBM + M2_RBM..])
-            .for_each(|(u, c)| *u -= k * c);
-        Ok(self)
-    }
-}
-impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize>
-    TryRead<SensorData> for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
-{
-    type Error = QpError;
-
-    fn try_read(
-        &mut self,
-        data: Data<SensorData>,
-    ) -> std::result::Result<&mut Self, <Self as TryRead<SensorData>>::Error> {
-        self.y_valid = self
-            .calib
-            .as_ref()
-            .ok_or_else(|| QpError::MissingCalibration)?
-            .mask(&data);
-        Ok(self)
-    }
-}
-impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize>
-    TryWrite<Estimate> for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
-{
-    type Error = Infallible;
-
-    fn try_write(
-        &mut self,
-    ) -> std::result::Result<Option<Data<Estimate>>, <Self as TryWrite<Estimate>>::Error> {
-        Ok(Some(self.u.clone().into()))
-    }
-}
-
 // impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize>
 //     Write<OpticsState> for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
 // {
