@@ -119,6 +119,8 @@ pub enum ActorError {
     OrphanOutput(String, String),
     #[error(transparent)]
     Other(#[from] Box<dyn std::error::Error + Send + Sync>),
+    #[error(transparent)]
+    NoError(#[from] std::convert::Infallible)
 }
 pub(crate) type Result<R> = std::result::Result<R, ActorError>;
 

@@ -57,16 +57,18 @@ impl<'a, T: ArcMutex> Client<'a, T> {
 
 #[cfg(test)]
 mod tests {
+    use interface::Update;
+
     #[test]
     fn client() {
         use crate::{
             actor::Actor,
-            client::{Client, TryUpdate},
+            client::{Client },
         };
 
         struct TestClient;
 
-        impl TryUpdate for TestClient {}
+        impl Update for TestClient {}
 
         let test_client = TestClient;
 
