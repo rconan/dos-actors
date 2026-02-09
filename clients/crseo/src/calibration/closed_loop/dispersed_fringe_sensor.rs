@@ -1,3 +1,4 @@
+use super::linear_model::LinearModel;
 use crate::calibration::{CalibProps, Modality};
 use std::sync::Arc;
 
@@ -230,10 +231,12 @@ where
     }
 }
 
-impl<W: FromBuilder> ClosedLoopCalibration<GmtM1, W> for DispersedFringeSensorProcessing
+impl<W> ClosedLoopCalibration<GmtM1, W> for DispersedFringeSensorProcessing
 where
     <W as FromBuilder>::ComponentBuilder: Clone,
-    W: CalibrateAssembly<GmtM2, W, Vec<f64>> + CalibrateAssembly<GmtM1, W, Vec<f64>>,
+    W: CalibrateAssembly<GmtM2, W, <W as LinearModel>::Data>
+        + CalibrateAssembly<GmtM1, W, <W as LinearModel>::Data>,
+    W: FromBuilder + LinearModel,
 {
     type Sensor = DispersedFringeSensor<1, 1>;
     type Data = Vec<f64>;

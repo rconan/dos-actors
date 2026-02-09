@@ -24,7 +24,7 @@ pub trait LinearModel {
 impl LinearModel for WaveSensor {
     type Sensor = WaveSensor;
     type Processing = Self;
-    type Data = Vec<f64>;
+    type Data = Vec<(f64, bool)>;
 }
 
 impl<K: CentroidKind> LinearModel for CentroidsProcessing<K> {
@@ -133,8 +133,8 @@ where
     <W as FromBuilder>::ComponentBuilder: Clone,
     <<L as LinearModel>::Sensor as FromBuilder>::ComponentBuilder: Clone,
     W: FromBuilder + LinearModel,
-    <W as LinearModel>::Processing: CalibrateAssembly<GmtM2, W, <L as LinearModel>::Data>
-        + CalibrateAssembly<M, W, <L as LinearModel>::Data>,
+    <W as LinearModel>::Processing: CalibrateAssembly<GmtM2, W, <W as LinearModel>::Data>
+        + CalibrateAssembly<M, W, <W as LinearModel>::Data>,
     L: LinearModel
         + CalibrateAssembly<GmtM2, <L as LinearModel>::Sensor, <L as LinearModel>::Data>
         + CalibrateAssembly<M, <L as LinearModel>::Sensor, <L as LinearModel>::Data>,

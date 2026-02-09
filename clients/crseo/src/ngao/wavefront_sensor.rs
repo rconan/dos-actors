@@ -3,8 +3,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crseo::{Frame, Propagation, Source};
-use interface::{Data, Read, UniqueIdentifier, Update};
+use crseo::{Frame, Source};
+use interface::UniqueIdentifier;
 
 pub enum GuideStar {}
 impl UniqueIdentifier for GuideStar {
@@ -109,19 +109,19 @@ where
     }
 } */
 
-pub struct ShackHartmann(pub crseo::ShackHartmann<crseo::Diffractive>);
+// pub struct ShackHartmann(pub crseo::ShackHartmann<crseo::Diffractive>);
 
-unsafe impl Send for ShackHartmann {}
-unsafe impl Sync for ShackHartmann {}
+// unsafe impl Send for ShackHartmann {}
+// unsafe impl Sync for ShackHartmann {}
 
-impl Update for ShackHartmann {}
+// impl Update for ShackHartmann {}
 
-impl Read<GuideStar> for ShackHartmann {
-    fn read(&mut self, data: Data<GuideStar>) {
-        let src = &mut (*data.lock().unwrap());
-        self.0.propagate(src);
-    }
-}
+// impl Read<GuideStar> for ShackHartmann {
+//     fn read(&mut self, data: Data<GuideStar>) {
+//         let src = &mut (*data.lock().unwrap());
+//         self.0.propagate(src);
+//     }
+// }
 
 /* #[derive(UID)]
 #[uid(data = Vec<f32>)]
