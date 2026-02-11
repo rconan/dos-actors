@@ -8,7 +8,7 @@ pub use agws::Agws;
 pub use builder::AgwsBuilder;
 
 #[cfg(test)]
-mod test {
+mod tests {
 
     use builder::shack_hartmann::ShackHartmannBuilder;
 
@@ -16,7 +16,19 @@ mod test {
     use interface::{Update, Write};
     use skyangle::Conversion;
 
+    use crate::qp::ActiveOptics;
+
     use super::*;
+
+    #[test]
+    fn builder() {
+        let _ = Agws::<1, 1>::builder().build();
+    }
+
+    #[test]
+    fn aco_builder() {
+        let _ = Agws::<1, 1, ActiveOptics<1, 41, 41, 27, 271>>::builder().build();
+    }
 
     #[tokio::test(flavor = "multi_thread")]
     async fn sh24() {

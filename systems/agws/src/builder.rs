@@ -5,7 +5,6 @@ use std::path::Path;
 use gmt_dos_actors::system::{Sys, SystemError};
 use gmt_dos_clients_crseo::{
     OpticalModel, OpticalModelBuilder, OpticalModelError,
-    calibration::{CalibrationMode, ClosedLoopCalib, Reconstructor},
     crseo::{
         FromBuilder, Source,
         builders::{AtmosphereBuilder, AtmosphereBuilderError, GmtBuilder},
@@ -16,12 +15,17 @@ use gmt_dos_clients_crseo::{
         builders::{CameraBuilder, WaveSensorBuilder},
     },
 };
+use gmt_dos_clients_io::optics::{Dev, Frame};
+use interface::TryRead;
 use shack_hartmann::{ShackHartmannBuilder, ShackHartmannBuilderError};
 
 use crate::{
     Agws,
-    agws::{sh24::Sh24, sh48::Sh48},
-    kernels::{Kernel, KernelError},
+    agws::{
+        sh24::{Sh24, kernel::Sh24Kern},
+        sh48::{Sh48, kernel::Sh48Kern},
+    },
+    kernels::{Kernel, KernelError, KernelFrame, KernelSpecs},
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -62,28 +66,47 @@ impl AgwsShackHartmann {
 }
 
 /// [Agws] builder
-#[derive(Debug, Clone)]
-pub struct AgwsBuilder<const SH48_I: usize = 1, const SH24_I: usize = 1> {
-    sh48: ShackHartmannBuilder<Reconstructor<CalibrationMode, ClosedLoopCalib>, SH48_I>,
+// #[derive(Debug)]
+pub struct AgwsBuilder<
+    const SH48_I: usize = 1,
+    const SH24_I: usize = 1,
+    K48 = Sh48<SH48_I>,
+    K24 = Sh24<SH24_I>,
+> where
+    K48: KernelSpecs,
+    K24: KernelSpecs,
+{
+    sh48: ShackHartmannBuilder<<K48 as KernelSpecs>::Estimator, SH48_I>,
     // sh24: OpticalModelBuilder<CameraBuilder<SH24_I>>,
     // sh24_recon: Option<Reconstructor>,
-    sh24: ShackHartmannBuilder<Reconstructor, SH24_I>,
+    sh24: ShackHartmannBuilder<<K24 as KernelSpecs>::Estimator, SH24_I>,
     gmt: Option<GmtBuilder>,
     atm: Option<(AtmosphereBuilder, f64)>,
 }
 
-impl<const SH48_I: usize, const SH24_I: usize> Default for AgwsBuilder<SH48_I, SH24_I> {
+impl<const SH48_I: usize, const SH24_I: usize, K48, K24> Default
+    for AgwsBuilder<SH48_I, SH24_I, K48, K24>
+where
+    K48: KernelSpecs,
+    K24: KernelSpecs,
+{
     fn default() -> Self {
         Self {
-            sh48: ShackHartmannBuilder::<Reconstructor<CalibrationMode,ClosedLoopCalib>,SH48_I>::sh48(),
-            sh24: ShackHartmannBuilder::<Reconstructor,SH24_I>::sh24(),
+            sh48: ShackHartmannBuilder::sh48(),
+            sh24: ShackHartmannBuilder::sh24(),
             gmt: None,
             atm: None,
         }
     }
 }
 
-impl<const SH48_I: usize, const SH24_I: usize> AgwsBuilder<SH48_I, SH24_I> {
+impl<const SH48_I: usize, const SH24_I: usize, K48, K24> AgwsBuilder<SH48_I, SH24_I, K48, K24>
+where
+    K48: KernelSpecs<Input = Frame<Dev>, Sensor = Camera<SH48_I>> + 'static + Send + Sync,
+    K24: KernelSpecs<Input = Frame<Dev>, Sensor = Camera<SH24_I>> + 'static + Send + Sync,
+    Sh24Kern<K24>: TryRead<KernelFrame<K24>>,
+    Sh48Kern<K48>: TryRead<KernelFrame<K48>>,
+{
     /// Create a new builder instance
     pub fn new() -> Self {
         Default::default()
@@ -105,26 +128,26 @@ impl<const SH48_I: usize, const SH24_I: usize> AgwsBuilder<SH48_I, SH24_I> {
     /// Sets the AGWS SH48 builder
     pub fn sh48(
         mut self,
-        sh48: ShackHartmannBuilder<Reconstructor<CalibrationMode, ClosedLoopCalib>, SH48_I>,
+        sh48: ShackHartmannBuilder<<K48 as KernelSpecs>::Estimator, SH48_I>,
     ) -> Self {
         self.sh48 = sh48;
         self
     }
     /// Sets the AGWS SH24 builder
-    pub fn sh24(mut self, sh24: ShackHartmannBuilder<Reconstructor, SH24_I>) -> Self {
+    pub fn sh24(
+        mut self,
+        sh24: ShackHartmannBuilder<<K24 as KernelSpecs>::Estimator, SH24_I>,
+    ) -> Self {
         self.sh24 = sh24;
         self
     }
     /// Sets the reconstructor for AGWS SH24
-    pub fn sh24_calibration(mut self, sh24_recon: Reconstructor) -> Self {
+    pub fn sh24_calibration(mut self, sh24_recon: <K24 as KernelSpecs>::Estimator) -> Self {
         self.sh24 = self.sh24.reconstructor(sh24_recon);
         self
     }
     /// Sets the reconstructor for AGWS SH48
-    pub fn sh48_calibration(
-        mut self,
-        sh48_recon: Reconstructor<CalibrationMode, ClosedLoopCalib>,
-    ) -> Self {
+    pub fn sh48_calibration(mut self, sh48_recon: <K48 as KernelSpecs>::Estimator) -> Self {
         self.sh48 = self.sh48.reconstructor(sh48_recon);
         self
     }
@@ -159,7 +182,7 @@ impl<const SH48_I: usize, const SH24_I: usize> AgwsBuilder<SH48_I, SH24_I> {
             )
     }
     /// Build an [Agws] [system](gmt_dos_actors::system::Sys) instance
-    pub fn build(self) -> Result<Sys<Agws<SH48_I, SH24_I>>, AgwsBuilderError> {
+    pub fn build(self) -> Result<Sys<Agws<SH48_I, SH24_I, K48, K24>>, AgwsBuilderError> {
         let (sh24_label, sh48_label) = if self.atm.is_none() {
             (
                 format!("GMT Optics\nw/ SH24<{}>", SH24_I),
@@ -174,8 +197,8 @@ impl<const SH48_I: usize, const SH24_I: usize> AgwsBuilder<SH48_I, SH24_I> {
                 ),
             )
         };
-        let mut sh48 = OpticalModelBuilder::from(self.sh48.clone());
-        let mut sh24 = OpticalModelBuilder::from(self.sh24.clone());
+        let mut sh48 = OpticalModelBuilder::from(&self.sh48);
+        let mut sh24 = OpticalModelBuilder::from(&self.sh24);
         if let Some((atm, sampling_frequency)) = self.atm {
             sh48 = sh48
                 .atmosphere(atm.clone())
@@ -193,11 +216,16 @@ impl<const SH48_I: usize, const SH24_I: usize> AgwsBuilder<SH48_I, SH24_I> {
         let sh24 = sh24.build()?;
         log::info!("SH24:\n{}", sh24);
 
+        let sh24_kern = Kernel::<K24>::try_from(self.sh24)
+            .map_err(|_e| ShackHartmannBuilderError::Reconstructor)?;
+        let sh48_kern = Kernel::<K48>::try_from(self.sh48)
+            .map_err(|_e| ShackHartmannBuilderError::Reconstructor)?;
+
         Ok(Sys::new(Agws {
             sh24: (Sh24(sh24), sh24_label).into(),
             sh48: (Sh48(sh48), sh48_label).into(),
-            sh24_kernel: Kernel::<Sh24<SH24_I>>::try_from(&self.sh24)?.into(),
-            sh48_kernel: Kernel::<Sh48<SH48_I>>::try_from(&self.sh48)?.into(),
+            sh24_kernel: Sh24Kern(sh24_kern).into(),
+            sh48_kernel: Sh48Kern(sh48_kern).into(),
         })
         .build()?)
     }
