@@ -3,7 +3,7 @@ use std::{convert::Infallible, fmt::Display, fs::File};
 use gmt_dos_clients_crseo::calibration::{Calib, MixedMirrorMode, algebra::CalibProps};
 use gmt_dos_clients_io::{Estimate, optics::SensorData};
 use interface::{Data, TryRead, TryUpdate, TryWrite};
-use nalgebra::{ArrayStorage, Const, DMatrix, DVector, Matrix, SMatrix};
+use nalgebra::{DMatrix, DVector, SMatrix};
 use osqp::{CscMatrix, Problem};
 
 use super::{J1_J3_RATIO, MIN_RHO3, QpError};
@@ -28,14 +28,14 @@ pub struct ActiveOptics<
     /// Calibration matrix
     pub(super) d_wfs: DMatrix<f64>,
     /// Previous quadratic programming solution
-    pub(super) u_ant: SMatrix<f64, N_MODE, 1>,
+    pub(super) u_ant: DMatrix<f64>,// N_MODE, 1>,
     /// Current quadratic programming solution
     pub(super) u: Vec<f64>,
     /// Wavefront sensor data
     pub(super) y_valid: Vec<f64>,
     /// Wavefront error weighting matrix
-    pub(super) d_t_w1_d:
-        Matrix<f64, Const<N_MODE>, Const<N_MODE>, ArrayStorage<f64, N_MODE, N_MODE>>,
+    pub(super) d_t_w1_d: DMatrix<f64>,
+        // Matrix<f64, Const<N_MODE>, Const<N_MODE>, ArrayStorage<f64, N_MODE, N_MODE>>,
     /// Controllable mode regularization matrix    
     pub(super) w2: DMatrix<f64>,
     /// Control balance weighting matrix
@@ -152,7 +152,7 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
         };
         // Control effort cost
         let j_3na = {
-            let delta = c_vec.scale(self.k) - self.u_ant;
+            let delta = c_vec.scale(self.k) - &self.u_ant;
             delta.tr_mul(&self.w3) * &delta
         };
         // nalgebra object to f64 scalar conversion
@@ -168,7 +168,7 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
             // Update QP P matrix
             let p_utri = {
                 //println!("New rho_3:{}", format!("{:.4e}", self.rho_3));
-                let p = self.d_t_w1_d + &self.w2 + self.w3.scale(self.rho_3 * self.k * self.k);
+                let p = &self.d_t_w1_d + &self.w2 + self.w3.scale(self.rho_3 * self.k * self.k);
                 CscMatrix::from_column_iter_dense(
                     p.nrows(),
                     p.ncols(),

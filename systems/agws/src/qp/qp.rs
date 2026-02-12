@@ -1,7 +1,7 @@
 use std::{fs::File, io::BufReader, path::Path};
 
 use gmt_dos_clients_crseo::calibration::{Calib, MixedMirrorMode, algebra::CalibProps};
-use nalgebra::{DMatrix, SMatrix};
+use nalgebra::DMatrix;
 use osqp::{CscMatrix, Problem, Settings};
 use serde::Deserialize;
 
@@ -198,13 +198,12 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
         let w3 = DMatrix::<f64>::from_column_slice(N_MODE, N_MODE, &self.data.w3);
         // W1
         let d_wfs = DMatrix::from_column_slice(dmat.len() / N_MODE, N_MODE, &dmat);
-        let d_t_w1_d = {
-            let d_t_w1_d_dyn = d_wfs.tr_mul(&d_wfs);
-            SMatrix::<f64, N_MODE, N_MODE>::from_vec(d_t_w1_d_dyn.as_slice().to_vec())
-        };
+        let d_t_w1_d = 
+             d_wfs.tr_mul(&d_wfs);
+        
         // Extract the upper triangular elements of `P`
         let p_utri = {
-            let p = d_t_w1_d + &w2 + w3.scale(self.data.rho_3 * self.data.k * self.data.k);
+            let p = &d_t_w1_d + &w2 + w3.scale(self.data.rho_3 * self.data.k * self.data.k);
             CscMatrix::from_column_iter_dense(
                 p.nrows(),
                 p.ncols(),
@@ -263,7 +262,7 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
             u: vec![0f64; 84 + 7 * M1_BM],
             y_valid: Vec::with_capacity(d_wfs.nrows()),
             d_wfs,
-            u_ant: SMatrix::zeros(),
+            u_ant: DMatrix::zeros(N_MODE,1),
             d_t_w1_d,
             w2,
             w3,
