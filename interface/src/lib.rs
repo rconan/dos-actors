@@ -169,6 +169,17 @@ pub trait Size<U: UniqueIdentifier>: Update {
     fn len(&self) -> usize;
 }
 
+pub struct NoneClient<U, V = U>(PhantomData<U>, PhantomData<V>);
+impl<U: UniqueIdentifier, V: UniqueIdentifier> Update for NoneClient<U, V> {}
+impl<U: UniqueIdentifier, V: UniqueIdentifier> Read<U> for NoneClient<U, V> {
+    fn read(&mut self, _: Data<U>) {}
+}
+impl<U: UniqueIdentifier, V: UniqueIdentifier> Write<V> for NoneClient<U, V> {
+    fn write(&mut self) -> Option<Data<V>> {
+        None
+    }
+}
+
 pub trait Who<T> {
     /// Returns type name
     fn who(&self) -> String {
