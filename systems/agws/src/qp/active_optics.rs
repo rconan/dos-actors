@@ -2,7 +2,7 @@ use std::{convert::Infallible, fmt::Display, fs::File};
 
 use gmt_dos_clients_crseo::calibration::{Calib, MixedMirrorMode, algebra::CalibProps};
 use gmt_dos_clients_io::{Estimate, optics::SensorData};
-use interface::{Data, TryRead, TryUpdate, TryWrite};
+use interface::{Data, TryRead, TryUpdate, TryWrite, optics::{OpticsState, state::{MirrorState, OpticalState}}};
 use nalgebra::{DMatrix, DVector, SMatrix};
 use osqp::{CscMatrix, Problem};
 
@@ -28,14 +28,14 @@ pub struct ActiveOptics<
     /// Calibration matrix
     pub(super) d_wfs: DMatrix<f64>,
     /// Previous quadratic programming solution
-    pub(super) u_ant: DMatrix<f64>,// N_MODE, 1>,
+    pub(super) u_ant: DMatrix<f64>, // N_MODE, 1>,
     /// Current quadratic programming solution
     pub(super) u: Vec<f64>,
     /// Wavefront sensor data
     pub(super) y_valid: Vec<f64>,
     /// Wavefront error weighting matrix
     pub(super) d_t_w1_d: DMatrix<f64>,
-        // Matrix<f64, Const<N_MODE>, Const<N_MODE>, ArrayStorage<f64, N_MODE, N_MODE>>,
+    // Matrix<f64, Const<N_MODE>, Const<N_MODE>, ArrayStorage<f64, N_MODE, N_MODE>>,
     /// Controllable mode regularization matrix    
     pub(super) w2: DMatrix<f64>,
     /// Control balance weighting matrix
@@ -242,5 +242,19 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
         &mut self,
     ) -> std::result::Result<Option<Data<Estimate>>, <Self as TryWrite<Estimate>>::Error> {
         Ok(Some(self.u.clone().into()))
+    }
+}
+impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize>
+    TryWrite<OpticsState> for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
+{
+    type Error = Infallible;
+
+    fn try_write(
+        &mut self,
+    ) -> std::result::Result<Option<Data<OpticsState>>, <Self as TryWrite<OpticsState>>::Error>
+    {
+        let m1 = MirrorState::new(self.u[..42].chunks(6), self.u[84..].chunks(27));
+        let m2 = MirrorState::from_rbms(&self.u[42..84]);
+        Ok(Some(Data::new(OpticalState::new(m1, m2))))
     }
 }

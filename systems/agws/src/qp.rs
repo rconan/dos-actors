@@ -100,13 +100,13 @@ impl<
 
     type Estimator = active_optics::ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>;
 
-    type Integrator = gmt_dos_clients::integrator::Integrator<Estimate>;
+    type Integrator = interface::NoneClient<Self::Output>; //gmt_dos_clients::integrator::Integrator<Estimate>;
 
     type Input = Frame<Dev>;
 
     type Data = SensorData;
 
-    type Output = Estimate;
+    type Output = OpticsState;
 
     fn processor(
         model: &OpticalModelBuilder<<Self::Sensor as FromBuilder>::ComponentBuilder>,
