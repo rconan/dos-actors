@@ -14,7 +14,13 @@ use gmt_dos_clients_io::{
         segment::{ActuatorCommandForces, ModeShapes, RBM},
     },
 };
-use interface::{Data, Left, Read, Right, UniqueIdentifier, Update, Write};
+use interface::{
+    Data, Left, Read, Right, UniqueIdentifier, Update, Write,
+    optics::{
+        M1State,
+        state::{MirrorState, SegmentState},
+    },
+};
 
 use super::NA;
 
@@ -77,6 +83,33 @@ impl DispatchIn {
 impl Assembly for DispatchIn {}
 
 impl Update for DispatchIn {}
+
+impl Read<M1State> for DispatchIn {
+    fn read(&mut self, data: Data<M1State>) {
+        let m2fts = self
+            .mode_2_force_transforms
+            .as_ref()
+            .expect("missing modal to zonal forces matrices in systems::m1::DispatchIn");
+        for (segment_state, (segment_rbms, (segment_m2ft, segment_forces))) in data.iter().zip(
+            self.m1_rigid_body_motions.iter_mut().zip(
+                m2fts
+                    .into_iter()
+                    .zip(self.m1_actuator_command_forces.iter_mut()),
+            ),
+        ) {
+            if let Some(SegmentState { rbms, modes }) = segment_state {
+                if let Some(rbms) = rbms {
+                    *segment_rbms = rbms.clone();
+                }
+                if let Some(modes) = modes {
+                    let b = nalgebra::DVector::from_column_slice(modes);
+                    let y = segment_m2ft * b;
+                    *segment_forces = y.as_slice().to_vec().into();
+                }
+            }
+        }
+    }
+}
 
 impl Read<M1RigidBodyMotions> for DispatchIn {
     fn read(&mut self, data: Data<M1RigidBodyMotions>) {
