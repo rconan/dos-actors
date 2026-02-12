@@ -2,7 +2,13 @@ use std::{convert::Infallible, fmt::Display, fs::File};
 
 use gmt_dos_clients_crseo::calibration::{Calib, MixedMirrorMode, algebra::CalibProps};
 use gmt_dos_clients_io::{Estimate, optics::SensorData};
-use interface::{Data, TryRead, TryUpdate, TryWrite, optics::{OpticsState, state::{MirrorState, OpticalState}}};
+use interface::{
+    Data, TryRead, TryUpdate, TryWrite,
+    optics::{
+        OpticsState,
+        state::{MirrorState, OpticalState},
+    },
+};
 use nalgebra::{DMatrix, DVector, SMatrix};
 use osqp::{CscMatrix, Problem};
 
@@ -72,8 +78,13 @@ impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE:
     ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
 {
     /// Returns AcO controller gain
-    pub fn controller_gain(&self) -> f64 {
+    pub fn get_controller_gain(&self) -> f64 {
         self.k
+    }
+    /// Sets the AcO controller gain
+    pub fn set_controller_gain(&mut self, gain: f64) -> &mut Self {
+        self.k = gain;
+        self
     }
 
     /// Returns AcO interacion matrix (stacked) version

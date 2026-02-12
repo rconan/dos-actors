@@ -92,6 +92,20 @@ impl<
     const M2_RBM: usize,
     const M1_BM: usize,
     const N_MODE: usize,
+> ActiveOptics<I, M1_RBM, M2_RBM, M1_BM, N_MODE>
+{
+    pub fn controller_gain(mut self, gain: f64) -> Self {
+        self.0.k = gain;
+        self
+    }
+}
+
+impl<
+    const I: usize,
+    const M1_RBM: usize,
+    const M2_RBM: usize,
+    const M1_BM: usize,
+    const N_MODE: usize,
 > KernelSpecs for ActiveOptics<I, M1_RBM, M2_RBM, M1_BM, N_MODE>
 {
     type Sensor = Camera<I>;
