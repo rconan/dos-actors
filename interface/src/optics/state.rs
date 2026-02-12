@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::ops::{Add, AddAssign};
 
 use crate::{Data, Left, Read, Right, Update, Write};
 
@@ -16,6 +16,7 @@ pub use segment::SegmentState;
 pub struct OpticalState {
     pub m1: Option<MirrorState>,
     pub m2: Option<MirrorState>,
+    pub zero_point: Option<Box<OpticalState>>,
 }
 impl OpticalState {
     /// Creates a new [OpticalState] from M1 and M2 [MirrorState]
@@ -23,7 +24,13 @@ impl OpticalState {
         Self {
             m1: Some(m1),
             m2: Some(m2),
+            zero_point: None,
         }
+    }
+    /// Sets the optical state zero point
+    pub fn zero_point(mut self, zp: OpticalState) -> Self {
+        self.zero_point = Some(zp.into());
+        self
     }
     /// Creates a new [OpticalState] from M1 [MirrorState]
     pub fn m1(state: MirrorState) -> Self {
@@ -58,7 +65,13 @@ impl OpticalState {
 }
 
 impl Update for OpticalState {
-    fn update(&mut self) {}
+    fn update(&mut self) {
+        if let Some(zero_point) = self.zero_point.as_ref() {
+            let OpticalState { m1, m2, .. } = zero_point.as_ref() + &self;
+            self.m1 = m1;
+            self.m2 = m2;
+        }
+    }
 }
 
 impl Read<M1State> for OpticalState {
@@ -141,6 +154,7 @@ impl Add for OpticalState {
                 (Some(s2), None) => Some(s2),
                 (Some(s2), Some(rhs_s2)) => Some(s2 + rhs_s2),
             },
+            zero_point: None,
         }
     }
 }
@@ -161,6 +175,7 @@ impl Add for &OpticalState {
                 (Some(s2), None) => Some(s2.clone()),
                 (Some(s2), Some(rhs_s2)) => Some(s2 + rhs_s2),
             },
+            zero_point: None,
         }
     }
 }
