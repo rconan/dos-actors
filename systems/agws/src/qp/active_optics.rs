@@ -1,12 +1,21 @@
 use std::{convert::Infallible, fmt::Display, fs::File};
 
-use gmt_dos_clients_crseo::calibration::{Calib, MixedMirrorMode,algebra::CalibProps};
+use gmt_dos_clients_crseo::calibration::{Calib, MixedMirrorMode, algebra::CalibProps};
 use gmt_dos_clients_io::{Estimate, optics::SensorData};
 use interface::{Data, TryRead, TryUpdate, TryWrite};
 use nalgebra::{ArrayStorage, Const, DMatrix, DVector, Matrix, SMatrix};
 use osqp::{CscMatrix, Problem};
 
 use super::{J1_J3_RATIO, MIN_RHO3, QpError};
+
+pub trait DoF {
+    const N_MODE: usize;
+}
+impl<const M1_RBM: usize, const M2_RBM: usize, const M1_BM: usize, const N_MODE: usize> DoF
+    for ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>
+{
+    const N_MODE: usize = M1_RBM + M2_RBM + M1_BM * 7;
+}
 
 pub struct ActiveOptics<
     const M1_RBM: usize,

@@ -138,6 +138,7 @@ impl Estimate2OpticsState {
         }
     }
 }
+
 impl Update for Estimate2OpticsState {}
 impl Read<Estimate> for Estimate2OpticsState {
     fn read(&mut self, data: Data<Estimate>) {
@@ -146,6 +147,13 @@ impl Read<Estimate> for Estimate2OpticsState {
 }
 impl Write<Right<OpticsState>> for Estimate2OpticsState {
     fn write(&mut self) -> Option<Data<Right<OpticsState>>> {
+        let m1 = MirrorState::new(self.u[..42].chunks(6), self.u[84..].chunks(27));
+        let m2 = MirrorState::from_rbms(&self.u[42..84]);
+        Some(Data::new(OpticalState::new(m1, m2)))
+    }
+}
+impl Write<OpticsState> for Estimate2OpticsState {
+    fn write(&mut self) -> Option<Data<OpticsState>> {
         let m1 = MirrorState::new(self.u[..42].chunks(6), self.u[84..].chunks(27));
         let m2 = MirrorState::from_rbms(&self.u[42..84]);
         Some(Data::new(OpticalState::new(m1, m2)))
@@ -166,9 +174,9 @@ impl<
         &mut self,
     ) -> std::result::Result<Option<Data<SensorData>>, <Self as TryWrite<SensorData>>::Error> {
         Ok(
-            <<ActiveOptics<I, M1_RBM, M2_RBM, M1_BM, N_MODE> as KernelSpecs>::Processor as Write<_>>::write(
-                &mut self.processor,
-            ),
+            <<ActiveOptics<I, M1_RBM, M2_RBM, M1_BM, N_MODE> as KernelSpecs>::Processor as Write<
+                _,
+            >>::write(&mut self.processor),
         )
     }
 }
