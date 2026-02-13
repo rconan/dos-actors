@@ -132,7 +132,7 @@ where
                         figure.resize(y_slice.len(), Default::default());
                         figure.copy_from_slice(y_slice);
                     }
-                    SegmentState::modes(figure)
+                    SegmentState::new(rbms, figure)
                 }
                 _ => SegmentState::default(),
             };
