@@ -3849,6 +3849,7 @@ dependencies = [
 name = "gmt_dos-clients_servos"
 version = "3.1.0"
 dependencies = [
+ "anyhow",
  "complot",
  "crseo",
  "env_logger",

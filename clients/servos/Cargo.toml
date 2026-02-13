@@ -43,6 +43,7 @@ gmt_dos-clients_lom.workspace = true
 gmt_dos-clients_scope = { workspace = true, features = ["server"] }
 gmt_dos-clients_scope-client.workspace = true
 nanorand.workspace = true
+anyhow.workspace = true
 
 [features]
 cuda = ["gmt_dos-clients_fem/cuda"]
