@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign};
+use std::ops::Add;
 
 use crate::{Data, Left, Read, Right, Update, Write};
 
@@ -28,8 +28,11 @@ impl OpticalState {
         }
     }
     /// Sets the optical state zero point
-    pub fn zero_point(mut self, zp: OpticalState) -> Self {
-        self.zero_point = Some(zp.into());
+    pub fn zero_point(mut self, zero_point: OpticalState) -> Self {
+        let OpticalState { m1, m2, .. } = &zero_point + &self;
+        self.m1 = m1;
+        self.m2 = m2;
+        self.zero_point = Some(zero_point.into());
         self
     }
     /// Creates a new [OpticalState] from M1 [MirrorState]
@@ -64,24 +67,28 @@ impl OpticalState {
     }
 }
 
-impl Update for OpticalState {
-    fn update(&mut self) {
-        if let Some(zero_point) = self.zero_point.as_ref() {
-            let OpticalState { m1, m2, .. } = zero_point.as_ref() + &self;
-            self.m1 = m1;
-            self.m2 = m2;
-        }
-    }
-}
+impl Update for OpticalState {}
 
 impl Read<M1State> for OpticalState {
     fn read(&mut self, data: Data<M1State>) {
-        self.m1 = Some(data.into_arc().as_ref().clone());
+        if let Some(zero_point) = self.zero_point.as_ref()
+            && let OpticalState { m1: Some(m1_0), .. } = zero_point.as_ref()
+        {
+            self.m1 = Some(data.into_arc().as_ref() + m1_0);
+        } else {
+            self.m1 = Some(data.into_arc().as_ref().clone());
+        }
     }
 }
 impl Read<M2State> for OpticalState {
     fn read(&mut self, data: Data<M2State>) {
-        self.m2 = Some(data.into_arc().as_ref().clone());
+        if let Some(zero_point) = self.zero_point.as_ref()
+            && let OpticalState { m2: Some(m2_0), .. } = zero_point.as_ref()
+        {
+            self.m2 = Some(data.into_arc().as_ref() + m2_0);
+        } else {
+            self.m2 = Some(data.into_arc().as_ref().clone());
+        }
     }
 }
 impl Write<Right<M1State>> for OpticalState {
@@ -122,8 +129,13 @@ impl Write<OpticsState> for OpticalState {
 }
 impl Read<OpticsState> for OpticalState {
     fn read(&mut self, data: Data<OpticsState>) {
-        let state = &*data;
-        *self = state.clone();
+        let state = if let Some(zero_point) = &self.zero_point {
+            &(&*data + zero_point.as_ref())
+        } else {
+            &*data
+        };
+        self.m1 = state.m1.clone();
+        self.m2 = state.m2.clone();
     }
 }
 impl Write<Right<OpticsState>> for OpticalState {
