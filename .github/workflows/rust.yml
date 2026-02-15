@@ -115,7 +115,7 @@ jobs:
       env:
         FEM_REPO: /home/ubuntu/mnt/20230131_1605_zen_30_M1_202110_ASM_202208_Mount_202111/
         MOUNT_MODEL: MOUNT_PDR_8kHz
-      run: cargo test --workspace --release --lib --all-features --exclude "gmt_dos-clients_domeseeing" -- --test-threads 4
+      run: cargo test --workspace --release --lib --all-features --exclude "gmt_dos-clients_domeseeing" -- --test-threads 2
       
   fsm-2023-test:
     name: Run 2023 FSM Tests
@@ -129,7 +129,7 @@ jobs:
       env:
         FEM_REPO: /home/ubuntu/mnt/20230530_1756_zen_30_M1_202110_FSM_202305_Mount_202305_noStairs/
         MOUNT_MODEL: MOUNT_FDR_1kHz
-      run: cargo test --workspace --release --lib --all-features --exclude "gmt_dos-clients_domeseeing" -- --test-threads 4
+      run: cargo test --workspace --release --lib --all-features --exclude "gmt_dos-clients_domeseeing" -- --test-threads 2
       
   fsm-2025-test:
     name: Run 2025 FSM Tests
@@ -143,7 +143,7 @@ jobs:
       env:
         FEM_REPO: /home/ubuntu/mnt/20250516_1420_zen_30_M1_202110_FSM_202305_Mount_202305_pier_202411_M1_actDamping/
         MOUNT_MODEL: MOUNT_FDR_1kHz
-      run: cargo test --workspace --release --lib --all-features --exclude "gmt_dos-clients_domeseeing" -- --test-threads 4
+      run: cargo test --workspace --release --lib --all-features --exclude "gmt_dos-clients_domeseeing" -- --test-threads 2
       
   asm-doc-test:
     name: Run ASM Doc Tests
