@@ -1,7 +1,10 @@
 use gmt_dos_clients_fem::{Model, Switch};
 use gmt_dos_clients_io::gmt_m2::{M2PositionerForces, M2PositionerNodes, M2RigidBodyMotions};
 use gmt_fem::FEM;
-use interface::{Data, Read, Update, Write};
+use interface::{
+    Data, Read, Update, Write,
+    optics::{M2State, state::SegmentState},
+};
 use nalgebra as na;
 use serde::{Deserialize, Serialize};
 
@@ -127,6 +130,24 @@ impl Update for Positioners {
 impl Read<M2RigidBodyMotions> for Positioners {
     fn read(&mut self, data: Data<M2RigidBodyMotions>) {
         self.rbm = na::SVector::<f64, 42>::from_column_slice(&data);
+    }
+}
+impl Read<M2State> for Positioners {
+    fn read(&mut self, data: Data<M2State>) {
+        let rbms: Vec<_> = data
+            .iter()
+            .flat_map(|segment| {
+                if let Some(SegmentState {
+                    rbms: Some(rbms), ..
+                }) = segment
+                {
+                    rbms.as_ref().to_vec()
+                } else {
+                    vec![0f64; 6]
+                }
+            })
+            .collect();
+        self.rbm = na::SVector::<f64, 42>::from_column_slice(&rbms);
     }
 }
 
