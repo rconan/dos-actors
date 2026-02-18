@@ -88,8 +88,6 @@ where
                             None
                         }
                     })
-                    .inspect(|x| {
-                    })
                     .flatten()
                     .collect::<Vec<_>>()
             })
