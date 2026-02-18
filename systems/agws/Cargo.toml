@@ -25,7 +25,7 @@ thiserror.workspace = true
 
 [dev-dependencies]
 complot = "0.3.5"
-criterion = "0.8.2"
+criterion = { version = "0.8.2", features = ["async_tokio"] }
 gmt_dos-clients_io.workspace = true
 tokio.workspace = true
 
@@ -36,6 +36,10 @@ matio-rs = []
 nalgebra = ["dep:nalgebra"]
 osqp = ["dep:osqp"]
 serde = ["dep:serde"]
+
+[[bench]]
+name = "sys"
+harness = false
 
 [[bench]]
 name = "agws"
