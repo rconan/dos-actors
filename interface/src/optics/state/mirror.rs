@@ -198,3 +198,13 @@ impl Mul<f64> for MirrorState {
             .collect()
     }
 }
+impl Mul<f64> for &MirrorState {
+    type Output = MirrorState;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        self.segment
+            .iter()
+            .map(|segment| segment.as_ref().map(|segment| segment * rhs))
+            .collect()
+    }
+}

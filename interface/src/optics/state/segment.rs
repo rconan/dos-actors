@@ -5,10 +5,24 @@ use std::{
 
 /// GMT mirror segment optical state (rigid body motion and surface figure)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Default, Clone, PartialEq)]
 pub struct SegmentState {
     pub rbms: Option<Arc<Vec<f64>>>,
     pub modes: Option<Arc<Vec<f64>>>,
+}
+impl std::fmt::Debug for SegmentState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let rbms_mag = self.rbms.as_ref().map(|rbms| {
+            let t_xy = rbms[0].hypot(rbms[1]);
+            let t_z = rbms[2];
+            let r_xy = rbms[3].hypot(rbms[4]);
+            [t_xy, t_z, r_xy]
+        });
+        f.debug_struct("SegmentState")
+            .field("rbms", &rbms_mag)
+            .field("modes", &self.modes.as_ref().map(|x| &x[..3]))
+            .finish()
+    }
 }
 impl SegmentState {
     /// Creates a new GMT mirror [SegmentState] from
@@ -188,6 +202,25 @@ impl Mul<f64> for SegmentState {
                 .map(|rbms| Arc::new(rbms)),
             modes: self
                 .modes
+                .map(|modes| modes.iter().map(|&a| a * rhs).collect::<Vec<_>>())
+                .map(|modes| Arc::new(modes)),
+        }
+    }
+}
+
+impl Mul<f64> for &SegmentState {
+    type Output = SegmentState;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        SegmentState {
+            rbms: self
+                .rbms
+                .as_ref()
+                .map(|rbms| rbms.iter().map(|&a| a * rhs).collect::<Vec<_>>())
+                .map(|rbms| Arc::new(rbms)),
+            modes: self
+                .modes
+                .as_ref()
                 .map(|modes| modes.iter().map(|&a| a * rhs).collect::<Vec<_>>())
                 .map(|modes| Arc::new(modes)),
         }

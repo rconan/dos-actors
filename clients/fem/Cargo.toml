@@ -27,10 +27,10 @@ serde = { workspace = true, optional = true }
 bincode = { workspace = true, optional = true }
 anyhow.workspace = true
 geotrans = "0.2.2"
-toml = {version = "0.8.19", optional = true}
+toml = { version = "0.8.19", optional = true }
 faer.workspace = true
 faer-ext.workspace = true
-fem-cuda-solver = { version = "0.1.0", path = "fem-cuda-solver", optional = true}
+fem-cuda-solver = { version = "0.1.0", path = "fem-cuda-solver", optional = true }
 
 [build-dependencies]
 anyhow.workspace = true
@@ -43,11 +43,11 @@ gmt-fem-code-builder.workspace = true
 
 [features]
 serde = [
-    "dep:serde",
-    "interface/filing",
-    "gmt-fem/serde",
-    "bincode/serde",
-    "nalgebra/serde-serialize",
+  "dep:serde",
+  "interface/filing",
+  "gmt-fem/serde",
+  "bincode/serde",
+  "nalgebra/serde-serialize",
 ]
 cuda = ["dep:fem-cuda-solver"]
 
@@ -58,6 +58,10 @@ serde_json = "1.0.96"
 
 [[bench]]
 name = "benchmarks"
+harness = false
+
+[[bench]]
+name = "fem"
 harness = false
 
 [[bin]]
@@ -77,14 +81,14 @@ required-features = ["serde", "clap"]
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
-    'cfg(fem)',
-    'cfg(cfd2021)',
-    'cfg(cfd2025)',
-    'cfg(mount)',
-    'cfg(m1)',
-    'cfg(m1_hp_force_extension)',
-    'cfg(m2)',
-    'cfg(topend,values("FSM","ASM"))',
-    'cfg(m2_rbm,values("MCM2Lcl","MCM2Lcl6D"))',
-    'cfg(ground_acceleration)'
+  'cfg(fem)',
+  'cfg(cfd2021)',
+  'cfg(cfd2025)',
+  'cfg(mount)',
+  'cfg(m1)',
+  'cfg(m1_hp_force_extension)',
+  'cfg(m2)',
+  'cfg(topend,values("FSM","ASM"))',
+  'cfg(m2_rbm,values("MCM2Lcl","MCM2Lcl6D"))',
+  'cfg(ground_acceleration)',
 ] }

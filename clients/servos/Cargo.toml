@@ -43,6 +43,8 @@ gmt_dos-clients_lom.workspace = true
 gmt_dos-clients_scope = { workspace = true, features = ["server"] }
 gmt_dos-clients_scope-client.workspace = true
 nanorand.workspace = true
+anyhow.workspace = true
+criterion = { version = "0.8.2", features = ["async_tokio"] }
 
 [features]
 cuda = ["gmt_dos-clients_fem/cuda"]
@@ -58,3 +60,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 
 [build-dependencies]
 gmt-fem-code-builder.workspace = true
+
+[[bench]]
+name = "servos"
+harness = false

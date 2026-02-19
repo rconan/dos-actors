@@ -60,15 +60,27 @@ where
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Sys<T: System, S = Built> {
     pub sys: T,
+    verbose: bool,
     state: PhantomData<S>,
 }
 
+impl<T: System, S> Sys<T, S> {
+    pub fn quiet(mut self) -> Self {
+        self.verbose = false;
+        self
+    }
+    pub fn verbose(mut self) -> Self {
+        self.verbose = true;
+        self
+    }
+}
 impl<T: System, S> Clone for Sys<T, S> {
     fn clone(&self) -> Self {
         let mut sys = self.sys.clone();
         sys.build().unwrap();
         Self {
             sys,
+            verbose: self.verbose,
             state: PhantomData,
         }
     }
@@ -91,6 +103,7 @@ impl<T: System> Sys<T, New> {
     pub fn new(sys: T) -> Self {
         Self {
             sys,
+            verbose: false,
             state: PhantomData,
         }
     }
@@ -99,6 +112,7 @@ impl<T: System> Sys<T, New> {
         log::info!("building Sys<{}>", type_name::<T>());
         let mut this: Sys<T> = Sys {
             sys: self.sys,
+            verbose: self.verbose,
             state: PhantomData,
         };
         <T as System>::build(&mut this.sys)?;

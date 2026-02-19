@@ -30,13 +30,14 @@ impl<C: Write<M1State> + Write<M2State> + Optics> Write<OpticsState> for C {
             _ => Some(Data::new(OpticalState {
                 m1: s1.map(|data| (*data).clone()),
                 m2: s2.map(|data| (*data).clone()),
+                zero_point: None,
             })),
         }
     }
 }
 impl<C: Read<M1State> + Read<M2State> + Optics> Read<OpticsState> for C {
     fn read(&mut self, data: Data<OpticsState>) {
-        let OpticalState { m1, m2 } = &*data;
+        let OpticalState { m1, m2, .. } = &*data;
         if let Some(s1) = m1 {
             <_ as Read<M1State>>::read(self, Data::new(s1.clone()));
         }

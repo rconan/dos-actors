@@ -1,4 +1,4 @@
-mod kernel;
+pub mod kernel;
 
 use std::{
     convert::Infallible,

@@ -92,6 +92,20 @@ impl<
     const M2_RBM: usize,
     const M1_BM: usize,
     const N_MODE: usize,
+> ActiveOptics<I, M1_RBM, M2_RBM, M1_BM, N_MODE>
+{
+    pub fn controller_gain(mut self, gain: f64) -> Self {
+        self.0.k = gain;
+        self
+    }
+}
+
+impl<
+    const I: usize,
+    const M1_RBM: usize,
+    const M2_RBM: usize,
+    const M1_BM: usize,
+    const N_MODE: usize,
 > KernelSpecs for ActiveOptics<I, M1_RBM, M2_RBM, M1_BM, N_MODE>
 {
     type Sensor = Camera<I>;
@@ -100,13 +114,13 @@ impl<
 
     type Estimator = active_optics::ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>;
 
-    type Integrator = gmt_dos_clients::integrator::Integrator<Estimate>;
+    type Integrator = interface::NoneClient<Self::Output>; //gmt_dos_clients::integrator::Integrator<Estimate>;
 
     type Input = Frame<Dev>;
 
     type Data = SensorData;
 
-    type Output = Estimate;
+    type Output = OpticsState;
 
     fn processor(
         model: &OpticalModelBuilder<<Self::Sensor as FromBuilder>::ComponentBuilder>,
@@ -138,6 +152,7 @@ impl Estimate2OpticsState {
         }
     }
 }
+
 impl Update for Estimate2OpticsState {}
 impl Read<Estimate> for Estimate2OpticsState {
     fn read(&mut self, data: Data<Estimate>) {
@@ -146,6 +161,13 @@ impl Read<Estimate> for Estimate2OpticsState {
 }
 impl Write<Right<OpticsState>> for Estimate2OpticsState {
     fn write(&mut self) -> Option<Data<Right<OpticsState>>> {
+        let m1 = MirrorState::new(self.u[..42].chunks(6), self.u[84..].chunks(27));
+        let m2 = MirrorState::from_rbms(&self.u[42..84]);
+        Some(Data::new(OpticalState::new(m1, m2)))
+    }
+}
+impl Write<OpticsState> for Estimate2OpticsState {
+    fn write(&mut self) -> Option<Data<OpticsState>> {
         let m1 = MirrorState::new(self.u[..42].chunks(6), self.u[84..].chunks(27));
         let m2 = MirrorState::from_rbms(&self.u[42..84]);
         Some(Data::new(OpticalState::new(m1, m2)))
@@ -166,9 +188,9 @@ impl<
         &mut self,
     ) -> std::result::Result<Option<Data<SensorData>>, <Self as TryWrite<SensorData>>::Error> {
         Ok(
-            <<ActiveOptics<I, M1_RBM, M2_RBM, M1_BM, N_MODE> as KernelSpecs>::Processor as Write<_>>::write(
-                &mut self.processor,
-            ),
+            <<ActiveOptics<I, M1_RBM, M2_RBM, M1_BM, N_MODE> as KernelSpecs>::Processor as Write<
+                _,
+            >>::write(&mut self.processor),
         )
     }
 }

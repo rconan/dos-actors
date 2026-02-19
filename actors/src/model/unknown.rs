@@ -51,6 +51,10 @@ impl Model<Unknown> {
         self.verbose = false;
         self
     }
+    pub fn verbose(mut self,verbose: bool) -> Self {
+        self.verbose = verbose;
+        self
+    }
     /// Validates actors inputs and outputs
     pub fn check(self) -> Result<Model<Ready>> {
         let (n_inputs, n_outputs) = self.n_io();
