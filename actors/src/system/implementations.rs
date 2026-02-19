@@ -26,11 +26,13 @@ where
 
     async fn task(mut self: Box<Self>) -> std::result::Result<(), TaskError> {
         let name = self.name();
+        let verbose = self.verbose;
         let q = *self;
         let w = q.sys;
         let b = Box::new(w);
         Model::<Unknown>::from_iter(b)
             .name(name)
+            .verbose(verbose)
             .skip_check()
             .run()
             .await?;
