@@ -18,7 +18,7 @@ type Solver = solvers::CuStateSpace;
 
 // #[inline]
 async fn update(servos_prime: &Sys<GmtServoMechanisms<10>>) {
-    let mut servos = Sys::<GmtServoMechanisms<10>>::clone(servos_prime).quiet();
+    let mut servos = Sys::<GmtServoMechanisms<10>>::clone(servos_prime);
     let mut timer: Actor<Timer, 0, 1> = Timer::new(100).into();
     timer
         .add_output()
@@ -38,9 +38,7 @@ async fn update(servos_prime: &Sys<GmtServoMechanisms<10>>) {
 pub fn servos(c: &mut Criterion) {
     let servos = GmtServoMechanisms::<10, 1>::new(1000f64, FEM::from_env().unwrap())
         .build()
-        .unwrap()
-        .quiet();
-    // let timer
+        .unwrap();
 
     c.bench_function("servos", |b| {
         b.to_async(tokio::runtime::Runtime::new().unwrap())
@@ -51,11 +49,8 @@ pub fn servos(c: &mut Criterion) {
 pub fn servos_m1_figure(c: &mut Criterion) {
     let servos = GmtServoMechanisms::<10, 1>::new(1000f64, FEM::from_env().unwrap())
         .m1_segment_figure(M1SegmentFigure::new())
-
         .build()
-        .unwrap()
-        .quiet();
-    // let timer
+        .unwrap();
 
     c.bench_function("servos M1 figure", |b| {
         b.to_async(tokio::runtime::Runtime::new().unwrap())
