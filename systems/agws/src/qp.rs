@@ -13,7 +13,7 @@ use gmt_dos_clients_io::{
     optics::{Dev, Frame, SensorData},
 };
 use interface::{
-    Data, Read, Right, TryWrite, Update, Write,
+    Data, Read, Right, TryWrite, UniqueIdentifier, Update, Write,
     optics::{
         OpticsState,
         state::{MirrorState, OpticalState},
@@ -192,5 +192,25 @@ impl<
                 _,
             >>::write(&mut self.processor),
         )
+    }
+}
+impl<
+    const I: usize,
+    const M1_RBM: usize,
+    const M2_RBM: usize,
+    const M1_BM: usize,
+    const N_MODE: usize,
+    U,
+> TryWrite<Right<U>> for Kernel<ActiveOptics<I, M1_RBM, M2_RBM, M1_BM, N_MODE>>
+where
+    U: UniqueIdentifier,
+    Self: TryWrite<U>,
+{
+    type Error = <Self as TryWrite<U>>::Error;
+
+    fn try_write(
+        &mut self,
+    ) -> std::result::Result<Option<Data<Right<U>>>, <Self as TryWrite<Right<U>>>::Error> {
+        <Self as TryWrite<U>>::try_write(self).map(|x| x.map(|x| x.transmute()))
     }
 }
