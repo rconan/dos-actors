@@ -126,6 +126,7 @@ where
         Ok(self)
     }
     /// Sets the AGWS SH48 builder
+    #[cfg(feature = "sh48")]
     pub fn sh48(
         mut self,
         sh48: ShackHartmannBuilder<<K48 as KernelSpecs>::Estimator, SH48_I>,
@@ -134,6 +135,7 @@ where
         self
     }
     /// Sets the AGWS SH24 builder
+    #[cfg(feature = "sh24")]
     pub fn sh24(
         mut self,
         sh24: ShackHartmannBuilder<<K24 as KernelSpecs>::Estimator, SH24_I>,
@@ -142,11 +144,13 @@ where
         self
     }
     /// Sets the reconstructor for AGWS SH24
+    #[cfg(feature = "sh24")]
     pub fn sh24_calibration(mut self, sh24_recon: <K24 as KernelSpecs>::Estimator) -> Self {
         self.sh24 = self.sh24.reconstructor(sh24_recon);
         self
     }
     /// Sets the reconstructor for AGWS SH48
+    #[cfg(feature = "sh48")]
     pub fn sh48_calibration(mut self, sh48_recon: <K48 as KernelSpecs>::Estimator) -> Self {
         self.sh48 = self.sh48.reconstructor(sh48_recon);
         self
@@ -183,6 +187,7 @@ where
     }
     /// Build an [Agws] [system](gmt_dos_actors::system::Sys) instance
     pub fn build(self) -> Result<Sys<Agws<SH48_I, SH24_I, K48, K24>>, AgwsBuilderError> {
+        #[allow(unused_variables)]
         let (sh24_label, sh48_label) = if self.atm.is_none() {
             (
                 format!("GMT Optics\nw/ SH24<{}>", SH24_I),
@@ -216,16 +221,24 @@ where
         let sh24 = sh24.build()?;
         log::info!("SH24:\n{}", sh24);
 
+        #[cfg(feature = "shk24")]
         let sh24_kern = Kernel::<K24>::try_from(self.sh24)
             .map_err(|_e| ShackHartmannBuilderError::Reconstructor)?;
+        #[cfg(feature = "shk48")]
         let sh48_kern = Kernel::<K48>::try_from(self.sh48)
             .map_err(|_e| ShackHartmannBuilderError::Reconstructor)?;
 
         Ok(Sys::new(Agws {
+            #[cfg(feature = "sh24")]
             sh24: (Sh24(sh24), sh24_label).into(),
+            #[cfg(feature = "sh48")]
             sh48: (Sh48(sh48), sh48_label).into(),
+            #[cfg(feature = "shk24")]
             sh24_kernel: Sh24Kern(sh24_kern).into(),
+            #[cfg(feature = "shk48")]
             sh48_kernel: Sh48Kern(sh48_kern).into(),
+            k48: std::marker::PhantomData,
+            k24: std::marker::PhantomData,
         })
         .build()?)
     }

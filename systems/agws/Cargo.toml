@@ -30,12 +30,16 @@ gmt_dos-clients_io.workspace = true
 tokio.workspace = true
 
 [features]
-default = ["qp"]
+default = ["qp", "shk48", "shk24"]
 qp = ["nalgebra", "osqp", "serde"]
 matio-rs = []
 nalgebra = ["dep:nalgebra"]
 osqp = ["dep:osqp"]
 serde = ["dep:serde"]
+sh48 = []
+sh24 = []
+shk48 = ["sh48"]
+shk24 = ["sh24"]
 
 [[bench]]
 name = "sys"

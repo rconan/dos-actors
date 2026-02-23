@@ -1,7 +1,7 @@
 pub mod sh24;
 pub mod sh48;
 
-use std::fmt::Display;
+use std::{fmt::Display, marker::PhantomData};
 
 use gmt_dos_actors::{
     actor::{Actor, PlainActor},
@@ -33,10 +33,16 @@ pub struct Agws<
     Sh48Kern<K48>: TryUpdate,
     Sh24Kern<K24>: TryUpdate,
 {
+    #[cfg(feature = "sh48")]
     pub(crate) sh48: Actor<Sh48<SH48_I>, 1, SH48_I>,
+    #[cfg(feature = "sh24")]
     pub(crate) sh24: Actor<Sh24<SH24_I>, 1, SH24_I>,
+    #[cfg(feature = "shk24")]
     pub(crate) sh24_kernel: Actor<Sh24Kern<K24>, SH24_I, SH24_I>,
+    #[cfg(feature = "shk48")]
     pub(crate) sh48_kernel: Actor<Sh48Kern<K48>, SH48_I, SH48_I>,
+    pub(crate) k48: PhantomData<K48>,
+    pub(crate) k24: PhantomData<K24>,
 }
 
 impl<const SH48_I: usize, const SH24_I: usize, K48, K24> Clone for Agws<SH48_I, SH24_I, K48, K24>
@@ -48,10 +54,16 @@ where
 {
     fn clone(&self) -> Self {
         Self {
+            #[cfg(feature = "sh48")]
             sh48: self.sh48.clone(),
+            #[cfg(feature = "sh24")]
             sh24: self.sh24.clone(),
+            #[cfg(feature = "shk24")]
             sh24_kernel: self.sh24_kernel.clone(),
+            #[cfg(feature = "shk48")]
             sh48_kernel: self.sh48_kernel.clone(),
+            k48: PhantomData,
+            k24: PhantomData,
         }
     }
 }
@@ -64,7 +76,9 @@ where
     Sh24Kern<K24>: TryUpdate,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        #[cfg(feature = "sh48")]
         self.sh48.fmt(f)?;
+        #[cfg(feature = "sh24")]
         self.sh24.fmt(f)?;
         Ok(())
     }
@@ -83,6 +97,7 @@ where
     /// Sensor pointing error relative to the source
     ///
     /// The pointing error is given in cartesian coordinates and in radians units
+    #[cfg(feature = "sh24")]
     pub async fn sh24_pointing(
         &mut self,
         xy: (f64, f64),
@@ -103,11 +118,13 @@ where
         String::from("AGWS")
     }
     fn build(&mut self) -> Result<&mut Self, SystemError> {
+        #[cfg(feature = "shk24")]
         self.sh24
             .add_output()
             .bootstrap()
             .build::<KernelFrame<K24>>()
             .into_input(&mut self.sh24_kernel)?;
+        #[cfg(feature = "shk48")]
         self.sh48
             .add_output()
             .bootstrap()
@@ -115,7 +132,7 @@ where
             .into_input(&mut self.sh48_kernel)?;
         Ok(self)
     }
-
+    #[cfg(all(feature = "shk48", feature = "shk24"))]
     fn plain(&self) -> gmt_dos_actors::actor::PlainActor {
         PlainActor::new(self.name())
             .inputs(self.sh48.as_plain().inputs().unwrap())
@@ -137,6 +154,38 @@ where
             .graph(self.graph())
             .build()
     }
+    #[cfg(all(feature = "shk48", not(feature = "shk24")))]
+    fn plain(&self) -> gmt_dos_actors::actor::PlainActor {
+        PlainActor::new(self.name())
+            .inputs(self.sh48.as_plain().inputs().unwrap())
+            .outputs(self.sh48_kernel.as_plain().outputs().unwrap_or_default())
+            .graph(self.graph())
+            .build()
+    }
+    #[cfg(all(feature = "sh48", not(feature = "shk48")))]
+    fn plain(&self) -> gmt_dos_actors::actor::PlainActor {
+        PlainActor::new(self.name())
+            .inputs(self.sh48.as_plain().inputs().unwrap())
+            .outputs(self.sh48.as_plain().outputs().unwrap_or_default())
+            .graph(self.graph())
+            .build()
+    }
+    #[cfg(all(feature = "shk24", not(feature = "shk48")))]
+    fn plain(&self) -> gmt_dos_actors::actor::PlainActor {
+        PlainActor::new(self.name())
+            .inputs(self.sh24.as_plain().inputs().unwrap())
+            .outputs(self.sh24_kernel.as_plain().outputs().unwrap())
+            .graph(self.graph())
+            .build()
+    }
+    #[cfg(all(feature = "sh24", not(feature = "shk24")))]
+    fn plain(&self) -> gmt_dos_actors::actor::PlainActor {
+        PlainActor::new(self.name())
+            .inputs(self.sh24.as_plain().inputs().unwrap())
+            .outputs(self.sh24.as_plain().outputs().unwrap_or_default())
+            .graph(self.graph())
+            .build()
+    }
 }
 
 impl<'a, const SH48_I: usize, const SH24_I: usize, K48, K24> IntoIterator
@@ -152,9 +201,13 @@ where
 
     fn into_iter(self) -> Self::IntoIter {
         vec![
+            #[cfg(feature = "sh48")]
             Box::new(&self.sh48 as &dyn Check),
+            #[cfg(feature = "sh24")]
             Box::new(&self.sh24 as &dyn Check),
+            #[cfg(feature = "shk24")]
             Box::new(&self.sh24_kernel as &dyn Check),
+            #[cfg(feature = "shk48")]
             Box::new(&self.sh48_kernel as &dyn Check),
         ]
         .into_iter()
@@ -174,14 +227,27 @@ where
 
     fn into_iter(self) -> Self::IntoIter {
         vec![
-            Box::new(self.sh48) as Box<dyn Task>,
-            Box::new(self.sh24) as Box<dyn Task>,
-            Box::new(self.sh24_kernel) as Box<dyn Task>,
-            Box::new(self.sh48_kernel) as Box<dyn Task>,
+            #[cfg(feature = "sh48")]
+            {
+                Box::new(self.sh48) as Box<dyn Task>
+            },
+            #[cfg(feature = "sh24")]
+            {
+                Box::new(self.sh24) as Box<dyn Task>
+            },
+            #[cfg(feature = "shk24")]
+            {
+                Box::new(self.sh24_kernel) as Box<dyn Task>
+            },
+            #[cfg(feature = "shk48")]
+            {
+                Box::new(self.sh48_kernel) as Box<dyn Task>
+            },
         ]
         .into_iter()
     }
 }
+#[cfg(feature = "sh48")]
 impl<const SH48_I: usize, const SH24_I: usize, K48, K24> SystemInput<Sh48<SH48_I>, 1, SH48_I>
     for Agws<SH48_I, SH24_I, K48, K24>
 where
@@ -194,6 +260,7 @@ where
         &mut self.sh48
     }
 }
+#[cfg(feature = "sh48")]
 impl<const SH48_I: usize, const SH24_I: usize, K48, K24> SystemOutput<Sh48<SH48_I>, 1, SH48_I>
     for Agws<SH48_I, SH24_I, K48, K24>
 where
@@ -206,6 +273,7 @@ where
         &mut self.sh48
     }
 }
+#[cfg(feature = "shk48")]
 impl<const SH48_I: usize, const SH24_I: usize, K48, K24> SystemOutput<Sh48Kern<K48>, SH48_I, SH48_I>
     for Agws<SH48_I, SH24_I, K48, K24>
 where
@@ -219,6 +287,7 @@ where
     }
 }
 
+#[cfg(feature = "sh24")]
 impl<const SH48_I: usize, const SH24_I: usize, K48, K24> SystemInput<Sh24<SH24_I>, 1, SH24_I>
     for Agws<SH48_I, SH24_I, K48, K24>
 where
@@ -232,6 +301,7 @@ where
     }
 }
 
+#[cfg(feature = "sh24")]
 impl<const SH48_I: usize, const SH24_I: usize, K48, K24> SystemOutput<Sh24<SH24_I>, 1, SH24_I>
     for Agws<SH48_I, SH24_I, K48, K24>
 where
@@ -244,6 +314,7 @@ where
         &mut self.sh24
     }
 }
+#[cfg(feature = "shk24")]
 impl<const SH48_I: usize, const SH24_I: usize, K48, K24> SystemOutput<Sh24Kern<K24>, SH24_I, SH24_I>
     for Agws<SH48_I, SH24_I, K48, K24>
 where
