@@ -6,7 +6,7 @@ use crate::{
 };
 
 use gmt_fem::{FEM, Result};
-use interface::{TimerMarker, UniqueIdentifier, optics::Optics};
+use interface::{TimerMarker, UniqueIdentifier};
 use nalgebra as na;
 use rayon::prelude::*;
 use std::{
@@ -17,7 +17,6 @@ use std::{
 };
 
 impl<T: Solver + Default> TimerMarker for DiscreteModalSolver<T> {}
-impl<T: Solver + Default> Optics for DiscreteModalSolver<T> {}
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default)]

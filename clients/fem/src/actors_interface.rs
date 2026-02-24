@@ -44,6 +44,28 @@ where
 }
 
 #[cfg(all(fem, m1, m2))]
+pub use gmt_dos_clients_optics_state::{M1State, M2State, OpticalState, OpticsState};
+#[cfg(all(fem, m1, m2))]
+impl<S> Write<OpticsState> for DiscreteModalSolver<S>
+where
+    DiscreteModalSolver<S>: Write<M1State> + Write<M2State>,
+    S: Solver + Default,
+{
+    fn write(&mut self) -> Option<Data<OpticsState>> {
+        let s1 = <_ as Write<M1State>>::write(self);
+        let s2 = <_ as Write<M2State>>::write(self);
+        match (&s1, &s2) {
+            (None, None) => None,
+            _ => Some(Data::new(OpticalState {
+                m1: s1.map(|data| (*data).clone()),
+                m2: s2.map(|data| (*data).clone()),
+                zero_point: None,
+            })),
+        }
+    }
+}
+
+#[cfg(all(fem, m1, m2))]
 impl<S> Write<gmt_dos_clients_io::M12RigidBodyMotions> for DiscreteModalSolver<S>
 where
     DiscreteModalSolver<S>: Iterator,

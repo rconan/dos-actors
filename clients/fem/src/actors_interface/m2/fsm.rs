@@ -3,10 +3,8 @@
 // use super::prelude::*;
 use gmt_dos_clients_io::Assembly;
 use gmt_dos_clients_io::gmt_m2::fsm::{M2FSMPiezoForces, M2FSMPiezoNodes};
-use interface::{
-    Data, Write,
-    optics::{M2State, state::SegmentState},
-};
+use gmt_dos_clients_optics_state::{M2State, SegmentState};
+use interface::{Data, Write};
 
 use crate::{DiscreteModalSolver, Get};
 

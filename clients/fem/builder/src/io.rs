@@ -196,6 +196,7 @@ impl<'a> IO<'a> {
     /// impl TryFrom<String> for Box<dyn Get{io}>
     ///
     /// io: In|Out
+    #[allow(dead_code)]
     pub fn impl_tryfrom_for_getio(&self) -> String {
         let arms = self
             .variants

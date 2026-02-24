@@ -6,8 +6,8 @@ use super::prelude::*;
 use gmt_dos_clients_io::{
     Assembly,
     gmt_m1::{M1EdgeSensors, M1ModeShapes, M1RigidBodyMotions, segment::ModeShapes},
-    optics::{M1State, state::SegmentState},
 };
+use gmt_dos_clients_optics_state::{M1State, SegmentState};
 
 pub mod actuators;
 pub mod assembly;
