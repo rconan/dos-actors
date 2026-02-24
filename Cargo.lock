@@ -3731,6 +3731,7 @@ dependencies = [
  "gmt-fem-code-builder",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
+ "gmt_dos-clients_optics-state",
  "serde",
 ]
 

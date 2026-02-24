@@ -1,7 +1,7 @@
 use interface::{OperatorLeftRight, UID, UniqueIdentifier};
 use std::marker::PhantomData;
 
-pub use interface::optics::{self, M1State, M2State, OpticsState, state};
+pub use gmt_dos_clients_optics_state::{M1State, M2State, OpticsState};
 
 /// Source wavefront error RMS `[m]`
 #[derive(UID)]
@@ -35,12 +35,12 @@ pub enum M2GlobalTipTilt {}
 /// M1 global translation (Tx,Ty,Tz)
 #[derive(UID)]
 #[uid(port = 55_103)]
-pub enum M1GlobalTxyz{}
+pub enum M1GlobalTxyz {}
 
 /// M2 global translation (Tx,Ty,Tz)
 #[derive(UID)]
 #[uid(port = 55_104)]
-pub enum M2GlobalTxyz{}
+pub enum M2GlobalTxyz {}
 
 /// Source segment wavefront piston and standard deviation `([m],[m])x7`
 pub enum SegmentWfe<const E: i32 = 0> {}
