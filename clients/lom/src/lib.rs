@@ -11,10 +11,11 @@ use gmt_dos_clients_io::{
     gmt_m1::M1RigidBodyMotions,
     gmt_m2::{M2RigidBodyMotions, asm::M2ASMReferenceBodyNodes},
     optics::{
-        M1State, M2State, MaskedWavefront, SegmentD21PistonRSS, SegmentPiston, SegmentTipTilt,
-        SegmentWfeRms, TipTilt, Wavefront, WfeRms,
+        MaskedWavefront, SegmentD21PistonRSS, SegmentPiston, SegmentTipTilt, SegmentWfeRms,
+        TipTilt, Wavefront, WfeRms,
     },
 };
+use gmt_dos_clients_optics_state::{M1State, M2State};
 use gmt_dos_clients_optics_state::{OpticalState, OpticsState};
 use gmt_lom::{LOM, LinearOpticalModelError, Loader};
 use interface::{self, Data, Size, Units, Update, Write};
