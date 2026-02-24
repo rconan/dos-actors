@@ -1,8 +1,6 @@
 use interface::{OperatorLeftRight, UID, UniqueIdentifier};
 use std::marker::PhantomData;
 
-pub use gmt_dos_clients_optics_state::{M1State, M2State, OpticsState};
-
 /// Source wavefront error RMS `[m]`
 #[derive(UID)]
 #[uid(port = 55_011)]

@@ -16,7 +16,6 @@ gmt_dos-actors.workspace = true
 interface.workspace = true
 crseo = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
-gmt_dos-clients_optics-state.workspace = true
 
 [build-dependencies]
 anyhow.workspace = true
