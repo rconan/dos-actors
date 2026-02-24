@@ -15,8 +15,9 @@ use gmt_dos_clients_io::{
         SegmentWfeRms, TipTilt, Wavefront, WfeRms,
     },
 };
+use gmt_dos_clients_optics_state::{OpticalState, OpticsState};
 use gmt_lom::{LOM, LinearOpticalModelError, Loader};
-use interface::{self, Data, Size, Units, Update, Write, optics::Optics};
+use interface::{self, Data, Size, Units, Update, Write};
 
 mod optical_sensitivity;
 pub use optical_sensitivity::OpticalSensitivities;
@@ -59,13 +60,26 @@ impl LinearOpticalModel {
 }
 
 impl Units for LinearOpticalModel {}
-impl Optics for LinearOpticalModel {}
 
 impl Update for LinearOpticalModel {
     fn update(&mut self) {
         self.lom.rbm = vec![(self.m1_rbm.as_slice(), self.m2_rbm.as_slice())]
             .into_iter()
             .collect();
+    }
+}
+impl interface::Read<OpticsState> for LinearOpticalModel
+where
+    LinearOpticalModel: interface::Read<M1State> + interface::Read<M2State>,
+{
+    fn read(&mut self, data: Data<OpticsState>) {
+        let OpticalState { m1, m2, .. } = &*data;
+        if let Some(s1) = m1 {
+            <_ as interface::Read<M1State>>::read(self, Data::new(s1.clone()));
+        }
+        if let Some(s2) = m2 {
+            <_ as interface::Read<M2State>>::read(self, Data::new(s2.clone()));
+        }
     }
 }
 impl interface::Read<M1RigidBodyMotions> for LinearOpticalModel {

@@ -3743,6 +3743,7 @@ dependencies = [
  "gmt-lom",
  "gmt_dos-actors-clients_interface",
  "gmt_dos-clients_io",
+ "gmt_dos-clients_optics-state",
  "nalgebra 0.33.2",
 ]
 

@@ -17,3 +17,4 @@ gmt_dos-clients_io.workspace = true
 nalgebra.workspace = true
 gmt-lom = "2.4"
 flate2 = "1.0.26"
+gmt_dos-clients_optics-state.workspace = true
