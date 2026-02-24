@@ -67,6 +67,7 @@ impl AgwsShackHartmann {
 
 /// [Agws] builder
 // #[derive(Debug)]
+#[allow(dead_code)]
 pub struct AgwsBuilder<
     const SH48_I: usize = 1,
     const SH24_I: usize = 1,
@@ -82,6 +83,7 @@ pub struct AgwsBuilder<
     sh24: ShackHartmannBuilder<<K24 as KernelSpecs>::Estimator, SH24_I>,
     gmt: Option<GmtBuilder>,
     atm: Option<(AtmosphereBuilder, f64)>,
+    sh24_controller: Option<<K24 as KernelSpecs>::Integrator>,
 }
 
 impl<const SH48_I: usize, const SH24_I: usize, K48, K24> Default
@@ -96,6 +98,7 @@ where
             sh24: ShackHartmannBuilder::sh24(),
             gmt: None,
             atm: None,
+            sh24_controller: None,
         }
     }
 }
@@ -143,6 +146,12 @@ where
         self.sh24 = sh24;
         self
     }
+    /// Sets the AGWS SH24 controller
+    #[cfg(feature = "sh24")]
+    pub fn sh24_controller(mut self, sh24_controller: <K24 as KernelSpecs>::Integrator) -> Self {
+        self.sh24_controller = Some(sh24_controller);
+        self
+    }
     /// Sets the reconstructor for AGWS SH24
     #[cfg(feature = "sh24")]
     pub fn sh24_calibration(mut self, sh24_recon: <K24 as KernelSpecs>::Estimator) -> Self {
@@ -186,7 +195,8 @@ where
             )
     }
     /// Build an [Agws] [system](gmt_dos_actors::system::Sys) instance
-    pub fn build(self) -> Result<Sys<Agws<SH48_I, SH24_I, K48, K24>>, AgwsBuilderError> {
+    #[allow(unused_mut)]
+    pub fn build(mut self) -> Result<Sys<Agws<SH48_I, SH24_I, K48, K24>>, AgwsBuilderError> {
         #[allow(unused_variables)]
         let (sh24_label, sh48_label) = if self.atm.is_none() {
             (
@@ -223,7 +233,14 @@ where
 
         #[cfg(feature = "shk24")]
         let sh24_kern = Kernel::<K24>::try_from(self.sh24)
-            .map_err(|_e| ShackHartmannBuilderError::Reconstructor)?;
+            .map_err(|_e| ShackHartmannBuilderError::Reconstructor)
+            .map(|sh24_kern| {
+                if let Some(sh24_controller) = self.sh24_controller.take() {
+                    sh24_kern.controller(sh24_controller)
+                } else {
+                    sh24_kern
+                }
+            })?;
         #[cfg(feature = "shk48")]
         let sh48_kern = Kernel::<K48>::try_from(self.sh48)
             .map_err(|_e| ShackHartmannBuilderError::Reconstructor)?;

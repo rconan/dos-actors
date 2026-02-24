@@ -70,6 +70,16 @@ where
     integrator: Option<<T as KernelSpecs>::Integrator>,
 }
 
+impl<T> Kernel<T>
+where
+    T: KernelSpecs,
+{
+    pub fn controller(mut self, controller: <T as KernelSpecs>::Integrator) -> Self {
+        self.integrator = Some(controller);
+        self
+    }
+}
+
 impl<T> Display for Kernel<T>
 where
     T: KernelSpecs,
