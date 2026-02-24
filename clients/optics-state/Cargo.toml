@@ -9,6 +9,7 @@ categories.workspace = true
 keywords.workspace = true
 
 [dependencies]
+gmt_dos-clients_io.workspace = true
 interface.workspace = true
 serde = { workspace = true, features = ["derive"], optional = true }
 
