@@ -4,8 +4,8 @@ use gmt_dos_clients_io::{
     gmt_m2::asm::{
         M2ASMFaceSheetFigure, M2ASMFluidDampingForces, M2ASMVoiceCoilsForces, M2ASMVoiceCoilsMotion,
     },
-    optics::{M2State, state::MirrorState},
 };
+use gmt_dos_clients_optics_state::{M2State, MirrorState};
 use interface::{Data, Read, Size, Write};
 use std::sync::Arc;
 
