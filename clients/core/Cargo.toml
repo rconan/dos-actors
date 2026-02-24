@@ -33,6 +33,7 @@ gmt_dos-clients_scope-client = { workspace = true, optional = true }
 faer = {workspace=true, optional = true}
 faer-traits = {version = "0.21.5", optional = true}
 faer-ext = {workspace = true, optional = true}
+gmt_dos-clients_optics-state.workspace = true
 
 [features]
 noise = ["rand", "rand_distr"]

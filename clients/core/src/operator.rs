@@ -5,10 +5,8 @@ use std::{
     sync::Arc,
 };
 
-use interface::{
-    Data, Left, Read, Right, UniqueIdentifier, Update, Write,
-    optics::state::{MirrorState, OpticalState},
-};
+use gmt_dos_clients_optics_state::{MirrorState, OpticalState};
+use interface::{Data, Left, Read, Right, UniqueIdentifier, Update, Write};
 
 #[derive(Default, Debug, Clone)]
 pub enum OperatorKind {

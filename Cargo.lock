@@ -3578,6 +3578,7 @@ dependencies = [
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface",
  "gmt_dos-clients_arrow",
+ "gmt_dos-clients_optics-state",
  "gmt_dos-clients_scope",
  "gmt_dos-clients_scope-client",
  "image 0.25.9",
