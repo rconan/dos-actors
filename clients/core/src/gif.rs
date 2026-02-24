@@ -3,32 +3,24 @@
 //! A client to create a GIF image from a stream of frame
 
 use std::{
-    env, fmt,
+    fmt,
     fs::File,
     ops::{Div, Sub},
-    path::{Path, PathBuf},
-    sync::Arc,
+    path::Path,
 };
 
-use ab_glyph::{FontArc, FontRef};
-use colorous::CIVIDIS;
 use gif::{Encoder, EncodingError, Frame as GifFrame};
-use image::{Rgba, RgbaImage};
-use imageproc::drawing::draw_text_mut;
 use interface::{Read, UniqueIdentifier, Update};
 
 mod frame;
 pub use frame::Frame;
 
 pub struct Gif<T> {
-    path: PathBuf,
-    frame: Arc<Vec<T>>,
     width: usize,
     height: usize,
     delay: u16,
     encoder: Encoder<File>,
-    idx: usize,
-    font: FontArc,
+    frame: Frame<T>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -48,22 +40,19 @@ impl<T> Gif<T> {
     ///
     /// The `width` and `height` of the image must match the frame size
     pub fn new<P: AsRef<Path>>(path: P, width: usize, height: usize) -> Result<Self> {
-        let data_path = env::var("DATA_REPO").unwrap_or(".".into());
-        let path = Path::new(&data_path).join(path);
-        let file = File::create(&path)?;
+        let frame = Frame::<T>::new(path, height).autosave(false);
+        let file = File::create(frame.path())?;
         let encoder = Encoder::new(file, width as u16, height as u16, &[])?;
         // encoder.set_repeat(Repeat::Infinite)?;
-        let font_data = include_bytes!("DejaVuSans.ttf"); // You'll need to provide a font
-        let font = FontRef::try_from_slice(font_data).unwrap();
         Ok(Self {
-            path,
-            frame: Default::default(),
+            // path,
+            frame,
             width,
             height,
             delay: 100,
             encoder,
-            idx: 0,
-            font: font.into(),
+            // idx: 0,
+            // font: font.into(),
         })
     }
     /// Frame delay in milliseconds
@@ -86,82 +75,15 @@ where
     f64: From<T>,
 {
     fn update(&mut self) {
-        let max_px = *self
-            .frame
-            .iter()
-            .max_by(|&a, &b| a.partial_cmp(b).unwrap())
-            .unwrap();
-        let min_px = *self
-            .frame
-            .iter()
-            .min_by(|&a, &b| a.partial_cmp(b).unwrap())
-            .unwrap();
-        let colormap = CIVIDIS;
-        let pixels: Vec<u8> = self
-            .frame
-            .iter()
-            .map(|x| (*x - min_px) / (max_px - min_px))
-            .map(|t| colormap.eval_continuous(t.into()))
-            .map(|c| c.into_array().to_vec())
-            .flat_map(|mut c| {
-                c.push(255u8);
-                c
-            })
-            .collect();
-        let n = self.height;
-        let pixels: Vec<_> = (0..n)
-            .flat_map(|i| {
-                pixels
-                    .chunks(n * 4)
-                    .skip(i)
-                    .step_by(n)
-                    .flat_map(|c| c.to_vec())
-                    .collect::<Vec<_>>()
-            })
-            .collect();
+        <Frame<T> as Update>::update(&mut self.frame);
 
-        let mut image = RgbaImage::from_vec(self.width as u32, self.height as u32, pixels)
-            .expect("failed to create a RGB image");
-        draw_text_mut(
-            &mut image,
-            Rgba([255u8, 255u8, 255u8, 255u8]),
-            10,
-            10,
-            16.,
-            &self.font,
-            &format!(
-                "{} #{}",
-                self.path
-                    .with_extension("")
-                    .file_name()
-                    .unwrap()
-                    .to_str()
-                    .unwrap(),
-                self.idx
-            ),
-        );
-        draw_text_mut(
-            &mut image,
-            Rgba([255u8, 255u8, 255u8, 255u8]),
-            10,
-            28,
-            12.0,
-            &self.font,
-            &format!("[{:.3e},{:.3e}]", min_px, max_px),
-        );
-        // draw_guide_lines(&mut image, self.width as u32, self.height as u32);
-
-        let mut frame = GifFrame::from_rgba_speed(
-            self.width as u16,
-            self.height as u16,
-            &mut image.into_raw(),
-            10,
-        );
+        let mut q = self.frame.image().clone().into_raw();
+        let mut frame =
+            GifFrame::from_rgba_speed(self.width as u16, self.height as u16, &mut q, 10);
         frame.delay = self.delay;
         self.encoder
             .write_frame(&frame)
             .expect("failed to write frame to GIF encoder");
-        self.idx += 1;
     }
 }
 // Helper function to draw semi-transparent guide lines
@@ -204,8 +126,9 @@ where
         + fmt::LowerExp,
     f64: From<T>,
     U: UniqueIdentifier<DataType = Vec<T>>,
+    Vec<T>: From<interface::Data<U>>,
 {
     fn read(&mut self, data: interface::Data<U>) {
-        self.frame = data.into_arc();
+        <Frame<T> as Read<U>>::read(&mut self.frame, data);
     }
 }

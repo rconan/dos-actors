@@ -26,6 +26,7 @@ where
     font: FontArc,
     filter: Option<F>,
     crosses: Option<Vec<(i32, i32)>>,
+    autosave: bool,
 }
 impl<T, F: Fn(&T) -> T> Frame<T, F> {
     /// Creates a new image encoder
@@ -45,7 +46,13 @@ impl<T, F: Fn(&T) -> T> Frame<T, F> {
             font: font.into(),
             filter: None,
             crosses: None,
+            autosave: true,
         }
+    }
+    /// Enables/disables auto-save property (enabled per default)
+    pub fn autosave(mut self, flag: bool) -> Self {
+        self.autosave = flag;
+        self
     }
     /// Saves the the image
     pub fn save(&self) -> Result<()> {
@@ -60,6 +67,14 @@ impl<T, F: Fn(&T) -> T> Frame<T, F> {
     pub fn cross(mut self, cross: (i32, i32)) -> Self {
         self.crosses.get_or_insert(vec![]).push(cross);
         self
+    }
+    /// Returns the image
+    pub fn image(&self) -> &RgbaImage {
+        &self.image
+    }
+    /// Returns the path to the image
+    pub fn path(&self) -> &Path {
+        self.path.as_path()
     }
 }
 impl<T, F> Update for Frame<T, F>
@@ -162,8 +177,10 @@ where
                 );
             }
         } // draw_guide_lines(&mut self.image, self.width as u32, self.height as u32);
-        self.save()
-            .expect(&format!("failed to write frame to {:?}", self.path));
+        if self.autosave {
+            self.save()
+                .expect(&format!("failed to write frame to {:?}", self.path));
+        }
         self.idx += 1;
     }
 }
@@ -178,10 +195,11 @@ where
         + Sub<Output = T>
         + fmt::LowerExp,
     f64: From<T>,
-    U: UniqueIdentifier<DataType = Vec<T>>,
+    U: UniqueIdentifier,
     F: Send + Sync + Fn(&T) -> T,
+    Vec<T>: From<interface::Data<U>>,
 {
     fn read(&mut self, data: interface::Data<U>) {
-        self.frame = data.into_arc();
+        self.frame = Vec::<T>::from(data).into();
     }
 }
