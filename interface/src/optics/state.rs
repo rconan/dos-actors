@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-use crate::{Data, Left, Read, Right, Update, Write};
+use crate::{Data, Left, Read, Right, TimerMarker, Update, Write};
 
 use super::{M1State, M2State, OpticsState};
 
@@ -18,6 +18,7 @@ pub struct OpticalState {
     pub m2: Option<MirrorState>,
     pub zero_point: Option<Box<OpticalState>>,
 }
+impl TimerMarker for OpticalState {}
 impl OpticalState {
     /// Creates a new [OpticalState] from M1 and M2 [MirrorState]
     pub fn new(m1: MirrorState, m2: MirrorState) -> Self {

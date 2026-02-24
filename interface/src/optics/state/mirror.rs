@@ -208,3 +208,4 @@ impl Mul<f64> for &MirrorState {
             .collect()
     }
 }
+
