@@ -6,10 +6,8 @@ use gmt_dos_clients_io::{
     },
     optics::{M1GlobalTipTilt, M1GlobalTxyz, M1Modes},
 };
-use interface::{
-    Data, Read,
-    optics::{M1State, state::SegmentState},
-};
+use gmt_dos_clients_optics_state::{M1State, SegmentState};
+use interface::{Data, Read};
 
 use crate::{OpticalModel, sensors::SensorPropagation};
 
@@ -83,8 +81,9 @@ impl<T: SensorPropagation> Read<M1GlobalTipTilt> for OpticalModel<T> {
 }
 impl<T: SensorPropagation> Read<M1GlobalTxyz> for OpticalModel<T> {
     fn read(&mut self, data: Data<M1GlobalTxyz>) {
-        let rbms =
-            geotrans::Mirror::<geotrans::M1>::translations_2_rigidbodymotions((data[0], data[1], data[2]));
+        let rbms = geotrans::Mirror::<geotrans::M1>::translations_2_rigidbodymotions((
+            data[0], data[1], data[2],
+        ));
         <OpticalModel<T> as Read<M1RigidBodyMotions>>::read(self, rbms.into())
     }
 }

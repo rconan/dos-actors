@@ -8,10 +8,8 @@ use gmt_dos_clients_io::{
     },
     optics::{M2GlobalTipTilt, M2GlobalTxyz, M2Modes},
 };
-use interface::{
-    Data, Read,
-    optics::{M2State, state::SegmentState},
-};
+use gmt_dos_clients_optics_state::{M2State, SegmentState};
+use interface::{Data, Read};
 
 use crate::{OpticalModel, sensors::SensorPropagation};
 

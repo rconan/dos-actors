@@ -3,13 +3,13 @@ use crate::{
     sensors::{NoSensor, SensorPropagation},
 };
 use crseo::{Atmosphere, FromBuilder, Gmt, PSSnEstimates, Source};
-use interface::{Units, Update, optics::Optics};
+use interface::{Units, Update};
 
 pub mod builder;
 mod imaging;
 mod pyramid;
-mod write;
 mod read;
+mod write;
 
 #[derive(Debug, thiserror::Error)]
 pub enum OpticalModelError {
@@ -71,7 +71,6 @@ unsafe impl<T> Send for OpticalModel<T> {}
 unsafe impl<T> Sync for OpticalModel<T> {}
 
 impl<T> Units for OpticalModel<T> {}
-impl<T> Optics for OpticalModel<T> {}
 
 impl<T> OpticalModel<T>
 where
@@ -116,5 +115,3 @@ impl<T: SensorPropagation> Update for OpticalModel<T> {
         }
     }
 }
-
-

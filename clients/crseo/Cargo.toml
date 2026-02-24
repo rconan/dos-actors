@@ -29,6 +29,7 @@ skyangle = "0.2.2"
 faer = { workspace = true, features = ["serde"], optional = true }
 faer-ext = { workspace = true, optional = true }
 geotrans = "1.2.0"
+gmt_dos-clients_optics-state.workspace = true
 
 [dev-dependencies]
 colorous = "1.0.16"
@@ -42,7 +43,7 @@ skyangle = "0.2.2"
 tokio = "1.21.1"
 
 [features]
- default = ["faer", "faer-ext"]
+default = ["faer", "faer-ext"]
 
 [[bench]]
 name = "ray_tracing"

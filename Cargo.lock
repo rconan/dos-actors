@@ -3631,6 +3631,7 @@ dependencies = [
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_domeseeing",
  "gmt_dos-clients_io",
+ "gmt_dos-clients_optics-state",
  "image 0.25.9",
  "indicatif",
  "linya",
