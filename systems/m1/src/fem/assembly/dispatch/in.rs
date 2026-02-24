@@ -14,13 +14,8 @@ use gmt_dos_clients_io::{
         segment::{ActuatorCommandForces, ModeShapes, RBM},
     },
 };
-use interface::{
-    Data, Left, Read, Right, UniqueIdentifier, Update, Write,
-    optics::{
-        M1State,
-        state::SegmentState,
-    },
-};
+use gmt_dos_clients_optics_state::{M1State, SegmentState};
+use interface::{Data, Left, Read, Right, UniqueIdentifier, Update, Write};
 
 use super::NA;
 
@@ -92,7 +87,8 @@ impl Read<M1State> for DispatchIn {
             .zip(self.m1_actuator_command_forces.iter_mut());
         let mut mat_iter = self
             .mode_2_force_transforms
-            .as_ref().map(|x|x.as_slice())
+            .as_ref()
+            .map(|x| x.as_slice())
             .map(|x| x.iter());
         for (segment_state, (segment_rbms, segment_forces)) in data.iter().zip(iter) {
             if let Some(SegmentState { rbms, modes }) = segment_state {
