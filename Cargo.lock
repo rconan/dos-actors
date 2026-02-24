@@ -3849,6 +3849,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "gmt_dos-clients_optics-state"
+version = "0.1.0"
+dependencies = [
+ "gmt_dos-actors-clients_interface",
+ "serde",
+]
+
+[[package]]
 name = "gmt_dos-clients_scope"
 version = "3.1.0"
 dependencies = [

@@ -18,7 +18,6 @@ use std::{any::type_name, convert::Infallible, marker::PhantomData, sync::Arc};
 
 mod data;
 pub mod doublet;
-pub mod optics;
 pub use data::Data;
 pub use dos_uid_derive::UID;
 pub mod units;

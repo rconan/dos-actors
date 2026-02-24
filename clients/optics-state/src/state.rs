@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-use crate::{Data, Left, Read, Right, TimerMarker, Update, Write};
+use interface::{Data, Left, Read, Right, TimerMarker, Update, Write};
 
 use super::{M1State, M2State, OpticsState};
 

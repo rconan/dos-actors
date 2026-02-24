@@ -17,7 +17,7 @@ members = [
   "clients/dcs/servos-scopes",
   "systems/agws",
   "systems/m1/modes",
-  "clients/scope/hub",
+  "clients/scope/hub", "clients/optics-state",
 ]
 resolver = "2"
 
