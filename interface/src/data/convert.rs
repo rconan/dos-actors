@@ -7,18 +7,20 @@ use super::Data;
 impl<T, U> From<Data<U>> for Vec<T>
 where
     T: Clone,
-    U: UniqueIdentifier<DataType = Vec<T>>,
+    U: UniqueIdentifier, //<DataType = Vec<T>>,
+    <U as UniqueIdentifier>::DataType: Clone,
+    Vec<T>: From<<U as UniqueIdentifier>::DataType>,
 {
     fn from(data: Data<U>) -> Self {
-        (*data.0).clone()
+        (*data.0).clone().into()
     }
 }
-impl<T, U: UniqueIdentifier<DataType = Vec<T>>> From<&Data<U>> for Vec<T>
+impl<T, U: UniqueIdentifier> From<&Data<U>> for Vec<T>
 where
     T: Clone,
 {
     fn from(data: &Data<U>) -> Self {
-        data.to_vec()
+        data.into()
     }
 }
 impl<'a, T, U: UniqueIdentifier<DataType = Vec<T>>> From<&'a Data<U>> for &'a [T] {
