@@ -1,10 +1,7 @@
 use gmt_dos_clients_fem::{Model, Switch};
 use gmt_dos_clients_io::gmt_m2::{M2PositionerForces, M2PositionerNodes, M2RigidBodyMotions};
 use gmt_fem::FEM;
-use interface::{
-    Data, Read, Update, Write,
-    optics::{M2State, state::SegmentState},
-};
+use interface::{Data, Read, Update, Write};
 use nalgebra as na;
 use serde::{Deserialize, Serialize};
 
@@ -13,6 +10,7 @@ pub enum PositionersError {
     #[error("cannot create positionners model")]
     Positionners(#[from] gmt_fem::FemError),
 }
+use gmt_dos_clients_optics_state::{M2State, SegmentState};
 
 #[cfg(topend = "ASM")]
 type M2Positioner = gmt_m2_ctrl_asm_positionner::AsmPositionner;

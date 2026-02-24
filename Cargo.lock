@@ -3805,6 +3805,7 @@ dependencies = [
  "gmt_dos-clients_lom",
  "gmt_dos-clients_m1-ctrl",
  "gmt_dos-clients_mount",
+ "gmt_dos-clients_optics-state",
  "gmt_m2-ctrl_asm_pid-damping",
  "gmt_m2-ctrl_asm_positionner",
  "gmt_m2-ctrl_asm_preshape-filter",

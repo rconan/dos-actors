@@ -30,6 +30,7 @@ gmt_m2-ctrl_fsm-piezo-246 = "0.1.0"
 gmt_m2-ctrl_fsm-piezo-7 = "0.1.1"
 gmt_m2-ctrl_fsm_positionner = "0.1.0"
 complot = { version = "0.3.5", optional = true }
+gmt_dos-clients_optics-state.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }
