@@ -4007,6 +4007,7 @@ dependencies = [
  "gmt_dos-clients",
  "gmt_dos-clients_crseo",
  "gmt_dos-clients_io",
+ "gmt_dos-clients_optics-state",
  "log",
  "nalgebra 0.33.2",
  "osqp",

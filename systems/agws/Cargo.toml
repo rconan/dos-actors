@@ -14,6 +14,7 @@ gmt_dos-actors.workspace = true
 gmt_dos-clients.workspace = true
 gmt_dos-clients_crseo.workspace = true
 gmt_dos-clients_io = { workspace = true, features = ["crseo"] }
+gmt_dos-clients_optics-state.workspace = true
 interface.workspace = true
 log.workspace = true
 nalgebra = { workspace = true, optional = true }

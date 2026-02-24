@@ -2,13 +2,8 @@ use std::{convert::Infallible, fmt::Display, fs::File};
 
 use gmt_dos_clients_crseo::calibration::{Calib, MixedMirrorMode, algebra::CalibProps};
 use gmt_dos_clients_io::{Estimate, optics::SensorData};
-use interface::{
-    Data, TryRead, TryUpdate, TryWrite,
-    optics::{
-        OpticsState,
-        state::{MirrorState, OpticalState},
-    },
-};
+use gmt_dos_clients_optics_state::{MirrorState, OpticalState, OpticsState};
+use interface::{Data, TryRead, TryUpdate, TryWrite};
 use nalgebra::{DMatrix, DVector, SMatrix};
 use osqp::{CscMatrix, Problem};
 

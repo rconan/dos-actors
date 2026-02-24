@@ -12,13 +12,8 @@ use gmt_dos_clients_io::{
     Estimate,
     optics::{Dev, Frame, SensorData},
 };
-use interface::{
-    Data, Read, Right, TryWrite, UniqueIdentifier, Update, Write,
-    optics::{
-        OpticsState,
-        state::{MirrorState, OpticalState},
-    },
-};
+use gmt_dos_clients_optics_state::{MirrorState, OpticalState, OpticsState};
+use interface::{Data, Read, Right, TryWrite, UniqueIdentifier, Update, Write};
 use std::{
     convert::Infallible,
     io::{self},
