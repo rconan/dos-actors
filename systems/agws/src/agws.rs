@@ -158,7 +158,15 @@ where
     fn plain(&self) -> gmt_dos_actors::actor::PlainActor {
         PlainActor::new(self.name())
             .inputs(self.sh48.as_plain().inputs().unwrap())
-            .outputs(self.sh48_kernel.as_plain().outputs().unwrap_or_default())
+            .outputs(
+                self.sh48.as_plain().outputs().unwrap().into_iter().chain(
+                    self.sh48_kernel
+                        .as_plain()
+                        .outputs()
+                        .unwrap_or_default()
+                        .into_iter(),
+                ).collect(),
+            )
             .graph(self.graph())
             .build()
     }
@@ -174,7 +182,15 @@ where
     fn plain(&self) -> gmt_dos_actors::actor::PlainActor {
         PlainActor::new(self.name())
             .inputs(self.sh24.as_plain().inputs().unwrap())
-            .outputs(self.sh24_kernel.as_plain().outputs().unwrap())
+            .outputs(
+                self.sh24.as_plain().outputs().unwrap().into_iter().chain(
+                    self.sh24_kernel
+                        .as_plain()
+                        .outputs()
+                        .unwrap_or_default()
+                        .into_iter(),
+                ).collect(),
+            )
             .graph(self.graph())
             .build()
     }
