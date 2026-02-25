@@ -5,9 +5,13 @@ use std::{
     sync::Arc,
 };
 
+use super::FrameBuilder;
 use ab_glyph::{FontArc, FontRef};
 use colorous::CIVIDIS;
-use image::{Rgba, RgbaImage};
+use image::{
+    imageops::{FilterType, resize},
+    {Rgba, RgbaImage},
+};
 use imageproc::drawing::{draw_cross_mut, draw_text_mut};
 use interface::{Read, UniqueIdentifier, Update};
 
@@ -27,11 +31,16 @@ where
     filter: Option<F>,
     crosses: Option<Vec<(i32, i32)>>,
     autosave: bool,
+    pub(super) image_size: Option<usize>,
+    font_scale: f32,
 }
 impl<T, F: Fn(&T) -> T> Frame<T, F> {
     /// Creates a new image encoder
     ///
     /// The image is saved at the given location and is of the given size
+    ///
+    /// The size corresponds to the height of the data.
+    /// The data vector with be resized to a 2D frame of the given height and of width `height/data.len()`
     pub fn new<P: AsRef<Path>>(path: P, size: usize) -> Self {
         let data_path = env::var("DATA_REPO").unwrap_or(".".into());
         let path = Path::new(&data_path).join(path);
@@ -47,6 +56,8 @@ impl<T, F: Fn(&T) -> T> Frame<T, F> {
             filter: None,
             crosses: None,
             autosave: true,
+            image_size: None,
+            font_scale: 12f32,
         }
     }
     /// Enables/disables auto-save property (enabled per default)
@@ -70,13 +81,38 @@ impl<T, F: Fn(&T) -> T> Frame<T, F> {
     }
     /// Returns the image
     pub fn image(&self) -> &RgbaImage {
+        // (width,hight)
         &self.image
     }
     /// Returns the path to the image
     pub fn path(&self) -> &Path {
         self.path.as_path()
     }
+    pub(super) fn get_image_size(&self) -> Option<(usize, usize)> {
+        if let Some(s) = self.image_size {
+            let n = self.size;
+            let w = self.frame.len() / n;
+            let q = s as f64 / n as f64;
+            let height = (n as f64 * q).ceil() as usize;
+            let width = (w as f64 * q).ceil() as usize;
+            Some((width, height))
+        } else {
+            None
+        }
+    }
 }
+
+impl<T, F: Fn(&T) -> T> FrameBuilder for Frame<T, F> {
+    fn image_size(mut self, n: usize) -> Result<Self> {
+        self.image_size = Some(n);
+        Ok(self)
+    }
+    fn font_scale(mut self, s: f32) -> Self {
+        self.font_scale = s;
+        self
+    }
+}
+
 impl<T, F> Update for Frame<T, F>
 where
     T: Send
@@ -99,7 +135,6 @@ where
             .iter()
             .max_by(|&a, &b| a.partial_cmp(b).unwrap())
             .unwrap();
-        // dbg!(max_px);
         let min_px = *self
             .frame
             .iter()
@@ -133,12 +168,20 @@ where
 
         self.image =
             RgbaImage::from_vec(w as u32, n as u32, pixels).expect("failed to create a RGBA image");
+        if let Some((width, height)) = self.get_image_size() {
+            self.image = resize(
+                &self.image,
+                width as u32,
+                height as u32,
+                FilterType::Nearest,
+            );
+        }
         draw_text_mut(
             &mut self.image,
             Rgba([255u8, 255u8, 255u8, 255u8]),
             10,
             10,
-            16.,
+            4. * self.font_scale / 3.,
             &self.font,
             &format!(
                 "{} #{}",
@@ -156,7 +199,7 @@ where
             Rgba([255u8, 255u8, 255u8, 255u8]),
             10,
             28,
-            12.0,
+            self.font_scale,
             &self.font,
             &format!("[{:.3e},{:.3e}]", min_px, max_px),
         );

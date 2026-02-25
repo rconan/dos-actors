@@ -35,6 +35,32 @@ pub enum GifError {
 
 type Result<T> = std::result::Result<T, GifError>;
 
+pub trait FrameBuilder {
+    /// Sets the size of the image
+    ///
+    /// Per default the image size is set to the size of the data
+    fn image_size(self, n: usize) -> Result<Self>
+    where
+        Self: Sized;
+    fn font_scale(self, s: f32) -> Self;
+}
+impl<T> FrameBuilder for Gif<T> {
+    fn image_size(mut self, n: usize) -> Result<Self> {
+        self.frame = <_ as FrameBuilder>::image_size(self.frame, n)?;
+        if let Some((_, height)) = self.frame.get_image_size() {
+            self.width = height * self.width / self.height;
+            self.height = height;
+            let file = File::create(self.frame.path())?;
+            self.encoder = Encoder::new(file, self.width as u16, self.height as u16, &[])?;
+        }
+        Ok(self)
+    }
+    fn font_scale(mut self, s: f32) -> Self {
+        self.frame = <_ as FrameBuilder>::font_scale(self.frame, s);
+        self
+    }
+}
+
 impl<T> Gif<T> {
     /// Creates a new GIF encoder
     ///
