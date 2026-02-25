@@ -128,6 +128,10 @@ where
         self.atm = Some((AtmosphereBuilder::load(path)?, sampling_frequency));
         Ok(self)
     }
+    pub fn atmosphere(mut self, atm: AtmosphereBuilder, sampling_frequency: f64) -> Self {
+        self.atm = Some((atm, sampling_frequency));
+        self
+    }
     /// Sets the AGWS SH48 builder
     #[cfg(feature = "sh48")]
     pub fn sh48(
