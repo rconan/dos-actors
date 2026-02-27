@@ -1,3 +1,5 @@
+#[cfg(feature = "gmt_dos-clients_arrow")]
+pub mod arrow;
 mod state;
 pub use state::{MirrorState, OpticalState, SegmentState};
 
