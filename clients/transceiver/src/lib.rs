@@ -40,7 +40,7 @@ pub enum TransceiverError {
     ConnectionError(#[from] quinn::ConnectionError),
     #[error("failed to connect")]
     ConnectError(#[from] quinn::ConnectError),
-    #[error(transparent)]
+    #[error(r#"failed I/O (try using "insecure" feature)"#)]
     IO(#[from] std::io::Error),
     #[error("encryption failed")]
     Crypto(#[from] rustls::Error),
