@@ -8,6 +8,7 @@ use interface::{Data, Read, UID, Update};
 #[uid(data = Vec<u8>)]
 pub enum Packet {}
 
+#[allow(dead_code)]
 pub struct Payload(usize);
 
 impl Update for Payload {}
@@ -27,7 +28,7 @@ async fn main() -> anyhow::Result<()> {
 
     let mut payload: Terminator<_> = Payload(0).into();
     let mut monitor = Monitor::new();
-    let mut rx: Initiator<_> = Transceiver::<Packet>::receiver("44.235.124.92:5001", "0.0.0.0:0")?
+    let mut rx: Initiator<_> = Transceiver::<Packet>::receiver("52.26.134.63", "0.0.0.0:0")?
         .run(&mut monitor)
         .into();
 
