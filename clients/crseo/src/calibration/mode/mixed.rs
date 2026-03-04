@@ -82,6 +82,16 @@ impl From<MirrorMode> for MixedMirrorMode {
         Self(vec![MixedMode::Mirror(value)])
     }
 }
+impl From<Vec<CalibrationMode>> for MixedMirrorMode {
+    fn from(value: Vec<CalibrationMode>) -> Self {
+        Self(
+            value
+                .into_iter()
+                .map(|m| MixedMode::Calibration(m))
+                .collect(),
+        )
+    }
+}
 impl From<Vec<MirrorMode>> for MixedMirrorMode {
     fn from(value: Vec<MirrorMode>) -> Self {
         Self(value.into_iter().map(|m| MixedMode::Mirror(m)).collect())

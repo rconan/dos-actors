@@ -38,9 +38,12 @@ where
     }
 }
 
-impl ClosedLoopCalib {
+impl<M: Modality> ClosedLoopCalib<M> {
     pub fn m1_to_m2(&self) -> MatRef<'_, f64> {
         self.m1_to_m2.as_ref()
+    }
+    pub fn m1_closed_loop_to_sensor(&self) -> &Calib<M> {
+        &self.m1_closed_loop_to_sensor
     }
 }
 impl<M: Modality + Display + Default> CalibProps<M> for ClosedLoopCalib<M> {
