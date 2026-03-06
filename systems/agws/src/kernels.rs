@@ -50,7 +50,7 @@ pub trait KernelSpecs {
     type Sensor: FromBuilder;
     type Processor;
     type Estimator;
-    type Integrator;
+    type Controller;
     type Input: Send + Sync;
     type Data: Send + Sync;
     type Output: Send + Sync;
@@ -67,14 +67,14 @@ where
 {
     pub(crate) processor: <T as KernelSpecs>::Processor,
     estimator: Option<<T as KernelSpecs>::Estimator>,
-    integrator: Option<<T as KernelSpecs>::Integrator>,
+    integrator: Option<<T as KernelSpecs>::Controller>,
 }
 
 impl<T> Kernel<T>
 where
     T: KernelSpecs,
 {
-    pub fn controller(mut self, controller: <T as KernelSpecs>::Integrator) -> Self {
+    pub fn controller(mut self, controller: <T as KernelSpecs>::Controller) -> Self {
         self.integrator = Some(controller);
         self
     }
@@ -87,7 +87,7 @@ where
     //     DeviceInitialize<T::Processor>,
     <T as KernelSpecs>::Processor: Display,
     <T as KernelSpecs>::Estimator: Display,
-    <T as KernelSpecs>::Integrator: Display,
+    <T as KernelSpecs>::Controller: Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "{} KERNEL", type_name::<T>().to_uppercase())?;
@@ -181,14 +181,14 @@ where
     <T as KernelSpecs>::Estimator: TryRead<<T as KernelSpecs>::Data>,
     <T as KernelSpecs>::Output: UniqueIdentifier,
     <T as KernelSpecs>::Estimator: TryWrite<<T as KernelSpecs>::Output>,
-    <T as KernelSpecs>::Integrator: TryRead<<T as KernelSpecs>::Output>,
+    <T as KernelSpecs>::Controller: TryRead<<T as KernelSpecs>::Output>,
     <<T as KernelSpecs>::Processor as TryUpdate>::Error: 'static,
     <<T as KernelSpecs>::Processor as TryWrite<<T as KernelSpecs>::Data>>::Error: 'static,
     <<T as KernelSpecs>::Estimator as TryRead<<T as KernelSpecs>::Data>>::Error: 'static,
     <<T as KernelSpecs>::Estimator as TryUpdate>::Error: 'static,
     <<T as KernelSpecs>::Estimator as TryWrite<<T as KernelSpecs>::Output>>::Error: 'static,
-    <<T as KernelSpecs>::Integrator as TryRead<<T as KernelSpecs>::Output>>::Error: 'static,
-    <<T as KernelSpecs>::Integrator as TryUpdate>::Error: 'static,
+    <<T as KernelSpecs>::Controller as TryRead<<T as KernelSpecs>::Output>>::Error: 'static,
+    <<T as KernelSpecs>::Controller as TryUpdate>::Error: 'static,
     <<T as KernelSpecs>::Processor as TryRead<<T as KernelSpecs>::Input>>::Error: 'static,
 {
     type Error = KernelReadError;
@@ -232,14 +232,14 @@ where
     <T as KernelSpecs>::Estimator: TryRead<<T as KernelSpecs>::Data>,
     <T as KernelSpecs>::Output: UniqueIdentifier,
     <T as KernelSpecs>::Estimator: TryWrite<<T as KernelSpecs>::Output>,
-    <T as KernelSpecs>::Integrator: TryRead<<T as KernelSpecs>::Output>,
+    <T as KernelSpecs>::Controller: TryRead<<T as KernelSpecs>::Output>,
     <<T as KernelSpecs>::Processor as TryUpdate>::Error: 'static,
     <<T as KernelSpecs>::Processor as TryWrite<<T as KernelSpecs>::Data>>::Error: 'static,
     <<T as KernelSpecs>::Estimator as TryRead<<T as KernelSpecs>::Data>>::Error: 'static,
     <<T as KernelSpecs>::Estimator as TryUpdate>::Error: 'static,
     <<T as KernelSpecs>::Estimator as TryWrite<<T as KernelSpecs>::Output>>::Error: 'static,
-    <<T as KernelSpecs>::Integrator as TryRead<<T as KernelSpecs>::Output>>::Error: 'static,
-    <<T as KernelSpecs>::Integrator as TryUpdate>::Error: 'static,
+    <<T as KernelSpecs>::Controller as TryRead<<T as KernelSpecs>::Output>>::Error: 'static,
+    <<T as KernelSpecs>::Controller as TryUpdate>::Error: 'static,
 {
     type Error = KernelUpdateError;
 
@@ -262,7 +262,7 @@ where
                     <T as KernelSpecs>::Output,
                 >>::boxed_try_write(estimator)?
                 {
-                    <<T as KernelSpecs>::Integrator as TryRead<<T as KernelSpecs>::Output>>::boxed_try_read(
+                    <<T as KernelSpecs>::Controller as TryRead<<T as KernelSpecs>::Output>>::boxed_try_read(
                         integrator, data,
                     )?;
                     integrator.boxed_try_update()?;
@@ -296,21 +296,21 @@ impl<T> TryWrite<<T as KernelSpecs>::Output> for Kernel<T>
 where
     T: KernelSpecs,
     <T as KernelSpecs>::Output: UniqueIdentifier,
-    <T as KernelSpecs>::Integrator: TryWrite<<T as KernelSpecs>::Output>,
+    <T as KernelSpecs>::Controller: TryWrite<<T as KernelSpecs>::Output>,
     <T as KernelSpecs>::Data: UniqueIdentifier,
     <T as KernelSpecs>::Processor: TryWrite<<T as KernelSpecs>::Data>,
     <T as KernelSpecs>::Estimator: TryRead<<T as KernelSpecs>::Data>,
     <T as KernelSpecs>::Output: UniqueIdentifier,
     <T as KernelSpecs>::Estimator: TryWrite<<T as KernelSpecs>::Output>,
-    <T as KernelSpecs>::Integrator: TryRead<<T as KernelSpecs>::Output>,
+    <T as KernelSpecs>::Controller: TryRead<<T as KernelSpecs>::Output>,
     <<T as KernelSpecs>::Processor as TryUpdate>::Error: 'static,
     <<T as KernelSpecs>::Processor as TryWrite<<T as KernelSpecs>::Data>>::Error: 'static,
     <<T as KernelSpecs>::Estimator as TryRead<<T as KernelSpecs>::Data>>::Error: 'static,
     <<T as KernelSpecs>::Estimator as TryUpdate>::Error: 'static,
     <<T as KernelSpecs>::Estimator as TryWrite<<T as KernelSpecs>::Output>>::Error: 'static,
-    <<T as KernelSpecs>::Integrator as TryRead<<T as KernelSpecs>::Output>>::Error: 'static,
-    <<T as KernelSpecs>::Integrator as TryUpdate>::Error: 'static,
-    <<T as KernelSpecs>::Integrator as TryWrite<<T as KernelSpecs>::Output>>::Error: 'static,
+    <<T as KernelSpecs>::Controller as TryRead<<T as KernelSpecs>::Output>>::Error: 'static,
+    <<T as KernelSpecs>::Controller as TryUpdate>::Error: 'static,
+    <<T as KernelSpecs>::Controller as TryWrite<<T as KernelSpecs>::Output>>::Error: 'static,
 {
     type Error = KernelWriteError;
 
@@ -321,7 +321,7 @@ where
         <Self as TryWrite<<T as KernelSpecs>::Output>>::Error,
     > {
         Ok(if let Some(integrator) = self.integrator.as_mut() {
-            <<T as KernelSpecs>::Integrator as TryWrite<_>>::boxed_try_write(integrator)?
+            <<T as KernelSpecs>::Controller as TryWrite<_>>::boxed_try_write(integrator)?
         } else {
             if let Some(estimator) = self.estimator.as_mut() {
                 <<T as KernelSpecs>::Estimator as TryWrite<_>>::boxed_try_write(estimator)?

@@ -109,7 +109,7 @@ impl<
 
     type Estimator = active_optics::ActiveOptics<M1_RBM, M2_RBM, M1_BM, N_MODE>;
 
-    type Integrator = interface::NoneClient<Self::Output>; //gmt_dos_clients::integrator::Integrator<Estimate>;
+    type Controller = interface::NoneClient<Self::Output>; //gmt_dos_clients::integrator::Integrator<Estimate>;
 
     type Input = Frame<Dev>;
 

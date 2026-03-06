@@ -79,7 +79,7 @@ impl<const I: usize> KernelSpecs for Sh48<I> {
 
     type Estimator = Reconstructor<CalibrationMode, ClosedLoopCalib>;
 
-    type Integrator = gmt_dos_clients::integrator::Integrator<Estimate>;
+    type Controller = gmt_dos_clients::integrator::Integrator<Estimate>;
 
     type Input = Frame<Dev>;
 

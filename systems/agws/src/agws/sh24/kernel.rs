@@ -77,7 +77,7 @@ impl<const I: usize> KernelSpecs for Sh24<I> {
 
     type Estimator = Reconstructor;
 
-    type Integrator = gmt_dos_clients::integrator::Integrator<M2FSMFsmCommand>;
+    type Controller = gmt_dos_clients::integrator::Integrator<M2FSMFsmCommand>;
 
     type Input = Frame<Dev>;
 
@@ -100,7 +100,7 @@ impl<const I: usize> KernelSpecs for Sh24TT<I> {
 
     type Estimator = Reconstructor;
 
-    type Integrator = gmt_dos_clients::integrator::Integrator<M2RigidBodyMotions>;
+    type Controller = gmt_dos_clients::integrator::Integrator<M2RigidBodyMotions>;
 
     type Input = Frame<Dev>;
 

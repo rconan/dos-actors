@@ -83,7 +83,7 @@ pub struct AgwsBuilder<
     sh24: ShackHartmannBuilder<<K24 as KernelSpecs>::Estimator, SH24_I>,
     gmt: Option<GmtBuilder>,
     atm: Option<(AtmosphereBuilder, f64)>,
-    sh24_controller: Option<<K24 as KernelSpecs>::Integrator>,
+    sh24_controller: Option<<K24 as KernelSpecs>::Controller>,
 }
 
 impl<const SH48_I: usize, const SH24_I: usize, K48, K24> Default
@@ -152,7 +152,7 @@ where
     }
     /// Sets the AGWS SH24 controller
     #[cfg(feature = "sh24")]
-    pub fn sh24_controller(mut self, sh24_controller: <K24 as KernelSpecs>::Integrator) -> Self {
+    pub fn sh24_controller(mut self, sh24_controller: <K24 as KernelSpecs>::Controller) -> Self {
         self.sh24_controller = Some(sh24_controller);
         self
     }
