@@ -1,5 +1,5 @@
-mod ops;
 mod interface;
+mod ops;
 
 use std::sync::Arc;
 
@@ -109,5 +109,12 @@ impl MirrorState {
                 None
             }
         })
+    }
+    /// Sets `n` mirror modes to 0
+    pub fn zeros_modes(mut self, n: usize) -> Self {
+        self.segment.iter_mut().for_each(|segment| {
+            *segment = Some(SegmentState::modes(vec![0f64; n]));
+        });
+        self
     }
 }

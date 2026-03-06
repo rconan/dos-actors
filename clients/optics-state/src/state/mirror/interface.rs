@@ -2,7 +2,7 @@ use std::mem;
 
 use gmt_dos_clients_io::{
     gmt_m1::{self, M1RigidBodyMotions},
-    gmt_m2::{self, M2RigidBodyMotions},
+    gmt_m2::M2RigidBodyMotions,
 };
 use interface::{Data, Read, Update, Write};
 
@@ -55,6 +55,25 @@ impl<const ID: u8> Write<gmt_m1::segment::RBM<ID>> for MirrorState {
                     |SegmentState { rbms, .. }| {
                         rbms.as_ref()
                             .map_or_else(|| vec![0f64; 6], |rbms| rbms.as_ref().to_vec())
+                    },
+                )
+                .into(),
+        )
+    }
+}
+
+impl<const ID: u8> Write<gmt_m1::segment::ModeShapes<ID>> for MirrorState {
+    fn write(&mut self) -> Option<Data<gmt_m1::segment::ModeShapes<ID>>> {
+        Some(
+            self.iter()
+                .nth(ID as usize - 1)
+                .flatten()
+                .map_or_else(
+                    || vec![],
+                    |SegmentState { modes, .. }| {
+                        modes
+                            .as_ref()
+                            .map_or_else(|| vec![], |modes| modes.as_ref().to_vec())
                     },
                 )
                 .into(),
