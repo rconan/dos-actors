@@ -64,6 +64,17 @@ impl<const I: usize> TryWrite<SensorData> for Kernel<Sh24<I>> {
         ))
     }
 }
+impl<const I: usize> TryWrite<SensorData> for Kernel<Sh24TT<I>> {
+    type Error = Infallible;
+
+    fn try_write(
+        &mut self,
+    ) -> std::result::Result<Option<Data<SensorData>>, <Self as TryWrite<SensorData>>::Error> {
+        Ok(<<Sh24TT<I> as KernelSpecs>::Processor as Write<_>>::write(
+            &mut self.processor,
+        ))
+    }
+}
 
 impl<U, const I: usize> Read<U> for Sh24<I>
 where
