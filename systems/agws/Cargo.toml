@@ -1,6 +1,6 @@
 [package]
 name = "gmt_dos-systems_agws"
-version = "0.1.0"
+version = "0.2.0"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -31,7 +31,7 @@ gmt_dos-clients_io.workspace = true
 tokio.workspace = true
 
 [features]
-default = ["qp", "shk48", "shk24"]
+default = ["shk48", "shk24"]
 qp = ["nalgebra", "osqp", "serde"]
 matio-rs = []
 nalgebra = ["dep:nalgebra"]

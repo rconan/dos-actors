@@ -1,3 +1,7 @@
+/*!
+# SH 48x48 [Kernel]s specifications
+*/
+
 use std::ops::{Deref, DerefMut};
 
 use gmt_dos_clients_crseo::{
@@ -19,6 +23,7 @@ use super::Sh48;
 
 type Result<T> = std::result::Result<T, KernelError>;
 
+/// AGWS SH WFS 48x48 [Kernel] wrapper
 pub struct Sh48Kern<T: KernelSpecs>(pub(crate) Kernel<T>);
 impl<T: KernelSpecs> Deref for Sh48Kern<T> {
     type Target = Kernel<T>;

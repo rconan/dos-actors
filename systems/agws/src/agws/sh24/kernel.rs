@@ -1,3 +1,7 @@
+/*!
+# SH 24x24 [Kernel]s specifications
+*/
+
 use std::ops::{Deref, DerefMut};
 
 use gmt_dos_clients_crseo::{
@@ -16,6 +20,7 @@ use super::{Sh24, Sh24TT};
 
 type Result<T> = std::result::Result<T, KernelError>;
 
+/// AGWS SH WFS 24x24 [Kernel] wrapper
 pub struct Sh24Kern<T: KernelSpecs>(pub(crate) Kernel<T>);
 impl<T: KernelSpecs> Deref for Sh24Kern<T> {
     type Target = Kernel<T>;

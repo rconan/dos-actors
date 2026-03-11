@@ -1,6 +1,54 @@
+/*!
+# GMT AGWS Integrated Model
+
+A [gmt_dos-actors] [system] that models the optical paths from the AGWS guide stars through the GMT to the Shack-Hartmann wavefront sensors (WFS) 48x48 and 24x24.
+The model includes [kernels] that compute the WFS centroids from the frames of the cameras, transform the centroids in commmands for M1 and M2 segments and apply temporal filters to the commands.
+
+## Examples
+
+ 1. Building an optical model for the 3 AGWS 48x48 Shack-Hartmann wavefront sensors:
+```
+use gmt_dos_clients_crseo::{
+    OpticalModelBuilder,
+    sensors::builders::CameraBuilder,
+    calibration::Reconstructor};
+use gmt_dos_systems_agws::builder::shack_hartmann::ShackHartmannBuilder;
+
+let sh48 = ShackHartmannBuilder::<Reconstructor>::sh48().use_calibration_src();
+let omb = OpticalModelBuilder::<CameraBuilder>::from(&sh48);
+println!("{}", omb.clone().build()?);
+# Ok::<(),Box<dyn std::error::Error>>(())
+```
+
+ 2. Building an optical model for the AGWS 24x24 Shack-Hartmann wavefront sensor:
+```
+use gmt_dos_clients_crseo::{
+    OpticalModelBuilder,
+    sensors::builders::CameraBuilder,
+    calibration::Reconstructor};
+use gmt_dos_systems_agws::builder::shack_hartmann::ShackHartmannBuilder;
+
+let sh24 = ShackHartmannBuilder::<Reconstructor>::sh24().use_calibration_src();
+let omb = OpticalModelBuilder::<CameraBuilder>::from(&sh24);
+println!("{}", omb.clone().build()?);
+# Ok::<(),Box<dyn std::error::Error>>(())
+```
+ 3. Building the default AGWS systems: one 24x24 and three 48x48 SH WFSs
+ ```
+use gmt_dos_systems_agws::Agws;
+
+let agws = Agws::<5000,5>::builder().build()?;
+# Ok::<(),Box<dyn std::error::Error>>(())
+ ```
+
+[gmt_dos-actors]: https://docs.rs/gmt_dos-actors
+[system]: https://docs.rs/gmt_dos-actors/system
+*/
+
 pub mod agws;
 pub mod builder;
 pub mod kernels;
+#[cfg(feature = "qp")]
 pub mod qp;
 #[doc(inline)]
 pub use agws::Agws;
@@ -16,6 +64,7 @@ mod tests {
     use interface::{Update, Write};
     use skyangle::Conversion;
 
+    #[cfg(feature = "qp")]
     use crate::qp::ActiveOptics;
 
     use super::*;
@@ -25,6 +74,7 @@ mod tests {
         let _ = Agws::<1, 1>::builder().build();
     }
 
+    #[cfg(feature = "qp")]
     #[test]
     fn aco_builder() {
         let _ = Agws::<1, 1, ActiveOptics<1, 41, 41, 27, 271>>::builder().build();

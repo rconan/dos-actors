@@ -1,10 +1,16 @@
-use std::{any::type_name, fmt::Display, io, marker::PhantomData};
+use std::{any::type_name, fmt::Display, marker::PhantomData};
 
-use gmt_dos_clients_crseo::{
-    OpticalModel, OpticalModelBuilder, centroiding::CentroidsError, crseo::FromBuilder,
-};
+use gmt_dos_clients_crseo::{OpticalModel, OpticalModelBuilder, crseo::FromBuilder};
 use interface::{Data, TryRead, TryUpdate, TryWrite, UniqueIdentifier, Write};
 
+pub mod error;
+#[doc(inline)]
+pub use error::KernelError;
+use error::{KernelReadError, KernelUpdateError, KernelWriteError};
+
+/// AGWS wavefront sensor camera frame
+///
+/// This is the data that get passed from the wavefront sensor to the [Kernel]
 pub struct KernelFrame<T>(PhantomData<T>)
 where
     T: KernelSpecs;
@@ -35,17 +41,12 @@ where
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum KernelError {
-    #[error("failed kernel centroiding initialization")]
-    Centroiding(#[from] CentroidsError),
-    #[error("failed to load kernel data")]
-    IO(#[from] io::Error),
-    #[error("failed to read pickle file")]
-    Pickle(#[from] serde_pickle::Error),
-}
 type Result<T> = std::result::Result<T, KernelError>;
 
+/// [Kernel] specifications
+///
+/// Defines the types of the processor, estimator and controller and
+/// of the [Kernel] data, input and output 
 pub trait KernelSpecs {
     type Sensor: FromBuilder;
     type Processor;
@@ -59,6 +60,12 @@ pub trait KernelSpecs {
     ) -> Result<Self::Processor>;
 }
 
+/// AGWS wavefront sensor kernel
+///
+/// The kernel computes the wavefront sensor slopes, transform the slopes
+/// into commands for M1 and M2 segments and apply a temporal filter to
+/// the command.
+/// The last 2 operations are optional.
 pub struct Kernel<T>
 where
     T: KernelSpecs,
@@ -112,6 +119,7 @@ where
     // <T as KernelSpecs>::Sensor: DerefMut, // OpticalModelBuilder<<T::Sensor as FromBuilder>::ComponentBuilder>:
     //     DeviceInitialize<T::Processor>,
 {
+    /// Creates a new kernel instance from the wavefront sensor `OpticalModelBuilder`
     pub fn new(
         model: &OpticalModelBuilder<<T::Sensor as FromBuilder>::ComponentBuilder>,
         // estimator: T::Estimator,
@@ -122,10 +130,12 @@ where
             integrator: None,
         })
     }
+    /// Sets the estimator that transforms slopes into commands
     pub fn estimator(mut self, estimator: T::Estimator) -> Self {
         self.estimator = Some(estimator);
         self
     }
+    /// Returns the processor that computes the slopes
     pub fn processor(&self) -> &<T as KernelSpecs>::Processor {
         &self.processor
     }
@@ -149,25 +159,6 @@ where
 //         <<T as KernelSpecs>::Processor as TryRead<_>>::read(&mut self.processor, data);
 //     }
 // }
-
-#[derive(Debug)]
-pub struct KernelReadError(Box<dyn std::error::Error + Send + Sync>);
-impl Display for KernelReadError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Kernel failed to read data caused by")?;
-        std::fmt::Display::fmt(&self.0, f)
-    }
-}
-impl std::error::Error for KernelReadError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        Some(self.0.as_ref())
-    }
-}
-impl From<Box<dyn std::error::Error + Send + Sync>> for KernelReadError {
-    fn from(value: Box<dyn std::error::Error + Send + Sync>) -> Self {
-        KernelReadError(value)
-    }
-}
 
 impl<T> TryRead<KernelFrame<T>> for Kernel<T>
 where
@@ -202,25 +193,6 @@ where
             data.transmute::<<T as KernelSpecs>::Input>(),
         )?;
         Ok(self)
-    }
-}
-
-#[derive(Debug)]
-pub struct KernelUpdateError(Box<dyn std::error::Error + Send + Sync>);
-impl Display for KernelUpdateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Kernel failed to update cause by")?;
-        std::fmt::Display::fmt(&self.0, f)
-    }
-}
-impl std::error::Error for KernelUpdateError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        Some(self.0.as_ref())
-    }
-}
-impl From<Box<dyn std::error::Error + Send + Sync>> for KernelUpdateError {
-    fn from(value: Box<dyn std::error::Error + Send + Sync>) -> Self {
-        KernelUpdateError(value)
     }
 }
 
@@ -270,25 +242,6 @@ where
             };
         };
         Ok(self)
-    }
-}
-
-#[derive(Debug)]
-pub struct KernelWriteError(Box<dyn std::error::Error + Send + Sync>);
-impl Display for KernelWriteError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Kernel failed to write data caused by")?;
-        std::fmt::Display::fmt(&self.0, f)
-    }
-}
-impl std::error::Error for KernelWriteError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        Some(self.0.as_ref())
-    }
-}
-impl From<Box<dyn std::error::Error + Send + Sync>> for KernelWriteError {
-    fn from(value: Box<dyn std::error::Error + Send + Sync>) -> Self {
-        KernelWriteError(value)
     }
 }
 

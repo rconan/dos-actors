@@ -1,3 +1,17 @@
+/*!
+# AGWS model
+
+The AGWS model is modular and what it includes depends on the selected features:
+ * *sh48* : the model is limited to only the [OpticalModel] of the SH WFS 48x48
+ * *shk48* : include *sh48* and the SH WFS 48x48 [kernel](sh48::kernel::Sh48Kern)
+ * *sh24* : the model is limited to only the [OpticalModel] of the SH WFS 24x24
+ * *shk24* : include *sh24* and the SH WFS 24x24 [kernel](sh24::kernel::Sh24Kern)
+
+The default feature includes both *shk24* and *shk48*.
+
+[OpticalModel]: https://docs.rs/gmt_dos-clients_crseo/latest/gmt_dos_clients_crseo/struct.OpticalModel.html
+*/
+
 pub mod sh24;
 pub mod sh48;
 
@@ -159,13 +173,19 @@ where
         PlainActor::new(self.name())
             .inputs(self.sh48.as_plain().inputs().unwrap())
             .outputs(
-                self.sh48.as_plain().outputs().unwrap().into_iter().chain(
-                    self.sh48_kernel
-                        .as_plain()
-                        .outputs()
-                        .unwrap_or_default()
-                        .into_iter(),
-                ).collect(),
+                self.sh48
+                    .as_plain()
+                    .outputs()
+                    .unwrap()
+                    .into_iter()
+                    .chain(
+                        self.sh48_kernel
+                            .as_plain()
+                            .outputs()
+                            .unwrap_or_default()
+                            .into_iter(),
+                    )
+                    .collect(),
             )
             .graph(self.graph())
             .build()
@@ -183,13 +203,19 @@ where
         PlainActor::new(self.name())
             .inputs(self.sh24.as_plain().inputs().unwrap())
             .outputs(
-                self.sh24.as_plain().outputs().unwrap().into_iter().chain(
-                    self.sh24_kernel
-                        .as_plain()
-                        .outputs()
-                        .unwrap_or_default()
-                        .into_iter(),
-                ).collect(),
+                self.sh24
+                    .as_plain()
+                    .outputs()
+                    .unwrap()
+                    .into_iter()
+                    .chain(
+                        self.sh24_kernel
+                            .as_plain()
+                            .outputs()
+                            .unwrap_or_default()
+                            .into_iter(),
+                    )
+                    .collect(),
             )
             .graph(self.graph())
             .build()

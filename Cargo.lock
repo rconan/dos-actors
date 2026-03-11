@@ -3999,7 +3999,7 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-systems_agws"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "complot",
  "criterion 0.8.2",

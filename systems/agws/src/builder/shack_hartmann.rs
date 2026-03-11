@@ -40,7 +40,7 @@ pub enum ShackHartmannBuilderError {
     Kernel(#[from] KernelError),
 }
 
-/// AGWS Shack-Hartmann wavefront sensor builder
+/// AGWS Shack-Hartmann integrated model builder
 #[derive(Debug, Clone)]
 pub struct ShackHartmannBuilder<R, const I: usize = 1> {
     sh: CameraBuilder<I>,

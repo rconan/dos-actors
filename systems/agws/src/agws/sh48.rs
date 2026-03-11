@@ -1,3 +1,7 @@
+/*!
+# AGWS SH WFS 48x48 kernels specifications
+*/
+
 pub mod kernel;
 
 use std::{
@@ -12,6 +16,7 @@ use interface::{Data, Read, TryWrite, UniqueIdentifier, Update, Write};
 
 use crate::kernels::{Kernel, KernelSpecs};
 
+/// SH 48x48 [KernelSpecs]
 pub struct Sh48<const I: usize>(pub(crate) OpticalModel<Camera<I>>);
 
 impl<const I: usize> Display for Sh48<I> {

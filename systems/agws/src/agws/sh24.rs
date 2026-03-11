@@ -1,3 +1,7 @@
+/*!
+# AGWS SH WFS 24x24 kernels specifications
+*/
+
 pub mod kernel;
 
 use std::{
@@ -12,7 +16,9 @@ use interface::{Data, Read, TryWrite, UniqueIdentifier, Update, Write};
 
 use crate::kernels::{Kernel, KernelSpecs};
 
+/// SH 24x24 [KernelSpecs] with `M2FSMFsmCommand` output
 pub struct Sh24<const I: usize>(pub(crate) OpticalModel<Camera<I>>);
+/// SH 24x24 [KernelSpecs] with `M2RigidBodyMotions` output
 pub struct Sh24TT<const I: usize>(pub(crate) OpticalModel<Camera<I>>);
 
 impl<const I: usize> Display for Sh24<I> {

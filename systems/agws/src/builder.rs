@@ -42,6 +42,7 @@ pub enum AgwsBuilderError {
     ShackHartmann(#[from] ShackHartmannBuilderError),
 }
 
+/// [Agws] Shack-Hartmann wavefront sensor builder
 pub struct AgwsShackHartmann;
 impl AgwsShackHartmann {
     /// 48x48 Shack-Hartmann wavefront sensor
@@ -114,7 +115,7 @@ where
     pub fn new() -> Self {
         Default::default()
     }
-    /// Sets the GMT [builder](gmt_dos_clients_crseo::crseo::GmtBuilder)
+    /// Sets the GMT builder
     pub fn gmt(mut self, gmt: GmtBuilder) -> Self {
         self.gmt = Some(gmt);
         self
