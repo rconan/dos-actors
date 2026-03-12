@@ -74,7 +74,7 @@ where
 {
     pub(crate) processor: <T as KernelSpecs>::Processor,
     estimator: Option<<T as KernelSpecs>::Estimator>,
-    integrator: Option<<T as KernelSpecs>::Controller>,
+    controller: Option<<T as KernelSpecs>::Controller>,
 }
 
 impl<T> Kernel<T>
@@ -82,7 +82,7 @@ where
     T: KernelSpecs,
 {
     pub fn controller(mut self, controller: <T as KernelSpecs>::Controller) -> Self {
-        self.integrator = Some(controller);
+        self.controller = Some(controller);
         self
     }
 }
@@ -105,7 +105,7 @@ where
             writeln!(f, "|* estimator:")?;
             writeln!(f, "| {}", estimator)?;
         }
-        if let Some(integrator) = self.integrator.as_ref() {
+        if let Some(integrator) = self.controller.as_ref() {
             writeln!(f, "|* integrator:")?;
             writeln!(f, "| {}", integrator)?;
         }
@@ -127,7 +127,7 @@ where
         Ok(Self {
             processor: <T as KernelSpecs>::processor(model)?,
             estimator: None,
-            integrator: None,
+            controller: None,
         })
     }
     /// Sets the estimator that transforms slopes into commands
@@ -229,7 +229,7 @@ where
                     ?;
                 estimator.boxed_try_update()?;
             };
-            if let Some(integrator) = self.integrator.as_mut() {
+            if let Some(integrator) = self.controller.as_mut() {
                 if let Some(data) = <<T as KernelSpecs>::Estimator as TryWrite<
                     <T as KernelSpecs>::Output,
                 >>::boxed_try_write(estimator)?
@@ -273,7 +273,7 @@ where
         Option<Data<<T as KernelSpecs>::Output>>,
         <Self as TryWrite<<T as KernelSpecs>::Output>>::Error,
     > {
-        Ok(if let Some(integrator) = self.integrator.as_mut() {
+        Ok(if let Some(integrator) = self.controller.as_mut() {
             <<T as KernelSpecs>::Controller as TryWrite<_>>::boxed_try_write(integrator)?
         } else {
             if let Some(estimator) = self.estimator.as_mut() {
