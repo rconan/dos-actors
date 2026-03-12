@@ -3,7 +3,7 @@ use std::ops::Mul;
 use faer::{Mat, MatRef};
 use serde::{Deserialize, Serialize};
 
-use crate::calibration::mode::Modality;
+use crate::calibration::{MixedMirrorMode, mode::Modality};
 
 use super::{Calib, CalibProps, CalibrationMode};
 
@@ -20,6 +20,18 @@ where
     pub(crate) mat: Mat<f64>,
     pub(crate) cond: f64,
     pub(crate) mode: M,
+}
+
+impl From<CalibPinv<CalibrationMode>> for CalibPinv<MixedMirrorMode>
+{
+    fn from(c: CalibPinv<CalibrationMode>) -> Self {
+        let CalibPinv { mat, cond, mode } = c;
+        Self {
+            mat,
+            cond,
+            mode: mode.into(),
+        }
+    }
 }
 
 impl<M: Modality> CalibPinv<M> {
