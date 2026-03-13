@@ -1,10 +1,10 @@
 use std::mem;
 
 use gmt_dos_clients_io::{
-    gmt_m1::{self, M1RigidBodyMotions},
+    gmt_m1::{self, M1ModeShapes, M1RigidBodyMotions},
     gmt_m2::M2RigidBodyMotions,
 };
-use interface::{Data, Read, Update, Write};
+use interface::{Data, Left, Read, Right, Update, Write};
 
 use crate::{M1State, M2State, MirrorState, SegmentState};
 
@@ -39,6 +39,34 @@ impl Read<M1RigidBodyMotions> for MirrorState {
         self.segment = data
             .chunks(6)
             .map(|data| SegmentState::rbms(data))
+            .map(|segment| Some(segment))
+            .collect();
+    }
+}
+
+impl Read<M1ModeShapes> for MirrorState {
+    fn read(&mut self, data: Data<M1ModeShapes>) {
+        self.segment = data
+            .chunks(data.len() / 7)
+            .map(|data| SegmentState::modes(data))
+            .map(|segment| Some(segment))
+            .collect();
+    }
+}
+impl Read<Right<M1ModeShapes>> for MirrorState {
+    fn read(&mut self, data: Data<Right<M1ModeShapes>>) {
+        self.segment = data
+            .chunks(data.len() / 7)
+            .map(|data| SegmentState::modes(data))
+            .map(|segment| Some(segment))
+            .collect();
+    }
+}
+impl Read<Left<M1ModeShapes>> for MirrorState {
+    fn read(&mut self, data: Data<Left<M1ModeShapes>>) {
+        self.segment = data
+            .chunks(data.len() / 7)
+            .map(|data| SegmentState::modes(data))
             .map(|segment| Some(segment))
             .collect();
     }
