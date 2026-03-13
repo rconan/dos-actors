@@ -70,10 +70,10 @@ impl GraphTheme {
             Self::Screen => format!(
                 r#"
     digraph  G {{
-      overlap = scale;
+      overlap = false;
       splines = true;
       bgcolor = gray24;
-      {{node [shape=box, width=1.5, style="rounded,filled", fillcolor=lightgray]; {};}}
+      {{node [shape=box, width=0.75, margin="0.025", style="rounded,filled", fillcolor=lightgray]; {};}}
       node [shape=point, fillcolor=gray24, color=lightgray];
     
       /* Outputs */
@@ -95,7 +95,7 @@ impl GraphTheme {
     digraph  G {{
       overlap = scale;
       splines = true;
-      {{node [shape=box, width=1.5, style="rounded,filled"]; {};}}
+      {{node [shape=box, width=0.75, margin="0.025", style="rounded,filled"]; {};}}
       node [shape=point, fillcolor=gray24, color=lightgray];
     
       /* Outputs */
