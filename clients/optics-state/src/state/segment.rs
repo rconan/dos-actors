@@ -5,25 +5,26 @@ use std::{
 
 /// GMT mirror segment optical state (rigid body motion and surface figure)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct SegmentState {
     pub rbms: Option<Arc<Vec<f64>>>,
     pub modes: Option<Arc<Vec<f64>>>,
+    pub zero_point: Option<Box<SegmentState>>,
 }
-impl std::fmt::Debug for SegmentState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let rbms_mag = self.rbms.as_ref().map(|rbms| {
-            let t_xy = rbms[0].hypot(rbms[1]);
-            let t_z = rbms[2];
-            let r_xy = rbms[3].hypot(rbms[4]);
-            [t_xy, t_z, r_xy]
-        });
-        f.debug_struct("SegmentState")
-            .field("rbms", &rbms_mag)
-            .field("modes", &self.modes.as_ref().map(|x| &x[..3]))
-            .finish()
-    }
-}
+// impl std::fmt::Debug for SegmentState {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         let rbms_mag = self.rbms.as_ref().map(|rbms| {
+//             let t_xy = rbms[0].hypot(rbms[1]);
+//             let t_z = rbms[2];
+//             let r_xy = rbms[3].hypot(rbms[4]);
+//             [t_xy, t_z, r_xy]
+//         });
+//         f.debug_struct("SegmentState")
+//             .field("rbms", &rbms_mag)
+//             .field("modes", &self.modes.as_ref().map(|x| &x[..3]))
+//             .finish()
+//     }
+// }
 impl SegmentState {
     /// Creates a new GMT mirror [SegmentState] from
     /// the 6 rigid body motions and the surface figure
@@ -32,10 +33,11 @@ impl SegmentState {
         Self {
             rbms: Some(Arc::new(rbms.into())),
             modes: Some(Arc::new(modes.into())),
+            zero_point: None,
         }
     }
     /// Creates a new GMT mirror [SegmentState] from
-    /// the 6 rigid body motions
+    /// the surface figure modal or zonal coefficients
     pub fn modes(modes: impl Into<Vec<f64>>) -> Self {
         Self {
             modes: Some(Arc::new(modes.into())),
@@ -50,12 +52,21 @@ impl SegmentState {
         self
     }
     /// Creates a new GMT mirror [SegmentState] from
-    /// the surface figure modal or zonal coefficients
+    /// the 6 rigid body motions
     pub fn rbms(rbms: impl Into<Vec<f64>>) -> Self {
         Self {
             rbms: Some(Arc::new(rbms.into())),
             ..Default::default()
         }
+    }
+    /// Sets the segment state zero point
+    pub fn set_zero_point(mut self, zero_point: SegmentState) -> Self {
+        self.zero_point = Some(Box::new(zero_point));
+        self
+    }
+    /// Gets the segment state zero point
+    pub fn get_zero_point(&self) -> Option<SegmentState> {
+        self.zero_point.as_ref().map(|zp| zp.as_ref().clone())
     }
 }
 impl Add for SegmentState {
@@ -87,6 +98,7 @@ impl Add for SegmentState {
                 )
                 .map(|modes| Arc::new(modes)),
             },
+            zero_point: self.zero_point,
         }
     }
 }
@@ -121,6 +133,7 @@ impl Sub for SegmentState {
                 )
                 .map(|modes| Arc::new(modes)),
             },
+            zero_point: self.zero_point,
         }
     }
 }
@@ -153,6 +166,7 @@ impl Add for &SegmentState {
                 )
                 .map(|modes| Arc::new(modes)),
             },
+            zero_point: self.zero_point.clone(),
         }
     }
 }
@@ -187,6 +201,7 @@ impl Sub for &SegmentState {
                 )
                 .map(|modes| Arc::new(modes)),
             },
+            zero_point: self.zero_point.clone(),
         }
     }
 }
@@ -204,6 +219,7 @@ impl Mul<f64> for SegmentState {
                 .modes
                 .map(|modes| modes.iter().map(|&a| a * rhs).collect::<Vec<_>>())
                 .map(|modes| Arc::new(modes)),
+            zero_point: self.zero_point,
         }
     }
 }
@@ -223,6 +239,7 @@ impl Mul<f64> for &SegmentState {
                 .as_ref()
                 .map(|modes| modes.iter().map(|&a| a * rhs).collect::<Vec<_>>())
                 .map(|modes| Arc::new(modes)),
+            zero_point: self.zero_point.clone(),
         }
     }
 }
@@ -232,5 +249,20 @@ impl Neg for SegmentState {
 
     fn neg(self) -> Self::Output {
         self * -1f64
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn default() {
+        let segment = SegmentState::default();
+        dbg!(&segment);
+    }
+    #[test]
+    fn modes() {
+        let segment = SegmentState::modes(vec![0f64; 27]);
+        dbg!(segment);
     }
 }

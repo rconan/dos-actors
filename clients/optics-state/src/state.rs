@@ -16,7 +16,6 @@ pub use segment::SegmentState;
 pub struct OpticalState {
     pub m1: Option<MirrorState>,
     pub m2: Option<MirrorState>,
-    pub zero_point: Option<Box<OpticalState>>,
 }
 impl TimerMarker for OpticalState {}
 impl OpticalState {
@@ -25,16 +24,32 @@ impl OpticalState {
         Self {
             m1: Some(m1),
             m2: Some(m2),
-            zero_point: None,
         }
     }
     /// Sets the optical state zero point
-    pub fn zero_point(mut self, zero_point: OpticalState) -> Self {
-        let OpticalState { m1, m2, .. } = &zero_point + &self;
-        self.m1 = m1;
-        self.m2 = m2;
-        self.zero_point = Some(zero_point.into());
-        self
+    pub fn set_zero_point(self, zero_point: OpticalState) -> Self {
+        Self {
+            m1: if let Some(zero_point) = zero_point.m1 {
+                Some(self.m1.unwrap_or_default().set_zero_point(zero_point))
+            } else {
+                self.m1
+            },
+            m2: if let Some(zero_point) = zero_point.m2 {
+                Some(self.m2.unwrap_or_default().set_zero_point(zero_point))
+            } else {
+                self.m2
+            },
+        }
+    }
+    /// Gets the optical state zero point
+    pub fn get_zero_point(&self) -> Option<Self> {
+        let m1 = self.m1.as_ref().and_then(|m1| m1.get_zero_point());
+        let m2 = self.m2.as_ref().and_then(|m2| m2.get_zero_point());
+        if m1.is_none() && m2.is_none() {
+            None
+        } else {
+            Some(Self { m1, m2 })
+        }
     }
     /// Creates a new [OpticalState] from M1 [MirrorState]
     pub fn m1(state: MirrorState) -> Self {
@@ -72,10 +87,10 @@ impl Update for OpticalState {}
 
 impl Read<M1State> for OpticalState {
     fn read(&mut self, data: Data<M1State>) {
-        if let Some(zero_point) = self.zero_point.as_ref()
-            && let OpticalState { m1: Some(m1_0), .. } = zero_point.as_ref()
+        if let Some(zero_point) = self.get_zero_point()
+            && let OpticalState { m1: Some(m1_0), .. } = zero_point
         {
-            self.m1 = Some(data.into_arc().as_ref() + m1_0);
+            self.m1 = Some(data.into_arc().as_ref() + &m1_0);
         } else {
             self.m1 = Some(data.into_arc().as_ref().clone());
         }
@@ -83,10 +98,10 @@ impl Read<M1State> for OpticalState {
 }
 impl Read<M2State> for OpticalState {
     fn read(&mut self, data: Data<M2State>) {
-        if let Some(zero_point) = self.zero_point.as_ref()
-            && let OpticalState { m2: Some(m2_0), .. } = zero_point.as_ref()
+        if let Some(zero_point) = self.get_zero_point()
+            && let OpticalState { m2: Some(m2_0), .. } = zero_point
         {
-            self.m2 = Some(data.into_arc().as_ref() + m2_0);
+            self.m2 = Some(data.into_arc().as_ref() + &m2_0);
         } else {
             self.m2 = Some(data.into_arc().as_ref().clone());
         }
@@ -130,8 +145,8 @@ impl Write<OpticsState> for OpticalState {
 }
 impl Read<OpticsState> for OpticalState {
     fn read(&mut self, data: Data<OpticsState>) {
-        let state = if let Some(zero_point) = &self.zero_point {
-            &(&*data + zero_point.as_ref())
+        let state = if let Some(zero_point) = self.get_zero_point() {
+            &(&*data + &zero_point)
         } else {
             &*data
         };
@@ -167,7 +182,6 @@ impl Add for OpticalState {
                 (Some(s2), None) => Some(s2),
                 (Some(s2), Some(rhs_s2)) => Some(s2 + rhs_s2),
             },
-            zero_point: None,
         }
     }
 }
@@ -188,7 +202,6 @@ impl Add for &OpticalState {
                 (Some(s2), None) => Some(s2.clone()),
                 (Some(s2), Some(rhs_s2)) => Some(s2 + rhs_s2),
             },
-            zero_point: None,
         }
     }
 }

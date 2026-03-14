@@ -1,4 +1,4 @@
-use std::mem;
+use std::{mem, sync::Arc};
 
 use gmt_dos_clients_io::{
     gmt_m1::{self, M1ModeShapes, M1RigidBodyMotions},
@@ -12,63 +12,72 @@ impl Update for MirrorState {}
 
 impl Read<M1State> for MirrorState {
     fn read(&mut self, data: Data<M1State>) {
-        let state = &*data;
+        let state = if let Some(zero_point) = self.get_zero_point() {
+            &(&*data + &zero_point)
+        } else {
+            &*data
+        };
         let _ = mem::replace(self, state.clone());
     }
 }
 
 impl Read<M2State> for MirrorState {
     fn read(&mut self, data: Data<M2State>) {
-        let state = &*data;
+        let state = if let Some(zero_point) = self.get_zero_point() {
+            &(&*data + &zero_point)
+        } else {
+            &*data
+        };
         let _ = mem::replace(self, state.clone());
     }
 }
 
 impl Read<M2RigidBodyMotions> for MirrorState {
     fn read(&mut self, data: Data<M2RigidBodyMotions>) {
-        self.segment = data
-            .chunks(6)
-            .map(|data| SegmentState::rbms(data))
-            .map(|segment| Some(segment))
-            .collect();
+        data.chunks(6)
+            .zip(&mut self.segment)
+            .for_each(|(data, segment)| {
+                segment.get_or_insert_default().rbms = Some(Arc::new(data.to_vec()));
+            });
+        if let Some(zero_point) = self.get_zero_point() {
+            *self = self.clone() + zero_point;
+        }
     }
 }
 
 impl Read<M1RigidBodyMotions> for MirrorState {
     fn read(&mut self, data: Data<M1RigidBodyMotions>) {
-        self.segment = data
-            .chunks(6)
-            .map(|data| SegmentState::rbms(data))
-            .map(|segment| Some(segment))
-            .collect();
+        data.chunks(6)
+            .zip(&mut self.segment)
+            .for_each(|(data, segment)| {
+                segment.get_or_insert_default().rbms = Some(Arc::new(data.to_vec()));
+            });
+        if let Some(zero_point) = self.get_zero_point() {
+            *self = self.clone() + zero_point;
+        }
     }
 }
 
 impl Read<M1ModeShapes> for MirrorState {
     fn read(&mut self, data: Data<M1ModeShapes>) {
-        self.segment = data
-            .chunks(data.len() / 7)
-            .map(|data| SegmentState::modes(data))
-            .map(|segment| Some(segment))
-            .collect();
+        data.chunks(data.len() / 7)
+            .zip(&mut self.segment)
+            .for_each(|(data, segment)| {
+                segment.get_or_insert_default().modes = Some(Arc::new(data.to_vec()));
+            });
+        if let Some(zero_point) = self.get_zero_point() {
+            *self = self.clone() + zero_point;
+        }
     }
 }
 impl Read<Right<M1ModeShapes>> for MirrorState {
     fn read(&mut self, data: Data<Right<M1ModeShapes>>) {
-        self.segment = data
-            .chunks(data.len() / 7)
-            .map(|data| SegmentState::modes(data))
-            .map(|segment| Some(segment))
-            .collect();
+        <_ as Read<M1ModeShapes>>::read(self, data.transmute())
     }
 }
 impl Read<Left<M1ModeShapes>> for MirrorState {
     fn read(&mut self, data: Data<Left<M1ModeShapes>>) {
-        self.segment = data
-            .chunks(data.len() / 7)
-            .map(|data| SegmentState::modes(data))
-            .map(|segment| Some(segment))
-            .collect();
+        <_ as Read<M1ModeShapes>>::read(self, data.transmute())
     }
 }
 
