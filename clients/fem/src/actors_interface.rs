@@ -59,7 +59,6 @@ where
             _ => Some(Data::new(OpticalState {
                 m1: s1.map(|data| (*data).clone()),
                 m2: s2.map(|data| (*data).clone()),
-                zero_point: None,
             })),
         }
     }
