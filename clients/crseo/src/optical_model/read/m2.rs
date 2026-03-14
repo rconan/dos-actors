@@ -99,7 +99,7 @@ impl<T: SensorPropagation> Read<M2Modes> for OpticalModel<T> {
 impl<T: SensorPropagation> Read<M2State> for OpticalModel<T> {
     fn read(&mut self, data: Data<M2State>) {
         let state = data.into_arc();
-        for (sid, SegmentState { rbms, modes }) in state
+        for (sid, SegmentState { rbms, modes, .. }) in state
             .iter()
             .enumerate()
             .filter_map(|(i, state)| state.map(|state| (i + 1, state)))
