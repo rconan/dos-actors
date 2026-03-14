@@ -91,7 +91,7 @@ impl Read<M1State> for DispatchIn {
             .map(|x| x.as_slice())
             .map(|x| x.iter());
         for (segment_state, (segment_rbms, segment_forces)) in data.iter().zip(iter) {
-            if let Some(SegmentState { rbms, modes }) = segment_state {
+            if let Some(SegmentState { rbms, modes, .. }) = segment_state {
                 if let Some(rbms) = rbms {
                     *segment_rbms = rbms.clone()
                 }
