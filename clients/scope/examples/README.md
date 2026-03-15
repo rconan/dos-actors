@@ -4,7 +4,7 @@
 
 All examples are using data from the same server, that is run with
 ```text
-RUST_LOG=info cargo run --no-default-features --features server --example tx
+RUST_LOG=info cargo run --features server --example tx
 ```
 
 ### async
@@ -12,7 +12,7 @@ RUST_LOG=info cargo run --no-default-features --features server --example tx
 Asynchronous scope using [tokio](https://tokio.rs/) runtime:
 
 ```text
-RUST_LOG=info cargo run --example async
+RUST_LOG=info cargo run --features client --example async
 ```
 
 ### async-macro
