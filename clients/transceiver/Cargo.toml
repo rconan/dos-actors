@@ -28,6 +28,7 @@ humantime = "2.1.0"
 bytesize = "1.2.0"
 flate2 = { version = "1.0.27", optional = true }
 quinn-proto = "0.10.6"
+gmt_dos-actors.workspace = true
 
 [dev-dependencies]
 env_logger.workspace = true

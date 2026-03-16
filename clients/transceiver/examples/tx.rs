@@ -1,3 +1,5 @@
+use std::{thread, time::Duration};
+
 use gmt_dos_actors::prelude::*;
 use gmt_dos_clients::signals::{Signal, Signals};
 use gmt_dos_clients_transceiver::{Monitor, Transceiver};
@@ -53,6 +55,10 @@ async fn main() -> anyhow::Result<()> {
         .check()?
         .run()
         .await?;
+
+    println!("sleeping for 10s ....");
+    thread::sleep(Duration::from_secs(10));
+    println!("waking up!!");
 
     let res = monitor.await?;
     dbg!(res);

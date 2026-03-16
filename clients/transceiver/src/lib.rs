@@ -97,6 +97,13 @@ pub struct Transceiver<U: UniqueIdentifier, F = Unset, S = Off> {
     function: PhantomData<F>,
     state: PhantomData<S>,
 }
+impl<U: UniqueIdentifier> Transceiver<U, Transmitter, On> {
+    /// Drops the transmitting end of the channel
+    pub fn drop(mut self) {
+        self.tx.take().map(|tx| drop(tx));
+    }
+}
+
 impl<U: UniqueIdentifier, F> Transceiver<U, F> {
     pub fn new<S: Into<String>>(
         crypto: Crypto,
