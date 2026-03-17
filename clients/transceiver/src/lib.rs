@@ -98,9 +98,8 @@ pub struct Transceiver<U: UniqueIdentifier, F = Unset, S = Off> {
     state: PhantomData<S>,
 }
 impl<U: UniqueIdentifier> Transceiver<U, Transmitter, On> {
-    /// Drops the transmitting end of the channel
-    pub fn drop(mut self) {
-        self.tx.take().map(|tx| drop(tx));
+    /// Drops the transmitter
+    pub fn drop(self) {
     }
 }
 

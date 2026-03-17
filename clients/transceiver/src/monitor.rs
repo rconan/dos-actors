@@ -31,7 +31,7 @@ impl Monitor {
     }
     /// Drops the [Transmitter] [client](https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/client/struct.Client.html) explicitely
     ///
-    /// This is required when a [Transmitter] is used within [actorscript](https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/macro.actorscript.html) to prevent an infinite loop
+    /// This is required when a [Transmitter] is used within [actorscript](https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/macro.actorscript.html) to prevent an infinite loop from happening
     pub fn drop<'a, U: UniqueIdentifier>(
         self,
         client: Client<'a, Transceiver<U, Transmitter, On>>,
