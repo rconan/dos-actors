@@ -20,9 +20,9 @@ mod monitor;
 mod receiver;
 mod transmitter;
 
-use std::{any::type_name, marker::PhantomData};
+use std::{any::type_name, marker::PhantomData, thread, time::Duration};
 
-use interface::{Data, Read, UniqueIdentifier, Update, Write};
+use interface::{Data, Read, UniqueIdentifier, Update, Write, trim_type_name};
 use quinn::Endpoint;
 
 pub use crypto::Crypto;
@@ -98,8 +98,27 @@ pub struct Transceiver<U: UniqueIdentifier, F = Unset, S = Off> {
     state: PhantomData<S>,
 }
 impl<U: UniqueIdentifier> Transceiver<U, Transmitter, On> {
-    /// Drops the transmitter
-    pub fn drop(self) {
+    /// Terminates the data transmission
+    ///
+    /// This process waits for all the data to have been sent
+    pub fn end_transmission(&mut self) -> &mut Self {
+        if let Some(tx) = self.take_channel_transmitter() {
+            let mut d = 1;
+            while !tx.is_empty() {
+                tracing::log::info!(
+                    "There is still {} messages in the channel, waiting {d}s for {} to go through ...",
+                    tx.len(),
+                    trim_type_name::<U>()
+                );
+                thread::sleep(Duration::from_secs(d));
+                if d < 10 {
+                    d += 1;
+                }
+            }
+            drop(tx);
+        }
+        // drop(self.tx.cxtake_channel_transmitter().unwrap());
+        self
     }
 }
 

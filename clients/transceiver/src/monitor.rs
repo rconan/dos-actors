@@ -1,12 +1,10 @@
 use std::{
     future::IntoFuture,
     ops::{Deref, DerefMut},
-    thread,
-    time::Duration,
 };
 
 use gmt_dos_actors::client::Client;
-use interface::{UniqueIdentifier, trim_type_name};
+use interface::UniqueIdentifier;
 use tokio::task::{JoinError, JoinHandle};
 
 use crate::{On, Transceiver, TransceiverError, Transmitter};
@@ -41,20 +39,7 @@ impl Monitor {
         client
             .into_inner()
             .map(|mut client: Transceiver<U, Transmitter, On>| {
-                if let Some(tx) = client.take_channel_transmitter() {
-                    let mut d = 1;
-                    while !tx.is_empty() {
-                        tracing::info!(
-                            "There is still {} messages in the channel, waiting {d}s ...",
-                            tx.len(),
-                        );
-                        thread::sleep(Duration::from_secs(d));
-                        if d < 10 {
-                            d += 1;
-                        }
-                    }
-                    drop(tx);
-                }
+                client.end_transmission();
             });
         self
     }

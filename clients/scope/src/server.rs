@@ -140,22 +140,7 @@ where
     ///
     /// This process waits for all the data to have been sent
     pub fn end_transmission(&mut self) -> &mut Self {
-        if let Some(tx) = self.tx.take_channel_transmitter() {
-            let mut d = 1;
-            while !tx.is_empty() {
-                log::info!(
-                    "There is still {} messages in the channel, waiting {d}s for {} to go through ...",
-                    tx.len(),
-                    trim_type_name::<FU>()
-                );
-                thread::sleep(Duration::from_secs(d));
-                if d < 10 {
-                    d += 1;
-                }
-            }
-            drop(tx);
-        }
-        // drop(self.tx.cxtake_channel_transmitter().unwrap());
+        self.tx.end_transmission();
         self
     }
 }
