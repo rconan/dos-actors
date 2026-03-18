@@ -90,15 +90,25 @@ impl Add for SegmentState {
                 (None, None) => None,
                 (None, Some(value)) => Some(value),
                 (Some(value), None) => Some(value),
-                (Some(l), Some(r)) => Some(
-                    l.iter()
-                        .zip(r.iter())
-                        .map(|(&a, &b)| a + b)
-                        .collect::<Vec<_>>(),
+                // (Some(l), Some(r)) => Some(
+                (Some(a), Some(b)) => Some(
+                    {
+                        let (longer, shorter) = if a.len() >= b.len() { (a, b) } else { (b, a) };
+
+                        longer
+                            .iter()
+                            .enumerate()
+                            .map(|(i, &val)| val + shorter.get(i).unwrap_or(&0f64))
+                            .collect()
+                    },
+                    // l.iter()
+                    //     .zip(r.iter())
+                    //     .map(|(&a, &b)| a + b)
+                    //     .collect::<Vec<_>>(),
                 )
                 .map(|modes| Arc::new(modes)),
             },
-            zero_point: self.zero_point,
+            ..Default::default()
         }
     }
 }
@@ -133,7 +143,7 @@ impl Sub for SegmentState {
                 )
                 .map(|modes| Arc::new(modes)),
             },
-            zero_point: self.zero_point,
+            ..Default::default()
         }
     }
 }
@@ -158,15 +168,24 @@ impl Add for &SegmentState {
                 (None, None) => None,
                 (None, Some(value)) => Some(value),
                 (Some(value), None) => Some(value),
-                (Some(l), Some(r)) => Some(
-                    l.iter()
-                        .zip(r.iter())
-                        .map(|(&a, &b)| a + b)
-                        .collect::<Vec<_>>(),
+                (Some(a), Some(b)) => Some(
+                    {
+                        let (longer, shorter) = if a.len() >= b.len() { (a, b) } else { (b, a) };
+
+                        longer
+                            .iter()
+                            .enumerate()
+                            .map(|(i, &val)| val + shorter.get(i).unwrap_or(&0f64))
+                            .collect()
+                    },
+                    // l.iter()
+                    //     .zip(r.iter())
+                    //     .map(|(&a, &b)| a + b)
+                    //     .collect::<Vec<_>>(),
                 )
                 .map(|modes| Arc::new(modes)),
             },
-            zero_point: self.zero_point.clone(),
+            ..Default::default()
         }
     }
 }
@@ -201,7 +220,7 @@ impl Sub for &SegmentState {
                 )
                 .map(|modes| Arc::new(modes)),
             },
-            zero_point: self.zero_point.clone(),
+            ..Default::default()
         }
     }
 }
@@ -219,7 +238,7 @@ impl Mul<f64> for SegmentState {
                 .modes
                 .map(|modes| modes.iter().map(|&a| a * rhs).collect::<Vec<_>>())
                 .map(|modes| Arc::new(modes)),
-            zero_point: self.zero_point,
+            ..Default::default()
         }
     }
 }
@@ -239,7 +258,7 @@ impl Mul<f64> for &SegmentState {
                 .as_ref()
                 .map(|modes| modes.iter().map(|&a| a * rhs).collect::<Vec<_>>())
                 .map(|modes| Arc::new(modes)),
-            zero_point: self.zero_point.clone(),
+            ..Default::default()
         }
     }
 }
@@ -263,6 +282,13 @@ mod tests {
     #[test]
     fn modes() {
         let segment = SegmentState::modes(vec![0f64; 27]);
+        dbg!(segment);
+    }
+    #[test]
+    fn add() {
+        let segment_1 = SegmentState::modes(vec![1., 2., 3., 4., 5.]);
+        let segment_2 = SegmentState::modes(vec![10., 20., 30.]);
+        let segment = segment_1 + segment_2;
         dbg!(segment);
     }
 }

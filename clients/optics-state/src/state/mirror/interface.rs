@@ -1,4 +1,4 @@
-use std::{mem, sync::Arc};
+use std::sync::Arc;
 
 use gmt_dos_clients_io::{
     gmt_m1::{self, M1ModeShapes, M1RigidBodyMotions},
@@ -12,23 +12,21 @@ impl Update for MirrorState {}
 
 impl Read<M1State> for MirrorState {
     fn read(&mut self, data: Data<M1State>) {
-        let state = if let Some(zero_point) = self.get_zero_point() {
-            &(&*data + &zero_point)
+        *self = if let Some(zero_point) = self.get_zero_point().take() {
+            (&*data + &zero_point).set_zero_point(zero_point)
         } else {
-            &*data
+            (&*data).clone()
         };
-        let _ = mem::replace(self, state.clone());
     }
 }
 
 impl Read<M2State> for MirrorState {
     fn read(&mut self, data: Data<M2State>) {
-        let state = if let Some(zero_point) = self.get_zero_point() {
-            &(&*data + &zero_point)
+        *self = if let Some(zero_point) = self.get_zero_point().take() {
+            (&*data + &zero_point).set_zero_point(zero_point)
         } else {
-            &*data
+            (&*data).clone()
         };
-        let _ = mem::replace(self, state.clone());
     }
 }
 
@@ -39,8 +37,8 @@ impl Read<M2RigidBodyMotions> for MirrorState {
             .for_each(|(data, segment)| {
                 segment.get_or_insert_default().rbms = Some(Arc::new(data.to_vec()));
             });
-        if let Some(zero_point) = self.get_zero_point() {
-            *self = self.clone() + zero_point;
+        if let Some(zero_point) = self.get_zero_point().take() {
+            *self = (&self.clone() + &zero_point).set_zero_point(zero_point);
         }
     }
 }
@@ -52,8 +50,8 @@ impl Read<M1RigidBodyMotions> for MirrorState {
             .for_each(|(data, segment)| {
                 segment.get_or_insert_default().rbms = Some(Arc::new(data.to_vec()));
             });
-        if let Some(zero_point) = self.get_zero_point() {
-            *self = self.clone() + zero_point;
+        if let Some(zero_point) = self.get_zero_point().take() {
+            *self = (&self.clone() + &zero_point).set_zero_point(zero_point);
         }
     }
 }
@@ -65,8 +63,8 @@ impl Read<M1ModeShapes> for MirrorState {
             .for_each(|(data, segment)| {
                 segment.get_or_insert_default().modes = Some(Arc::new(data.to_vec()));
             });
-        if let Some(zero_point) = self.get_zero_point() {
-            *self = self.clone() + zero_point;
+        if let Some(zero_point) = self.get_zero_point().take() {
+            *self = (&self.clone() + &zero_point).set_zero_point(zero_point);
         }
     }
 }

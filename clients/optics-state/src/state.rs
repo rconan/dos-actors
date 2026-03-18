@@ -145,13 +145,11 @@ impl Write<OpticsState> for OpticalState {
 }
 impl Read<OpticsState> for OpticalState {
     fn read(&mut self, data: Data<OpticsState>) {
-        let state = if let Some(zero_point) = self.get_zero_point() {
-            &(&*data + &zero_point)
+        *self = if let Some(zero_point) = self.get_zero_point().take() {
+            (&*data + &zero_point).set_zero_point(zero_point)
         } else {
-            &*data
+            (&*data).clone()
         };
-        self.m1 = state.m1.clone();
-        self.m2 = state.m2.clone();
     }
 }
 impl Write<Right<OpticsState>> for OpticalState {
@@ -203,5 +201,28 @@ impl Add for &OpticalState {
                 (Some(s2), Some(rhs_s2)) => Some(s2 + rhs_s2),
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn add() {
+        let state1 = OpticalState::m1(
+            MirrorState::default()
+                .zeros_modes(5)
+                .set_segment_state(1, SegmentState::modes(vec![0f64; 6]).set_mode(2, -2.)),
+        );
+        let mut state = OpticalState::m1(MirrorState::default().zeros_modes(6)).set_zero_point(
+            OpticalState::m1(
+                MirrorState::default()
+                    .zeros_modes(6)
+                    .set_segment_state(1, SegmentState::modes(vec![0f64; 6]).set_mode(5, 1.)),
+            ),
+        );
+        <_ as Read<OpticsState>>::read(&mut state, Data::new(state1));
+        dbg!(&state);
     }
 }

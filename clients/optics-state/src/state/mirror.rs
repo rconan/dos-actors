@@ -149,6 +149,14 @@ impl MirrorState {
     }
 }
 
+impl From<SegmentState> for MirrorState {
+    fn from(state: SegmentState) -> Self {
+        Self {
+            segment: (0..7).map(|_| Some(state.clone())).collect(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
