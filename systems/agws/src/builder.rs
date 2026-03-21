@@ -22,6 +22,7 @@ use shack_hartmann::{ShackHartmannBuilder, ShackHartmannBuilderError};
 use crate::{
     Agws,
     agws::{
+        AgwsParts,
         sh24::{Sh24, kernel::Sh24Kern},
         sh48::{Sh48, kernel::Sh48Kern},
     },
@@ -217,6 +218,29 @@ where
                 ),
             )
         };
+
+        let AgwsParts {
+            sh48,
+            sh24,
+            sh24_kernel,
+            sh48_kernel,
+            ..
+        } = self.parts()?;
+
+        Ok(Sys::new(Agws {
+            #[cfg(feature = "sh24")]
+            sh24: (sh24, sh24_label).into(),
+            #[cfg(feature = "sh48")]
+            sh48: (sh48, sh48_label).into(),
+            #[cfg(feature = "shk24")]
+            sh24_kernel: sh24_kernel.into(),
+            #[cfg(feature = "shk48")]
+            sh48_kernel: sh48_kernel.into(),
+        })
+        .build()?)
+    }
+    #[allow(unused_mut)]
+    pub fn parts(mut self) -> Result<AgwsParts<SH48_I, SH24_I, K48, K24>, AgwsBuilderError> {
         let mut sh48 = OpticalModelBuilder::from(&self.sh48);
         let mut sh24 = OpticalModelBuilder::from(&self.sh24);
         if let Some((atm, sampling_frequency)) = self.atm {
@@ -236,7 +260,6 @@ where
         let sh24 = sh24.build()?;
         log::info!("SH24:\n{}", sh24);
 
-        #[cfg(feature = "shk24")]
         let sh24_kern = Kernel::<K24>::try_from(self.sh24)
             .map_err(|_e| ShackHartmannBuilderError::Reconstructor)
             .map(|sh24_kern| {
@@ -246,22 +269,14 @@ where
                     sh24_kern
                 }
             })?;
-        #[cfg(feature = "shk48")]
         let sh48_kern = Kernel::<K48>::try_from(self.sh48)
             .map_err(|_e| ShackHartmannBuilderError::Reconstructor)?;
 
-        Ok(Sys::new(Agws {
-            #[cfg(feature = "sh24")]
-            sh24: (Sh24(sh24), sh24_label).into(),
-            #[cfg(feature = "sh48")]
-            sh48: (Sh48(sh48), sh48_label).into(),
-            #[cfg(feature = "shk24")]
-            sh24_kernel: Sh24Kern(sh24_kern).into(),
-            #[cfg(feature = "shk48")]
-            sh48_kernel: Sh48Kern(sh48_kern).into(),
-            k48: std::marker::PhantomData,
-            k24: std::marker::PhantomData,
+        Ok(AgwsParts {
+            sh24: Sh24(sh24),
+            sh48: Sh48(sh48),
+            sh24_kernel: Sh24Kern(sh24_kern),
+            sh48_kernel: Sh48Kern(sh48_kern),
         })
-        .build()?)
     }
 }
