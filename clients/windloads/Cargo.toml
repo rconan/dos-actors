@@ -1,6 +1,6 @@
 [package]
 name = "gmt_dos-clients_windloads"
-version = "3.0.3"
+version = "3.1.0"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -19,16 +19,17 @@ log.workspace = true
 thiserror = { workspace = true }
 geotrans = "0.2.2"
 gmt-fem = { workspace = true }
-parse-monitors = "0.3.2"
+parse-monitors = { version = "0.4.0", features = ["object_store"] }
 nalgebra.workspace = true
 serde.workspace = true
 gmt_dos-clients = { workspace = true, features = ["serde"] }
 gmt_dos-clients_fem.workspace = true
+object_store = { version = "0.13.1", optional = true }
 
 [dev-dependencies]
 anyhow.workspace = true
 env_logger.workspace = true
-gmt_dos-clients = { workspace = true, features = ["faer","nalgebra"] }
+gmt_dos-clients = { workspace = true, features = ["faer", "nalgebra"] }
 gmt_dos-clients_arrow.workspace = true
 gmt_dos-clients_fem = { workspace = true }
 gmt_dos-clients_m1-ctrl = { workspace = true, features = ["serde"] }
@@ -47,7 +48,7 @@ cfd2025 = []
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
-    'cfg(fem)',
-    'cfg(cfd2021)',
-    'cfg(cfd2025)',
+  'cfg(fem)',
+  'cfg(cfd2021)',
+  'cfg(cfd2025)',
 ] }

@@ -69,6 +69,30 @@ impl TryFrom<Builder<FOH>> for SigmoidCfdLoads {
         })
     }
 }
+impl TryFrom<CfdLoads<FOH>> for SigmoidCfdLoads {
+    type Error = SigmoidCfdLoadsError;
+
+    fn try_from(cfd_loads: CfdLoads<FOH>) -> Result<Self, Self::Error> {
+        let sampling_frequency = cfd_loads.upsampling.rate * 20;
+        let m1_smoother = M1::new();
+        let m2_smoother = M2::new();
+        let mount_smoother = Mount::new();
+        let sigmoid = OneSignal::try_from(Signals::new(1, usize::MAX).channel(
+            0,
+            Signal::Sigmoid {
+                amplitude: 1f64,
+                sampling_frequency_hz: sampling_frequency as f64,
+            },
+        ))?;
+        Ok(Self {
+            cfd_loads: cfd_loads.into(),
+            m1_smoother: m1_smoother.into(),
+            m2_smoother: m2_smoother.into(),
+            mount_smoother: mount_smoother.into(),
+            sigmoid: sigmoid.into(),
+        })
+    }
+}
 
 impl From<SigmoidCfdLoadsError> for SystemError {
     fn from(value: SigmoidCfdLoadsError) -> Self {
@@ -80,6 +104,12 @@ impl TryFrom<Builder<FOH>> for Sys<SigmoidCfdLoads> {
     type Error = SystemError;
     fn try_from(builder: Builder<FOH>) -> Result<Self, Self::Error> {
         Sys::new(builder.try_into()?).build()
+    }
+}
+impl TryFrom<CfdLoads<FOH>> for Sys<SigmoidCfdLoads> {
+    type Error = SystemError;
+    fn try_from(cfd_loads: CfdLoads<FOH>) -> Result<Self, Self::Error> {
+        Sys::new(cfd_loads.try_into()?).build()
     }
 }
 

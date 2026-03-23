@@ -1174,8 +1174,8 @@ dependencies = [
  "clap 4.6.0",
  "complot",
  "env_logger",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "nanorand 0.8.0",
  "rand_distr 0.4.3",
@@ -1671,6 +1671,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "console"
+version = "0.16.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d64e8af5551369d19cf50138de61f1c42074ab970f74e99be916646777f8fc87"
+dependencies = [
+ "encode_unicode",
+ "libc",
+ "unicode-width 0.2.2",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "const-random"
 version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1978,7 +1990,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "33df8a79391e84a464ede737be01ac1ff32a0fea3a0322c4795e3ed816e5a056"
 dependencies = [
  "crseo-sys",
- "indicatif",
+ "indicatif 0.17.11",
  "libm",
  "log",
  "nalgebra 0.33.2",
@@ -2058,12 +2070,12 @@ dependencies = [
  "anyhow",
  "env_logger",
  "gmt-fem",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_lom",
  "gmt_dos-clients_m1-ctrl",
  "gmt_dos-clients_m2-ctrl",
@@ -2199,7 +2211,18 @@ dependencies = [
 name = "dos-uid-derive"
 version = "5.0.1"
 dependencies = [
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors-clients_interface 1.5.1",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
+name = "dos-uid-derive"
+version = "5.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8718723acfbed6bc862c637ccadc61054a4f92ecc49eeca1b14bfd0450def587"
+dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
@@ -2221,8 +2244,8 @@ checksum = "d8b14ccef22fc6f5a8f4d7d768562a182c04ce9a3b3157b91390b52ddfdf1a76"
 name = "dsl-demo"
 version = "0.1.0"
 dependencies = [
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_scope",
@@ -2287,13 +2310,13 @@ dependencies = [
  "faer-ext",
  "gmt-fem",
  "gmt-lom",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_crseo",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_lom",
  "gmt_dos-clients_m1-ctrl",
  "gmt_dos-clients_m2-ctrl",
@@ -2317,8 +2340,8 @@ name = "edge-sensors_scopes"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "gmt_dos-actors-clients_interface",
- "gmt_dos-clients_io",
+ "gmt_dos-actors-clients_interface 1.5.1",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_scope-client",
  "io",
  "tokio",
@@ -3490,7 +3513,7 @@ dependencies = [
  "complot",
  "csv",
  "geotrans 0.1.1",
- "gmt-fem-code-builder",
+ "gmt-fem-code-builder 2.3.8",
  "log",
  "matio-rs",
  "nalgebra 0.33.2",
@@ -3509,6 +3532,20 @@ dependencies = [
 [[package]]
 name = "gmt-fem-code-builder"
 version = "2.3.8"
+dependencies = [
+ "anyhow",
+ "arrow",
+ "bytes",
+ "parquet",
+ "thiserror 2.0.18",
+ "zip 4.6.1",
+]
+
+[[package]]
+name = "gmt-fem-code-builder"
+version = "2.3.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f426f6ea5ac67772b3aac935ae79b3bf9590e5a6f4d4699ffac0d5a4265614f5"
 dependencies = [
  "anyhow",
  "arrow",
@@ -3545,6 +3582,29 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-actors"
+version = "12.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f45d436060725ea24c78511d4de76146f285bbe86f740760df725c030d7e8607"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "flume",
+ "futures",
+ "gmt_dos-actors-clients_interface 1.5.0",
+ "gmt_dos-actors_dsl 2.2.0",
+ "html-escape",
+ "humantime",
+ "log",
+ "open",
+ "svg",
+ "thiserror 1.0.69",
+ "tokio",
+ "vec_box",
+]
+
+[[package]]
+name = "gmt_dos-actors"
 version = "12.1.0"
 dependencies = [
  "anyhow",
@@ -3554,8 +3614,8 @@ dependencies = [
  "env_logger",
  "flume",
  "futures",
- "gmt_dos-actors-clients_interface",
- "gmt_dos-actors_dsl",
+ "gmt_dos-actors-clients_interface 1.5.1",
+ "gmt_dos-actors_dsl 2.2.1",
  "gmt_dos-clients",
  "html-escape",
  "humantime",
@@ -3574,16 +3634,41 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-actors-clients_interface"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "efb834be42f95b2c4b54395b177e33a9881d29a4386a012b4fa841f8293aedf0"
+dependencies = [
+ "dos-uid-derive 5.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log",
+ "paris",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "gmt_dos-actors-clients_interface"
 version = "1.5.1"
 dependencies = [
  "bincode 2.0.1",
  "criterion 0.5.1",
- "dos-uid-derive",
+ "dos-uid-derive 5.0.1",
  "log",
  "paris",
  "serde",
  "serde-pickle 1.2.0",
  "thiserror 2.0.18",
+]
+
+[[package]]
+name = "gmt_dos-actors_dsl"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b453ebf7b9f6abb41af1f009f8203e8e8561ab0297e36b2635c0262b0389a3b7"
+dependencies = [
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+ "tracing",
 ]
 
 [[package]]
@@ -3611,15 +3696,15 @@ dependencies = [
  "faer-ext",
  "faer-traits",
  "gif 0.13.3",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_optics-state",
  "gmt_dos-clients_scope",
  "gmt_dos-clients_scope-client",
  "image 0.25.10",
  "imageproc",
- "indicatif",
+ "indicatif 0.17.11",
  "log",
  "matio-rs",
  "nalgebra 0.33.2",
@@ -3639,8 +3724,8 @@ version = "2.3.0"
 dependencies = [
  "arrow",
  "env_logger",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "log",
  "matio-rs",
@@ -3663,13 +3748,13 @@ dependencies = [
  "faer",
  "faer-ext",
  "geotrans 1.2.0",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients_arrow",
- "gmt_dos-clients_domeseeing",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_domeseeing 3.2.0",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_optics-state",
  "image 0.25.10",
- "indicatif",
+ "indicatif 0.17.11",
  "linya",
  "log",
  "nalgebra 0.33.2",
@@ -3689,12 +3774,12 @@ dependencies = [
  "anyhow",
  "env_logger",
  "gmt-fem",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_mount",
  "gmt_dos-clients_scope",
  "gmt_dos-clients_scope-client",
@@ -3717,14 +3802,29 @@ dependencies = [
  "bincode 1.3.3",
  "futures",
  "glob",
- "gmt_dos-actors-clients_interface",
- "gmt_dos-clients_io",
+ "gmt_dos-actors-clients_interface 1.5.1",
+ "gmt_dos-clients_io 4.3.0",
  "log",
  "npyz",
- "object_store",
+ "object_store 0.12.5",
  "serde",
  "thiserror 2.0.18",
  "tokio",
+]
+
+[[package]]
+name = "gmt_dos-clients_domeseeing"
+version = "3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "359a53edf564e04d0f0cb02e0f8a22f4adb1661f7bcb00aa55ffceee5dbec236"
+dependencies = [
+ "glob",
+ "gmt_dos-actors-clients_interface 1.5.0",
+ "gmt_dos-clients_io 4.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log",
+ "npyz",
+ "serde",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -3742,10 +3842,10 @@ dependencies = [
  "fem-cuda-solver",
  "geotrans 0.2.2",
  "gmt-fem",
- "gmt-fem-code-builder",
- "gmt_dos-actors-clients_interface",
+ "gmt-fem-code-builder 2.3.8",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_optics-state",
  "log",
  "matio-rs",
@@ -3767,10 +3867,22 @@ version = "4.3.0"
 dependencies = [
  "anyhow",
  "crseo",
- "gmt-fem-code-builder",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt-fem-code-builder 2.3.8",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "serde",
+]
+
+[[package]]
+name = "gmt_dos-clients_io"
+version = "4.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a50bd13fa496100c24c94c252532d68e13d64d4b9f0fae040c6d47c574cf1807"
+dependencies = [
+ "anyhow",
+ "gmt-fem-code-builder 2.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gmt_dos-actors 12.0.0",
+ "gmt_dos-actors-clients_interface 1.5.0",
 ]
 
 [[package]]
@@ -3779,8 +3891,8 @@ version = "1.2.1"
 dependencies = [
  "flate2",
  "gmt-lom",
- "gmt_dos-actors-clients_interface",
- "gmt_dos-clients_io",
+ "gmt_dos-actors-clients_interface 1.5.1",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_optics-state",
  "nalgebra 0.33.2",
 ]
@@ -3793,14 +3905,14 @@ dependencies = [
  "bincode 2.0.1",
  "env_logger",
  "gmt-fem",
- "gmt-fem-code-builder",
+ "gmt-fem-code-builder 2.3.8",
  "gmt-lom",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_mount",
  "gmt_dos-clients_scope",
  "gmt_dos-clients_scope-client",
@@ -3829,14 +3941,14 @@ dependencies = [
  "complot",
  "env_logger",
  "gmt-fem",
- "gmt-fem-code-builder",
+ "gmt-fem-code-builder 2.3.8",
  "gmt-lom",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_lom",
  "gmt_dos-clients_m1-ctrl",
  "gmt_dos-clients_mount",
@@ -3866,14 +3978,14 @@ dependencies = [
  "anyhow",
  "env_logger",
  "gmt-fem",
- "gmt-fem-code-builder",
+ "gmt-fem-code-builder 2.3.8",
  "gmt-lom",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_transceiver",
  "gmt_mount-ctrl_controller",
  "gmt_mount-ctrl_driver",
@@ -3893,9 +4005,9 @@ dependencies = [
 name = "gmt_dos-clients_optics-state"
 version = "0.1.0"
 dependencies = [
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients_arrow",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "serde",
 ]
 
@@ -3909,10 +4021,10 @@ dependencies = [
  "egui_plot",
  "epaint",
  "flume",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_scopehub",
  "gmt_dos-clients_transceiver",
  "log",
@@ -3935,8 +4047,8 @@ dependencies = [
 name = "gmt_dos-clients_scopehub"
 version = "0.1.0"
 dependencies = [
- "gmt_dos-actors-clients_interface",
- "gmt_dos-clients_io",
+ "gmt_dos-actors-clients_interface 1.5.1",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_scope",
  "quote",
  "syn 2.0.117",
@@ -3952,14 +4064,14 @@ dependencies = [
  "crseo",
  "env_logger",
  "gmt-fem",
- "gmt-fem-code-builder",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt-fem-code-builder 2.3.8",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_crseo",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_lom",
  "gmt_dos-clients_m2-ctrl",
  "gmt_dos-clients_mount",
@@ -3989,8 +4101,8 @@ dependencies = [
  "flate2",
  "flume",
  "futures",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "humantime",
  "quinn 0.10.2",
@@ -4007,24 +4119,25 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-clients_windloads"
-version = "3.0.3"
+version = "3.1.0"
 dependencies = [
  "anyhow",
  "env_logger",
  "geotrans 0.2.2",
  "gmt-fem",
- "gmt-fem-code-builder",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt-fem-code-builder 2.3.8",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_m1-ctrl",
  "gmt_dos-clients_mount",
- "indicatif",
+ "indicatif 0.17.11",
  "log",
  "nalgebra 0.33.2",
+ "object_store 0.13.1",
  "parse-monitors",
  "serde",
  "serde-pickle 1.2.0",
@@ -4039,11 +4152,11 @@ version = "0.2.0"
 dependencies = [
  "complot",
  "criterion 0.8.2",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_crseo",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_optics-state",
  "log",
  "nalgebra 0.33.2",
@@ -4063,13 +4176,13 @@ dependencies = [
  "bincode 2.0.1",
  "faer",
  "gmt-fem",
- "gmt-fem-code-builder",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt-fem-code-builder 2.3.8",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_m1-ctrl",
  "gmt_dos-clients_mount",
  "gmt_dos-clients_optics-state",
@@ -4090,9 +4203,9 @@ dependencies = [
  "faer",
  "faer-ext",
  "gmt-fem",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_m1-ctrl",
  "gmt_dos-systems_m1",
  "serde",
@@ -4106,13 +4219,13 @@ dependencies = [
  "bincode 2.0.1",
  "complot",
  "gmt-fem",
- "gmt-fem-code-builder",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt-fem-code-builder 2.3.8",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_m2-ctrl",
  "gmt_m2-ctrl_asm_pid-damping",
  "gmt_m2-ctrl_asm_positionner",
@@ -4827,11 +4940,25 @@ version = "0.17.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "183b3088984b400f4cfac3620d5e076c84da5364016b4f49473de574b2586235"
 dependencies = [
- "console",
+ "console 0.15.11",
  "number_prefix",
  "portable-atomic",
  "rayon",
  "unicode-width 0.2.2",
+ "web-time",
+]
+
+[[package]]
+name = "indicatif"
+version = "0.18.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25470f23803092da7d239834776d653104d551bc4d7eacaf31e6837854b8e9eb"
+dependencies = [
+ "console 0.16.3",
+ "portable-atomic",
+ "rayon",
+ "unicode-width 0.2.2",
+ "unit-prefix",
  "web-time",
 ]
 
@@ -4874,8 +5001,8 @@ dependencies = [
 name = "io"
 version = "0.1.0"
 dependencies = [
- "gmt_dos-actors-clients_interface",
- "gmt_dos-clients_io",
+ "gmt_dos-actors-clients_interface 1.5.1",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_lom",
 ]
 
@@ -5527,12 +5654,12 @@ dependencies = [
  "anyhow",
  "env_logger",
  "gmt-fem",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_lom",
  "gmt_dos-clients_m1-ctrl",
  "gmt_dos-clients_m2-ctrl",
@@ -6490,6 +6617,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "object_store"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2858065e55c148d294a9f3aae3b0fa9458edadb41a108397094566f4e3c0dfb"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "chrono",
+ "futures",
+ "http",
+ "humantime",
+ "itertools 0.14.0",
+ "parking_lot 0.12.5",
+ "percent-encoding",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "url",
+ "walkdir",
+ "wasm-bindgen-futures",
+ "web-time",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6733,9 +6884,9 @@ dependencies = [
 
 [[package]]
 name = "parse-monitors"
-version = "0.3.2"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d263152dead2b0df91bde3e2e66e0c7f02be705d84398c5809be2cae22ac3189"
+checksum = "c74840ef66452eb2251517f20585dceb6b9d3f7de07ac1ff9a5a69ad4639257f"
 dependencies = [
  "anyhow",
  "clap 4.6.0",
@@ -6746,12 +6897,14 @@ dependencies = [
  "geotrans 0.2.2",
  "glob",
  "gmt-lom",
- "indicatif",
+ "gmt_dos-clients_domeseeing 3.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "indicatif 0.18.4",
  "itertools 0.14.0",
  "linya",
  "log",
  "nalgebra 0.32.6",
  "npyz",
+ "object_store 0.13.1",
  "rayon",
  "regex",
  "serde",
@@ -8447,11 +8600,11 @@ name = "scope"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_scope",
  "gmt_dos-clients_scope-client",
  "gmt_dos-clients_windloads",
@@ -8475,11 +8628,11 @@ name = "scopes"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "gmt_dos-actors",
- "gmt_dos-actors-clients_interface",
+ "gmt_dos-actors 12.1.0",
+ "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_scope",
  "gmt_dos-clients_scope-client",
  "gmt_dos-clients_windloads",
@@ -8662,7 +8815,7 @@ dependencies = [
 name = "servos-scopes"
 version = "0.1.0"
 dependencies = [
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_scope-client",
  "tokio",
 ]
@@ -9433,11 +9586,11 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "crseo",
- "gmt_dos-actors",
+ "gmt_dos-actors 12.1.0",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_crseo",
- "gmt_dos-clients_io",
+ "gmt_dos-clients_io 4.3.0",
  "polars 0.27.2",
  "rand 0.8.5",
  "rand_distr 0.4.3",
@@ -9829,6 +9982,12 @@ name = "unicode-xid"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
+
+[[package]]
+name = "unit-prefix"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81e544489bf3d8ef66c953931f56617f423cd4b5494be343d9b9d3dda037b9a3"
 
 [[package]]
 name = "untrusted"
