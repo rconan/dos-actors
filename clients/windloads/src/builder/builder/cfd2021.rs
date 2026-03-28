@@ -1,26 +1,57 @@
 use super::Builder;
 use crate::{
     CS, CfdLoads, M1S, M2S, MAX_DURATION, Result,
-    windloads::{WindLoads, WindLoadsBuilder},
 };
 use geotrans::{SegmentTrait, Transform};
 use parse_monitors::{Exertion, Monitors, Vector};
-use serde::{Deserialize, Serialize};
 use std::mem;
 
 impl<S> Builder<S> {
-    /// Returns a [CfdLoads] object
+    /// Build a [CfdLoads] object
     pub fn build(self) -> Result<CfdLoads<S>> {
-        //println!("Loading the CFD loads from {} ...", self.cfd_case);
-        //let now = Instant::now();
-        let mut monitors = if let Some(time_range) = self.time_range {
-            Monitors::loader::<String, 2021>(self.cfd_case)
+        // println!("Loading the CFD loads from {} ...", self.cfd_case);
+        // let now = Instant::now();
+        let monitors_loader = if let Some(time_range) = self.time_range {
+            Monitors::loader::<String, 2021>(self.cfd_case.clone())
                 .start_time(time_range.0)
                 .end_time(time_range.1)
-                .load()?
         } else {
-            Monitors::loader::<String, 2021>(self.cfd_case).load()?
+            Monitors::loader::<String, 2021>(self.cfd_case.clone())
         };
+        let monitors = monitors_loader.load()?;
+        self.monitors_to_cfdloads(monitors)
+    }
+    #[cfg(feature = "object_store")]
+    /// Upload a CFD monitors data file and build a [CfdLoads] object
+    pub async fn fetch_and_build(
+        self,
+        store: impl object_store::ObjectStore,
+    ) -> Result<CfdLoads<S>> {
+        // println!("Loading the CFD loads from {} ...", self.cfd_case);
+        // let now = Instant::now();
+        let monitors_loader = if let Some(time_range) = self.time_range {
+            Monitors::loader::<String, 2021>(self.cfd_case.clone())
+                .start_time(time_range.0)
+                .end_time(time_range.1)
+        } else {
+            Monitors::loader::<String, 2021>(self.cfd_case.clone())
+        };
+        let monitors = monitors_loader.load_from_store(store).await?;
+        self.monitors_to_cfdloads(monitors)
+    }
+    pub fn monitors_to_cfdloads(self, mut monitors: Monitors) -> Result<CfdLoads<S>> {
+        // /// Returns a [CfdLoads] object
+        // pub fn build(self) -> Result<CfdLoads<S>> {
+        //println!("Loading the CFD loads from {} ...", self.cfd_case);
+        //let now = Instant::now();
+        // let mut monitors = if let Some(time_range) = self.time_range {
+        //     Monitors::loader::<String, 2021>(self.cfd_case)
+        //         .start_time(time_range.0)
+        //         .end_time(time_range.1)
+        //         .load()?
+        // } else {
+        //     Monitors::loader::<String, 2021>(self.cfd_case).load()?
+        // };
 
         let fm = monitors.forces_and_moments.remove("Cabs").unwrap();
         monitors
