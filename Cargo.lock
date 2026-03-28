@@ -4174,6 +4174,7 @@ version = "1.0.0"
 dependencies = [
  "anyhow",
  "bincode 2.0.1",
+ "clap 4.6.0",
  "faer",
  "gmt-fem",
  "gmt-fem-code-builder 2.3.8",

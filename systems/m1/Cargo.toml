@@ -24,10 +24,12 @@ bincode = { workspace = true, optional = true }
 thiserror.workspace = true
 faer = { workspace = true, optional = true }
 gmt_dos-clients_optics-state.workspace = true
+clap = { version = "4.6.0", features = ["derive"], optional = true }
 
 [features]
 serde = ["bincode/serde", "nalgebra/serde-serialize"]
 faer = ["dep:faer"]
+clap = ["dep:clap"]
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [

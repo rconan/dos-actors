@@ -11,7 +11,7 @@ faer-ext.workspace = true
 faer.workspace = true
 gmt-fem.workspace = true
 gmt_dos-clients_fem.workspace = true
-gmt_dos-systems_m1 = {workspace = true, features = ["faer"]}
+gmt_dos-systems_m1 = { workspace = true, features = ["faer", "clap"] }
 serde-pickle = "1.2.0"
 gmt_dos-clients_m1-ctrl.workspace = true
 interface.workspace = true
@@ -19,5 +19,5 @@ gmt_dos-clients_io.workspace = true
 serde = { workspace = true, features = ["derive"] }
 
 [[bin]]
-name="m1-modes"
+name = "m1-modes"
 path = "src/main.rs"

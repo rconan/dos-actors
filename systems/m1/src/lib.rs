@@ -145,10 +145,11 @@ actorscript!(
 
 #[cfg(fem)]
 mod fem;
-use std::ops::Deref;
+use std::{env, ops::Deref, path::Path};
 
 #[cfg(fem)]
 pub use fem::*;
+use serde::Deserialize;
 
 /// M1 segment singular modes (aka bending modes)
 #[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
@@ -236,19 +237,67 @@ impl SegmentSingularModes {
     }
 }
 
+/// Null space of M1 singular modes
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+pub enum NullSpace {
+    /// M1 rigid body motions
+    Rbm,
+    /// M1 rigid body & hardpoints motions
+    RbmHp,
+}
+fn expected_fem<'de, D>(d: D) -> Result<String, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s = String::deserialize(d)?;
+    let Ok(fem_id) = env::var("FEM_REPO").map(|v| {
+        Path::new(&v)
+            .file_name()
+            .expect("invalid name for FEM folder")
+            .to_string_lossy()
+            .into_owned()
+    }) else {
+        return Ok(s);
+    };
+    if s != fem_id {
+        return Err(serde::de::Error::custom(format!(
+            r#"SingularModes FEM ID mismatch: expected "{fem_id}", found "{s}""#
+        )));
+    }
+    Ok(s)
+}
 /// M1 singular modes (aka bending modes)
-#[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
-pub struct SingularModes(Vec<SegmentSingularModes>);
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct SingularModes {
+    #[serde(deserialize_with = "expected_fem")]
+    fem_id: String,
+    modes: Vec<SegmentSingularModes>,
+    null_space: NullSpace,
+}
 impl Deref for SingularModes {
     type Target = [SegmentSingularModes];
 
     fn deref(&self) -> &Self::Target {
-        self.0.as_slice()
+        self.modes.as_slice()
     }
 }
 impl SingularModes {
+    pub fn new() -> Result<Self, env::VarError> {
+        Ok(Self {
+            fem_id: env::var("FEM_REPO").map(|v| {
+                Path::new(&v)
+                    .file_name()
+                    .expect("invalid name for FEM folder")
+                    .to_string_lossy()
+                    .into_owned()
+            })?,
+            modes: Vec::new(),
+            null_space: NullSpace::Rbm,
+        })
+    }
     pub fn push(&mut self, segment: SegmentSingularModes) {
-        self.0.push(segment);
+        self.modes.push(segment);
     }
     pub fn modes_into_mat(&self, n_mode: Option<usize>) -> Vec<nalgebra::DMatrix<f64>> {
         self.iter()

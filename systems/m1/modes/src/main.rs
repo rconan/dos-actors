@@ -1,10 +1,10 @@
 use std::{fs::File, time::Instant};
 
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 use faer::Mat;
 use faer_ext::IntoFaer;
 use gmt_dos_clients_fem::{Model, Switch, fem_io};
-use gmt_dos_systems_m1::{SegmentSingularModes, SingularModes};
+use gmt_dos_systems_m1::{NullSpace, SegmentSingularModes, SingularModes};
 use gmt_fem::FEM;
 
 /// M1 singular modes (a.k.a. bending modes) computation
@@ -24,13 +24,13 @@ struct Args {
     #[arg(long)]
     dry_run: bool,
 }
-#[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Eq)]
-enum NullSpace {
-    /// M1 rigid body motions
-    Rbm,
-    /// M1 rigid body & hardpoints motions
-    RbmHp,
-}
+// #[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Eq)]
+// enum NullSpace {
+//     /// M1 rigid body motions
+//     Rbm,
+//     /// M1 rigid body & hardpoints motions
+//     RbmHp,
+// }
 // impl std::fmt::Display for NullSpace {
 //     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 //         self.to_possible_value()
@@ -64,11 +64,11 @@ fn main() -> anyhow::Result<()> {
     // let gain_rbm = gain.subrows(gain.nrows() - NR, NR);
     // println!("RBM gain matrix {:?}", gain_rbm.shape());
 
-    let mut m1_sms = SingularModes::default();
+    let mut m1_sms = SingularModes::new()?;
 
     for sid in 1..=7u8 {
         println!("Segment #{sid}");
-        let i = (sid - 1) as usize;
+        // let i = (sid - 1) as usize;
 
         let inputs = vec![format!("M1_actuators_segment_{sid}")];
         let outputs = vec![format!("M1_segment_{sid}_axial_d")];
@@ -118,22 +118,23 @@ fn main() -> anyhow::Result<()> {
         let gain_rbm = gain_rbm.view_range(.., ..).into_faer();
 
         let i = (sid - 1) as usize;
-        fem.switch_inputs(Switch::Off, None)
-            .switch_outputs(Switch::Off, None);
-        // M1 actuator forces to M1 hardpoints displacement gain
-        let gain_hp = fem
-            .switch_inputs_by_name(inputs.clone(), Switch::On)
-            .and_then(|fem| fem.switch_outputs_by_name(vec!["OSS_Hardpoint_D"], Switch::On))
-            .map(|fem| fem.reduced_static_gain().unwrap())?;
-        let rows = i * 12..(i + 1) * 12;
-        let gain_hp = gain_hp.view_range(rows, ..).into_faer();
-        let gain_hp = gain_hp.subrows(6, 6) - gain_hp.subrows(0, 6);
+        // fem.switch_inputs(Switch::Off, None)
+        //     .switch_outputs(Switch::Off, None);
+        // // M1 actuator forces to M1 hardpoints displacement gain
+        // let gain_hp = fem
+        //     .switch_inputs_by_name(inputs.clone(), Switch::On)
+        //     .and_then(|fem| fem.switch_outputs_by_name(vec!["OSS_Hardpoint_D"], Switch::On))
+        //     .map(|fem| fem.reduced_static_gain().unwrap())?;
+        // let rows = i * 12..(i + 1) * 12;
+        // let gain_hp = gain_hp.view_range(rows, ..).into_faer();
+        // let gain_hp = gain_hp.subrows(6, 6) - gain_hp.subrows(0, 6);
 
         let gain_r = match args.null_space {
             NullSpace::Rbm => gain_rbm.subrows(i * 6, 6).to_owned(),
             NullSpace::RbmHp => {
                 fem.switch_inputs(Switch::Off, None)
                     .switch_outputs(Switch::Off, None);
+                // M1 actuator forces to M1 hardpoints displacement gain
                 let gain_hp = fem
                     .switch_inputs_by_name(inputs.clone(), Switch::On)
                     .and_then(|fem| fem.switch_outputs_by_name(vec!["OSS_Hardpoint_D"], Switch::On))
