@@ -26,6 +26,7 @@ pub struct GridScope {
     scopes: Vec<NodeScope>,
     server_ip: String,
     client_address: String,
+    n_sample: Option<usize>,
 }
 impl GridScope {
     /// Creates a new grid layout for [Scope]s
@@ -37,7 +38,13 @@ impl GridScope {
             scopes: vec![],
             server_ip: env::var("SCOPE_SERVER_IP").unwrap_or(crate::SERVER_IP.into()),
             client_address: crate::CLIENT_ADDRESS.into(),
+            n_sample: None,
         }
+    }
+    /// Sets the number of samples to be displayed
+    pub fn n_sample(mut self, n_sample: usize) -> Self {
+        self.n_sample = Some(n_sample);
+        self
     }
     /// Sets the server IP address
     pub fn server_ip<S: Into<String>>(mut self, server_ip: S) -> Self {
@@ -96,6 +103,7 @@ impl GridScope {
     /// Display the scope
     pub fn show(mut self) {
         for node in self.scopes.iter_mut() {
+            node.scope.n_sample = self.n_sample.clone();
             let monitor = node.scope.monitor.take().unwrap();
             tokio::spawn(async move {
                 match monitor.join().await {
