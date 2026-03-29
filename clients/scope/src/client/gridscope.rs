@@ -24,7 +24,6 @@ struct NodeScope {
 pub struct GridScope {
     size: (usize, usize),
     scopes: Vec<NodeScope>,
-    plot_size: (f32, f32),
     server_ip: String,
     client_address: String,
 }
@@ -33,13 +32,9 @@ impl GridScope {
     ///
     /// `size` sets the number of rows and columns
     pub fn new(size: (usize, usize)) -> Self {
-        let (rows, cols) = size;
-        let width = MAX_WINDOW_SIZE.0.min(PLOT_SIZE.0 * cols as f32) / cols as f32;
-        let height = MAX_WINDOW_SIZE.1.min(PLOT_SIZE.1 * rows as f32) / rows as f32;
         Self {
             size,
             scopes: vec![],
-            plot_size: (width, height),
             server_ip: env::var("SCOPE_SERVER_IP").unwrap_or(crate::SERVER_IP.into()),
             client_address: crate::CLIENT_ADDRESS.into(),
         }
@@ -56,7 +51,8 @@ impl GridScope {
     }
     fn window_size(&self) -> (f32, f32) {
         let (rows, cols) = self.size;
-        let (width, height) = self.plot_size;
+        let width = MAX_WINDOW_SIZE.0.min(PLOT_SIZE.0 * cols as f32) / cols as f32;
+        let height = MAX_WINDOW_SIZE.1.min(PLOT_SIZE.1 * rows as f32) / rows as f32;
         (width * cols as f32, height * rows as f32)
     }
     /// Sets a [Scope] at position `(row,column)` in the grid layout
@@ -133,6 +129,12 @@ impl eframe::App for GridScope {
             let (rows, cols) = self.size;
             let style = ui.style_mut();
             style.spacing.item_spacing = egui::vec2(0.0, 0.0);
+
+            // Calculate plot sizes dynamically based on available space
+            let available_size = ui.available_size();
+            let plot_width = available_size.x / cols as f32;
+            let plot_height = available_size.y / rows as f32;
+
             for row in 0..rows {
                 ui.horizontal(|ui| {
                     for col in 0..cols {
@@ -142,8 +144,8 @@ impl eframe::App for GridScope {
                             .map(|node| {
                                 let plot = Plot::new("Scope")
                                     .legend(Default::default())
-                                    .width(self.plot_size.0)
-                                    .height(self.plot_size.1)
+                                    .width(plot_width)
+                                    .height(plot_height)
                                     .set_margin_fraction(egui::Vec2::from((0.05, 0.05)));
                                 plot.show(ui, |plot_ui: &mut PlotUi| {
                                     for signal in &mut node.scope.signals {
