@@ -150,11 +150,12 @@ impl eframe::App for GridScope {
                             .iter_mut()
                             .find(|node| node.indices == (row, col))
                             .map(|node| {
-                                let plot = Plot::new("Scope")
+                                let plot = Plot::new(format!("Scope_{}_{}", row, col))
                                     .legend(Default::default())
                                     .width(plot_width)
                                     .height(plot_height)
-                                    .set_margin_fraction(egui::Vec2::from((0.05, 0.05)));
+                                    .set_margin_fraction(egui::Vec2::from((0.05, 0.05)))
+                                    .link_axis("x_axis_link", [true, false]);
                                 plot.show(ui, |plot_ui: &mut PlotUi| {
                                     for signal in &mut node.scope.signals {
                                         signal.plot_ui(plot_ui, node.scope.n_sample)
