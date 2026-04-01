@@ -291,7 +291,7 @@ impl TryExpand for Model {
                     // .flowchart()
                     // let #model = ::gmt_dos_actors::ramework::model::FlowChart(#model);
                     #[allow(unused_variables)]
-                    let mut #model = ::gmt_dos_actors::prelude::FlowChart::flowchart_open(#model)#state;
+                    let mut #model = ::gmt_dos_actors::prelude::FlowChart::flowchart_open(#model).#state;
                 }
             },
         )
