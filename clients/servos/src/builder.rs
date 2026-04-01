@@ -57,8 +57,8 @@ impl<const M1_RATE: usize, const M2_RATE: usize> ServosBuilder<M1_RATE, M2_RATE>
         self
     }
     /// Sets the [WindLoads] builder
-    pub fn wind_loads(mut self, wind_loads: WindLoads) -> Self {
-        self.wind_loads = Some(wind_loads);
+    pub fn wind_loads(mut self, wind_loads: impl Into<WindLoads>) -> Self {
+        self.wind_loads = Some(wind_loads.into());
         self
     }
     /// Sets the [EdgeSensors] builder

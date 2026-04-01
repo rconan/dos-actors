@@ -54,6 +54,12 @@ impl Default for WindLoads {
     }
 }
 
+impl From<CfdLoads<FOH>> for WindLoads {
+    fn from(value: CfdLoads<FOH>) -> Self {
+        Self::new(value)
+    }
+}
+
 impl WindLoads {
     /// Creates a new [WindLoads] builder
     /// ```no_run
