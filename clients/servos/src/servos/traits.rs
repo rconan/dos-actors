@@ -27,6 +27,11 @@ impl<'a, const M1_RATE: usize, const M2_RATE: usize> IntoIterator
                 .as_ref()
                 .map(|telemetry| Box::new(telemetry as &dyn Check)),
         )
+        .chain(
+            self.wind_loads
+                .as_ref()
+                .map(|wind_loads| Box::new(wind_loads as &dyn Check)),
+        )
         .collect::<Vec<_>>()
         .into_iter()
     }
@@ -52,6 +57,11 @@ impl<const M1_RATE: usize, const M2_RATE: usize> IntoIterator
             self.telemetry
                 .take()
                 .map(|telemetry| Box::new(telemetry) as Box<dyn Task>),
+        )
+        .chain(
+            self.wind_loads
+                .take()
+                .map(|wind_loads| Box::new(wind_loads) as Box<dyn Task>),
         )
         .collect::<Vec<_>>()
         .into_iter()

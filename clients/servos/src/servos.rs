@@ -16,12 +16,16 @@ use gmt_dos_clients_io::gmt_m2::asm::{
 #[cfg(topend = "FSM")]
 use gmt_dos_clients_io::gmt_m2::fsm::{M2FSMPiezoForces, M2FSMPiezoNodes};
 use gmt_dos_clients_io::{
+    cfd_wind_loads::{CFDM1WindLoads, CFDM2WindLoads, CFDMountWindLoads},
     gmt_m1::assembly,
     gmt_m2::{M2PositionerForces, M2PositionerNodes},
     mount::{MountEncoders, MountTorques},
 };
 use gmt_dos_clients_m2_ctrl::Positioners;
 use gmt_dos_clients_mount::Mount;
+use gmt_dos_clients_windloads::system::{
+    M1 as WindOnM1, M2 as WindOnM2, Mount as WindOnMount, SigmoidCfdLoads,
+};
 use gmt_dos_systems_m1::assembly::M1;
 use gmt_dos_systems_m2::M2;
 
@@ -42,6 +46,7 @@ pub struct GmtServoMechanisms<const M1_RATE: usize, const M2_RATE: usize = 1> {
     pub(crate) m2: Sys<M2<1>>,
     #[serde(skip)]
     pub(crate) telemetry: Option<Terminator<Arrow>>,
+    pub(crate) wind_loads: Option<Sys<SigmoidCfdLoads>>,
 }
 
 impl<const M1_RATE: usize, const M2_RATE: usize> System for GmtServoMechanisms<M1_RATE, M2_RATE> {
@@ -179,6 +184,18 @@ impl<const M1_RATE: usize, const M2_RATE: usize> System for GmtServoMechanisms<M
             }
         }
 
+        if let Some(wind_loads) = self.wind_loads.as_mut() {
+            <Sys<SigmoidCfdLoads> as AddActorOutput<'_, WindOnMount, 1, 1>>::add_output(wind_loads)
+                .build::<CFDMountWindLoads>()
+                .into_input(&mut self.fem)?;
+            <Sys<SigmoidCfdLoads> as AddActorOutput<'_, WindOnM1, 1, 1>>::add_output(wind_loads)
+                .build::<CFDM1WindLoads>()
+                .into_input(&mut self.fem)?;
+            <Sys<SigmoidCfdLoads> as AddActorOutput<'_, WindOnM2, 1, 1>>::add_output(wind_loads)
+                .build::<CFDM2WindLoads>()
+                .into_input(&mut self.fem)?;
+        }
+
         Ok(self)
     }
     fn plain(&self) -> gmt_dos_actors::actor::PlainActor {
@@ -187,12 +204,16 @@ impl<const M1_RATE: usize, const M2_RATE: usize> System for GmtServoMechanisms<M
                 PlainActor::from(&self.fem)
                     .filter_inputs_by_name(&[
                         "MountTorques",
+                        "M1HardpointsMotion",
                         "M1HardpointsForces",
                         "M1ActuatorAppliedForces",
                         "M2PositionerForces",
                         "M2ASMVoiceCoilsForces",
                         "M2FSMPiezoForces",
                         "M2ASMFluidDampingForces",
+                        "CFDMountWindLoads",
+                        "CFDM1WindLoads",
+                        "CFDM2WindLoads",
                     ])
                     .zip(PlainActor::from(&self.mount).filter_inputs_by_name(&["MountEncoders"]))
                     .zip(
@@ -221,6 +242,7 @@ impl<const M1_RATE: usize, const M2_RATE: usize> System for GmtServoMechanisms<M
                     .filter_outputs_by_name(&[
                         "MountEncoders",
                         "M1HardpointsMotion",
+                        "M1HardpointsForces",
                         "M2PositionerNodes",
                         "M2FSMPiezoNodes",
                         "M2ASMVoiceCoilsMotion",

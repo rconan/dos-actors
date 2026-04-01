@@ -1,4 +1,5 @@
 use gmt_dos_clients_fem::{DiscreteStateSpace, StateSpaceError, solvers::ExponentialMatrix};
+use gmt_dos_clients_windloads::{CfdLoads, FOH};
 
 use super::Include;
 
@@ -39,6 +40,7 @@ pub struct WindLoads {
     mount: WindLoaded,
     m1: WindLoaded,
     m2: WindLoaded,
+    pub(crate) cfd_loads: Option<CfdLoads<FOH>>,
 }
 
 impl Default for WindLoads {
@@ -47,6 +49,7 @@ impl Default for WindLoads {
             mount: WindLoaded::Mount,
             m1: WindLoaded::M1,
             m2: WindLoaded::M2,
+            cfd_loads: None,
         }
     }
 }
@@ -65,8 +68,11 @@ impl WindLoads {
     ///         .build()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn new() -> Self {
-        Default::default()
+    pub fn new(cfd_loads: CfdLoads<FOH>) -> Self {
+        Self {
+            cfd_loads: Some(cfd_loads),
+            ..Default::default()
+        }
     }
     /// Disable the mount wind loads
     /// ```no_run

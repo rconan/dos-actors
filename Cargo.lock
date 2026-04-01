@@ -4077,6 +4077,7 @@ dependencies = [
  "gmt_dos-clients_mount",
  "gmt_dos-clients_scope",
  "gmt_dos-clients_scope-client",
+ "gmt_dos-clients_windloads",
  "gmt_dos-systems_m1",
  "gmt_dos-systems_m2",
  "log",

@@ -1,4 +1,8 @@
-use gmt_dos_actors::{ArcMutex, prelude::Actor, system::SystemError};
+use gmt_dos_actors::{
+    ArcMutex,
+    prelude::Actor,
+    system::{Sys, SystemError},
+};
 use gmt_dos_clients_arrow::Arrow;
 use gmt_dos_clients_fem::{DiscreteModalSolver, StateSpaceError, solvers::ExponentialMatrix};
 #[cfg(topend = "FSM")]
@@ -9,6 +13,7 @@ use gmt_dos_clients_io::gmt_fem::{
 };
 use gmt_dos_clients_m2_ctrl::{Positioners, PositionersError};
 use gmt_dos_clients_mount::Mount;
+use gmt_dos_clients_windloads::system::SigmoidCfdLoads;
 use gmt_dos_systems_m2::M2Error;
 
 use crate::servos::GmtServoMechanisms;
@@ -104,6 +109,14 @@ impl<'a, const M1_RATE: usize, const M2_RATE: usize> TryFrom<ServosBuilder<M1_RA
         log::info!("converting ServosBuilder into GmtServoMechanism");
         let mut fem = builder.fem;
 
+        let wind_loads =
+            if let Some(cfd_loads) = builder.wind_loads.as_mut().and_then(|w| w.cfd_loads.take()) {
+                let cfd_loads = Sys::<SigmoidCfdLoads>::try_from(cfd_loads)?;
+                Some(cfd_loads)
+            } else {
+                None
+            };
+
         #[cfg(topend = "ASM")]
         if let Some(asms_servo) = builder.asms_servo.as_mut() {
             asms_servo.build(&fem)?;
@@ -197,6 +210,7 @@ impl<'a, const M1_RATE: usize, const M2_RATE: usize> TryFrom<ServosBuilder<M1_RA
                 )
                     .into(),
             )),
+            wind_loads,
         })
     }
 }
