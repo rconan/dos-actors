@@ -287,11 +287,11 @@ impl TryExpand for Model {
                 quote! {
                     #code
                     // MODEL
-                    #[allow(unused_variables)]
                     let #model = ::gmt_dos_actors::prelude::model!(#(#actors),*).name(#name);
                     // .flowchart()
                     // let #model = ::gmt_dos_actors::ramework::model::FlowChart(#model);
-                    let #model = ::gmt_dos_actors::prelude::FlowChart::flowchart_open(#model).#state;
+                    #[allow(unused_variables)]
+                    let mut #model = ::gmt_dos_actors::prelude::FlowChart::flowchart_open(#model)#state;
                 }
             },
         )
