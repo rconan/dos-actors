@@ -62,7 +62,7 @@ async fn main() -> anyhow::Result<()> {
                     sim_sampling_frequency as f64,
                     fem.unwrap(),
                 )
-                .wind_loads(WindLoads::new())
+                .wind_loads(WindLoads::default())
                 // .asms_servo(AsmsServo::new().reference_body(ReferenceBody::new()))
             },
         )?;

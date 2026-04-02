@@ -49,11 +49,12 @@ async fn main() -> Result<()> {
     env_logger::builder().init(); //.format_timestamp(None).init();
 
     let data_repo = Path::new(&env::var("CARGO_MANIFEST_DIR").unwrap()).join("data");
-    env::set_var("DATA_REPO", &data_repo);
-    if env::var("EDGE_SENSORS_DATA").is_err() {
-        env::set_var("EDGE_SENSORS_DATA", &data_repo);
-    };
-
+    unsafe {
+        env::set_var("DATA_REPO", &data_repo);
+        if env::var("EDGE_SENSORS_DATA").is_err() {
+            env::set_var("EDGE_SENSORS_DATA", &data_repo);
+        };
+    }
     let sim_sampling_frequency = 8000;
     let m1_freq = 100; // Hz
     assert!(m1_freq == sim_sampling_frequency / ACTUATOR_RATE);
@@ -81,7 +82,7 @@ async fn main() -> Result<()> {
                 sim_sampling_frequency as f64,
                 fem.unwrap_or_else(|| FEM::from_env().unwrap()),
             )
-            .wind_loads(WindLoads::new())
+            .wind_loads(WindLoads::default())
             .asms_servo(AsmsServo::new().reference_body(asms_servo::ReferenceBody::new()))
             .edge_sensors(EdgeSensors::both().m1_with(es_2_m1_rbm))
         })?;

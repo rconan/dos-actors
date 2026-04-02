@@ -30,7 +30,7 @@ let fem = FEM::from_env()?;
 
 let gmt_servos =
     GmtServoMechanisms::<ACTUATOR_RATE, 1>::new(frequency, fem)
-        .wind_loads(WindLoads::new())
+        .wind_loads(WindLoads::default())
         .build()?;
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
@@ -70,7 +70,7 @@ impl WindLoads {
     /// # let fem = FEM::from_env()?;
     /// let gmt_servos =
     ///     GmtServoMechanisms::<ACTUATOR_RATE, 1>::new(frequency, fem)
-    ///         .wind_loads(WindLoads::new())
+    ///         .wind_loads(WindLoads::default())
     ///         .build()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
@@ -89,7 +89,7 @@ impl WindLoads {
     /// # let fem = FEM::from_env()?;
     /// let gmt_servos =
     ///     GmtServoMechanisms::<ACTUATOR_RATE, 1>::new(frequency, fem)
-    ///         .wind_loads(WindLoads::new().no_mount())
+    ///         .wind_loads(WindLoads::default().no_mount())
     ///         .build()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
@@ -106,7 +106,7 @@ impl WindLoads {
     /// # let fem = FEM::from_env()?;
     /// let gmt_servos =
     ///     GmtServoMechanisms::<ACTUATOR_RATE, 1>::new(frequency, fem)
-    ///         .wind_loads(WindLoads::new().no_m1())
+    ///         .wind_loads(WindLoads::default().no_m1())
     ///         .build()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
@@ -123,7 +123,7 @@ impl WindLoads {
     /// # let fem = FEM::from_env()?;
     /// let gmt_servos =
     ///     GmtServoMechanisms::<ACTUATOR_RATE, 1>::new(frequency, fem)
-    ///         .wind_loads(WindLoads::new().no_m2())
+    ///         .wind_loads(WindLoads::default().no_m2())
     ///         .build()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
