@@ -86,7 +86,13 @@ impl DomeSeeingBuilder {
                     .chain((0..data.len()).skip(1).rev().skip(1))
                     .cycle(),
             ) as Counter,
-            (None, false) => Box::new(0..data.len()) as Counter,
+            (None, false) => {
+                if data.len() > 1 {
+                    Box::new(0..data.len()) as Counter
+                } else {
+                    Box::new([0usize, 0].into_iter()) as Counter
+                }
+            }
             (Some(take), true) => Box::new(
                 (0..data.len())
                     .chain((0..data.len()).skip(1).rev().skip(1))
