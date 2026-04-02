@@ -20,10 +20,10 @@ pub struct OpticalState {
 impl TimerMarker for OpticalState {}
 impl OpticalState {
     /// Creates a new [OpticalState] from M1 and M2 [MirrorState]
-    pub fn new(m1: MirrorState, m2: MirrorState) -> Self {
+    pub fn new(m1: impl Into<MirrorState>, m2: impl Into<MirrorState>) -> Self {
         Self {
-            m1: Some(m1),
-            m2: Some(m2),
+            m1: Some(m1.into()),
+            m2: Some(m2.into()),
         }
     }
     /// Sets the optical state zero point
@@ -52,16 +52,16 @@ impl OpticalState {
         }
     }
     /// Creates a new [OpticalState] from M1 [MirrorState]
-    pub fn m1(state: MirrorState) -> Self {
+    pub fn m1(state: impl Into<MirrorState>) -> Self {
         Self {
-            m1: Some(state),
+            m1: Some(state.into()),
             ..Default::default()
         }
     }
     /// Creates a new [OpticalState] from M2 [MirrorState]
-    pub fn m2(state: MirrorState) -> Self {
+    pub fn m2(state: impl Into<MirrorState>) -> Self {
         Self {
-            m2: Some(state),
+            m2: Some(state.into()),
             ..Default::default()
         }
     }
@@ -224,5 +224,18 @@ mod tests {
         );
         <_ as Read<OpticsState>>::read(&mut state, Data::new(state1));
         dbg!(&state);
+    }
+
+    #[test]
+    fn interface() {
+        let m1 = MirrorState::default();
+        let m2 = MirrorState::default()
+            .set_segment_state(1, SegmentState::rbms([1e-6, 0., 0., 0., 0., 0.]));
+        let mut optical_state = OpticalState::m1(MirrorState::default().zeros_modes(3))
+            .set_zero_point(OpticalState::new(&m1, &m2));
+
+        <_ as Read<OpticsState>>::read(&mut optical_state, Data::new(Default::default()));
+        let reference = OpticalState::m2(&m2).set_zero_point(OpticalState::m2(m2));
+        assert_eq!(reference, optical_state);
     }
 }

@@ -33,6 +33,11 @@ impl FromIterator<Option<SegmentState>> for MirrorState {
         }
     }
 }
+impl From<&MirrorState> for MirrorState {
+    fn from(value: &MirrorState) -> Self {
+        value.clone()
+    }
+}
 impl MirrorState {
     /// Creates a new [MirrorState] from rigid body motion and segment figure modes
     pub fn new<U, V, R, M>(rbms: R, modes: M) -> Self
@@ -142,10 +147,16 @@ impl MirrorState {
     }
     /// Gets the mirror state zero point
     pub fn get_zero_point(&self) -> Option<MirrorState> {
-        self.segment
+        let segment: Vec<_> = self
+            .segment
             .iter()
-            .map(|s| s.as_ref().map(|s| s.get_zero_point()))
-            .collect()
+            .map(|s| s.as_ref().and_then(|s| s.get_zero_point()))
+            .collect();
+        if segment.iter().all(|s| s.is_none()) {
+            None
+        } else {
+            Some(MirrorState { segment })
+        }
     }
 }
 
