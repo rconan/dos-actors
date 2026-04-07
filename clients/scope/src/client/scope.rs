@@ -33,7 +33,7 @@ where
     pub(super) n_sample: Option<usize>,
     min_recvr: Option<CompactRecvr>,
     name: String,
-    rx: Option<Receiver<Vec<String>>>,
+    pub(crate) rx: Option<Receiver<Vec<String>>>,
     kind: PhantomData<K>,
 }
 impl<K: ScopeKind> XScope<K> {

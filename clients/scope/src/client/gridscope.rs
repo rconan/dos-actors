@@ -1,9 +1,13 @@
-use std::env;
+use std::{
+    env,
+    sync::{Arc, OnceLock},
+};
 
 use super::{ClientError, Scope};
 use eframe::egui;
 use egui_plot::{Plot, PlotUi};
 use interface::UniqueIdentifier;
+use tokio::sync::broadcast;
 
 const PLOT_SIZE: (f32, f32) = (600f32, 500f32);
 const MAX_WINDOW_SIZE: (f32, f32) = (1200f32, 1000f32);
@@ -27,6 +31,7 @@ pub struct GridScope {
     server_ip: String,
     client_address: String,
     n_sample: Option<usize>,
+    egui_ctx: Arc<OnceLock<egui::Context>>,
 }
 impl GridScope {
     /// Creates a new grid layout for [Scope]s
@@ -39,6 +44,7 @@ impl GridScope {
             server_ip: env::var("SCOPE_SERVER_IP").unwrap_or(crate::SERVER_IP.into()),
             client_address: crate::CLIENT_ADDRESS.into(),
             n_sample: None,
+            egui_ctx: Arc::new(OnceLock::new()),
         }
     }
     /// Sets the number of samples to be displayed
@@ -100,6 +106,54 @@ impl GridScope {
         }); */
         Ok(self)
     }
+    pub fn pin_with_legends<U>(
+        mut self,
+        indices: (usize, usize),
+        items: &[String],
+        rx: broadcast::Receiver<Vec<String>>,
+    ) -> Result<Self>
+    where
+        U: UniqueIdentifier + 'static,
+    {
+        let (rows, cols) = self.size;
+        let (row, col) = indices;
+        assert!(
+            row < rows,
+            "The row index in the scopes grid must be less than {}",
+            rows
+        );
+        assert!(
+            col < cols,
+            "The columm index in the scopes grid must be less than {}",
+            cols
+        );
+        if let Some(node) = self.scopes.iter_mut().find(|node| node.indices == indices) {
+            node.scope.as_mut_signal::<U>()?;
+        } else {
+            self.scopes.push(NodeScope {
+                indices,
+                scope: Scope::new()
+                    .server_ip(&self.server_ip)
+                    .client_address(&self.client_address)
+                    .rx(rx)
+                    .signal_with_legends::<U>(items.to_vec())?,
+            });
+        }
+
+        /*         self.scopes.push(NodeScope {
+            indices,
+            scope: Scope::new()
+                .server_ip(&self.server_ip)
+                .client_address(&self.client_address)
+                .signal::<U>()?,
+        }); */
+        Ok(self)
+    }
+    /// Returns a handle to the egui context, set once the window is created.
+    /// Callers can use it to call `ctx.request_repaint()` from other threads.
+    pub fn egui_ctx(&self) -> Arc<OnceLock<egui::Context>> {
+        self.egui_ctx.clone()
+    }
     /// Display the scope
     pub fn show(mut self) {
         for node in self.scopes.iter_mut() {
@@ -133,6 +187,7 @@ impl GridScope {
 
 impl eframe::App for GridScope {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let _ = self.egui_ctx.set(ctx.clone());
         egui::CentralPanel::default().show(ctx, |ui| {
             let (rows, cols) = self.size;
             let style = ui.style_mut();
@@ -166,5 +221,14 @@ impl eframe::App for GridScope {
                 });
             }
         });
+        for NodeScope { scope, .. } in &mut self.scopes {
+            if let Some(rx) = scope.rx.as_mut()
+                && let Ok(items) = rx.try_recv()
+            {
+                for signal in &mut scope.signals {
+                    signal.set_hidden(items.clone());
+                }
+            }
+        }
     }
 }
