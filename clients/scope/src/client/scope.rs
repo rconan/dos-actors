@@ -4,7 +4,7 @@ use eframe::egui;
 use egui_plot::{Corner, Legend, Plot, PlotUi};
 use gmt_dos_clients_transceiver::{CompactRecvr, Monitor, Transceiver, TransceiverError};
 use interface::UniqueIdentifier;
-use tokio::task::JoinError;
+use tokio::{sync::broadcast::Receiver, task::JoinError};
 use tracing::debug;
 
 mod signal;
@@ -33,6 +33,7 @@ where
     pub(super) n_sample: Option<usize>,
     min_recvr: Option<CompactRecvr>,
     name: String,
+    rx: Option<Receiver<Vec<String>>>,
     kind: PhantomData<K>,
 }
 impl<K: ScopeKind> XScope<K> {
@@ -48,8 +49,13 @@ impl<K: ScopeKind> XScope<K> {
             n_sample: None,
             min_recvr: None,
             name: String::from("GMT DOS Actors Scope"),
+            rx: None,
             kind: PhantomData,
         }
+    }
+    pub fn rx(mut self, rx: Receiver<Vec<String>>) -> Self {
+        self.rx = Some(rx);
+        self
     }
     /// Sets the number of samples to be displayed
     pub fn n_sample(mut self, n_sample: usize) -> Self {
@@ -89,6 +95,25 @@ impl<K: ScopeKind> XScope<K> {
         .run(self.monitor.as_mut().unwrap())
         .take_channel_receiver();
         self.signals.push(Box::new(Signal::new(rx)));
+        Ok(self)
+    }
+    pub fn signal_with_legends<U>(mut self, items: Vec<String>) -> Result<Self>
+    where
+        U: UniqueIdentifier + 'static,
+    {
+        let rx = if let Some(min_recvr) = self.min_recvr.as_ref() {
+            min_recvr.spawn(&self.server_ip)?
+        } else {
+            let recvr = Transceiver::<crate::payload::ScopeData<U>>::receiver(
+                &self.server_ip,
+                &self.client_address,
+            )?;
+            self.min_recvr = Some(CompactRecvr::from(&recvr));
+            recvr
+        }
+        .run(self.monitor.as_mut().unwrap())
+        .take_channel_receiver();
+        self.signals.push(Box::new(Signal::new(rx).legends(items)));
         Ok(self)
     }
     pub fn as_mut_signal<U>(&mut self) -> Result<&mut Self>
@@ -160,8 +185,11 @@ pub type Scope = XScope<PlotScope>;
 
 impl eframe::App for Scope {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let plot_id = egui::Id::new("Scope");
         egui::CentralPanel::default().show(ctx, |ui| {
-            let plot = Plot::new("Scope").legend(Legend::default().position(Corner::LeftTop));
+            let plot = Plot::new("Scope")
+                .id(plot_id)
+                .legend(Legend::default().position(Corner::LeftTop));
             plot.show(ui, |plot_ui: &mut PlotUi| {
                 for signal in &mut self.signals {
                     // plot_ui.line(signal.line());
@@ -169,6 +197,14 @@ impl eframe::App for Scope {
                 }
             });
         });
+        if let Some(rx) = self.rx.as_mut()
+            && let Ok(items) = rx.try_recv()
+        {
+            for signal in &mut self.signals {
+                signal.set_hidden(items.clone());
+            }
+            ctx.request_repaint();
+        }
     }
 }
 

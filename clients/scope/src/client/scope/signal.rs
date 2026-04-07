@@ -23,6 +23,8 @@ where
 {
     rx: Option<flume::Receiver<D<U>>>,
     data: Arc<RwLock<Option<SignalData>>>,
+    legends: Option<Vec<String>>,
+    hidden: std::collections::HashSet<String>,
 }
 impl<U> Signal<U>
 where
@@ -32,7 +34,13 @@ where
         Self {
             rx,
             data: Arc::new(RwLock::new(None)),
+            legends: None,
+            hidden: Default::default(),
         }
+    }
+    pub fn legends(mut self, items: Vec<String>) -> Self {
+        self.legends = Some(items);
+        self
     }
 }
 
@@ -40,6 +48,7 @@ pub(crate) trait SignalProcessing {
     fn run(&mut self, ctx: egui::Context);
     fn plot_ui(&self, ui: &mut PlotUi, n_sample: Option<usize>);
     fn plot_stats_ui(&self, ctx: &egui::Context);
+    fn set_hidden(&mut self, items: Vec<String>);
     // fn minmax(&self) -> Option<(f64, f64)>;
 }
 
@@ -103,17 +112,34 @@ where
                     });
                 }
                 SignalData::Signals(signals) => {
-                    signals.iter().enumerate().for_each(|(i, signal)| {
-                        if let SignalData::Signal { tag, points, .. } = signal {
-                            let line = Line::new(match n_sample {
-                                Some(n_sample) if n_sample > points.len() => points.to_vec(),
-                                Some(n_sample) => points[points.len() - n_sample..].to_vec(),
-                                None => points.clone(),
-                            })
-                            .name(format!("{tag} #{i}"));
-                            ui.line(line);
-                        }
-                    })
+                    if let Some(items) = self.legends.as_ref() {
+                        signals.iter().zip(items).for_each(|(signal, item)| {
+                            if self.hidden.contains(item) {
+                                return;
+                            }
+                            if let SignalData::Signal { tag: _, points, .. } = signal {
+                                let line = Line::new(match n_sample {
+                                    Some(n_sample) if n_sample > points.len() => points.to_vec(),
+                                    Some(n_sample) => points[points.len() - n_sample..].to_vec(),
+                                    None => points.clone(),
+                                })
+                                .name(item);
+                                ui.line(line);
+                            }
+                        })
+                    } else {
+                        signals.iter().enumerate().for_each(|(i, signal)| {
+                            if let SignalData::Signal { tag, points, .. } = signal {
+                                let line = Line::new(match n_sample {
+                                    Some(n_sample) if n_sample > points.len() => points.to_vec(),
+                                    Some(n_sample) => points[points.len() - n_sample..].to_vec(),
+                                    None => points.clone(),
+                                })
+                                .name(format!("{tag} #{i}"));
+                                ui.line(line);
+                            }
+                        })
+                    }
                 }
             }
         }
@@ -167,6 +193,11 @@ where
             }
         }
     }
+
+    fn set_hidden(&mut self, items: Vec<String>) {
+        self.hidden = items.into_iter().collect();
+    }
+
     /*     fn minmax(&self) -> Option<(f64, f64)> {
         if let Some(data) = self.data.read().unwrap().as_ref() {
             match data {
