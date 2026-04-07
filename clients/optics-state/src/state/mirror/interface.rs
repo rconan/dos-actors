@@ -96,6 +96,42 @@ impl<const ID: u8> Write<gmt_m1::segment::RBM<ID>> for MirrorState {
         )
     }
 }
+impl Write<M2RigidBodyMotions> for MirrorState {
+    fn write(&mut self) -> Option<Data<M2RigidBodyMotions>> {
+        Some(
+            self.iter()
+                .flat_map(|segment| {
+                    segment.map_or_else(
+                        || vec![0f64; 6],
+                        |SegmentState { rbms, .. }| {
+                            rbms.as_ref()
+                                .map_or_else(|| vec![0f64; 6], |rbms| rbms.as_ref().to_vec())
+                        },
+                    )
+                })
+                .collect::<Vec<_>>()
+                .into(),
+        )
+    }
+}
+impl Write<M1RigidBodyMotions> for MirrorState {
+    fn write(&mut self) -> Option<Data<M1RigidBodyMotions>> {
+        Some(
+            self.iter()
+                .flat_map(|segment| {
+                    segment.map_or_else(
+                        || vec![0f64; 6],
+                        |SegmentState { rbms, .. }| {
+                            rbms.as_ref()
+                                .map_or_else(|| vec![0f64; 6], |rbms| rbms.as_ref().to_vec())
+                        },
+                    )
+                })
+                .collect::<Vec<_>>()
+                .into(),
+        )
+    }
+}
 
 impl<const ID: u8> Write<gmt_m1::segment::ModeShapes<ID>> for MirrorState {
     fn write(&mut self) -> Option<Data<gmt_m1::segment::ModeShapes<ID>>> {
