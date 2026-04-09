@@ -15,7 +15,7 @@ keywords.workspace = true
 interface.workspace = true
 log = { workspace = true }
 apache-arrow.workspace = true
-gmt_dos-actors.workspace = true
+# gmt_dos-actors.workspace = true
 matio-rs = { workspace = true, optional = true }
 parquet.workspace = true
 paste = "1.0.9"

@@ -102,10 +102,10 @@ pub fn sampling_frequency() -> usize {
     }
 }
 
-#[cfg(fem)]
-mod builder;
-#[cfg(fem)]
-pub use builder::Builder;
+// #[cfg(fem)]
+// mod builder;
+// #[cfg(fem)]
+// pub use builder::Builder;
 
 mod actors_interface;
 

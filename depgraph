@@ -1,0 +1,1 @@
+cargo depgraph --workspace-only  --build-deps --exclude demos,edge-sensors,fem-cuda-solver,book-examples,scopes,scope,mechanics,tms,servos-scopes,edge-sensors_scopes,dsl-demo,io,gmt_dos-clients_dcs | circo -Goverlap=compress -Tsvg > graph.svg
