@@ -13,7 +13,9 @@
 //!
 //! [MKS]: https://en.wikipedia.org/wiki/MKS_system_of_units
 
-use std::{any::type_name, f64::consts::PI, marker::PhantomData, ops::Mul};
+use std::{
+    any::type_name, error::Error, f64::consts::PI, fmt::Display, marker::PhantomData, ops::Mul,
+};
 
 use crate::{Size, Units};
 
@@ -33,7 +35,7 @@ macro_rules! converter {
         impl<T, U, C> Write<$t<U>> for C
         where
             T: Copy + TryFrom<f64> + Mul<T, Output = T>,
-            <T as TryFrom<f64>>::Error: std::fmt::Debug,
+            <T as TryFrom<f64>>::Error: std::error::Error+'static,
             U: UniqueIdentifier<DataType = Vec<T>>,
             C: Write<U> + Units,
         {
@@ -43,6 +45,20 @@ macro_rules! converter {
                     .map(|data| <$t<U> as UnitsConversion>::conversion(data).unwrap())
             }
         }
+        // impl<T, U, C> TryWrite<$t<U>> for C
+        // where
+        //     T: Copy + TryFrom<f64> + Mul<T, Output = T>,
+        //     <T as TryFrom<f64>>::Error: std::error::Error+'static,
+        //     U: UniqueIdentifier<DataType = Vec<T>>,
+        //     C: Write<U> + Units,
+        // {
+        //     type Error = UnitsConversionError;
+        //     fn try_write(&mut self) -> std::result::Result<Option<Data<$t<U>>>, <Self as TryWrite<$t<U>>>::Error>{
+        //         <C as Write<U>>::write(self)
+        //             .as_ref()
+        //             .map(|data| <$t<U> as UnitsConversion>::conversion(data)).transpose()
+        //     }
+        // }
         impl<U, C> Size<$t<U>> for C
         where
             U: UniqueIdentifier,
@@ -80,6 +96,18 @@ where
     type DataType = <U as UniqueIdentifier>::DataType;
 }
 
+#[derive(Debug)]
+pub struct UnitsConversionError {
+    msg: String,
+    error: Box<dyn Error>,
+}
+impl Display for UnitsConversionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}\ndue to {:?}", self.msg, self.error)
+    }
+}
+impl Error for UnitsConversionError {}
+
 /// Trait performing the units conversion
 pub trait UnitsConversion {
     /// Conversion scale factor
@@ -87,11 +115,11 @@ pub trait UnitsConversion {
     type ID: UniqueIdentifier;
 
     /// Converts data given in MKSA system
-    fn conversion<T>(data: &Data<Self::ID>) -> Result<Data<Self>, String>
+    fn conversion<T>(data: &Data<Self::ID>) -> Result<Data<Self>, UnitsConversionError>
     where
         Self::ID: UniqueIdentifier<DataType = Vec<T>>,
         T: Copy + TryFrom<f64> + Mul<T, Output = T>,
-        <T as TryFrom<f64>>::Error: std::fmt::Debug,
+        <T as TryFrom<f64>>::Error: std::error::Error + 'static,
         Self: UniqueIdentifier<DataType = Vec<T>> + Sized,
     {
         let msg = format!(
@@ -99,7 +127,10 @@ pub trait UnitsConversion {
             type_name::<T>(),
             type_name::<Self>()
         );
-        let s: T = T::try_from(Self::UNITS).map_err(|_| msg)?;
+        let s: T = T::try_from(Self::UNITS).map_err(|e| UnitsConversionError {
+            msg,
+            error: Box::new(e),
+        })?;
         let data: Vec<_> = Into::<&[T]>::into(data).iter().map(|x| *x * s).collect();
         Ok(data.into())
     }
