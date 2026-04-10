@@ -201,15 +201,17 @@ impl<'a, const M1_RATE: usize, const M2_RATE: usize> TryFrom<ServosBuilder<M1_RA
             m1,
             m2_positioners: (positioners, "M2 Positioners\nController").into(),
             m2,
-            telemetry: builder.telemetry.and(Some(
-                (
-                    Arrow::builder(10_000)
-                        .filename("servos_telemetry.parquet")
-                        .build(),
-                    "Telemetry",
+            telemetry: builder.telemetry.and_then(|_| {
+                Some(
+                    (
+                        Arrow::builder(10_000)
+                            .filename("servos_telemetry.parquet")
+                            .build(),
+                        "Telemetry",
+                    )
+                        .into(),
                 )
-                    .into(),
-            )),
+            }),
             wind_loads,
         })
     }
