@@ -55,16 +55,19 @@ impl<'a, T: ArcMutex> Client<'a, T> {
     }
 }
 
+impl<'a, T: ArcMutex> From<Client<'a, T>> for Option<T> {
+    fn from(client: Client<'a, T>) -> Self {
+        Arc::into_inner(client.client).map(|inner| inner.into_inner())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use interface::Update;
 
     #[test]
     fn client() {
-        use crate::{
-            actor::Actor,
-            client::{Client },
-        };
+        use crate::{actor::Actor, client::Client};
 
         struct TestClient;
 

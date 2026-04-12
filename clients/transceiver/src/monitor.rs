@@ -4,7 +4,6 @@ use std::{
 };
 
 // use gmt_dos_actors::client::Client;
-use gmt_dos_actors::client::Client;
 use interface::UniqueIdentifier;
 use tokio::task::{JoinError, JoinHandle};
 
@@ -35,13 +34,12 @@ impl Monitor {
     /// This is required when a [Transmitter] is used within [actorscript](https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/macro.actorscript.html) to prevent an infinite loop from happening
     pub fn drop<'a, U: UniqueIdentifier>(
         self,
-        client: Client<'a, Transceiver<U, Transmitter, On>>,
+        // client: Client<'a, Transceiver<U, Transmitter, On>>,
+        transmitter: impl Into<Option<Transceiver<U, Transmitter, On>>>,
     ) -> Self {
-        client
-            .into_inner()
-            .map(|mut client: Transceiver<U, Transmitter, On>| {
-                client.end_transmission();
-            });
+        transmitter.into().map(|mut transmitter| {
+            transmitter.end_transmission();
+        });
         self
     }
 }
