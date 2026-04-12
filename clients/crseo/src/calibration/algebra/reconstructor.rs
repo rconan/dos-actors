@@ -135,6 +135,19 @@ where
     pub fn pinv_iter_mut(&mut self) -> impl Iterator<Item = &mut CalibPinv<M>> {
         self.pinv.iter_mut().filter_map(|p| p.as_mut())
     }
+    pub fn set_pinv(&mut self, pinv: Vec<Mat<f64>>) -> &mut Self {
+        self.pinv = pinv
+            .into_iter()
+            .zip(self.calib.iter().map(|c| c.mode()))
+            .map(|(mat, mode)| CalibPinv {
+                mat,
+                cond: 0f64,
+                mode,
+            })
+            .map(Some)
+            .collect();
+        self
+    }
     /// Returns a vector of references to the pseudo-inverse of the calibration matrices
     pub fn pinv_as_ref(&self) -> Vec<Option<&CalibPinv<M>>> {
         self.pinv.iter().map(|x| x.as_ref()).collect()
