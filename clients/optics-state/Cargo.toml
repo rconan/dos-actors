@@ -25,4 +25,5 @@ gmt_dos-clients.workspace = true
 gmt_dos-clients_io.workspace = true
 gmt_dos-clients_scope = { workspace = true, features = ["server"] }
 gmt_dos-clients_scope-client.workspace = true
+skyangle.workspace = true
 tokio = { workspace = true, features = ["full"] }
