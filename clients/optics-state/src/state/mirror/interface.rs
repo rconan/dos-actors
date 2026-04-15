@@ -154,12 +154,12 @@ impl<const ID: u8> Write<gmt_m1::segment::ModeShapes<ID>> for MirrorState {
 
 impl Write<M1State> for MirrorState {
     fn write(&mut self) -> Option<Data<M1State>> {
-        Some(Data::new(self.clone()))
+        Some(Data::new(self.clone().no_zero_point()))
     }
 }
 
 impl Write<M2State> for MirrorState {
     fn write(&mut self) -> Option<Data<M2State>> {
-        Some(Data::new(self.clone()))
+        Some(Data::new(self.clone().no_zero_point()))
     }
 }

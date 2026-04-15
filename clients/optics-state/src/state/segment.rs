@@ -64,6 +64,11 @@ impl SegmentState {
         self.zero_point = Some(Box::new(zero_point));
         self
     }
+    /// Deletes the segment state zero point
+    pub fn no_zero_point(mut self  ) -> Self {
+        self.zero_point = None;
+        self
+    }
     /// Gets the segment state zero point
     pub fn get_zero_point(&self) -> Option<SegmentState> {
         self.zero_point.as_ref().map(|zp| zp.as_ref().clone())

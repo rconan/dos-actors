@@ -145,6 +145,16 @@ impl MirrorState {
                 .collect(),
         }
     }
+    /// Deletes the mirror state zero point
+    pub fn no_zero_point(self) -> Self {
+        Self {
+            segment: self
+                .segment
+                .into_iter()
+                .map(|s| Some(s.unwrap_or_default().no_zero_point()))
+                .collect(),
+        }
+    }
     /// Gets the mirror state zero point
     pub fn get_zero_point(&self) -> Option<MirrorState> {
         let segment: Vec<_> = self

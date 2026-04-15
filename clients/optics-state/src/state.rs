@@ -41,6 +41,13 @@ impl OpticalState {
             },
         }
     }
+    /// Deletes the optical state zero point
+    pub fn no_zero_point(self) -> Self {
+        Self {
+            m1: Some(self.m1.unwrap_or_default().no_zero_point()),
+            m2: Some(self.m2.unwrap_or_default().no_zero_point()),
+        }
+    }
     /// Gets the optical state zero point
     pub fn get_zero_point(&self) -> Option<Self> {
         let m1 = self.m1.as_ref().and_then(|m1| m1.get_zero_point());
@@ -129,18 +136,22 @@ impl Write<Left<M2State>> for OpticalState {
 }
 impl Write<M1State> for OpticalState {
     fn write(&mut self) -> Option<Data<M1State>> {
-        self.m1.as_ref().map(|x| Data::new(x.to_owned()))
+        self.m1
+            .as_ref()
+            .map(|x| Data::new(x.to_owned().no_zero_point()))
     }
 }
 impl Write<M2State> for OpticalState {
     fn write(&mut self) -> Option<Data<M2State>> {
-        self.m2.as_ref().map(|x| Data::new(x.to_owned()))
+        self.m2
+            .as_ref()
+            .map(|x| Data::new(x.to_owned().no_zero_point()))
     }
 }
 
 impl Write<OpticsState> for OpticalState {
     fn write(&mut self) -> Option<Data<OpticsState>> {
-        Some(Data::new(self.clone()))
+        Some(Data::new(self.clone().no_zero_point()))
     }
 }
 impl Read<OpticsState> for OpticalState {
