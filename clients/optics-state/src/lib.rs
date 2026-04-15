@@ -1,7 +1,7 @@
 #[cfg(feature = "gmt_dos-clients_arrow")]
 pub mod arrow;
 mod state;
-pub use state::{MirrorState, OpticalState, SegmentState};
+pub use state::{MirrorState, units, OpticalState, SegmentState};
 
 use interface::UniqueIdentifier;
 ///

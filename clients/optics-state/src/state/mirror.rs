@@ -5,6 +5,8 @@ use std::sync::Arc;
 
 use super::SegmentState;
 
+pub use interface::units;
+
 /// GMT mirror optical state (rigid body motion and surface figure)
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq)]

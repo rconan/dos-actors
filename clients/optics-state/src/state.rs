@@ -7,7 +7,7 @@ use super::{M1State, M2State, OpticsState};
 mod mirror;
 mod segment;
 
-pub use mirror::MirrorState;
+pub use mirror::{MirrorState, units};
 pub use segment::SegmentState;
 
 /// M1 and M2 segment optical states
