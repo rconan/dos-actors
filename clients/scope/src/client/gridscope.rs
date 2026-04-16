@@ -5,7 +5,7 @@ use std::{
 
 use super::{ClientError, Scope};
 use eframe::egui;
-use egui_plot::{Plot, PlotUi};
+use egui_plot::{Legend, Plot, PlotUi};
 use interface::UniqueIdentifier;
 use tokio::sync::broadcast;
 
@@ -206,7 +206,7 @@ impl eframe::App for GridScope {
                             .find(|node| node.indices == (row, col))
                             .map(|node| {
                                 let plot = Plot::new(format!("Scope_{}_{}", row, col))
-                                    .legend(Default::default())
+                                    .legend(Legend::default().position(egui_plot::Corner::LeftTop))
                                     .width(plot_width)
                                     .height(plot_height)
                                     .set_margin_fraction(egui::Vec2::from((0.05, 0.05)))
