@@ -116,6 +116,16 @@ impl Write<M2RigidBodyMotions> for MirrorState {
         )
     }
 }
+impl Write<Left<M2RigidBodyMotions>> for MirrorState {
+    fn write(&mut self) -> Option<Data<Left<M2RigidBodyMotions>>> {
+        <_ as Write<M2RigidBodyMotions>>::write(self).map(|data| data.transmute())
+    }
+}
+impl Write<Left<M1RigidBodyMotions>> for MirrorState {
+    fn write(&mut self) -> Option<Data<Left<M1RigidBodyMotions>>> {
+        <_ as Write<M1RigidBodyMotions>>::write(self).map(|data| data.transmute())
+    }
+}
 impl Write<M1RigidBodyMotions> for MirrorState {
     fn write(&mut self) -> Option<Data<M1RigidBodyMotions>> {
         Some(
