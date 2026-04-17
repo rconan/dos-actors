@@ -1,8 +1,9 @@
 use super::io::{Input, InputObject, OutputObject};
 use crate::{
-    framework::network::{ActorOutput, ActorOutputBuilder, AddActorInput, AddActorOutput}, Result,
+    framework::network::{ActorOutput, ActorOutputBuilder, AddActorInput, AddActorOutput},
+    Result,
 };
-use futures::{future::join_all, stream::FuturesUnordered};
+use futures::future::try_join_all;
 use interface::{Data, TryRead, TryUpdate, UniqueIdentifier, Who};
 use std::{
     fmt::{self, Debug},
@@ -162,29 +163,21 @@ where
     /// Gathers all the inputs from other [Actor] outputs
     pub(super) async fn collect(&mut self) -> Result<&mut Self> {
         if let Some(inputs) = &mut self.inputs {
-            let futures: FuturesUnordered<_> =
-                inputs.iter_mut().map(|input| input.recv()).collect();
-            join_all(futures)
-                .await
-                .into_iter()
-                .collect::<Result<Vec<_>>>()?;
+            let futures = inputs.iter_mut().map(|input| input.recv());
+            try_join_all(futures).await?;
         }
         Ok(self)
     }
     /// Sends the outputs to other [Actor] inputs
     pub(super) async fn distribute(&mut self) -> Result<&mut Self> {
         if let Some(outputs) = &mut self.outputs {
-            let futures: FuturesUnordered<_> =
-                outputs.iter_mut().map(|output| output.send()).collect();
-            join_all(futures)
-                .await
-                .into_iter()
-                .collect::<Result<Vec<_>>>()?;
+            let futures = outputs.iter_mut().map(|output| output.send());
+            try_join_all(futures).await?;
         }
         Ok(self)
     }
     /// Invokes outputs senders
-    pub(super) async fn bootstrap(&mut self) -> Result<bool> {
+    /* pub(super) async fn bootstrap(&mut self) -> Result<bool> {
         if let Some(outputs) = &mut self.outputs {
             async fn inner(outputs: &mut Vec<Box<dyn OutputObject>>) -> Result<Vec<()>> {
                 let futures: Vec<_> = outputs
@@ -211,6 +204,41 @@ where
                     a = a && inner(outputs).await.map(|result| !result.is_empty())?;
                 }
                 Ok(a)
+            }
+        } else {
+            Ok(false)
+        }
+    } */
+    pub(super) async fn bootstrap(&mut self) -> Result<bool> {
+        if let Some(outputs) = &mut self.outputs {
+            async fn inner(outputs: &mut Vec<Box<dyn OutputObject>>) -> Result<bool> {
+                let futures: Vec<_> = outputs
+                    .iter_mut()
+                    .filter(|output| output.bootstrap())
+                    .inspect(|output| {
+                        interface::print_info(
+                            format!("{} bootstrapped", output.highlight()),
+                            None::<&dyn std::error::Error>,
+                        )
+                    })
+                    .map(|output| output.send())
+                    .collect();
+                if futures.is_empty() {
+                    return Ok(false);
+                }
+                try_join_all(futures).await?;
+                Ok(true)
+            }
+
+            if NO >= NI {
+                inner(outputs).await
+            } else {
+                for _ in 0..NI / NO {
+                    if !inner(outputs).await? {
+                        return Ok(false);
+                    }
+                }
+                Ok(true)
             }
         } else {
             Ok(false)

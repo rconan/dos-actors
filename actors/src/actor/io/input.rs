@@ -85,14 +85,15 @@ where
     async fn recv(&mut self) -> Result<()> {
         // log::debug!("{} receiving", Who::highlight(self));
         // log::debug!("{} receiving (locking client)", Who::who(self));
-        let mut client = self.client.lock().await;
-        // log::debug!("{} receiving (client locked)", Who::who(self));
-        (*client).boxed_try_read(self.rx.recv_async().await.map_err(|e| {
+        let data = self.rx.recv_async().await.map_err(|e| {
             ActorError::DropRecv {
                 msg: format!("input {} to {}", type_name::<U>(), type_name::<C>()), //Who::lite(self),
                 source: e,
             }
-        })?)?;
+        })?;
+        let mut client = self.client.lock().await;
+        // log::debug!("{} receiving (client locked)", Who::who(self));
+        (*client).boxed_try_read(data)?;
         log::debug!(
             "{} RECV@{N}: {} - {}",
             self.hash,

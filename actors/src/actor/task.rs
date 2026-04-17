@@ -39,8 +39,7 @@ where
     }
 
     /// Starts the actor infinite loop
-    async fn async_run(&mut self) -> Result<()>
-    {
+    async fn async_run(&mut self) -> Result<()> {
         log::debug!("ACTOR LOOP ({NI}/{NO}): {}", type_name::<C>());
         let bootstrap = self.bootstrap().await?;
         match (self.inputs.as_ref(), self.outputs.as_ref()) {
@@ -89,11 +88,23 @@ where
                     }
                 }
             }
-            (None, Some(_)) => loop {
+            // (None, Some(_)) => loop {
+            //     // Initiator
+            //         tokio::task::yield_now().await;  // at least cooperates with other tasks:w
+
+            //     self.client.lock().await.boxed_try_update()?;
+            //     self.distribute().await?;
+            // },
+            (None, Some(_)) => {
                 // Initiator
-                self.client.lock().await.boxed_try_update()?;
-                self.distribute().await?;
-            },
+                let mut ticker = tokio::time::interval(std::time::Duration::from_millis(1));
+                ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+                loop {
+                    ticker.tick().await; // parks until next tick — external wakeup
+                    self.client.lock().await.boxed_try_update()?;
+                    self.distribute().await?;
+                }
+            }
             (Some(_), None) => loop {
                 // Terminator
                 self.collect()
@@ -109,5 +120,8 @@ where
 
     fn as_plain(&self) -> PlainActor {
         self.into()
+    }
+    fn name(&self) -> &'static str {
+        type_name::<C>()
     }
 }

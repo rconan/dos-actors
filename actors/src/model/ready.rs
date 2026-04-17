@@ -27,7 +27,17 @@ impl Model<Ready> {
             .actors
             .into_iter()
             .flatten()
-            .map(|actor| tokio::spawn(async move { actor.task().await }))
+            .map(|actor| {
+                #[cfg(tokio_unstable)]
+                {
+                    tokio::task::Builder::new()
+                        .name(actor.name())
+                        .spawn(async move { actor.task().await })
+                        .unwrap()
+                }
+                #[cfg(not(tokio_unstable))]
+                tokio::spawn(async move { actor.task().await })
+            })
             .collect();
         Model::<Running> {
             name: self.name,

@@ -2,8 +2,7 @@ use super::S;
 use crate::{ActorError, Result};
 use async_trait::async_trait;
 use flume::Sender;
-use futures::future::join_all;
-use futures::stream::FuturesUnordered;
+use futures::future::try_join_all;
 use interface::{Assoc, TryWrite, UniqueIdentifier, Who};
 use std::any::{type_name, Any};
 use std::fmt::Debug;
@@ -133,7 +132,6 @@ impl Debug for Box<dyn OutputObject> {
     }
 }
 
-
 #[async_trait]
 impl<C, U, const N: usize> OutputObject for Output<C, U, N>
 where
@@ -146,15 +144,15 @@ where
         self.data = (*self.client.lock().await).boxed_try_write()?;
         if let Some(data) = &self.data {
             // log::debug!("{} sending", Who::highlight(self));
-            let futures: FuturesUnordered<_> = self
-                .tx
-                .iter()
-                .map(|tx| tx.send_async(data.clone()))
-                .collect();
-            join_all(futures)
+            // let futures: FuturesUnordered<_> = self
+            //     .tx
+            //     .iter()
+            //     .map(|tx| tx.send_async(data.clone()))
+            //     .collect();
+            try_join_all(self.tx.iter().map(|tx| tx.send_async(data.clone())))
                 .await
-                .into_iter()
-                .collect::<std::result::Result<Vec<()>, flume::SendError<_>>>()
+                // .into_iter()
+                // .collect::<std::result::Result<Vec<()>, flume::SendError<_>>>()
                 .map_err(|_| ActorError::DropSend {
                     msg: format!("output {} from {}", type_name::<U>(), type_name::<C>()), //Who::lite(self),
                     source: flume::SendError(()),

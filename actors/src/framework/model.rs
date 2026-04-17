@@ -81,6 +81,9 @@ pub trait Task: Check + std::fmt::Display + Send + Sync {
     /// Run the actor loop
     async fn task(self: Box<Self>) -> std::result::Result<(), TaskError>;
     fn as_plain(&self) -> PlainActor;
+    fn name(&self) -> &'static str {
+        "dos-actors task"
+    }
 }
 
 /// Flowchart name

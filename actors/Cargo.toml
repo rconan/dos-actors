@@ -52,5 +52,8 @@ anyhow.workspace = true
 gmt_dos-clients = { workspace = true, features = ["nalgebra","noise"] }
 serde-pickle = "1.2.0"
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tokio_unstable)'] }
+  
 [package.metadata.docs.rs]
 features = ["filing"]
