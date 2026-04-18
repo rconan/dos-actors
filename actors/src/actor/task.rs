@@ -88,19 +88,10 @@ where
                     }
                 }
             }
-            // (None, Some(_)) => loop {
-            //     // Initiator
-            //         tokio::task::yield_now().await;  // at least cooperates with other tasks:w
-
-            //     self.client.lock().await.boxed_try_update()?;
-            //     self.distribute().await?;
-            // },
             (None, Some(_)) => {
                 // Initiator
-                let mut ticker = tokio::time::interval(std::time::Duration::from_millis(1));
-                ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+                tokio::task::yield_now().await; // at least cooperates with other tasks
                 loop {
-                    ticker.tick().await; // parks until next tick — external wakeup
                     self.client.lock().await.boxed_try_update()?;
                     self.distribute().await?;
                 }
