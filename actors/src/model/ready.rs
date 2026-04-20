@@ -30,13 +30,24 @@ impl Model<Ready> {
             .map(|actor| {
                 #[cfg(tokio_unstable)]
                 {
-                    tokio::task::Builder::new()
-                        .name(actor.name())
-                        .spawn(async move { actor.task().await })
-                        .unwrap()
+                    if actor.blocking() {
+                        tokio::task::Builder::new()
+                            .name(actor.name())
+                            .spawn(async move { actor.blocking_task().await })
+                            .unwrap()
+                    } else {
+                        tokio::task::Builder::new()
+                            .name(actor.name())
+                            .spawn(async move { actor.task().await })
+                            .unwrap()
+                    }
                 }
                 #[cfg(not(tokio_unstable))]
-                tokio::spawn(async move { actor.task().await })
+                if actor.blocking() {
+                    tokio::spawn(async move { actor.blocking_task().await })
+                } else {
+                    tokio::spawn(async move { actor.task().await })
+                }
             })
             .collect();
         Model::<Running> {
