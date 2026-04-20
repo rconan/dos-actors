@@ -21,7 +21,10 @@ where
     Box<T>: IntoIterator<Item = Box<dyn Task>>,
 {
     async fn async_run(&mut self) -> std::result::Result<(), TaskError> {
-        todo!()
+        unimplemented!()
+    }
+    async fn blocking_async_run(&mut self) -> std::result::Result<(), TaskError> {
+        unimplemented!()
     }
 
     async fn task(mut self: Box<Self>) -> std::result::Result<(), TaskError> {
@@ -39,6 +42,9 @@ where
         Ok(())
     }
 
+    async fn blocking_task(mut self: Box<Self>) -> std::result::Result<(), TaskError> {
+        self.task().await
+    }
     fn as_plain(&self) -> PlainActor {
         self.plain()
     }

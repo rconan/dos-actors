@@ -1,7 +1,7 @@
-use std::any::type_name;
-
 use async_trait::async_trait;
 use interface::TryUpdate;
+use std::any::type_name;
+use tokio::sync::Mutex;
 
 use crate::framework::model::{Task, TaskError};
 
@@ -36,6 +36,9 @@ where
             }
         } */
         self.async_run().await
+    }
+    async fn blocking_task(mut self: Box<Self>) -> std::result::Result<(), TaskError> {
+        self.blocking_async_run().await
     }
 
     /// Starts the actor infinite loop
@@ -109,10 +112,74 @@ where
         }
     }
 
+    async fn blocking_async_run(&mut self) -> Result<()> {
+        log::debug!("ACTOR LOOP ({NI}/{NO}): {}", type_name::<C>());
+        let try_update = |client: std::sync::Arc<Mutex<C>>| {
+            tokio::task::spawn_blocking(move || {
+                let mut c = client.blocking_lock();
+                let _ = c.boxed_try_update()?;
+                Ok::<(), TaskError>(())
+            })
+        };
+        let bootstrap = self.bootstrap().await?;
+        match (self.inputs.as_ref(), self.outputs.as_ref()) {
+            (Some(_), Some(_)) => {
+                if NO >= NI {
+                    // Decimation
+                    if !bootstrap {
+                        // bootstrap is applied when decimation is used
+                        // in conjunction with averaging
+                        // When averaging there is a delay of `NO` samples
+                        // to account for the time to iterate and a default
+                        // values is used for the 1st output
+                        // For decimation of the input signal there is no delay
+                        // and the 1st sample goes through unimpeded
+                        self.collect().await?;
+                        try_update(self.client.clone()).await??;
+                        self.distribute().await?;
+                    }
+                    loop {
+                        for _ in 0..NO / NI {
+                            self.collect().await?;
+                            try_update(self.client.clone()).await??;
+                        }
+                        self.distribute().await?;
+                    }
+                } else {
+                    // Upsampling
+                    loop {
+                        self.collect().await?;
+                        try_update(self.client.clone()).await??;
+                        for _ in 0..NI / NO {
+                            self.distribute().await?;
+                        }
+                    }
+                }
+            }
+            (None, Some(_)) => {
+                // Initiator
+                tokio::task::yield_now().await; // at least cooperates with other tasks
+                loop {
+                    try_update(self.client.clone()).await??;
+                    self.distribute().await?;
+                }
+            }
+            (Some(_), None) => loop {
+                // Terminator
+                self.collect().await?;
+                try_update(self.client.clone()).await??;
+            },
+            (None, None) => Ok(()),
+        }
+    }
+
     fn as_plain(&self) -> PlainActor {
         self.into()
     }
     fn name(&self) -> &'static str {
         type_name::<C>()
+    }
+    fn blocking(&self) -> bool {
+        self.blocking
     }
 }
