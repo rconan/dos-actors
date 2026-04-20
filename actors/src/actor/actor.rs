@@ -34,6 +34,7 @@ where
     pub(crate) client: Arc<Mutex<C>>,
     pub(crate) name: Option<String>,
     pub(crate) image: Option<String>,
+    pub(crate) blocking: bool,
 }
 
 /// Clone trait implementation
@@ -48,6 +49,7 @@ impl<C: TryUpdate, const NI: usize, const NO: usize> Clone for Actor<C, NI, NO> 
             client: self.client.clone(),
             name: self.name.clone(),
             image: self.image.clone(),
+            blocking: false,
         }
     }
 }
@@ -142,14 +144,25 @@ where
             client,
             name: None,
             image: None,
+            blocking: false,
         }
     }
+    /// Flags the actor as a CPU intensive task
+    ///
+    /// The actor loop will spawn the client state
+    /// update in a [blocking](https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html) thread
+    pub fn blocking(mut self) -> Self {
+        self.blocking = true;
+        self
+    }
+    /// Sets the actor name
     pub fn name<S: Into<String>>(self, name: S) -> Self {
         Self {
             name: Some(name.into()),
             ..self
         }
     }
+    /// Sets the actor associated picture
     pub fn image<S: Into<String>>(self, image: S) -> Self {
         Self {
             image: Some(image.into()),

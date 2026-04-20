@@ -8,6 +8,8 @@
 
 use std::path::PathBuf;
 
+use tokio::task::JoinError;
+
 use crate::graph::GraphError;
 use crate::model::{Model, UnknownOrReady};
 use crate::system::System;
@@ -61,6 +63,8 @@ pub enum TaskError {
     FromModel(#[from] model::ModelError),
     #[error(transparent)]
     Other(#[from] Box<dyn std::error::Error + Send + Sync>),
+    #[error("failed to join task")]
+    Join(#[from] JoinError)
 }
 
 /// Interface for running model components
@@ -71,18 +75,29 @@ pub trait Task: Check + std::fmt::Display + Send + Sync {
     /// The loop ends when the client data is [None] or when either the sending of receiving
     /// end of a channel is dropped
     async fn async_run(&mut self) -> std::result::Result<(), TaskError>;
+    /// Runs the [Actor](crate::actor::Actor) infinite loop
+    ///
+    /// The client update is CPU bound and is spawn in a [blocking](https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html) thread
+    /// 
+    /// The loop ends when the client data is [None] or when either the sending of receiving
+    /// end of a channel is dropped
+    async fn blocking_async_run(&mut self) -> std::result::Result<(), TaskError>;
     /// Run the actor loop in a dedicated thread
-    fn spawn(self) -> tokio::task::JoinHandle<std::result::Result<(), TaskError>>
+    fn spawn(self: Box<Self>) -> tokio::task::JoinHandle<std::result::Result<(), TaskError>>
     where
         Self: Sized + 'static,
     {
-        tokio::spawn(async move { Box::new(self).task().await })
+        tokio::spawn(async move { self.task().await })
     }
     /// Run the actor loop
     async fn task(self: Box<Self>) -> std::result::Result<(), TaskError>;
+    async fn blocking_task(self: Box<Self>) -> std::result::Result<(), TaskError>;
     fn as_plain(&self) -> PlainActor;
     fn name(&self) -> &'static str {
         "dos-actors task"
+    }
+    fn blocking(&self) -> bool {
+        false
     }
 }
 

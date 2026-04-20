@@ -10,6 +10,7 @@ pub struct Client<'a, T: ArcMutex> {
     label: Option<String>,
     image: Option<String>,
     lifetime: PhantomData<&'a T>,
+    blocking: bool,
 }
 
 impl<T: TryUpdate> Client<'_, T> {
@@ -28,13 +29,15 @@ impl<T: TryUpdate> From<T> for Client<'_, T> {
             label: None,
             image: None,
             lifetime: PhantomData,
+            blocking: false,
         }
     }
 }
 
 impl<C: TryUpdate, const NI: usize, const NO: usize> From<&Client<'_, C>> for Actor<C, NI, NO> {
     fn from(client: &Client<C>) -> Self {
-        let actor = Actor::new(client.client.clone());
+        let mut actor = Actor::new(client.client.clone());
+        actor.blocking = client.blocking;
         match (client.label.as_ref(), client.image.as_ref()) {
             (Some(label), Some(image)) => actor.name(label).image(image),
             (Some(label), None) => actor.name(label),
@@ -52,6 +55,14 @@ impl<'a, T: ArcMutex> Client<'a, T> {
     /// Consumes the [Client], returning the inner client , if the [Arc](https://doc.rust-lang.org/std/sync/struct.Arc.html#method.into_inner) has exactly one strong reference.
     pub fn into_inner(self) -> Option<T> {
         Arc::into_inner(self.client).map(|inner| inner.into_inner())
+    }
+    /// Flags the client as a CPU intensive task
+    ///
+    /// The loop of the client's actor will spawn the client state
+    /// update in a [blocking](https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html) thread
+    pub fn blocking(mut self) -> Self {
+        self.blocking = true;
+        self
     }
 }
 
