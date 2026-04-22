@@ -3,6 +3,7 @@ use crate::{
     framework::network::{ActorOutput, ActorOutputBuilder, AddActorInput, AddActorOutput},
     Result,
 };
+use cudarc::driver::CudaContext;
 use futures::future::try_join_all;
 use interface::{Data, TryRead, TryUpdate, UniqueIdentifier, Who};
 use std::{
@@ -35,6 +36,8 @@ where
     pub(crate) name: Option<String>,
     pub(crate) image: Option<String>,
     pub(crate) blocking: bool,
+    #[cfg_attr(feature = "serde", serde(skip))]
+    pub(crate) cuda: Option<Arc<CudaContext>>,
 }
 
 /// Clone trait implementation
@@ -50,6 +53,7 @@ impl<C: TryUpdate, const NI: usize, const NO: usize> Clone for Actor<C, NI, NO> 
             name: self.name.clone(),
             image: self.image.clone(),
             blocking: false,
+            cuda: None,
         }
     }
 }
@@ -145,6 +149,7 @@ where
             name: None,
             image: None,
             blocking: false,
+            cuda: None,
         }
     }
     /// Flags the actor as a CPU intensive task
@@ -176,6 +181,7 @@ where
     /// Gathers all the inputs from other [Actor] outputs
     pub(super) async fn collect(&mut self) -> Result<&mut Self> {
         if let Some(inputs) = &mut self.inputs {
+            self.cuda.as_ref().map(|cuda| cuda.bind_to_thread());
             let futures = inputs.iter_mut().map(|input| input.recv());
             try_join_all(futures).await?;
         }
@@ -184,6 +190,7 @@ where
     /// Sends the outputs to other [Actor] inputs
     pub(super) async fn distribute(&mut self) -> Result<&mut Self> {
         if let Some(outputs) = &mut self.outputs {
+            self.cuda.as_ref().map(|cuda| cuda.bind_to_thread());
             let futures = outputs.iter_mut().map(|output| output.send());
             try_join_all(futures).await?;
         }
@@ -244,9 +251,11 @@ where
             }
 
             if NO >= NI {
+                self.cuda.as_ref().map(|cuda| cuda.bind_to_thread());
                 inner(outputs).await
             } else {
                 for _ in 0..NI / NO {
+                    self.cuda.as_ref().map(|cuda| cuda.bind_to_thread());
                     if !inner(outputs).await? {
                         return Ok(false);
                     }

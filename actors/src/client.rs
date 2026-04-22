@@ -1,5 +1,6 @@
 use std::{marker::PhantomData, sync::Arc};
 
+use cudarc::driver::CudaContext;
 use interface::TryUpdate;
 use tokio::sync::Mutex;
 
@@ -11,6 +12,7 @@ pub struct Client<'a, T: ArcMutex> {
     image: Option<String>,
     lifetime: PhantomData<&'a T>,
     blocking: bool,
+    cuda_device: Option<usize>,
 }
 
 impl<T: TryUpdate> Client<'_, T> {
@@ -30,6 +32,7 @@ impl<T: TryUpdate> From<T> for Client<'_, T> {
             image: None,
             lifetime: PhantomData,
             blocking: false,
+            cuda_device: None,
         }
     }
 }
@@ -38,6 +41,7 @@ impl<C: TryUpdate, const NI: usize, const NO: usize> From<&Client<'_, C>> for Ac
     fn from(client: &Client<C>) -> Self {
         let mut actor = Actor::new(client.client.clone());
         actor.blocking = client.blocking;
+        actor.cuda = client.cuda_device.map(|id| CudaContext::new(id).unwrap());
         match (client.label.as_ref(), client.image.as_ref()) {
             (Some(label), Some(image)) => actor.name(label).image(image),
             (Some(label), None) => actor.name(label),
@@ -62,6 +66,10 @@ impl<'a, T: ArcMutex> Client<'a, T> {
     /// update in a [blocking](https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html) thread
     pub fn blocking(mut self) -> Self {
         self.blocking = true;
+        self
+    }
+    pub fn cuda_device(mut self, id: usize) -> Self {
+        self.cuda_device = Some(id);
         self
     }
 }

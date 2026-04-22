@@ -34,6 +34,7 @@ serde = { workspace = true, optional = true }
 svg = "0.16.0"
 html-escape = "0.2.13"
 open = "5.1.2"
+cudarc = { version = "0.19.4", features = ["cuda-version-from-build-system"] }
 
 [features]
 sampler = []
