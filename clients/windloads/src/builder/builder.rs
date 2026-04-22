@@ -111,7 +111,7 @@ impl<S: Default> Builder<S> {
             .map(|(j, (x, k))| format!("{:2}. {} <-> {}", j + 1, k, x))
             .collect::<Vec<String>>()
             .join("\n");
-        log::info!("\n{:}", info);
+        log::debug!("\n{:}", info);
         let locations: Vec<CS> = fem.inputs[loads_index]
             .as_ref()
             .unwrap()

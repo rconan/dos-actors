@@ -19,8 +19,8 @@ impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
 
         match (self.in2mode(n_modes), self.mode2out(n_modes)) {
             (Some(forces_2_modes), Some(modes_2_nodes)) => {
-                log::info!("forces 2 modes: {:?}", forces_2_modes.shape());
-                log::info!("modes 2 nodes: {:?}", modes_2_nodes.shape());
+                log::debug!("forces 2 modes: {:?}", forces_2_modes.shape());
+                log::debug!("modes 2 nodes: {:?}", modes_2_nodes.shape());
 
                 let (w_ss, state_space): (Vec<_>, Vec<_>) =
                     match self.hankel_singular_values_threshold {
@@ -86,7 +86,7 @@ impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
                             .unzip(),
                     };
                 let psi_dcg = if self.use_static_gain {
-                    log::info!(
+                    log::debug!(
                         "The elements of psi_dcg corresponding to 
     - OSSAzDriveTorque
     - OSSElDriveTorque

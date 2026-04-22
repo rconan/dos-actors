@@ -206,7 +206,7 @@ pub fn print_info<S: Into<String>>(msg: S, e: Option<&dyn std::error::Error>) {
         }
         eprintln!("{}", msg.join("\n .due to: "))
     } else {
-        log::info!("{}", msg.into())
+        log::debug!("{}", msg.into())
     }
 }
 

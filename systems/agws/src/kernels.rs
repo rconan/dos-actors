@@ -216,7 +216,7 @@ where
     type Error = KernelUpdateError;
 
     fn try_update(&mut self) -> std::result::Result<&mut Self, Self::Error> {
-        log::info!("updating kernel: {}", type_name::<T>());
+        // log::info!("updating kernel: {}", type_name::<T>());
         self.processor.boxed_try_update()?;
         if let Some(estimator) = self.estimator.as_mut() {
             if let Some(data) = <<T as KernelSpecs>::Processor as TryWrite<

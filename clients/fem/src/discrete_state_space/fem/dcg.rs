@@ -9,6 +9,7 @@ impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
         state_space: &[T],
         w: Vec<f64>,
     ) -> Option<na::DMatrix<f64>> {
+        log::info!("computing DC gain compensator");
         let (_w, _n_modes, _zeta, n_io) = self.properties().ok()?;
         let n_modes = state_space.len();
         let q = self
@@ -130,7 +131,7 @@ impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
             let (n_row, n_col) = psi_dcg.shape();
             for j in input_indices {
                 psi_dcg.set_column(j, &na::DVector::<f64>::zeros(n_row));
-                log::info!(
+                log::debug!(
                     "Removing SGMC from input #{} of {} (all outputs)",
                     j + 1,
                     n_col

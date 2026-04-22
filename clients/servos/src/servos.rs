@@ -54,7 +54,7 @@ impl<const M1_RATE: usize, const M2_RATE: usize> System for GmtServoMechanisms<M
         format!("GMT Servo-Mechanisms")
     }
     fn build(&mut self) -> Result<&mut Self, SystemError> {
-        log::info!("building GmtServoMechanisms System");
+        log::debug!("building GmtServoMechanisms System");
         self.mount
             .add_output()
             .build::<MountTorques>()

@@ -1,7 +1,5 @@
 use super::Builder;
-use crate::{
-    CS, CfdLoads, M1S, M2S, MAX_DURATION, Result,
-};
+use crate::{CS, CfdLoads, M1S, M2S, MAX_DURATION, Result};
 use geotrans::{SegmentTrait, Transform};
 use parse_monitors::{Exertion, Monitors, Vector};
 use std::mem;
@@ -200,7 +198,7 @@ impl<S> Builder<S> {
                 a
             });
         force_std.iter_mut().for_each(|x| *x = (*x / n).sqrt());
-        log::info!(
+        log::debug!(
             " OSS force: mean = {:.0?}N ; std = {:.0?}N",
             force_mean,
             force_std
@@ -225,7 +223,7 @@ impl<S> Builder<S> {
                 a
             });
         moment_std.iter_mut().for_each(|x| *x = (*x / n).sqrt());
-        log::info!(
+        log::debug!(
             " OSS moment: mean = {:.0?}N.m ; std = {:.0?}N.m",
             moment_mean,
             moment_std

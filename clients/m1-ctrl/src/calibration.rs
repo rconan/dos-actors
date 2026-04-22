@@ -21,7 +21,7 @@ type M = nalgebra::Matrix6<f64>;
 impl Calibration {
     pub fn new(fem: &mut FEM) -> Self {
         // Hardpoints stiffness
-        log::info!("HARDPOINTS STIFFNESS");
+        log::debug!("HARDPOINTS STIFFNESS");
         fem.switch_inputs(Switch::Off, None)
             .switch_outputs(Switch::Off, None);
         let Some(gain) = fem
@@ -44,7 +44,7 @@ impl Calibration {
         stiffness /= 7f64;
 
         // RBM2HP
-        log::info!("RBM 2 HP");
+        log::debug!("RBM 2 HP");
         fem.switch_inputs(Switch::Off, None)
             .switch_outputs(Switch::Off, None);
         let mut rbm_2_hp = vec![];
@@ -83,7 +83,7 @@ impl Calibration {
             }
         }
         // LC2CG (include negative feedback)
-        log::info!("LC 2 CG");
+        log::debug!("LC 2 CG");
         let mut lc_2_cg = vec![];
         #[cfg(all(m1_hp_force_extension, not(feature = "explicit-loadcells")))]
         {

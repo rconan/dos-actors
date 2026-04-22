@@ -84,7 +84,7 @@ where
             .iter()
             .find(|&x| x.as_any().is::<fem_io::SplitFem<U>>())
         else {
-            log::info!(
+            log::debug!(
                 "cannot find {} in DiscreteModalSolver, did you forget to select it?",
                 type_name::<U>()
             );

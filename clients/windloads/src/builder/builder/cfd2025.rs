@@ -185,7 +185,7 @@ impl<S> Builder<S> {
                 a
             });
         force_std.iter_mut().for_each(|x| *x = (*x / n).sqrt());
-        log::info!(
+        log::debug!(
             " OSS force: mean = {:.0?}N ; std = {:.0?}N",
             force_mean,
             force_std
@@ -210,7 +210,7 @@ impl<S> Builder<S> {
                 a
             });
         moment_std.iter_mut().for_each(|x| *x = (*x / n).sqrt());
-        log::info!(
+        log::debug!(
             " OSS moment: mean = {:.0?}N.m ; std = {:.0?}N.m",
             moment_mean,
             moment_std

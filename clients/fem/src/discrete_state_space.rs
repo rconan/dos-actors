@@ -106,6 +106,7 @@ impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
     }
     /// Set the same proportional damping coefficients to all the modes
     pub fn proportional_damping(self, zeta: f64) -> Self {
+        log::info!("Proportional coefficients modified, new value: {:.4}", zeta);
         Self {
             zeta: Some(zeta),
             ..self
@@ -508,7 +509,6 @@ impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
         }
         let zeta = match self.zeta {
             Some(zeta) => {
-                log::info!("Proportional coefficients modified, new value: {:.4}", zeta);
                 vec![zeta; n_modes]
             }
             None => fem.proportional_damping_vec.clone(),
