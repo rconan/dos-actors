@@ -144,8 +144,10 @@ pub trait FlowChart: GetName {
     {
         match self.to_html() {
             Ok(path) => {
-                if let Err(e) = open::that(path) {
-                    println!("failed to open flowchart Web page caused by:\n {e:?}");
+                if let Err(_) = open::that(&path) {
+                    // println!("failed to open flowchart Web page caused by:\n {e:?}");
+
+                    log::info!("model flowchart written to {path:?}");
                 }
             }
             Err(e) => println!("failed to write flowchart Web page caused by:\n {e:?}"),
