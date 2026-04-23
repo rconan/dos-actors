@@ -25,7 +25,7 @@ filing = ["serde", "bincode/serde"]
 serde-pickle = ["dep:serde-pickle"]
 
 [dev-dependencies]
-criterion = "0.5.1"
+criterion = "0.8.2"
 
 [[bench]]
 name = "main"

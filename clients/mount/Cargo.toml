@@ -19,27 +19,27 @@ gmt_dos-clients_fem.workspace = true
 log.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
-gmt_mount-ctrl_driver = { version = "1.0.0" }
+gmt_mount-ctrl_driver = { version = "1.1.0" }
 gmt_mount-ctrl_controller = { version = "1.1.0" }
 serde.workspace = true
 
 
 [dev-dependencies]
 gmt_dos-actors = { workspace = true, features = ["serde"] }
-skyangle = "0.2.2"
+skyangle = "0.4.0"
 tokio = { workspace = true, features = ["full"] }
 tokio-test.workspace = true
 anyhow.workspace = true
 gmt-fem.workspace = true
-gmt-lom = { version = "2.1.0", features = ["main"] }
+gmt-lom = { version = "2.6.2", features = ["main"] }
 gmt_dos-clients_fem.workspace = true
 gmt_dos-clients = { workspace = true }
 env_logger.workspace = true
 matio-rs = { workspace = true, features = ["nalgebra"] }
 gmt_dos-clients_transceiver.workspace = true
 tracing.workspace = true
-tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
-serde_json = "1.0.114"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+serde_json = "1.0.149"
 gmt_dos-clients_arrow.workspace = true
 
 [build-dependencies]

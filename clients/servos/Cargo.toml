@@ -36,7 +36,7 @@ gmt_dos-systems_m2 = { workspace = true, features = ["serde"] }
 gmt_dos-clients_windloads.workspace = true
 
 [dev-dependencies]
-complot = "0.3.4"
+complot = "0.3.5"
 env_logger.workspace = true
 interface.workspace = true
 gmt_dos-clients = { workspace = true, features = ["nalgebra"] }

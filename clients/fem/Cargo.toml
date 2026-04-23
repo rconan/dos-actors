@@ -17,17 +17,17 @@ gmt_dos-clients.workspace = true
 gmt_dos-clients_io.workspace = true
 gmt-fem.workspace = true
 log.workspace = true
-rayon = "1.6.1"
+rayon = "1.12.0"
 nalgebra = { workspace = true }
-num-complex = "0.4.3"
-serde-pickle = "1.1.1"
-clap = { version = "4.1.1", features = ["derive"], optional = true }
+num-complex = "0.4.6"
+serde-pickle = "1.2.0"
+clap = { version = "4.6.1", features = ["derive"], optional = true }
 thiserror.workspace = true
 serde = { workspace = true, optional = true }
 bincode = { workspace = true, optional = true }
 anyhow.workspace = true
-geotrans = "0.2.2"
-toml = { version = "0.8.19", optional = true }
+geotrans = "1.2.0"
+toml = { version = "1.1.2", optional = true }
 faer.workspace = true
 faer-ext.workspace = true
 fem-cuda-solver = { version = "0.1.0", path = "fem-cuda-solver", optional = true }
@@ -53,9 +53,9 @@ serde = [
 cuda = ["dep:fem-cuda-solver"]
 
 [dev-dependencies]
-criterion = { version = "0.4", features = ["html_reports"] }
+criterion = { version = "0.8", features = ["html_reports"] }
 matio-rs = { workspace = true, features = ["nalgebra"] }
-serde_json = "1.0.96"
+serde_json = "1.0.149"
 
 [[bench]]
 name = "benchmarks"

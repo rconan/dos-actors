@@ -8,9 +8,9 @@ gmt_dos-actors.workspace = true
 gmt_dos-clients = { workspace = true, features = ["noise"] }
 interface.workspace = true
 nanorand.workspace = true
-rand_distr = "0.4.3"
-complot = "0.3.3"
+rand_distr = "0.6.0"
+complot = "0.3.5"
 env_logger.workspace = true
 anyhow.workspace = true
 tokio = { workspace = true, features = ["full"] }
-clap = { version = "4.1.6", features = ["derive"] }
+clap = { version = "4.6.1", features = ["derive"] }

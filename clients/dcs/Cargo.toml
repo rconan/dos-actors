@@ -30,9 +30,9 @@ gmt_dos-clients_windloads = { workspace = true, optional = true }
 interface = { workspace = true, features = ["filing"] }
 log.workspace = true
 nanomsg = "0.7.2"
-rmp-serde = "1.3.0"
+rmp-serde = "1.3.1"
 serde = { workspace = true, features = ["derive"] }
-tai-time = { version = "0.3.3", features = ["tai_clock"] }
+tai-time = { version = "1.0.0", features = ["tai_clock"] }
 thiserror.workspace = true
 tokio.workspace = true
 

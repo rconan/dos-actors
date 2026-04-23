@@ -17,14 +17,14 @@ interface = { workspace = true, features = ["filing"] }
 gmt_dos-clients_io.workspace = true
 log.workspace = true
 thiserror = { workspace = true }
-geotrans = "0.2.2"
+geotrans = "1.2.0"
 gmt-fem = { workspace = true }
 parse-monitors = { version = "0.4.0", features = ["object_store"] }
 nalgebra.workspace = true
 serde.workspace = true
 gmt_dos-clients = { workspace = true, features = ["serde"] }
 gmt_dos-clients_fem.workspace = true
-object_store = { version = "0.13.1", optional = true }
+object_store = { version = "0.13.2", optional = true }
 
 [dev-dependencies]
 anyhow.workspace = true

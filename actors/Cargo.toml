@@ -12,10 +12,10 @@ categories = ["science", "simulation"]
 keywords = ["telescope", "astronomy"]
 
 [dependencies]
-flume = "0.11.0"
-futures = "0.3.19"
+flume = "0.12.0"
+futures = "0.3.32"
 thiserror.workspace = true
-async-trait = "0.1.52"
+async-trait = "0.1.89"
 tokio = { workspace = true, features = [
     "macros",
     "rt-multi-thread",
@@ -23,17 +23,17 @@ tokio = { workspace = true, features = [
     "rt",
     "time",
 ] }
-humantime = "2.1.0"
-chrono = "0.4.19"
+humantime = "2.3.0"
+chrono = "0.4.44"
 log = { workspace = true, features = ["release_max_level_info"] }
 vec_box = "1.0.0"
 interface.workspace = true
 gmt_dos-actors_dsl = { version = "2.2", path = "dsl" }
 anyhow.workspace = true
 serde = { workspace = true, optional = true }
-svg = "0.16.0"
+svg = "0.18.0"
 html-escape = "0.2.13"
-open = "5.1.2"
+open = "5.3.4"
 
 [features]
 sampler = []
@@ -43,11 +43,11 @@ noise = []
 filing = ["serde", "interface/filing"]
 
 [dev-dependencies]
-rand = "0.8.4"
-rand_distr = "0.4.3"
+rand = "0.10.1"
+rand_distr = "0.6.0"
 tokio-test.workspace = true
 env_logger.workspace = true
-complot = "0.3.4"
+complot = "0.3.5"
 anyhow.workspace = true
 gmt_dos-clients = { workspace = true, features = ["nalgebra","noise"] }
 serde-pickle = "1.2.0"

@@ -45,7 +45,7 @@ gmt_dos-clients_arrow.workspace = true
 anyhow.workspace = true
 skyangle.workspace = true
 gmt-fem.workspace = true
-lom = { version = "2.2.1", package = "gmt-lom", features = ["main"] }
+lom = { version = "2.6.2", package = "gmt-lom", features = ["main"] }
 tokio-test.workspace = true
 gmt_dos-clients_scope = { workspace = true, features = ["server"] }
 gmt_dos-clients_scope-client.workspace = true

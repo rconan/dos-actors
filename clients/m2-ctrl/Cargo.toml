@@ -24,7 +24,7 @@ nalgebra = { workspace = true, features = ["serde-serialize"] }
 thiserror.workspace = true
 serde.workspace = true
 bincode = { workspace = true, optional = true }
-polars = { version = "0.35.4", features = ["parquet"], optional = true }
+polars = { version = "0.53.0", features = ["parquet"], optional = true }
 gmt_m2-ctrl_fsm-piezo-135 = "0.1.0"
 gmt_m2-ctrl_fsm-piezo-246 = "0.1.0"
 gmt_m2-ctrl_fsm-piezo-7 = "0.1.1"
@@ -46,8 +46,8 @@ gmt_dos-clients_arrow.workspace = true
 anyhow.workspace = true
 skyangle.workspace = true
 gmt-fem.workspace = true
-lom = { version = "2.4.0", package = "gmt-lom", features = ["main"] }
-serde-pickle = "1.1.1"
+lom = { version = "2.6.2", package = "gmt-lom", features = ["main"] }
+serde-pickle = "1.2.0"
 gmt_dos-clients_lom.workspace = true
 
 [features]

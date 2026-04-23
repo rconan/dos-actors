@@ -12,5 +12,5 @@ categories.workspace = true
 keywords.workspace = true
 
 [build-dependencies]
-bindgen = "0.71.1"
-cc = "1.2.14"
+bindgen = "0.72.1"
+cc = "1.2.60"
