@@ -67,7 +67,7 @@ matio-rs = "1.6"
 skyangle = "0.4.0"
 nanorand = "0.8.0"
 serde = { version = "1.0.228", features = ["derive", "rc"] }
-bincode = "3.0.0"
+bincode = "2.0.1"
 apache-arrow = { version = "55.2", package = "arrow" }
 parquet = "58.1"
 zip = "8.5.1"
