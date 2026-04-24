@@ -31,7 +31,7 @@ ab_glyph = {version = "0.2.32", optional = true}
 gmt_dos-clients_scope = { workspace = true, features = ["server"], optional = true }
 gmt_dos-clients_scope-client = { workspace = true, optional = true }
 faer = {workspace=true, optional = true}
-faer-traits = {version = "0.24.0", optional = true}
+faer-traits = {version = "0.23.2", optional = true}
 faer-ext = {workspace = true, optional = true}
 gmt_dos-clients_optics-state.workspace = true
 

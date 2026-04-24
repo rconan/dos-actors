@@ -90,7 +90,7 @@ impl Signal {
                 amplitude * r * r
             }
             #[cfg(feature = "noise")]
-            WhiteNoise(noise) => noise.sample(&mut rand::thread_rng()),
+            WhiteNoise(noise) => noise.sample(&mut rand::rng()),
             Composite(signals) => signals.iter().map(|signal| signal.get(i)).sum(),
         }
     }

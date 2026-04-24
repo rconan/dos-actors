@@ -79,7 +79,7 @@ syn = "2.0"
 quote = "1.0"
 proc-macro2 = "1.0"
 faer-ext = { version = "0.7.1", features = ["nalgebra"] }
-faer = "0.24.0"
+faer = "0.23.2"
 
 [profile.release]
 lto = "thin"
