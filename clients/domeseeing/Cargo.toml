@@ -14,7 +14,7 @@ keywords.workspace = true
 [dependencies]
 interface.workspace = true
 glob = "0.3.3"
-bincode = { version = "3.0.0", optional = true }
+bincode = { workspace = true, features = ["serde"], optional = true }
 log.workspace = true
 serde = { version = "1.0.228", features = ["derive"] }
 thiserror.workspace = true

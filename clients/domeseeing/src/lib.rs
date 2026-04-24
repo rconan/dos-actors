@@ -14,7 +14,7 @@ pub enum DomeSeeingError {
     Pattern(#[from] PatternError),
     #[cfg(feature = "bincode")]
     #[error("failed to read dome seeing file")]
-    Bincode(#[from] bincode::Error),
+    Bincode(#[from] bincode::error::DecodeError),
     #[error("dome seeing index {0} is out-of-bounds")]
     OutOfBounds(usize),
     #[error("failed to parse CFD optvol files timestamp: {1}")]

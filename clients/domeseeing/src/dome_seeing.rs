@@ -63,14 +63,19 @@ impl DomeSeeing {
     }
     #[cfg(feature = "bincode")]
     pub fn get(&self, idx: usize) -> Result<Opd> {
+        use bincode::config;
+
         let path = &self
             .data
             .get(idx)
             .ok_or(DomeSeeingError::OutOfBounds(idx))?
             .file;
-        let file = std::fs::File::open(&path)
+        let mut file = std::fs::File::open(&path)
             .map_err(|e| DomeSeeingError::Load(e, path.display().to_string()))?;
-        Ok(bincode::deserialize_from(&file)?)
+        Ok(bincode::serde::decode_from_std_read(
+            &mut file,
+            config::standard(),
+        )?)
     }
     #[cfg(all(
         feature = "npyz",
