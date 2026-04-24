@@ -68,7 +68,7 @@ skyangle = "0.4.0"
 nanorand = "0.8.0"
 serde = { version = "1.0.228", features = ["derive", "rc"] }
 bincode = "2.0.1"
-apache-arrow = { version = "55.2", package = "arrow" }
+apache-arrow = { version = "58.1", package = "arrow" }
 parquet = "58.1"
 zip = "8.5.1"
 bytes = "1.11.1"
