@@ -59,10 +59,11 @@ impl AsmsNodes {
                     s
                 })
                 .collect();
-            series.push(Series::new(&format!("S{}", i + 1), s));
+            series.push(Series::new(format!("S{}", i + 1).into(), s));
         }
 
-        let mut df = DataFrame::new(series)?;
+        let mut df =
+            DataFrame::new_infer_height(series.into_iter().map(|serie| serie.into()).collect())?;
 
         let mut file = std::fs::File::create(path.as_ref())?;
         ParquetWriter::new(&mut file).finish(&mut df)?;
