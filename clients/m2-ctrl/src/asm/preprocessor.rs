@@ -324,6 +324,8 @@ mod tests {
         let file = File::open("ASMS-nodes.parquet")?;
         let df = ParquetReader::new(file).finish()?;
         Ok(df["S7"]
+            .as_series()
+            .unwrap()
             .iter()
             .filter_map(|series| {
                 if let AnyValue::List(series) = series {
