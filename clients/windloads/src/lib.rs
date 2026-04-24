@@ -216,8 +216,7 @@ impl<S> fmt::Display for CfdLoads<S> {
                 )?;
                 let u: Vector = (&oss[..3])
                     .to_vec()
-                    .vtov(M1S::new(i as i32 + 1))
-                    .unwrap()
+                    .vtov(M1S::new(i as i32 + 1).unwrap())
                     .into();
                 let t: [f64; 3] = M1S::new(i as i32 + 1).unwrap().translation().into();
                 let r: Vector = t.into();
@@ -225,8 +224,7 @@ impl<S> fmt::Display for CfdLoads<S> {
                 force = force + u;
                 let u: Vector = (&oss[3..])
                     .to_vec()
-                    .vtov(M1S::new(i as i32 + 1))
-                    .unwrap()
+                    .vtov(M1S::new(i as i32 + 1).unwrap())
                     .into();
                 moment = moment + u + mu;
             }

@@ -124,8 +124,8 @@ impl<S> Builder<S> {
                                 Into::<Option<[f64; 3]>>::into(&exertion[i].force),
                                 Into::<Option<[f64; 3]>>::into(&exertion[i].moment),
                             ) {
-                                exertion[i].force = f.vfrov(M1S::new(*j))?.into();
-                                exertion[i].moment = m.vfrov(M1S::new(*j))?.into();
+                                exertion[i].force = f.vfrov(M1S::new(*j)?).into();
+                                exertion[i].moment = m.vfrov(M1S::new(*j)?).into();
                             };
                             if let Some(m1_fm) = m1_fm.as_mut() {
                                 m1_fm.push((&exertion[i]).into());
@@ -140,8 +140,8 @@ impl<S> Builder<S> {
                                 Into::<Option<[f64; 3]>>::into(&exertion[i].force),
                                 Into::<Option<[f64; 3]>>::into(&exertion[i].moment),
                             ) {
-                                exertion[i].force = f.vfrov(M2S::new(*j))?.into();
-                                exertion[i].moment = m.vfrov(M2S::new(*j))?.into();
+                                exertion[i].force = f.vfrov(M2S::new(*j)?).into();
+                                exertion[i].moment = m.vfrov(M2S::new(*j)?).into();
                             };
                             if let Some(m2_fm) = m2_fm.as_mut() {
                                 m2_fm.push((&exertion[i]).into());
