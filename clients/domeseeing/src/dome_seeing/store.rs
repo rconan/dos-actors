@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use futures::{Stream, StreamExt, task::Poll};
-use object_store::ObjectStore;
+use object_store::{ObjectStore, ObjectStoreExt};
 
 use super::{DomeSeeing, Result};
 use crate::{DomeSeeingBuilder, DomeSeeingError, Opd};

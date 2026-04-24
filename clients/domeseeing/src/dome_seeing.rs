@@ -71,7 +71,7 @@ impl DomeSeeing {
             .ok_or(DomeSeeingError::OutOfBounds(idx))?
             .file;
         let mut file = std::fs::File::open(&path)
-            .map_err(|e| DomeSeeingError::Load(e, path.display().to_string()))?;
+            .map_err(|e| DomeSeeingError::Load(e, format!("{:?}", path)))?;
         Ok(bincode::serde::decode_from_std_read(
             &mut file,
             config::standard(),
