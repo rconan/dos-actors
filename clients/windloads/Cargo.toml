@@ -19,7 +19,7 @@ log.workspace = true
 thiserror = { workspace = true }
 geotrans = "1.2.0"
 gmt-fem = { workspace = true }
-parse-monitors = { version = "0.4.0", features = ["object_store"] }
+parse-monitors = { version = "0.4.1", features = ["object_store"] }
 nalgebra.workspace = true
 serde.workspace = true
 gmt_dos-clients = { workspace = true, features = ["serde"] }

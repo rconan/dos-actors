@@ -1168,15 +1168,6 @@ checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
 
 [[package]]
 name = "bincode"
-version = "1.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "bincode"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "36eaf5d7b090263e8150820482d5d93cd964a81e4019913c972f4edcc6edb740"
@@ -2104,13 +2095,13 @@ dependencies = [
  "indicatif",
  "libm",
  "log",
- "nalgebra 0.34.2",
+ "nalgebra",
  "rand 0.10.1",
  "rayon",
  "roots",
  "serde",
  "serde-pickle 1.2.0",
- "skyangle 0.4.0",
+ "skyangle",
  "thiserror 2.0.18",
  "toml",
 ]
@@ -2209,7 +2200,7 @@ dependencies = [
  "gmt_dos-clients_windloads",
  "gmt_dos-systems_m1",
  "gmt_dos-systems_m2",
- "skyangle 0.4.0",
+ "skyangle",
  "tokio",
 ]
 
@@ -2431,7 +2422,7 @@ dependencies = [
  "io",
  "log",
  "matio-rs",
- "nalgebra 0.34.2",
+ "nalgebra",
  "rayon",
  "serde",
  "thiserror 2.0.18",
@@ -2806,6 +2797,7 @@ dependencies = [
  "rand_distr 0.5.1",
  "rayon",
  "reborrow",
+ "serde",
  "spindle",
 ]
 
@@ -2816,7 +2808,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aa4d037166f25435671ecc6054ae76b964f17da513353f1617690470680efdf0"
 dependencies = [
  "faer",
- "nalgebra 0.34.2",
+ "nalgebra",
  "num-complex",
 ]
 
@@ -3335,15 +3327,6 @@ checksum = "3237277dbaf611664120f4f1267531d01ec3883c98018de26941e8918b24874f"
 
 [[package]]
 name = "geotrans"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d791e216517eb08f3717cc87af4134a23d824eda5dee14e05c6846d2491b97a"
-dependencies = [
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "geotrans"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4474eb1c84c91204dd1096bcb3f4bac5d5c0873f499bec88adec9b98a2a4fa5f"
@@ -3645,7 +3628,7 @@ version = "5.2.1"
 dependencies = [
  "anyhow",
  "arrow 58.1.0",
- "bincode 2.0.1",
+ "bincode",
  "bytes",
  "clap 4.6.1",
  "complot",
@@ -3654,7 +3637,7 @@ dependencies = [
  "gmt-fem-code-builder 2.3.8",
  "log",
  "matio-rs",
- "nalgebra 0.34.2",
+ "nalgebra",
  "num-complex",
  "parquet 58.1.0",
  "plotters",
@@ -3695,26 +3678,26 @@ dependencies = [
 
 [[package]]
 name = "gmt-lom"
-version = "2.6.2"
+version = "2.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbd9ddd3c9d2733a720e6c5d7408458dd1bb6a87ee76891a76b99fec711b2f52"
+checksum = "0716c1a6afe14612b592da631d1f65d69c0347b370ccf698e36894495715c750"
 dependencies = [
  "anyhow",
- "arrow 55.2.0",
- "bincode 1.3.3",
+ "arrow 58.1.0",
+ "bincode",
  "clap 4.6.1",
  "complot",
  "csv",
  "env_logger",
  "log",
- "nalgebra 0.33.3",
+ "nalgebra",
  "num-complex",
- "parquet 55.2.0",
+ "parquet 58.1.0",
  "serde",
  "serde-pickle 1.2.0",
- "skyangle 0.2.2",
+ "skyangle",
  "structopt",
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "welch-sde",
 ]
 
@@ -3786,7 +3769,7 @@ dependencies = [
 name = "gmt_dos-actors-clients_interface"
 version = "1.5.1"
 dependencies = [
- "bincode 2.0.1",
+ "bincode",
  "criterion",
  "dos-uid-derive 5.0.1",
  "log",
@@ -3826,7 +3809,7 @@ version = "5.0.0"
 dependencies = [
  "ab_glyph",
  "anyhow",
- "bincode 2.0.1",
+ "bincode",
  "colorous",
  "complot",
  "env_logger",
@@ -3845,7 +3828,7 @@ dependencies = [
  "indicatif",
  "log",
  "matio-rs",
- "nalgebra 0.34.2",
+ "nalgebra",
  "num-complex",
  "num-traits",
  "rand 0.10.1",
@@ -3878,7 +3861,7 @@ name = "gmt_dos-clients_crseo"
 version = "5.0.1"
 dependencies = [
  "anyhow",
- "bincode 2.0.1",
+ "bincode",
  "colorous",
  "complot",
  "criterion",
@@ -3895,11 +3878,11 @@ dependencies = [
  "indicatif",
  "linya",
  "log",
- "nalgebra 0.34.2",
+ "nalgebra",
  "rayon",
  "serde",
  "serde-pickle 1.2.0",
- "skyangle 0.4.0",
+ "skyangle",
  "thiserror 2.0.18",
  "tokio",
  "toml",
@@ -3937,7 +3920,7 @@ dependencies = [
 name = "gmt_dos-clients_domeseeing"
 version = "3.2.0"
 dependencies = [
- "bincode 2.0.1",
+ "bincode",
  "futures",
  "glob",
  "gmt_dos-actors-clients_interface 1.5.1",
@@ -3971,7 +3954,7 @@ version = "5.3.0"
 dependencies = [
  "anyhow",
  "arrow 58.1.0",
- "bincode 2.0.1",
+ "bincode",
  "bytes",
  "clap 4.6.1",
  "criterion",
@@ -3987,7 +3970,7 @@ dependencies = [
  "gmt_dos-clients_optics-state",
  "log",
  "matio-rs",
- "nalgebra 0.34.2",
+ "nalgebra",
  "num-complex",
  "parquet 58.1.0",
  "rayon",
@@ -4031,7 +4014,7 @@ dependencies = [
  "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_optics-state",
- "nalgebra 0.34.2",
+ "nalgebra",
 ]
 
 [[package]]
@@ -4039,7 +4022,7 @@ name = "gmt_dos-clients_m1-ctrl"
 version = "6.0.0"
 dependencies = [
  "anyhow",
- "bincode 2.0.1",
+ "bincode",
  "env_logger",
  "gmt-fem",
  "gmt-fem-code-builder 2.3.8",
@@ -4061,10 +4044,10 @@ dependencies = [
  "gmt_m1-ctrl_outer-actuators 1.0.0",
  "log",
  "matio-rs",
- "nalgebra 0.34.2",
+ "nalgebra",
  "serde",
  "serde-pickle 1.2.0",
- "skyangle 0.4.0",
+ "skyangle",
  "tokio",
  "tokio-test",
 ]
@@ -4074,7 +4057,7 @@ name = "gmt_dos-clients_m2-ctrl"
 version = "4.0.0"
 dependencies = [
  "anyhow",
- "bincode 2.0.1",
+ "bincode",
  "complot",
  "env_logger",
  "gmt-fem",
@@ -4097,13 +4080,13 @@ dependencies = [
  "gmt_m2-ctrl_fsm-piezo-246",
  "gmt_m2-ctrl_fsm-piezo-7",
  "gmt_m2-ctrl_fsm_positionner",
- "nalgebra 0.34.2",
+ "nalgebra",
  "nanorand 0.8.0",
  "polars",
  "rayon",
  "serde",
  "serde-pickle 1.2.0",
- "skyangle 0.4.0",
+ "skyangle",
  "thiserror 2.0.18",
  "tokio",
 ]
@@ -4130,7 +4113,7 @@ dependencies = [
  "matio-rs",
  "serde",
  "serde_json",
- "skyangle 0.4.0",
+ "skyangle",
  "thiserror 2.0.18",
  "tokio",
  "tokio-test",
@@ -4151,7 +4134,7 @@ dependencies = [
  "gmt_dos-clients_scope",
  "gmt_dos-clients_scope-client",
  "serde",
- "skyangle 0.4.0",
+ "skyangle",
  "tokio",
 ]
 
@@ -4226,7 +4209,7 @@ dependencies = [
  "gmt_dos-systems_m2",
  "log",
  "matio-rs",
- "nalgebra 0.34.2",
+ "nalgebra",
  "nanorand 0.8.0",
  "rayon",
  "serde",
@@ -4240,7 +4223,7 @@ name = "gmt_dos-clients_transceiver"
 version = "2.0.3"
 dependencies = [
  "anyhow",
- "bincode 2.0.1",
+ "bincode",
  "bytesize",
  "env_logger",
  "flate2",
@@ -4281,12 +4264,12 @@ dependencies = [
  "gmt_dos-clients_mount",
  "indicatif",
  "log",
- "nalgebra 0.34.2",
+ "nalgebra",
  "object_store",
  "parse-monitors",
  "serde",
  "serde-pickle 1.2.0",
- "skyangle 0.4.0",
+ "skyangle",
  "thiserror 2.0.18",
  "tokio",
 ]
@@ -4304,11 +4287,11 @@ dependencies = [
  "gmt_dos-clients_io 4.3.0",
  "gmt_dos-clients_optics-state",
  "log",
- "nalgebra 0.34.2",
+ "nalgebra",
  "osqp",
  "serde",
  "serde-pickle 1.2.0",
- "skyangle 0.4.0",
+ "skyangle",
  "thiserror 2.0.18",
  "tokio",
 ]
@@ -4318,7 +4301,7 @@ name = "gmt_dos-systems_m1"
 version = "1.0.0"
 dependencies = [
  "anyhow",
- "bincode 2.0.1",
+ "bincode",
  "clap 4.6.1",
  "faer",
  "gmt-fem",
@@ -4333,7 +4316,7 @@ dependencies = [
  "gmt_dos-clients_mount",
  "gmt_dos-clients_optics-state",
  "log",
- "nalgebra 0.34.2",
+ "nalgebra",
  "serde",
  "thiserror 2.0.18",
  "tokio",
@@ -4362,7 +4345,7 @@ dependencies = [
 name = "gmt_dos-systems_m2"
 version = "0.1.1"
 dependencies = [
- "bincode 2.0.1",
+ "bincode",
  "complot",
  "gmt-fem",
  "gmt-fem-code-builder 2.3.8",
@@ -4378,7 +4361,7 @@ dependencies = [
  "gmt_m2-ctrl_asm_preshape-filter",
  "log",
  "matio-rs",
- "nalgebra 0.34.2",
+ "nalgebra",
  "paste",
  "polars",
  "rayon",
@@ -5012,7 +4995,7 @@ dependencies = [
  "getrandom 0.3.4",
  "image 0.25.10",
  "itertools 0.14.0",
- "nalgebra 0.34.2",
+ "nalgebra",
  "num",
  "rand 0.9.4",
  "rand_distr 0.5.1",
@@ -5613,13 +5596,13 @@ dependencies = [
 
 [[package]]
 name = "matio-rs"
-version = "1.6.2"
+version = "1.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36638211ef2667b345a4e756ff095212ce0ead1faa3872e346332cc5bf7ee488"
+checksum = "670e37618814f4225d3e6d1e8a4a78655dc0f0135524f9a207089fad4516fbff"
 dependencies = [
  "matio-rs-sys",
  "matio-rs_derive",
- "nalgebra 0.33.3",
+ "nalgebra",
  "paste",
  "thiserror 2.0.18",
 ]
@@ -5696,7 +5679,7 @@ dependencies = [
  "gmt_dos-clients_scope-client",
  "gmt_dos-clients_windloads",
  "matio-rs",
- "nalgebra 0.34.2",
+ "nalgebra",
  "nanorand 0.8.0",
  "tokio",
 ]
@@ -5800,40 +5783,6 @@ dependencies = [
 
 [[package]]
 name = "nalgebra"
-version = "0.32.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b5c17de023a86f59ed79891b2e5d5a94c705dbe904a5b5c9c952ea6221b03e4"
-dependencies = [
- "approx",
- "matrixmultiply",
- "nalgebra-macros 0.2.2",
- "num-complex",
- "num-rational",
- "num-traits",
- "rand 0.8.6",
- "rand_distr 0.4.3",
- "simba 0.8.1",
- "typenum",
-]
-
-[[package]]
-name = "nalgebra"
-version = "0.33.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d43ddcacf343185dfd6de2ee786d9e8b1c2301622afab66b6c73baf9882abfd"
-dependencies = [
- "approx",
- "matrixmultiply",
- "nalgebra-macros 0.2.2",
- "num-complex",
- "num-rational",
- "num-traits",
- "simba 0.9.1",
- "typenum",
-]
-
-[[package]]
-name = "nalgebra"
 version = "0.34.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df76ea0ff5c7e6b88689085804d6132ded0ddb9de5ca5b8aeb9eeadc0508a70a"
@@ -5858,26 +5807,15 @@ dependencies = [
  "glam 0.31.1",
  "glam 0.32.1",
  "matrixmultiply",
- "nalgebra-macros 0.3.0",
+ "nalgebra-macros",
  "num-complex",
  "num-rational",
  "num-traits",
  "rand 0.9.4",
  "rand_distr 0.5.1",
  "serde",
- "simba 0.9.1",
+ "simba",
  "typenum",
-]
-
-[[package]]
-name = "nalgebra-macros"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "254a5372af8fc138e36684761d3c0cdb758a4410e938babcff1c860ce14ddbfc"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
 ]
 
 [[package]]
@@ -6832,9 +6770,9 @@ dependencies = [
 
 [[package]]
 name = "parse-monitors"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c74840ef66452eb2251517f20585dceb6b9d3f7de07ac1ff9a5a69ad4639257f"
+checksum = "09dcdb08ea542229406e140dcc4128f23d851942e5e806ccdc4b54a7008d0b1b"
 dependencies = [
  "anyhow",
  "clap 4.6.1",
@@ -6842,7 +6780,7 @@ dependencies = [
  "csv",
  "env_logger",
  "flate2",
- "geotrans 0.2.2",
+ "geotrans 1.2.0",
  "glob",
  "gmt-lom",
  "gmt_dos-clients_domeseeing 3.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -6850,8 +6788,8 @@ dependencies = [
  "itertools 0.14.0",
  "linya",
  "log",
- "nalgebra 0.32.6",
- "npyz 0.8.4",
+ "nalgebra",
+ "npyz 0.9.0",
  "object_store",
  "rayon",
  "regex",
@@ -6859,7 +6797,7 @@ dependencies = [
  "serde-pickle 1.2.0",
  "structopt",
  "strum",
- "strum_macros",
+ "strum_macros 0.28.0",
  "thiserror 2.0.18",
  "triangle-rs",
  "welch-sde",
@@ -7196,7 +7134,7 @@ dependencies = [
  "serde",
  "simdutf8",
  "streaming-iterator",
- "strum_macros",
+ "strum_macros 0.27.2",
  "version_check",
  "zstd 0.13.3",
 ]
@@ -7244,7 +7182,7 @@ dependencies = [
  "rand 0.9.4",
  "serde",
  "strength_reduce",
- "strum_macros",
+ "strum_macros 0.27.2",
  "version_check",
  "zmij",
 ]
@@ -7281,7 +7219,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
- "strum_macros",
+ "strum_macros 0.27.2",
  "uuid",
  "version_check",
  "xxhash-rust",
@@ -7458,7 +7396,7 @@ dependencies = [
  "rayon",
  "regex",
  "regex-syntax",
- "strum_macros",
+ "strum_macros 0.27.2",
  "unicode-normalization",
  "unicode-reverse",
  "version_check",
@@ -7537,7 +7475,7 @@ dependencies = [
  "regex",
  "sha2",
  "slotmap",
- "strum_macros",
+ "strum_macros 0.27.2",
  "tokio",
  "version_check",
 ]
@@ -7655,7 +7593,7 @@ dependencies = [
  "polars-utils",
  "rayon",
  "regex",
- "strum_macros",
+ "strum_macros 0.27.2",
 ]
 
 [[package]]
@@ -7665,7 +7603,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c97cabf53eb8fbf6050cde3fef8f596c51cc25fd7d55fbde108d815ee6674abf"
 dependencies = [
  "argminmax",
- "bincode 2.0.1",
+ "bincode",
  "bytemuck",
  "bytes",
  "compact_str",
@@ -8967,19 +8905,6 @@ dependencies = [
 
 [[package]]
 name = "simba"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "061507c94fc6ab4ba1c9a0305018408e312e17c041eb63bef8aa726fa33aceae"
-dependencies = [
- "approx",
- "num-complex",
- "num-traits",
- "paste",
- "wide",
-]
-
-[[package]]
-name = "simba"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c99284beb21666094ba2b75bbceda012e610f5479dfcc2d6e2426f53197ffd95"
@@ -9039,15 +8964,6 @@ name = "siphasher"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b2aa850e253778c88a04c3d7323b043aeda9d3e30d5971937c1855769763678e"
-
-[[package]]
-name = "skyangle"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99c2d45de41adca77991fd923b90a06c1cd8643ca316a6f2199e0de80e18bcfe"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "skyangle"
@@ -9323,15 +9239,27 @@ dependencies = [
 
 [[package]]
 name = "strum"
-version = "0.27.2"
+version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af23d6f6c1a224baef9d3f61e287d2761385a5b88fdab4eb4c6f11aeb54c4bcf"
+checksum = "9628de9b8791db39ceda2b119bbe13134770b56c138ec1d3af810d045c04f9bd"
 
 [[package]]
 name = "strum_macros"
 version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7695ce3845ea4b33927c055a39dc438a45b059f7c1b3d91d38d10355fb8cbca7"
+dependencies = [
+ "heck 0.5.0",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab85eea0270ee17587ed4156089e10b9e6880ee688791d45a905f5b1ca36f664"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -9640,7 +9568,7 @@ dependencies = [
  "polars",
  "rand 0.10.1",
  "rand_distr 0.6.0",
- "skyangle 0.4.0",
+ "skyangle",
  "tokio",
  "toml",
 ]
