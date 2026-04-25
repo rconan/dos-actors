@@ -54,6 +54,7 @@ gmt_dos-clients_transceiver = { version = "2.0", path = "clients/transceiver" }
 gmt_dos-clients_scope = { version = "3.1", path = "clients/scope" }
 gmt_dos-clients_scope-client = { version = "0.2.2", path = "clients/scope/client" }
 gmt_dos-clients_optics-state = { version = "0.1", path = "clients/optics-state" }
+gmt_dos-systems_agws = { version = "0.1", path = "systems/agws/" }
 log = "0.4.29"
 thiserror = "2.0"
 tokio-test = "0.4"
