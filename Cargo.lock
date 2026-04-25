@@ -2256,7 +2256,7 @@ dependencies = [
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_lom",
  "gmt_dos-clients_m1-ctrl",
  "gmt_dos-clients_m2-ctrl",
@@ -2490,7 +2490,7 @@ dependencies = [
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_crseo",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_lom",
  "gmt_dos-clients_m1-ctrl",
  "gmt_dos-clients_m2-ctrl",
@@ -2515,7 +2515,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "gmt_dos-actors-clients_interface 1.5.1",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_scope-client",
  "io",
  "tokio",
@@ -3952,7 +3952,7 @@ dependencies = [
  "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_domeseeing 3.2.0",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_optics-state",
  "image 0.25.10",
  "indicatif",
@@ -3980,7 +3980,7 @@ dependencies = [
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_mount",
  "gmt_dos-clients_scope",
  "gmt_dos-clients_scope-client",
@@ -4004,7 +4004,7 @@ dependencies = [
  "futures",
  "glob",
  "gmt_dos-actors-clients_interface 1.5.1",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "log",
  "npyz 0.9.0",
  "object_store",
@@ -4021,7 +4021,7 @@ checksum = "359a53edf564e04d0f0cb02e0f8a22f4adb1661f7bcb00aa55ffceee5dbec236"
 dependencies = [
  "glob",
  "gmt_dos-actors-clients_interface 1.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "gmt_dos-clients_io 4.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gmt_dos-clients_io 4.3.0",
  "log",
  "npyz 0.8.4",
  "serde",
@@ -4046,7 +4046,7 @@ dependencies = [
  "gmt-fem-code-builder 2.3.8",
  "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_optics-state",
  "log",
  "matio-rs",
@@ -4065,17 +4065,6 @@ dependencies = [
 [[package]]
 name = "gmt_dos-clients_io"
 version = "4.3.0"
-dependencies = [
- "anyhow",
- "crseo",
- "gmt-fem-code-builder 2.3.8",
- "gmt_dos-actors-clients_interface 1.5.1",
- "serde",
-]
-
-[[package]]
-name = "gmt_dos-clients_io"
-version = "4.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a50bd13fa496100c24c94c252532d68e13d64d4b9f0fae040c6d47c574cf1807"
 dependencies = [
@@ -4086,13 +4075,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "gmt_dos-clients_io"
+version = "4.3.1"
+dependencies = [
+ "anyhow",
+ "crseo",
+ "gmt-fem-code-builder 2.3.8",
+ "gmt_dos-actors-clients_interface 1.5.1",
+ "serde",
+]
+
+[[package]]
 name = "gmt_dos-clients_lom"
 version = "1.2.1"
 dependencies = [
  "flate2",
  "gmt-lom",
  "gmt_dos-actors-clients_interface 1.5.1",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_optics-state",
  "nalgebra",
 ]
@@ -4112,7 +4112,7 @@ dependencies = [
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_mount",
  "gmt_dos-clients_scope",
  "gmt_dos-clients_scope-client",
@@ -4148,7 +4148,7 @@ dependencies = [
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_lom",
  "gmt_dos-clients_m1-ctrl",
  "gmt_dos-clients_mount",
@@ -4185,7 +4185,7 @@ dependencies = [
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_transceiver",
  "gmt_mount-ctrl_controller",
  "gmt_mount-ctrl_driver",
@@ -4210,7 +4210,7 @@ dependencies = [
  "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_scope",
  "gmt_dos-clients_scope-client",
  "serde",
@@ -4231,7 +4231,7 @@ dependencies = [
  "gmt_dos-actors 12.1.0",
  "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_scopehub",
  "gmt_dos-clients_transceiver",
  "log",
@@ -4255,7 +4255,7 @@ name = "gmt_dos-clients_scopehub"
 version = "0.1.0"
 dependencies = [
  "gmt_dos-actors-clients_interface 1.5.1",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_scope",
  "quote",
  "syn 2.0.117",
@@ -4278,7 +4278,7 @@ dependencies = [
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_crseo",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_lom",
  "gmt_dos-clients_m2-ctrl",
  "gmt_dos-clients_mount",
@@ -4339,7 +4339,7 @@ dependencies = [
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_m1-ctrl",
  "gmt_dos-clients_mount",
  "indicatif",
@@ -4364,7 +4364,7 @@ dependencies = [
  "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_crseo",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_optics-state",
  "log",
  "nalgebra",
@@ -4391,7 +4391,7 @@ dependencies = [
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_m1-ctrl",
  "gmt_dos-clients_mount",
  "gmt_dos-clients_optics-state",
@@ -4414,7 +4414,7 @@ dependencies = [
  "gmt-fem",
  "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_m1-ctrl",
  "gmt_dos-systems_m1",
  "serde",
@@ -4434,7 +4434,7 @@ dependencies = [
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_m2-ctrl",
  "gmt_m2-ctrl_asm_pid-damping",
  "gmt_m2-ctrl_asm_positionner",
@@ -5193,7 +5193,7 @@ name = "io"
 version = "0.1.0"
 dependencies = [
  "gmt_dos-actors-clients_interface 1.5.1",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_lom",
 ]
 
@@ -5777,7 +5777,7 @@ dependencies = [
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_lom",
  "gmt_dos-clients_m1-ctrl",
  "gmt_dos-clients_m2-ctrl",
@@ -8736,7 +8736,7 @@ dependencies = [
  "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_scope",
  "gmt_dos-clients_scope-client",
  "gmt_dos-clients_windloads",
@@ -8764,7 +8764,7 @@ dependencies = [
  "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_scope",
  "gmt_dos-clients_scope-client",
  "gmt_dos-clients_windloads",
@@ -8958,7 +8958,7 @@ dependencies = [
 name = "servos-scopes"
 version = "0.1.0"
 dependencies = [
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "gmt_dos-clients_scope-client",
  "tokio",
 ]
@@ -9692,7 +9692,7 @@ dependencies = [
  "gmt_dos-clients",
  "gmt_dos-clients_arrow",
  "gmt_dos-clients_crseo",
- "gmt_dos-clients_io 4.3.0",
+ "gmt_dos-clients_io 4.3.1",
  "polars",
  "rand 0.10.1",
  "rand_distr 0.6.0",
