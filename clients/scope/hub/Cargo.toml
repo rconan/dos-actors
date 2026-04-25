@@ -1,7 +1,15 @@
 [package]
 name = "gmt_dos-clients_scopehub"
 version = "0.1.0"
-edition = "2024"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "GMT DOS Scope Macro Attribute"
+documentation = "https://docs.rs/gmt_dos-clients_scopehub"
+readme = "README.md"
+repository.workspace = true
+categories.workspace = true
+keywords.workspace = true
 
 [dependencies]
 syn = { version = "2.0", features = ["full"] }
