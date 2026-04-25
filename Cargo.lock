@@ -4196,7 +4196,7 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-clients_scope-client"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "gmt_dos-clients_scope",
 ]
@@ -4251,7 +4251,7 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-clients_transceiver"
-version = "2.0.3"
+version = "2.0.4"
 dependencies = [
  "anyhow",
  "bincode",
