@@ -2973,7 +2973,7 @@ dependencies = [
 
 [[package]]
 name = "fem-cuda-solver"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bindgen 0.72.1",
  "cc",
@@ -3692,7 +3692,7 @@ dependencies = [
 
 [[package]]
 name = "gmt-fem"
-version = "5.2.1"
+version = "5.2.2"
 dependencies = [
  "anyhow",
  "arrow 58.1.0",
@@ -3890,7 +3890,7 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-clients_crseo"
-version = "5.0.1"
+version = "5.1.0"
 dependencies = [
  "anyhow",
  "bincode",
@@ -3982,7 +3982,7 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-clients_fem"
-version = "5.3.0"
+version = "5.3.1"
 dependencies = [
  "anyhow",
  "arrow 58.1.0",
