@@ -37,6 +37,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("cargo:rustc-link-lib=cublas");
     bindgen::builder()
         .header("src/solver.hpp")
+        .wrap_unsafe_ops(true)
         .clang_arg("-I/usr/local/cuda/include")
         .allowlist_type("mode_state_space")
         .allowlist_type("state_space")
