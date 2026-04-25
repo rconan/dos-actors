@@ -15,7 +15,6 @@ keywords.workspace = true
 interface.workspace = true
 log = { workspace = true }
 apache-arrow.workspace = true
-# gmt_dos-actors.workspace = true
 matio-rs = { workspace = true, optional = true }
 parquet.workspace = true
 paste = "1.0.15"
@@ -26,6 +25,3 @@ regex = "1.12.3"
 env_logger.workspace = true
 gmt_dos-actors.workspace = true
 gmt_dos-clients.workspace = true
-
-[package.metadata.docs.rs]
-all-features = true
