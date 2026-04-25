@@ -7,6 +7,9 @@ license.workspace = true
 repository.workspace = true
 categories.workspace = true
 keywords.workspace = true
+description = "GMT M1 & M2 Optical State"
+documentation = "https://docs.rs/gmt_dos-clients_optics-state"
+readme = "README.md"
 
 [dependencies]
 gmt_dos-clients_arrow = { workspace = true, optional = true }
