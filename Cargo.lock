@@ -3692,7 +3692,7 @@ dependencies = [
 
 [[package]]
 name = "gmt-fem"
-version = "5.2.2"
+version = "5.2.1"
 dependencies = [
  "anyhow",
  "arrow 58.1.0",
@@ -4307,7 +4307,7 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-systems_agws"
-version = "0.2.0"
+version = "0.1.0"
 dependencies = [
  "complot",
  "criterion",
