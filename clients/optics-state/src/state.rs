@@ -97,7 +97,8 @@ impl Read<M1State> for OpticalState {
         if let Some(zero_point) = self.get_zero_point()
             && let OpticalState { m1: Some(m1_0), .. } = zero_point
         {
-            self.m1 = Some(data.into_arc().as_ref() + &m1_0);
+            let m1 = data.into_arc().as_ref() + &m1_0;
+            self.m1 = Some(m1.set_zero_point(m1_0));
         } else {
             self.m1 = Some(data.into_arc().as_ref().clone());
         }
@@ -105,10 +106,11 @@ impl Read<M1State> for OpticalState {
 }
 impl Read<M2State> for OpticalState {
     fn read(&mut self, data: Data<M2State>) {
-        if let Some(zero_point) = self.get_zero_point()
+        if let Some(mut zero_point) = self.get_zero_point()
             && let OpticalState { m2: Some(m2_0), .. } = zero_point
         {
-            self.m2 = Some(data.into_arc().as_ref() + &m2_0);
+            let m2 = data.into_arc().as_ref() + &m2_0;
+            self.m2 = Some(m2.set_zero_point(m2_0));
         } else {
             self.m2 = Some(data.into_arc().as_ref().clone());
         }
