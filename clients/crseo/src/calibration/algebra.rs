@@ -59,6 +59,7 @@ where
         self.as_slice().is_empty()
     }
     fn filter(&mut self, filter: &[bool]);
+    fn guide_stars_differentiation(&self, _n_guide_star: usize) -> Calib<M>;
 }
 
 /// Matrix block-matrix

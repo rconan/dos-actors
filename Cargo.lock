@@ -3692,7 +3692,7 @@ dependencies = [
 
 [[package]]
 name = "gmt-fem"
-version = "5.2.1"
+version = "5.2.2"
 dependencies = [
  "anyhow",
  "arrow 58.1.0",
@@ -4154,7 +4154,7 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-clients_optics-state"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "gmt_dos-actors",

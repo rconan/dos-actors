@@ -49,6 +49,8 @@ impl<M: Modality + Default> CalibBuilder<M> {
         self.n_cols = Some(n_cols);
         self
     }
+}
+impl<M: Modality> CalibBuilder<M> {
     /// Builds [Calib]
     pub fn build(self) -> Calib<M> {
         let Self {

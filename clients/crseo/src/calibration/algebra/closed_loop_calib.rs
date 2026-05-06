@@ -133,6 +133,11 @@ impl<M: Modality + Display + Default> CalibProps<M> for ClosedLoopCalib<M> {
     fn filter(&mut self, filter: &[bool]) {
         self.m1_closed_loop_to_sensor.filter(filter);
     }
+
+    fn guide_stars_differentiation(&self, n_guide_star: usize) -> Calib<M> {
+        self.m1_closed_loop_to_sensor
+            .guide_stars_differentiation(n_guide_star)
+    }
 }
 
 impl<M: Modality + Display> Display for ClosedLoopCalib<M> {

@@ -8,6 +8,7 @@ use faer::{Mat, MatRef};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
+    iter,
     ops::{Mul, SubAssign},
     time::Duration,
 };
@@ -448,6 +449,167 @@ where
         self.mask.iter_mut().zip(filter).for_each(|(m, f)| {
             *m = *m && *f;
         });
+    }
+
+    fn shape(&self) -> (usize, usize) {
+        (self.n_rows(), self.n_cols())
+    }
+
+    fn smode(&self) -> (u8, M) {
+        (self.sid(), self.mode())
+    }
+
+    fn is_empty(&self) -> bool {
+        self.as_slice().is_empty()
+    }
+
+    fn guide_stars_differentiation(&self, n_guide_star: usize) -> Calib<M>
+    where
+        Self: Sized,
+    {
+        assert!(
+            n_guide_star > 1,
+            "only 1 guide star, cannot differentiate Calib wrt. guide stars"
+        );
+        // let mask = calib.mask_as_slice();
+        // dbg!(self.mask.len());
+        // getting the # of non zeros elements in the mask
+        let nz = self
+            .mask
+            .iter()
+            .filter(|&&x| x)
+            .enumerate()
+            .map(|(i, _)| i)
+            .last()
+            .unwrap()
+            + 1;
+        log::debug!("non zeros: {nz}");
+        // getting the # of non zeros elements in the mask per guide star
+        let nzs: Vec<_> = self
+            .mask
+            .chunks(self.mask.len() / n_guide_star)
+            .map(|mask| {
+                mask.iter()
+                    .filter(|&&x| x)
+                    .enumerate()
+                    .map(|(i, _)| i)
+                    .last()
+                    .unwrap()
+                    + 1
+            })
+            .collect();
+        log::debug!("GS non zeros: {nzs:?}={}", nzs.iter().sum::<usize>());
+
+        let mat = self.mat_ref();
+        let mats = nzs.iter().scan(0usize, |s, nz| {
+            let smat = mat.subrows(*s, *nz);
+            *s += *nz;
+            Some(smat)
+        });
+        log::debug!(
+            "mats: {:?}",
+            mats.clone().map(|mat| mat.shape()).collect::<Vec<_>>()
+        );
+        let diff_mask = self.mask.chunks(self.mask.len() / n_guide_star).fold(
+            vec![true; self.mask.len() / n_guide_star],
+            |mut prod, mask| {
+                prod.iter_mut().zip(mask).for_each(|(p, m)| *p = *p && *m);
+                prod
+            },
+        );
+        dbg!(diff_mask.len());
+        // getting the # of non zeros elements in the collapsed mask
+        let dnz = diff_mask
+            .iter()
+            .filter(|&&x| x)
+            .enumerate()
+            .map(|(i, _)| i)
+            .last()
+            .unwrap()
+            + 1;
+        log::debug!("diff mask non zeros: {dnz}");
+        // duplicating the collapsed mask for each guide star
+        // and filtering each mask according to the centroids mask
+        let fmask: Vec<_> = self
+            .mask
+            .chunks(self.mask.len() / n_guide_star)
+            .map(|mask| {
+                mask.iter()
+                    .zip(&diff_mask)
+                    .filter(|(m, _)| **m)
+                    .map(|(_, d)| *d)
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        // dbg!(fmask.iter().map(|mask| mask.len()).collect::<Vec<_>>());
+        // getting the # of non zeros elements in the filtered collapsed duplicated mask
+        let fnz: Vec<_> = fmask
+            .iter()
+            .map(|mask| {
+                mask.iter()
+                    .filter(|&&x| x)
+                    .enumerate()
+                    .map(|(i, _)| i)
+                    .last()
+                    .unwrap()
+                    + 1
+            })
+            .collect();
+        log::debug!("filtered diff mask non zeros: {fnz:?}");
+        let n = fnz[0];
+        // filtering the rows of the sub-matrices according to the former mask
+        let fmats = mats.zip(&fmask).map(|(mat, mask)| {
+            let mat = mat
+                .row_iter()
+                .zip(mask)
+                .filter(|&(_, &mask)| mask)
+                .flat_map(|(mat, _)| mat.iter().copied().collect::<Vec<_>>())
+                .collect::<Vec<_>>();
+            MatRef::from_row_major_slice(mat.as_slice(), n, 2).to_owned()
+        });
+        log::debug!(
+            "fmats: {:?}",
+            fmats.clone().map(|mat| mat.shape()).collect::<Vec<_>>()
+        );
+        // differentiating the sub-matrices
+        let mut w = fmats.cycle().peekable();
+        let diff_mats: Vec<_> = (0..n_guide_star)
+            .map(|_| w.next().unwrap() - w.peek().unwrap())
+            .collect();
+        println!(
+            "diff. mats: {:?}",
+            diff_mats.iter().map(|mat| mat.shape()).collect::<Vec<_>>()
+        );
+        // concatenating the sub-matrices vertically
+        let row_wise_mat: Vec<_> = diff_mats
+            .iter()
+            .flat_map(|mat| {
+                mat.row_iter()
+                    .flat_map(|row| row.iter().copied().collect::<Vec<_>>())
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        let nrows = n * n_guide_star;
+        let ncols = row_wise_mat.len() / nrows;
+        // rasterizing the matrix column wise
+        let mat = MatRef::from_row_major_slice(&row_wise_mat, nrows, ncols);
+        let c: Vec<_> = mat
+            .col_iter()
+            .flat_map(|col| col.iter().copied().collect::<Vec<_>>())
+            .collect();
+        // building the calibration and reconstructor from the differentiated sub-matrices
+        CalibBuilder::<M> {
+            sid: self.sid,
+            n_mode: self.n_mode,
+            c,
+            mask: iter::repeat(diff_mask)
+                .take(n_guide_star)
+                .flatten()
+                .collect(),
+            mode: self.mode.clone(),
+            n_cols: None,
+        }
+        .build()
     }
 }
 
