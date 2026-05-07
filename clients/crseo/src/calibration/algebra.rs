@@ -21,7 +21,7 @@ mod closed_loop_calib;
 mod pinv;
 mod reconstructor;
 
-pub use calib::{Calib, CalibBuilder, MatchAreas};
+pub use calib::{Calib, CalibBuilder, CalibError, MatchAreas};
 pub use closed_loop_calib::ClosedLoopCalib;
 pub use pinv::CalibPinv;
 pub use reconstructor::Reconstructor;

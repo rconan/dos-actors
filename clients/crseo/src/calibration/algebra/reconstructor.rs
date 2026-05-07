@@ -153,7 +153,7 @@ where
         self
     }
     /// Returns a vector of references to the pseudo-inverse of the calibration matrices
-    pub fn pinv_as_ref(&self) -> Vec<Option<&CalibPinv<M>>> {
+    pub fn pinv_as_ref(&self) -> Option<Vec<&CalibPinv<M>>> {
         self.pinv.iter().map(|x| x.as_ref()).collect()
     }
     /// Returns an iterator over the calibration matrices and their pseudo-inverse
