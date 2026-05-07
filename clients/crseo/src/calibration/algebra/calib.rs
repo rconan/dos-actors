@@ -39,6 +39,15 @@ pub use builder::CalibBuilder;
 ///     .mask(vec![false, false, false, true, true, false])
 ///     .build();
 /// ```
+
+#[derive(Debug, thiserror::Error)]
+pub enum CalibError {
+    #[error("only 1 guide star, cannot differentiate Calib wrt. guide stars")]
+    Differentiation,
+}
+
+pub type CalibResult<M> = Result<Calib<M>, CalibError>;
+
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Calib<M = CalibrationMode>
 where
@@ -463,14 +472,13 @@ where
         self.as_slice().is_empty()
     }
 
-    fn guide_stars_differentiation(&self, n_guide_star: usize) -> Calib<M>
+    fn guide_stars_differentiation(&self, n_guide_star: usize) -> CalibResult<M>
     where
         Self: Sized,
     {
-        assert!(
-            n_guide_star > 1,
-            "only 1 guide star, cannot differentiate Calib wrt. guide stars"
-        );
+        if n_guide_star == 1 {
+            return Err(CalibError::Differentiation);
+        }
         // let mask = calib.mask_as_slice();
         // dbg!(self.mask.len());
         // getting the # of non zeros elements in the mask
@@ -598,7 +606,7 @@ where
             .flat_map(|col| col.iter().copied().collect::<Vec<_>>())
             .collect();
         // building the calibration and reconstructor from the differentiated sub-matrices
-        CalibBuilder::<M> {
+        Ok(CalibBuilder::<M> {
             sid: self.sid,
             n_mode: self.n_mode,
             c,
@@ -609,7 +617,7 @@ where
             mode: self.mode.clone(),
             n_cols: None,
         }
-        .build()
+        .build())
     }
 }
 

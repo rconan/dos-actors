@@ -12,6 +12,8 @@
 
 use faer::MatRef;
 
+use crate::calibration::algebra::calib::CalibResult;
+
 use super::{CalibrationMode, MirrorMode, mode::Modality};
 
 mod calib;
@@ -59,7 +61,7 @@ where
         self.as_slice().is_empty()
     }
     fn filter(&mut self, filter: &[bool]);
-    fn guide_stars_differentiation(&self, _n_guide_star: usize) -> Calib<M>;
+    fn guide_stars_differentiation(&self, _n_guide_star: usize) -> CalibResult<M>;
 }
 
 /// Matrix block-matrix

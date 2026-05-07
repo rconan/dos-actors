@@ -4,7 +4,7 @@ use faer::{Mat, MatRef};
 use serde::{Deserialize, Serialize};
 
 use super::{Calib, CalibPinv, CalibProps, CalibrationMode};
-use crate::calibration::{algebra::Reconstructor, mode::Modality};
+use crate::calibration::{algebra::{Reconstructor, calib::CalibResult}, mode::Modality};
 
 /// Closed-loop calibration matrix
 ///
@@ -134,7 +134,7 @@ impl<M: Modality + Display + Default> CalibProps<M> for ClosedLoopCalib<M> {
         self.m1_closed_loop_to_sensor.filter(filter);
     }
 
-    fn guide_stars_differentiation(&self, n_guide_star: usize) -> Calib<M> {
+    fn guide_stars_differentiation(&self, n_guide_star: usize) -> CalibResult<M> {
         self.m1_closed_loop_to_sensor
             .guide_stars_differentiation(n_guide_star)
     }
