@@ -7,7 +7,10 @@ use std::{
     sync::Arc,
 };
 
-use crate::calibration::mode::{MirrorMode, MixedMirrorMode, Modality};
+use crate::calibration::{
+    algebra::calib::CalibError,
+    mode::{MirrorMode, MixedMirrorMode, Modality},
+};
 
 use super::{
     Block, Calib, CalibPinv, CalibProps, CalibrationMode, ClosedLoopReconstructor, Collapse,
@@ -205,6 +208,23 @@ where
     }
     pub fn filter(&mut self, filter: &[bool]) {
         self.calib.iter_mut().for_each(|calib| calib.filter(filter));
+    }
+}
+impl<M, C> Reconstructor<M, C>
+where
+    M: Modality + Default + Display,
+    C: CalibProps<M> + Default,
+{
+    pub fn guide_stars_differentiation(
+        &self,
+        n_guide_star: usize,
+    ) -> Result<Reconstructor<M, Calib<M>>, CalibError> {
+        let calibs: Result<Vec<Calib<M>>, CalibError> = self
+            .calib
+            .iter()
+            .map(|calib| calib.guide_stars_differentiation(n_guide_star))
+            .collect();
+        Ok(Reconstructor::new(calibs?))
     }
 }
 
