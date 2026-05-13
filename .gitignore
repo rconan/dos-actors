@@ -34,6 +34,7 @@ grsim/20230131_1605_zen_30_M1_202110_ASM_202208_Mount_202111/
 *.mat
 *.ceo
 *.html
+!website/index.html
 *.xml
 *.npz
 .idea

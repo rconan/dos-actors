@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>gmt_dos-actors — GMT Integrated Modeling Framework</title>
+  <meta name="description" content="A Rust actor-model framework for building integrated models of the Giant Magellan Telescope control system.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/tomorrow-night.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #080c14;
+      --bg2:       #0d1320;
+      --bg3:       #111826;
+      --card:      #131c2e;
+      --card-h:    #1a2540;
+      --border:    #1e2d47;
+      --blue:      #4d9ef7;
+      --blue-dim:  #2d6aad;
+      --cyan:      #29d4f5;
+      --green:     #3ec97a;
+      --amber:     #f5a623;
+      --purple:    #b57afc;
+      --red:       #f76d6d;
+      --text:      #dde6f5;
+      --text2:     #8a9bbf;
+      --text3:     #4a6080;
+      --glow-blue: rgba(77,158,247,.18);
+      --glow-cyan: rgba(41,212,245,.12);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── STARS ── */
+    #stars-canvas {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: .7;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: rgba(8,12,20,.8);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .9rem;
+      font-weight: 600;
+      color: var(--cyan);
+      text-decoration: none;
+      letter-spacing: -.02em;
+    }
+    .nav-logo span { color: var(--text2); }
+    .nav-links { display: flex; align-items: center; gap: 1.6rem; }
+    .nav-links a {
+      color: var(--text2);
+      text-decoration: none;
+      font-size: .88rem;
+      font-weight: 500;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-btn {
+      display: flex; align-items: center; gap: .4rem;
+      padding: .35rem .85rem;
+      border-radius: 6px;
+      font-size: .84rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background .2s, color .2s;
+    }
+    .nav-btn-gh {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .nav-btn-gh:hover { background: var(--card-h); color: var(--text); }
+    .nav-btn-docs {
+      background: var(--blue);
+      color: #fff;
+    }
+    .nav-btn-docs:hover { background: #3888e0; color: #fff; }
+
+    /* ── SECTIONS ── */
+    section { position: relative; z-index: 1; }
+
+    /* ── HERO ── */
+    #hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center;
+      padding: 6rem 2rem 4rem;
+    }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: .5rem;
+      font-size: .8rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--cyan);
+      background: rgba(41,212,245,.08);
+      border: 1px solid rgba(41,212,245,.2);
+      border-radius: 100px;
+      padding: .3rem 1rem;
+      margin-bottom: 1.8rem;
+    }
+    .hero-eyebrow::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--cyan);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50% { opacity: .3; }
+    }
+    h1 {
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -.03em;
+      margin-bottom: 1.2rem;
+      max-width: 820px;
+    }
+    h1 .accent { color: var(--blue); }
+    h1 .accent2 { color: var(--cyan); }
+    .hero-sub {
+      font-size: 1.1rem;
+      color: var(--text2);
+      max-width: 600px;
+      margin: 0 auto 2.4rem;
+      line-height: 1.7;
+    }
+    .hero-ctas { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .7rem 1.5rem;
+      border-radius: 8px;
+      font-size: .95rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all .2s;
+    }
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+      box-shadow: 0 0 24px rgba(77,158,247,.35);
+    }
+    .btn-primary:hover {
+      background: #3888e0;
+      box-shadow: 0 0 36px rgba(77,158,247,.5);
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: var(--card-h); transform: translateY(-1px); }
+
+    .hero-stats {
+      display: flex; gap: 3rem; margin-top: 4rem;
+      flex-wrap: wrap; justify-content: center;
+    }
+    .hero-stat { text-align: center; }
+    .hero-stat-num {
+      display: block;
+      font-size: 1.8rem; font-weight: 700;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .hero-stat-num span { color: var(--cyan); }
+    .hero-stat-label {
+      font-size: .8rem; color: var(--text3); text-transform: uppercase;
+      letter-spacing: .08em; margin-top: .25rem;
+    }
+
+    /* ── LAYOUT HELPERS ── */
+    .container { max-width: 1140px; margin: 0 auto; padding: 0 2rem; }
+    .section-pad { padding: 6rem 0; }
+    .section-header { text-align: center; margin-bottom: 3.5rem; }
+    .section-eyebrow {
+      font-size: .78rem; font-weight: 600; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--blue); margin-bottom: .6rem;
+    }
+    h2 {
+      font-size: clamp(1.8rem, 3vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -.03em;
+      margin-bottom: .8rem;
+    }
+    .section-desc {
+      color: var(--text2);
+      font-size: 1.05rem;
+      max-width: 560px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+    }
+
+    /* ── FEATURES ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+    }
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.8rem;
+      transition: border-color .2s, transform .2s, background .2s;
+    }
+    .feature-card:hover {
+      border-color: var(--blue-dim);
+      background: var(--card-h);
+      transform: translateY(-3px);
+    }
+    .feature-icon {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1.1rem;
+      font-size: 1.3rem;
+    }
+    .feature-icon.blue  { background: rgba(77,158,247,.12);  color: var(--blue);   }
+    .feature-icon.cyan  { background: rgba(41,212,245,.12);  color: var(--cyan);   }
+    .feature-icon.green { background: rgba(62,201,122,.12);  color: var(--green);  }
+    .feature-icon.amber { background: rgba(245,166,35,.12);  color: var(--amber);  }
+    .feature-icon.purple{ background: rgba(181,122,252,.12); color: var(--purple); }
+    .feature-title {
+      font-size: 1rem; font-weight: 600; margin-bottom: .5rem;
+    }
+    .feature-desc { font-size: .9rem; color: var(--text2); line-height: 1.6; }
+
+    /* ── DSL SECTION ── */
+    #dsl { background: var(--bg2); }
+    .dsl-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.7fr;
+      gap: 3rem;
+      align-items: start;
+    }
+    @media (max-width: 900px) { .dsl-layout { grid-template-columns: 1fr; } }
+
+    .dsl-info h3 {
+      font-size: 1.4rem; font-weight: 700; margin-bottom: .8rem;
+      letter-spacing: -.02em;
+    }
+    .dsl-info p { color: var(--text2); font-size: .95rem; line-height: 1.7; margin-bottom: 1.2rem; }
+
+    .syntax-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    .syntax-table th {
+      font-size: .75rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--text3);
+      padding: .5rem .8rem; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .syntax-table td {
+      padding: .55rem .8rem;
+      font-size: .88rem;
+      border-bottom: 1px solid rgba(30,45,71,.5);
+      vertical-align: top;
+    }
+    .syntax-table tr:last-child td { border-bottom: none; }
+    .syntax-table td:first-child {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .82rem;
+      white-space: nowrap;
+    }
+    .tok-blue   { color: var(--blue);   }
+    .tok-cyan   { color: var(--cyan);   }
+    .tok-green  { color: var(--green);  }
+    .tok-amber  { color: var(--amber);  }
+    .tok-purple { color: var(--purple); }
+    .tok-red    { color: var(--red);    }
+
+    /* ── CODE TABS ── */
+    .code-panel { display: flex; flex-direction: column; }
+    .code-tabs {
+      display: flex;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 10px 10px 0 0;
+      overflow: hidden;
+    }
+    .code-tab {
+      padding: .7rem 1.2rem;
+      font-size: .82rem;
+      font-weight: 500;
+      color: var(--text3);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      border-bottom: 2px solid transparent;
+      transition: color .15s, background .15s, border-color .15s;
+      font-family: 'Inter', sans-serif;
+      white-space: nowrap;
+    }
+    .code-tab:hover { color: var(--text2); background: var(--card); }
+    .code-tab.active { color: var(--blue); border-bottom-color: var(--blue); background: var(--bg); }
+
+    .code-body {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 0 0 10px 10px;
+      overflow: hidden;
+    }
+    .code-pane { display: none; }
+    .code-pane.active { display: block; }
+    .code-pane pre {
+      margin: 0;
+      padding: 1.4rem 1.6rem;
+      overflow-x: auto;
+      font-size: .82rem;
+      line-height: 1.65;
+    }
+    .code-pane pre code {
+      font-family: 'JetBrains Mono', monospace !important;
+      background: none !important;
+    }
+    /* Override hljs background */
+    .hljs { background: transparent !important; }
+
+    /* ── DEMOS ── */
+    #demos { background: var(--bg); }
+    .demos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.2rem;
+    }
+    .demo-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: border-color .2s, transform .2s, background .2s;
+    }
+    .demo-card:hover { border-color: var(--blue-dim); background: var(--card-h); transform: translateY(-2px); }
+    .demo-card-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: .8rem;
+    }
+    .demo-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--cyan);
+    }
+    .demo-tag {
+      font-size: .7rem; font-weight: 600;
+      padding: .2rem .5rem;
+      border-radius: 4px;
+      background: rgba(62,201,122,.1);
+      color: var(--green);
+      border: 1px solid rgba(62,201,122,.2);
+    }
+    .demo-title { font-size: .95rem; font-weight: 600; margin-bottom: .4rem; }
+    .demo-desc { font-size: .85rem; color: var(--text2); line-height: 1.6; }
+    .demo-rate {
+      display: flex; gap: .4rem; margin-top: .9rem; flex-wrap: wrap;
+    }
+    .demo-rate-badge {
+      font-size: .72rem;
+      padding: .15rem .5rem;
+      border-radius: 4px;
+      background: rgba(77,158,247,.1);
+      color: var(--blue);
+      border: 1px solid rgba(77,158,247,.2);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── CRATES ── */
+    #crates { background: var(--bg2); }
+    .crates-categories { display: flex; flex-direction: column; gap: 2.5rem; }
+    .crates-category-title {
+      font-size: .78rem; font-weight: 600; letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 1rem;
+      display: flex; align-items: center; gap: .6rem;
+    }
+    .crates-category-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .crates-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: .9rem;
+    }
+    .crate-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.1rem 1.2rem;
+      transition: border-color .2s, background .2s;
+    }
+    .crate-card:hover { border-color: var(--blue-dim); background: var(--card-h); }
+    .crate-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .78rem;
+      font-weight: 600;
+      margin-bottom: .4rem;
+    }
+    .crate-version {
+      font-size: .7rem;
+      color: var(--text3);
+      font-family: 'JetBrains Mono', monospace;
+      margin-left: .4rem;
+    }
+    .crate-desc { font-size: .82rem; color: var(--text2); line-height: 1.55; }
+
+    /* ── ARCHITECTURE ── */
+    #arch { background: var(--bg); }
+    .arch-diagram {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      overflow-x: auto;
+    }
+    .arch-svg { display: block; margin: 0 auto; max-width: 100%; }
+
+    /* ── CRATE LINKS ── */
+    .crate-links { display: flex; gap: .45rem; margin-top: .8rem; flex-wrap: wrap; }
+    .crate-link {
+      display: inline-flex; align-items: center; gap: .28rem;
+      font-size: .72rem; font-weight: 600;
+      padding: .2rem .55rem; border-radius: 4px;
+      text-decoration: none;
+      transition: background .15s;
+    }
+    .crate-link svg { flex-shrink: 0; }
+    .cl-crates {
+      background: rgba(245,166,35,.1); color: var(--amber);
+      border: 1px solid rgba(245,166,35,.25);
+    }
+    .cl-crates:hover { background: rgba(245,166,35,.2); color: var(--amber); }
+    .cl-docs {
+      background: rgba(77,158,247,.1); color: var(--blue);
+      border: 1px solid rgba(77,158,247,.25);
+    }
+    .cl-docs:hover { background: rgba(77,158,247,.2); color: var(--blue); }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative; z-index: 1;
+      background: var(--bg3);
+      border-top: 1px solid var(--border);
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+    .footer-logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--cyan);
+      margin-bottom: .5rem;
+    }
+    .footer-sub { font-size: .85rem; color: var(--text2); margin-bottom: 1.5rem; }
+    .footer-links {
+      display: flex; gap: 1.5rem; justify-content: center;
+      flex-wrap: wrap; margin-bottom: 2rem;
+    }
+    .footer-links a {
+      font-size: .85rem;
+      color: var(--text2);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-copy { font-size: .78rem; color: var(--text3); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      nav .nav-links { gap: .8rem; }
+      .hero-stats { gap: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="stars-canvas"></canvas>
+
+<!-- ── NAV ── -->
+<nav>
+  <a class="nav-logo" href="#hero">gmt_dos<span>-actors</span></a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#dsl">DSL</a>
+    <a href="#demos">Demos</a>
+    <a href="#crates">Crates</a>
+    <a class="nav-btn nav-btn-docs" href="https://rconan.github.io/dos-actors/" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Guide
+    </a>
+    <a class="nav-btn nav-btn-gh" href="https://github.com/rconan/dos-actors" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17 6.1 18 6.4 18 6.4c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section id="hero">
+  <div class="hero-eyebrow">Giant Magellan Telescope &mdash; Rust Framework</div>
+  <h1>
+    Integrated Modeling for the<br>
+    <span class="accent">Giant Magellan</span> <span class="accent2">Telescope</span>
+  </h1>
+  <p class="hero-sub">
+    A high-performance <strong>actor-model framework</strong> built in Rust for assembling,
+    simulating, and running the GMT control system. Compose multi-rate concurrent actors
+    with a type-safe domain-specific language.
+  </p>
+  <div class="hero-ctas">
+    <a class="btn btn-primary" href="https://github.com/rconan/dos-actors" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17 6.1 18 6.4 18 6.4c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3z"/></svg>
+      View on GitHub
+    </a>
+    <a class="btn btn-secondary" href="https://rconan.github.io/dos-actors/" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Read the Guide
+    </a>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── FEATURES ── -->
+<section id="features">
+  <div class="container section-pad">
+    <div class="section-header">
+      <div class="section-eyebrow">Why gmt_dos-actors</div>
+      <h2>Everything you need to model a telescope</h2>
+      <p class="section-desc">
+        From structural dynamics to optics, all wired together through a safe, composable actor graph.
+      </p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon blue">⬡</div>
+        <div class="feature-title">Concurrent Actor Model</div>
+        <p class="feature-desc">Each subsystem runs as an independent async Tokio actor. Actors communicate via typed channels—no shared mutable state, no data races.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon cyan">⌨</div>
+        <div class="feature-title">actorscript! DSL</div>
+        <p class="feature-desc">Declare actor graphs with a concise, readable macro. Wiring, sampling-rate negotiation, and feedback loops are resolved at compile time.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon green">⇄</div>
+        <div class="feature-title">Multi-rate Sampling</div>
+        <p class="feature-desc">Different subsystems run at different rates—FEM at 8 kHz, actuators at 100 Hz, optics at 1 kHz. Samplers are inserted automatically.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon amber">🔭</div>
+        <div class="feature-title">GMT Integration</div>
+        <p class="feature-desc">First-class clients for every telescope subsystem: M1/M2 mirrors, mount control, ASM voice coils, wind loads, and linear optics.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon purple">🦀</div>
+        <div class="feature-title">Type-safe I/O</div>
+        <p class="feature-desc">Every signal carries a Rust type. Mismatched connections are compile errors. Physics units are encoded in types—arcseconds, nanometers, and more.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon blue">📊</div>
+        <div class="feature-title">Built-in Logging</div>
+        <p class="feature-desc">Annotate any output with <code style="font-family:'JetBrains Mono',monospace;font-size:.8em">~</code> to stream it live to a scope display, or with <code style="font-family:'JetBrains Mono',monospace;font-size:.8em">$</code> to record it to Apache Arrow / Parquet.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon cyan">🌐</div>
+        <div class="feature-title">Distributed Models</div>
+        <p class="feature-desc">Split a model across multiple scripts — on the same machine or across a network — using the <code style="font-family:'JetBrains Mono',monospace;font-size:.8em">transceiver</code> client. Scripts exchange actor data over the QUIC protocol with minimal latency.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon green">🔌</div>
+        <div class="feature-title">Extensible Client Interface</div>
+        <p class="feature-desc">Bring your own subsystem by implementing the <code style="font-family:'JetBrains Mono',monospace;font-size:.8em">Read</code>, <code style="font-family:'JetBrains Mono',monospace;font-size:.8em">Update</code>, and <code style="font-family:'JetBrains Mono',monospace;font-size:.8em">Write</code> traits from <code style="font-family:'JetBrains Mono',monospace;font-size:.8em">gmt_dos-actors-clients_interface</code>. Any Rust struct that satisfies the interface becomes a first-class actor in the graph.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── DSL SECTION ── -->
+<section id="dsl">
+  <div class="container section-pad">
+    <div class="section-header">
+      <div class="section-eyebrow">Domain-Specific Language</div>
+      <h2>Build models with <code style="font-size:1.1em;color:var(--cyan);font-family:'JetBrains Mono',monospace">actorscript!</code></h2>
+      <p class="section-desc">
+        A procedural macro that turns a concise dataflow description into a fully wired, asynchronous actor graph.
+      </p>
+    </div>
+    <div class="dsl-layout">
+      <!-- Left: explanation -->
+      <div class="dsl-info">
+        <h3>Syntax at a glance</h3>
+        <p>
+          Each line in <code style="font-family:'JetBrains Mono',monospace;color:var(--cyan)">actorscript!</code> is a <em>flow</em>: a sampling-rate multiplier followed by a chain of actors connected by arrows. The macro generates all the channel scaffolding, spawns Tokio tasks, and resolves rate mismatches for you.
+        </p>
+        <table class="syntax-table">
+          <thead>
+            <tr><th>Token</th><th>Meaning</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="tok-amber">1:</td>
+              <td>Sampling-rate multiplier (1× nominal, 8×, 80×, …)</td>
+            </tr>
+            <tr>
+              <td class="tok-blue">actor[Type]</td>
+              <td>Actor with its output data type</td>
+            </tr>
+            <tr>
+              <td class="tok-cyan">-&gt;</td>
+              <td>Data flow — connect output to next actor's input</td>
+            </tr>
+            <tr>
+              <td class="tok-red">!</td>
+              <td>Send immediately — breaks feedback-loop deadlocks</td>
+            </tr>
+            <tr>
+              <td class="tok-green">~</td>
+              <td>Scope — stream the signal live to a real-time display</td>
+            </tr>
+            <tr>
+              <td class="tok-purple">$</td>
+              <td>Enable data logging to Apache Arrow / Parquet</td>
+            </tr>
+            <tr>
+              <td class="tok-blue">{sys::Sub}</td>
+              <td>Scoped access to a sub-actor inside a system</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Right: code tabs -->
+      <div class="code-panel">
+        <div class="code-tabs">
+          <button class="code-tab active" data-tab="0">Mount Step Response</button>
+          <button class="code-tab" data-tab="1">Wind-Loaded Mount</button>
+          <button class="code-tab" data-tab="2">Full GMT Model</button>
+        </div>
+        <div class="code-body">
+          <!-- Tab 0 -->
+          <div class="code-pane active" data-pane="0">
+            <pre><code class="language-rust">use gmt_dos_actors::actorscript;
+use gmt_dos_clients::signals::{Signal, Signals};
+use gmt_dos_clients_io::{
+    gmt_m1::M1RigidBodyMotions,
+    gmt_m2::M2RigidBodyMotions,
+    mount::{MountEncoders, MountSetPoint, MountTorques},
+    optics::TipTilt,
+};
+use gmt_dos_clients_lom::LinearOpticalModel;
+use gmt_dos_clients_mount::Mount;
+use interface::units::Arcsec;
+use skyangle::Conversion;
+
+#[tokio::main]
+async fn main() -> anyhow::Result&lt;()&gt; {
+    // 1 arcsec step on the elevation axis
+    let setpoint = Signals::new(3, n_step)
+        .channel(1, Signal::Constant(1f64.from_arcsec()));
+
+    let fem   = state_space;           // Finite-element structural model
+    let mount = Mount::new();          // Mount PID feedback controller
+    let lom   = LinearOpticalModel::new()?; // Linear optical sensitivity
+
+    actorscript! {
+        #[labels(fem   = "GMT Structural Model",
+                 mount = "Mount\nControl",
+                 lom   = "Linear Optical\nModel")]
+
+        // Feedback loop: set-point → controller → FEM → encoders → controller
+        1: setpoint[MountSetPoint]
+               -> mount[MountTorques]
+               -> fem[MountEncoders]! -> mount
+
+        // Structural motion → optical model
+        1: fem[M1RigidBodyMotions] -> lom
+        1: fem[M2RigidBodyMotions] -> lom[Arcsec&lt;TipTilt&gt;]~
+    }
+
+    Ok(())
+}</code></pre>
+          </div>
+
+          <!-- Tab 1 -->
+          <div class="code-pane" data-pane="1">
+            <pre><code class="language-rust">use gmt_dos_actors::actorscript;
+use gmt_dos_clients::signals::{OneSignal, Signal, Signals};
+use gmt_dos_clients::smooth::{Smooth, Weight};
+use gmt_dos_clients_io::{
+    cfd_wind_loads::{CFDM1WindLoads, CFDM2WindLoads, CFDMountWindLoads},
+    gmt_m1::M1RigidBodyMotions,
+    gmt_m2::{M2RigidBodyMotions, asm::M2ASMReferenceBodyNodes},
+    mount::{MountEncoders, MountSetPoint, MountTorques},
+    optics::WfeRms,
+};
+
+#[tokio::main]
+async fn main() -> anyhow::Result&lt;()&gt; {
+    // Sigmoid envelope ramps wind loads on smoothly
+    let sigmoid = OneSignal::try_from(Signals::new(1, n_step).channel(0,
+        Signal::Sigmoid { amplitude: 1.0,
+                          sampling_frequency_hz: 8000.0 }))?;
+
+    let cfd_loads      = CfdLoads::foh(".", 8000).build()?;
+    let fem            = state_space;
+    let mount          = Mount::new();
+    let lom            = LinearOpticalModel::new()?;  // M1 + M2
+    let m1_lom         = LinearOpticalModel::new()?;  // M1 only
+    let asm_shell_lom  = LinearOpticalModel::new()?;  // ASM shell
+    let asm_rb_lom     = LinearOpticalModel::new()?;  // ASM ref-body
+
+    actorscript! {
+        #[labels(fem = "GMT FEM", mount = "Mount\nControl")]
+
+        // Mount feedback
+        1: setpoint[MountSetPoint]
+               -> mount[MountTorques]
+               -> fem[MountEncoders]! -> mount
+
+        // Wind loads tapered in via sigmoid × smoother
+        1: cfd_loads[CFDM1WindLoads]    -> m1_smoother
+        1: sigmoid[Weight]              -> m1_smoother[CFDM1WindLoads]    -> fem
+        1: cfd_loads[CFDM2WindLoads]    -> m2_smoother
+        1: sigmoid[Weight]              -> m2_smoother[CFDM2WindLoads]    -> fem
+        1: cfd_loads[CFDMountWindLoads] -> mount_smoother
+        1: sigmoid[Weight]              -> mount_smoother[CFDMountWindLoads] -> fem
+
+        // Log wavefront-error RMS every 8 samples (1 kHz)
+        8: lom[WfeRms&lt;-6&gt;]~
+        1: fem[M1RigidBodyMotions] -> lom
+        1: fem[M2RigidBodyMotions] -> lom
+
+        8: m1_lom[M1RbmWfeRms]~
+        1: fem[M1RigidBodyMotions] -> m1_lom
+
+        8: asm_shell_lom[AsmShellWfeRms]~
+        1: fem[M2RigidBodyMotions] -> asm_shell_lom
+
+        8: asm_rb_lom[AsmRefBodyWfeRms]~
+        1: fem[M2ASMReferenceBodyNodes] -> asm_rb_lom
+    }
+
+    Ok(())
+}</code></pre>
+          </div>
+
+          <!-- Tab 2 -->
+          <div class="code-pane" data-pane="2">
+            <pre><code class="language-rust">use gmt_dos_actors::actorscript;
+use gmt_dos_clients_io::{
+    gmt_m1::{M1RigidBodyMotions, assembly},
+    gmt_m2::{
+        M2PositionerForces, M2PositionerNodes, M2RigidBodyMotions,
+        asm::{M2ASMAsmCommand, M2ASMFluidDampingForces,
+              M2ASMVoiceCoilsForces, M2ASMVoiceCoilsMotion},
+    },
+    optics::{SegmentPiston, SegmentTipTilt, TipTilt},
+};
+
+const ACTUATOR_RATE: usize = 80; // actuators run at 8000/80 = 100 Hz
+
+#[tokio::main]
+async fn main() -> anyhow::Result&lt;()&gt; {
+    let m1        = M1::&lt;ACTUATOR_RATE&gt;::new(&amp;fem)?;
+    let positioners = Positioners::new(&amp;fem)?;
+    let asms      = ASMS::&lt;1&gt;::new(&amp;fem)?.build()?;
+    let lom       = LinearOpticalModel::new()?;
+
+    actorscript! {
+        #[labels(fem = "GMT Structural Model", mount = "Mount\nControl",
+                 lom = "Linear Optical\nModel")]
+
+        // Mount control feedback
+        1: setpoint[MountSetPoint]
+               -> mount[MountTorques]
+               -> fem[MountEncoders]! -> mount
+
+        // Wind loads (smoothed sigmoid ramp-on)
+        1: cfd_loads[CFDM1WindLoads]    -> m1_smoother
+        1: sigmoid[Weight]              -> m1_smoother[CFDM1WindLoads]    -> fem
+        1: cfd_loads[CFDM2WindLoads]    -> m2_smoother
+        1: sigmoid[Weight]              -> m2_smoother[CFDM2WindLoads]    -> fem
+        1: cfd_loads[CFDMountWindLoads] -> mount_smoother
+        1: sigmoid[Weight]              -> mount_smoother[CFDMountWindLoads] -> fem
+
+        // M1 primary mirror: hardpoints feedback + actuator forces
+        1: m1_rbm[assembly::M1RigidBodyMotions]
+               -> {m1}[assembly::M1HardpointsForces]
+               -> fem[assembly::M1HardpointsMotion]! -> {m1}
+        1: actuators[assembly::M1ActuatorCommandForces]
+               -> {m1}[assembly::M1ActuatorAppliedForces] -> fem
+
+        // M2 positioners feedback loop
+        1: m2_rbm[M2RigidBodyMotions]
+               -> positioners[M2PositionerForces]
+               -> fem[M2PositionerNodes]! -> positioners
+
+        // ASM (Adaptive Secondary Mirror) voice coils + fluid damping
+        1: asm_cmd[M2ASMAsmCommand]
+               -> {asms}[M2ASMVoiceCoilsForces] -> fem
+        1: {asms}[M2ASMFluidDampingForces]
+               -> fem[M2ASMVoiceCoilsMotion]! -> {asms}
+
+        // Broadcast rigid-body motions to optical model
+        1: fem[M1RigidBodyMotions].. -> lom
+        1: fem[M2RigidBodyMotions].. -> lom
+
+        // Log optical metrics
+        1: lom[TipTilt]$
+        1: lom[SegmentTipTilt]$
+        1: lom[SegmentPiston]$
+    }
+
+    Ok(())
+}</code></pre>
+          </div>
+        </div><!-- .code-body -->
+      </div><!-- .code-panel -->
+    </div><!-- .dsl-layout -->
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── DEMOS ── -->
+<section id="demos">
+  <div class="container section-pad">
+    <div class="section-header">
+      <div class="section-eyebrow">Demo Binaries</div>
+      <h2>Ready-to-run simulations</h2>
+      <p class="section-desc">
+        Each demo in the <code style="font-family:'JetBrains Mono',monospace;font-size:.9em">demos/</code> crate is a self-contained model of the GMT operating under realistic conditions.
+      </p>
+    </div>
+    <div class="demos-grid">
+      <div class="demo-card">
+        <div class="demo-card-header">
+          <div class="demo-name">step-mount</div>
+          <div class="demo-tag">beginner</div>
+        </div>
+        <div class="demo-title">Mount Step Response</div>
+        <p class="demo-desc">Commands a 1-arcsecond step on the elevation axis and records the tip-tilt optical response through the linear optical model.</p>
+        <div class="demo-rate">
+          <span class="demo-rate-badge">8 kHz FEM</span>
+          <span class="demo-rate-badge">feedback</span>
+          <span class="demo-rate-badge">optics</span>
+        </div>
+      </div>
+      <div class="demo-card">
+        <div class="demo-card-header">
+          <div class="demo-name">step-servos-mount</div>
+          <div class="demo-tag">intermediate</div>
+        </div>
+        <div class="demo-title">Servo-Driven Mount Step</div>
+        <p class="demo-desc">Same step test but with the full GMT servo-mechanism system instead of the bare mount controller, including all actuator dynamics.</p>
+        <div class="demo-rate">
+          <span class="demo-rate-badge">8 kHz</span>
+          <span class="demo-rate-badge">servos</span>
+        </div>
+      </div>
+      <div class="demo-card">
+        <div class="demo-card-header">
+          <div class="demo-name">windloaded-mount</div>
+          <div class="demo-tag">intermediate</div>
+        </div>
+        <div class="demo-title">Wind-Loaded Mount Control</div>
+        <p class="demo-desc">CFD wind-load time series applied to the telescope structure with a sigmoid ramp-on. Logs wavefront-error RMS from four independent optical models.</p>
+        <div class="demo-rate">
+          <span class="demo-rate-badge">8 kHz</span>
+          <span class="demo-rate-badge">CFD loads</span>
+          <span class="demo-rate-badge">multi-rate</span>
+        </div>
+      </div>
+      <div class="demo-card">
+        <div class="demo-card-header">
+          <div class="demo-name">windloaded-mount-m1</div>
+          <div class="demo-tag">intermediate</div>
+        </div>
+        <div class="demo-title">Mount + M1 Control</div>
+        <p class="demo-desc">Adds the M1 primary-mirror hardpoint and actuator control loops. Demonstrates multi-rate operation at 8 kHz (FEM) and 100 Hz (M1 actuators).</p>
+        <div class="demo-rate">
+          <span class="demo-rate-badge">8 kHz</span>
+          <span class="demo-rate-badge">100 Hz M1</span>
+          <span class="demo-rate-badge">M1 ctrl</span>
+        </div>
+      </div>
+      <div class="demo-card">
+        <div class="demo-card-header">
+          <div class="demo-name">windloaded-mount-m1-asms-lom</div>
+          <div class="demo-tag">advanced</div>
+        </div>
+        <div class="demo-title">Full GMT Integrated Model</div>
+        <p class="demo-desc">The most complete demo: Mount + M1 mirror + M2 positioners + ASM voice coils + optical model logging segment piston, tip-tilt, and WFE.</p>
+        <div class="demo-rate">
+          <span class="demo-rate-badge">8 kHz</span>
+          <span class="demo-rate-badge">100 Hz ASM</span>
+          <span class="demo-rate-badge">M1 + M2 + ASM</span>
+        </div>
+      </div>
+      <div class="demo-card">
+        <div class="demo-card-header">
+          <div class="demo-name">windloaded-servos</div>
+          <div class="demo-tag">advanced</div>
+        </div>
+        <div class="demo-title">Wind-Loaded Servo Mechanisms</div>
+        <p class="demo-desc">Uses the high-level <code style="font-family:'JetBrains Mono',monospace;font-size:.85em">GmtServoMechanisms</code> system crate—loads precomputed model state and logs four WFE metrics in parallel.</p>
+        <div class="demo-rate">
+          <span class="demo-rate-badge">servos</span>
+          <span class="demo-rate-badge">parallel optics</span>
+        </div>
+      </div>
+      <div class="demo-card">
+        <div class="demo-card-header">
+          <div class="demo-name">windloaded-servos-fsm</div>
+          <div class="demo-tag">advanced</div>
+        </div>
+        <div class="demo-title">FSM-Enhanced Servos</div>
+        <p class="demo-desc">Adds the Fast-Steering Mirror (FSM) subsystem to the servo model for image-stabilization loop closure at the focal plane.</p>
+        <div class="demo-rate">
+          <span class="demo-rate-badge">FSM</span>
+          <span class="demo-rate-badge">tip-tilt</span>
+        </div>
+      </div>
+      <div class="demo-card">
+        <div class="demo-card-header">
+          <div class="demo-name">windloaded-servos-preloading</div>
+          <div class="demo-tag">advanced</div>
+        </div>
+        <div class="demo-title">Servo Pre-loading</div>
+        <p class="demo-desc">Demonstrates model bootstrapping: first a short bootstrap run with <code style="font-family:'JetBrains Mono',monospace;font-size:.85em">#[model(state = ready)]</code>, then a full simulation using steady-state initial conditions.</p>
+        <div class="demo-rate">
+          <span class="demo-rate-badge">bootstrap</span>
+          <span class="demo-rate-badge">state transfer</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── ARCHITECTURE DIAGRAM ── -->
+<section id="arch">
+  <div class="container section-pad">
+    <div class="section-header">
+      <div class="section-eyebrow">Architecture</div>
+      <h2>How actors connect</h2>
+      <p class="section-desc">
+        A simplified view of the <code style="font-family:'JetBrains Mono',monospace;font-size:.9em">step-mount</code> model. Each box is an async Tokio task; arrows are typed channels.
+      </p>
+    </div>
+    <div class="arch-diagram">
+      <svg class="arch-svg" viewBox="0 0 820 280" xmlns="http://www.w3.org/2000/svg" font-family="JetBrains Mono, monospace" font-size="13">
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#4d9ef7"/>
+          </marker>
+          <marker id="arr-red" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#f76d6d"/>
+          </marker>
+          <marker id="arr-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#3ec97a"/>
+          </marker>
+        </defs>
+
+        <!-- Setpoint -->
+        <rect x="20" y="110" width="130" height="52" rx="8" fill="#131c2e" stroke="#1e2d47" stroke-width="1.5"/>
+        <text x="85" y="130" text-anchor="middle" fill="#29d4f5" font-size="11" font-weight="600">Signals</text>
+        <text x="85" y="150" text-anchor="middle" fill="#8a9bbf" font-size="10">setpoint</text>
+
+        <!-- Arrow setpoint → mount -->
+        <line x1="150" y1="136" x2="228" y2="136" stroke="#4d9ef7" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="189" y="128" text-anchor="middle" fill="#4d9ef7" font-size="9.5">MountSetPoint</text>
+
+        <!-- Mount -->
+        <rect x="230" y="110" width="130" height="52" rx="8" fill="#131c2e" stroke="#1e2d47" stroke-width="1.5"/>
+        <text x="295" y="130" text-anchor="middle" fill="#29d4f5" font-size="11" font-weight="600">Mount</text>
+        <text x="295" y="150" text-anchor="middle" fill="#8a9bbf" font-size="10">PID controller</text>
+
+        <!-- Arrow mount → FEM -->
+        <line x1="360" y1="136" x2="438" y2="136" stroke="#4d9ef7" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="399" y="128" text-anchor="middle" fill="#4d9ef7" font-size="9.5">MountTorques</text>
+
+        <!-- FEM -->
+        <rect x="440" y="90" width="145" height="96" rx="8" fill="#131c2e" stroke="#2d6aad" stroke-width="2"/>
+        <text x="513" y="115" text-anchor="middle" fill="#29d4f5" font-size="11" font-weight="600">DiscreteModal</text>
+        <text x="513" y="132" text-anchor="middle" fill="#29d4f5" font-size="11" font-weight="600">Solver</text>
+        <text x="513" y="172" text-anchor="middle" fill="#8a9bbf" font-size="10">GMT FEM · 8 kHz</text>
+
+        <!-- Arrow FEM → Mount (feedback, below) -->
+        <path d="M513,186 C513,220 295,220 295,162" stroke="#f76d6d" stroke-width="1.5" fill="none" marker-end="url(#arr-red)" stroke-dasharray="5,3"/>
+        <text x="404" y="240" text-anchor="middle" fill="#f76d6d" font-size="9.5">MountEncoders !</text>
+
+        <!-- Arrow FEM → LOM (M1 RBM) -->
+        <line x1="585" y1="116" x2="655" y2="116" stroke="#4d9ef7" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="620" y="108" text-anchor="middle" fill="#4d9ef7" font-size="9.5">M1RigidBody</text>
+        <text x="620" y="120" text-anchor="middle" fill="#4d9ef7" font-size="9.5">Motions</text>
+
+        <!-- Arrow FEM → LOM (M2 RBM) -->
+        <line x1="585" y1="160" x2="655" y2="160" stroke="#4d9ef7" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="620" y="152" text-anchor="middle" fill="#4d9ef7" font-size="9.5">M2RigidBody</text>
+        <text x="620" y="166" text-anchor="middle" fill="#4d9ef7" font-size="9.5">Motions</text>
+
+        <!-- LOM -->
+        <rect x="657" y="100" width="130" height="72" rx="8" fill="#131c2e" stroke="#1e2d47" stroke-width="1.5"/>
+        <text x="722" y="126" text-anchor="middle" fill="#29d4f5" font-size="11" font-weight="600">Linear Optical</text>
+        <text x="722" y="143" text-anchor="middle" fill="#29d4f5" font-size="11" font-weight="600">Model</text>
+        <text x="722" y="162" text-anchor="middle" fill="#8a9bbf" font-size="10">sensitivity matrices</text>
+
+        <!-- Arrow LOM → scope -->
+        <line x1="787" y1="136" x2="810" y2="136" stroke="#3ec97a" stroke-width="1.5" marker-end="url(#arr-green)"/>
+        <text x="800" y="128" text-anchor="middle" fill="#3ec97a" font-size="9.5">~</text>
+
+        <!-- Rate labels -->
+        <rect x="20" y="30" width="70" height="22" rx="4" fill="rgba(245,166,35,.1)" stroke="rgba(245,166,35,.3)" stroke-width="1"/>
+        <text x="55" y="46" text-anchor="middle" fill="#f5a623" font-size="10" font-weight="600">rate: 1×</text>
+
+        <!-- Legend -->
+        <line x1="20" y1="265" x2="50" y2="265" stroke="#4d9ef7" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="58" y="269" fill="#8a9bbf" font-size="10">forward flow</text>
+        <line x1="160" y1="265" x2="190" y2="265" stroke="#f76d6d" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-red)"/>
+        <text x="198" y="269" fill="#8a9bbf" font-size="10">feedback (!) no deadlock</text>
+        <line x1="380" y1="265" x2="410" y2="265" stroke="#3ec97a" stroke-width="1.5" marker-end="url(#arr-green)"/>
+        <text x="418" y="269" fill="#8a9bbf" font-size="10">scope display (~)</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── CRATES ── -->
+<section id="crates">
+  <div class="container section-pad">
+    <div class="section-header">
+      <div class="section-eyebrow">Crate Ecosystem</div>
+      <h2>Modular &amp; composable</h2>
+      <p class="section-desc">
+        Every subsystem lives in its own crate. Mix and match only what your model needs.
+      </p>
+    </div>
+    <div class="crates-categories">
+
+      <div>
+        <div class="crates-category-title">Core Framework</div>
+        <div class="crates-grid">
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--cyan)">gmt_dos-actors<span class="crate-version">v12</span></div>
+            <p class="crate-desc">Actor runtime, channel scaffolding, and the <code style="font-family:'JetBrains Mono',monospace">actorscript!</code> procedural macro.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-actors" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-actors"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--cyan)">gmt_dos-actors_dsl<span class="crate-version">v2</span></div>
+            <p class="crate-desc">Parser and code-generator for the actorscript domain-specific language.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-actors_dsl" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-actors_dsl"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--cyan)">gmt_dos-clients<span class="crate-version">v5</span></div>
+            <p class="crate-desc">Base signal sources: <code style="font-family:'JetBrains Mono',monospace">Signals</code>, <code style="font-family:'JetBrains Mono',monospace">Smooth</code>, <code style="font-family:'JetBrains Mono',monospace">Sampler</code>, timer, and more.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--cyan)">gmt_dos-clients_io<span class="crate-version">v4</span></div>
+            <p class="crate-desc">Shared I/O type identifiers for all GMT subsystem inputs and outputs.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_io" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_io"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--cyan)">gmt_dos-actors-clients_interface</div>
+            <p class="crate-desc">Extensibility interface — implement <code style="font-family:'JetBrains Mono',monospace">Read</code>, <code style="font-family:'JetBrains Mono',monospace">Update</code>, and <code style="font-family:'JetBrains Mono',monospace">Write</code> to turn any Rust struct into a first-class actor.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-actors-clients_interface" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-actors-clients_interface"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="crates-category-title">Structural Dynamics</div>
+        <div class="crates-grid">
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--blue)">gmt_dos-clients_fem<span class="crate-version">v5</span></div>
+            <p class="crate-desc">Discrete-time state-space solver wrapping the GMT finite-element model. Supports exponential-matrix integration.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_fem" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_fem"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--blue)">gmt-fem<span class="crate-version">v5</span></div>
+            <p class="crate-desc">Loads and processes the GMT FEM modal model from the data repository.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt-fem" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt-fem"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--blue)">gmt_dos-clients_windloads</div>
+            <p class="crate-desc">CFD-derived wind force and torque time series with first-order-hold interpolation.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_windloads" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_windloads"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="crates-category-title">Mirror &amp; Mount Control</div>
+        <div class="crates-grid">
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--green)">gmt_dos-clients_mount</div>
+            <p class="crate-desc">PID-based mount controller for azimuth, elevation, and GIR axes.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_mount" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_mount"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--green)">gmt_dos-clients_m1-ctrl</div>
+            <p class="crate-desc">M1 primary mirror hardpoint feedback and segment actuator force distribution.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_m1-ctrl" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_m1-ctrl"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--green)">gmt_dos-clients_m2-ctrl</div>
+            <p class="crate-desc">M2 positioner controller and Adaptive Secondary Mirror (ASM) voice-coil driver.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_m2-ctrl" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_m2-ctrl"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--green)">gmt_dos-clients_servos<span class="crate-version">v3</span></div>
+            <p class="crate-desc">High-level <code style="font-family:'JetBrains Mono',monospace">GmtServoMechanisms</code> system combining FEM, mount, M1, M2, and ASM.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_servos" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_servos"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="crates-category-title">Optics &amp; Sensing</div>
+        <div class="crates-grid">
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--amber)">gmt_dos-clients_lom<span class="crate-version">v1</span></div>
+            <p class="crate-desc">Linear Optical Model: maps rigid-body motions to wavefront error, tip-tilt, and segment piston via sensitivity matrices.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_lom" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_lom"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--amber)">gmt_dos-clients_crseo</div>
+            <p class="crate-desc">Full optical simulation client wrapping the <em>crseo</em> ray-tracing library.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_crseo" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_crseo"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--amber)">gmt_dos-clients_domeseeing</div>
+            <p class="crate-desc">Dome-seeing wavefront-error maps sourced from CFD simulations.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_domeseeing" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_domeseeing"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--amber)">gmt_dos-clients_optics-state</div>
+            <p class="crate-desc">Tracks and serialises the evolving optical state of each mirror segment.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_optics-state" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_optics-state"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="crates-category-title">Systems</div>
+        <div class="crates-grid">
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--purple)">gmt_dos-systems_m1</div>
+            <p class="crate-desc">Composite M1 system: hardpoints, actuators, and control modes pre-wired.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-systems_m1" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-systems_m1"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--purple)">gmt_dos-systems_m2</div>
+            <p class="crate-desc">Composite M2 + ASMS system with reference-body dynamics included.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-systems_m2" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-systems_m2"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--purple)">gmt_dos-systems_agws</div>
+            <p class="crate-desc">Adaptive-Optics Wavefront Sensing system for on-sky AO integration.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-systems_agws" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-systems_agws"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="crates-category-title">Tooling</div>
+        <div class="crates-grid">
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--purple)">gmt_dos-clients_scope</div>
+            <p class="crate-desc">Live signal display using a client-server architecture. Actors annotated with <code style="font-family:'JetBrains Mono',monospace">~</code> stream data to a scope client for real-time visualisation.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_scope" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_scope"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--purple)">gmt_dos-clients_arrow</div>
+            <p class="crate-desc">Apache Arrow / Parquet logger — attach <code style="font-family:'JetBrains Mono',monospace">$</code> to any output for zero-copy serialisation.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_arrow" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_arrow"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+          <div class="crate-card">
+            <div class="crate-name" style="color:var(--purple)">gmt_dos-clients_transceiver</div>
+            <p class="crate-desc">QUIC-based transceiver for distributing actor graphs across processes or machines.</p>
+            <div class="crate-links">
+              <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_transceiver" target="_blank" rel="noopener">crates.io</a>
+              <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_transceiver"          target="_blank" rel="noopener">docs.rs</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-logo">gmt_dos-actors</div>
+  <p class="footer-sub">GMT Integrated Modeling Computing Framework</p>
+  <div class="footer-links">
+    <a href="https://github.com/rconan/dos-actors" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://rconan.github.io/dos-actors/" target="_blank" rel="noopener">Documentation</a>
+    <a href="https://crates.io/crates/gmt_dos-actors" target="_blank" rel="noopener">crates.io</a>
+    <a href="https://giantmagellan.org/" target="_blank" rel="noopener">Giant Magellan Telescope</a>
+    <a href="https://github.com/rconan/dos-actors/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+  </div>
+  <p class="footer-copy">Built with Rust &amp; Tokio &mdash; &copy; Rod Conan</p>
+</footer>
+
+<script>
+// ── Stars canvas ──
+(function() {
+  const canvas = document.getElementById('stars-canvas');
+  const ctx    = canvas.getContext('2d');
+  let stars    = [];
+  const N      = 220;
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  function makeStars() {
+    stars = Array.from({ length: N }, () => ({
+      x:    Math.random() * canvas.width,
+      y:    Math.random() * canvas.height,
+      r:    Math.random() * 1.4 + 0.3,
+      a:    Math.random(),
+      da:   (Math.random() * 0.004 + 0.001) * (Math.random() < 0.5 ? 1 : -1),
+    }));
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const s of stars) {
+      s.a += s.da;
+      if (s.a > 1 || s.a < 0.1) s.da *= -1;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(180,210,255,${s.a})`;
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  makeStars();
+  draw();
+  window.addEventListener('resize', () => { resize(); makeStars(); });
+})();
+
+// ── Code tabs ──
+document.querySelectorAll('.code-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const idx    = tab.dataset.tab;
+    const panel  = tab.closest('.code-panel');
+    panel.querySelectorAll('.code-tab').forEach(t  => t.classList.remove('active'));
+    panel.querySelectorAll('.code-pane').forEach(p  => p.classList.remove('active'));
+    tab.classList.add('active');
+    panel.querySelector(`.code-pane[data-pane="${idx}"]`).classList.add('active');
+  });
+});
+
+// ── Highlight.js ──
+hljs.highlightAll();
+</script>
+</body>
+</html>
