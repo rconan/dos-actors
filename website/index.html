@@ -621,6 +621,11 @@
         <p class="feature-desc">Split a model across multiple scripts — on the same machine or across a network — using the <code style="font-family:'JetBrains Mono',monospace;font-size:.8em">transceiver</code> client. Scripts exchange actor data over the QUIC protocol with minimal latency.</p>
       </div>
       <div class="feature-card">
+        <div class="feature-icon blue">💨</div>
+        <div class="feature-title">CFD Simulations Database</div>
+        <p class="feature-desc">Wind load forces and dome-seeing wavefront errors are sourced from the GMT CFD simulations database at <a href="https://cfd.gmto.im" target="_blank" rel="noopener" style="color:var(--blue)">cfd.gmto.im</a>, directly consumed by the <code style="font-family:'JetBrains Mono',monospace;font-size:.8em">windloads</code> and <code style="font-family:'JetBrains Mono',monospace;font-size:.8em">domeseeing</code> clients.</p>
+      </div>
+      <div class="feature-card">
         <div class="feature-icon green">🔌</div>
         <div class="feature-title">Extensible Client Interface</div>
         <p class="feature-desc">Bring your own subsystem by implementing the <code style="font-family:'JetBrains Mono',monospace;font-size:.8em">Read</code>, <code style="font-family:'JetBrains Mono',monospace;font-size:.8em">Update</code>, and <code style="font-family:'JetBrains Mono',monospace;font-size:.8em">Write</code> traits from <code style="font-family:'JetBrains Mono',monospace;font-size:.8em">gmt_dos-actors-clients_interface</code>. Any Rust struct that satisfies the interface becomes a first-class actor in the graph.</p>
@@ -1190,7 +1195,7 @@ async fn main() -> anyhow::Result&lt;()&gt; {
           </div>
           <div class="crate-card">
             <div class="crate-name" style="color:var(--blue)">gmt_dos-clients_windloads</div>
-            <p class="crate-desc">CFD-derived wind force and torque time series with first-order-hold interpolation.</p>
+            <p class="crate-desc">CFD-derived wind force and torque time series with first-order-hold interpolation, sourced from the GMT CFD simulations database at <a href="https://cfd.gmto.im" target="_blank" rel="noopener" style="color:var(--blue)">cfd.gmto.im</a>.</p>
             <div class="crate-links">
               <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_windloads" target="_blank" rel="noopener">crates.io</a>
               <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_windloads"          target="_blank" rel="noopener">docs.rs</a>
@@ -1258,7 +1263,7 @@ async fn main() -> anyhow::Result&lt;()&gt; {
           </div>
           <div class="crate-card">
             <div class="crate-name" style="color:var(--amber)">gmt_dos-clients_domeseeing</div>
-            <p class="crate-desc">Dome-seeing wavefront-error maps sourced from CFD simulations.</p>
+            <p class="crate-desc">Dome-seeing wavefront-error maps sourced from the GMT CFD simulations database at <a href="https://cfd.gmto.im" target="_blank" rel="noopener" style="color:var(--blue)">cfd.gmto.im</a>.</p>
             <div class="crate-links">
               <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_domeseeing" target="_blank" rel="noopener">crates.io</a>
               <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_domeseeing"          target="_blank" rel="noopener">docs.rs</a>
