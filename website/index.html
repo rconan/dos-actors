@@ -180,23 +180,6 @@
     }
     .btn-secondary:hover { background: var(--card-h); transform: translateY(-1px); }
 
-    .hero-stats {
-      display: flex; gap: 3rem; margin-top: 4rem;
-      flex-wrap: wrap; justify-content: center;
-    }
-    .hero-stat { text-align: center; }
-    .hero-stat-num {
-      display: block;
-      font-size: 1.8rem; font-weight: 700;
-      color: var(--text);
-      font-variant-numeric: tabular-nums;
-    }
-    .hero-stat-num span { color: var(--cyan); }
-    .hero-stat-label {
-      font-size: .8rem; color: var(--text3); text-transform: uppercase;
-      letter-spacing: .08em; margin-top: .25rem;
-    }
-
     /* ── LAYOUT HELPERS ── */
     .container { max-width: 1140px; margin: 0 auto; padding: 0 2rem; }
     .section-pad { padding: 6rem 0; }
@@ -531,6 +514,7 @@
     <a href="#features">Features</a>
     <a href="#dsl">DSL</a>
     <a href="#demos">Demos</a>
+    <a href="#arch">Architecture</a>
     <a href="#crates">Crates</a>
     <a class="nav-btn nav-btn-docs" href="https://rconan.github.io/dos-actors/" target="_blank" rel="noopener">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
@@ -786,7 +770,7 @@ async fn main() -> anyhow::Result&lt;()&gt; {
         1: cfd_loads[CFDMountWindLoads] -> mount_smoother
         1: sigmoid[Weight]              -> mount_smoother[CFDMountWindLoads] -> fem
 
-        // Log wavefront-error RMS every 8 samples (1 kHz)
+        // Stream WFE RMS to scope every 8 samples (1 kHz)
         8: lom[WfeRms&lt;-6&gt;]~
         1: fem[M1RigidBodyMotions] -> lom
         1: fem[M2RigidBodyMotions] -> lom
@@ -848,7 +832,7 @@ async fn main() -> anyhow::Result&lt;()&gt; {
         1: {cfd_loads::M2}[CFDM2WindLoads]       -> {gmt_servos::GmtFem}
         1: {cfd_loads::Mount}[CFDMountWindLoads] -> {gmt_servos::GmtFem}
 
-        // Combined WFE — logged every 8 samples (1 kHz)
+        // Stream combined WFE to scope every 8 samples (1 kHz)
         8: lom[WfeRms&lt;-6&gt;]~
         1: {gmt_servos::GmtFem}[M1RigidBodyMotions] -> lom
         1: {gmt_servos::GmtFem}[M2RigidBodyMotions] -> lom
@@ -927,7 +911,7 @@ async fn main() -> anyhow::Result&lt;()&gt; {
           <div class="demo-tag">intermediate</div>
         </div>
         <div class="demo-title">Wind-Loaded Mount Control</div>
-        <p class="demo-desc">CFD wind-load time series applied to the telescope structure with a sigmoid ramp-on. Logs wavefront-error RMS from four independent optical models.</p>
+        <p class="demo-desc">CFD wind-load time series applied to the telescope structure with a sigmoid ramp-on. Streams wavefront-error RMS from four independent optical models to scope.</p>
         <div class="demo-rate">
           <span class="demo-rate-badge">8 kHz</span>
           <span class="demo-rate-badge">CFD loads</span>
@@ -978,7 +962,7 @@ async fn main() -> anyhow::Result&lt;()&gt; {
           <div class="demo-tag">advanced</div>
         </div>
         <div class="demo-title">Wind-Loaded Servo Mechanisms</div>
-        <p class="demo-desc">Uses the high-level <code style="font-family:'JetBrains Mono',monospace;font-size:.85em">GmtServoMechanisms</code> system crate—loads precomputed model state and logs four WFE metrics in parallel.</p>
+        <p class="demo-desc">Uses the high-level <code style="font-family:'JetBrains Mono',monospace;font-size:.85em">GmtServoMechanisms</code> system crate — loads precomputed model state and streams four WFE metrics in parallel to scope.</p>
         <div class="demo-rate">
           <span class="demo-rate-badge">servos</span>
           <span class="demo-rate-badge">parallel optics</span>
@@ -1033,7 +1017,7 @@ async fn main() -> anyhow::Result&lt;()&gt; {
       <div class="section-eyebrow">Architecture</div>
       <h2>How actors connect</h2>
       <p class="section-desc">
-        A simplified view of the <code style="font-family:'JetBrains Mono',monospace;font-size:.9em">step-mount</code> model. Each box is an async Tokio task; arrows are typed channels.
+        A simplified view of the <code style="font-family:'JetBrains Mono',monospace;font-size:.9em">step-mount</code> model. Each box is an actor or display client; arrows are typed channels.
       </p>
     </div>
     <div class="arch-diagram">
@@ -1260,7 +1244,7 @@ async fn main() -> anyhow::Result&lt;()&gt; {
           </div>
           <div class="crate-card">
             <div class="crate-name" style="color:var(--amber)">gmt_dos-clients_crseo</div>
-            <p class="crate-desc">Full optical simulation client wrapping the <em>crseo</em> CUDA-accelerated ray-tracing library for GPU-accelerated end-to-end ray tracing and Fourier optics simulation.</p>
+            <p class="crate-desc">Full optical simulation client wrapping the <em>crseo</em> CUDA-accelerated library for GPU-accelerated end-to-end ray tracing and Fourier optics simulation.</p>
             <div class="crate-links">
               <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_crseo" target="_blank" rel="noopener">crates.io</a>
               <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_crseo"          target="_blank" rel="noopener">docs.rs</a>
