@@ -1037,7 +1037,7 @@ async fn main() -> anyhow::Result&lt;()&gt; {
       </p>
     </div>
     <div class="arch-diagram">
-      <svg class="arch-svg" viewBox="0 0 820 280" xmlns="http://www.w3.org/2000/svg" font-family="JetBrains Mono, monospace" font-size="13">
+      <svg class="arch-svg" viewBox="0 0 980 280" xmlns="http://www.w3.org/2000/svg" font-family="JetBrains Mono, monospace" font-size="13">
         <defs>
           <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
             <path d="M0,0 L0,6 L8,3 z" fill="#4d9ef7"/>
@@ -1094,9 +1094,14 @@ async fn main() -> anyhow::Result&lt;()&gt; {
         <text x="722" y="143" text-anchor="middle" fill="#29d4f5" font-size="11" font-weight="600">Model</text>
         <text x="722" y="162" text-anchor="middle" fill="#8a9bbf" font-size="10">sensitivity matrices</text>
 
-        <!-- Arrow LOM → scope -->
-        <line x1="787" y1="136" x2="810" y2="136" stroke="#3ec97a" stroke-width="1.5" marker-end="url(#arr-green)"/>
-        <text x="800" y="128" text-anchor="middle" fill="#3ec97a" font-size="9.5">~</text>
+        <!-- Arrow LOM → scope (~) -->
+        <line x1="787" y1="136" x2="828" y2="136" stroke="#3ec97a" stroke-width="1.5" marker-end="url(#arr-green)"/>
+        <text x="808" y="128" text-anchor="middle" fill="#3ec97a" font-size="9.5">Arcsec&lt;TipTilt&gt; ~</text>
+
+        <!-- Scope -->
+        <rect x="830" y="110" width="120" height="52" rx="8" fill="#131c2e" stroke="#3ec97a" stroke-width="1.5"/>
+        <text x="890" y="130" text-anchor="middle" fill="#3ec97a" font-size="11" font-weight="600">Scope</text>
+        <text x="890" y="150" text-anchor="middle" fill="#8a9bbf" font-size="10">live display</text>
 
         <!-- Rate labels -->
         <rect x="20" y="30" width="70" height="22" rx="4" fill="rgba(245,166,35,.1)" stroke="rgba(245,166,35,.3)" stroke-width="1"/>
@@ -1108,7 +1113,7 @@ async fn main() -> anyhow::Result&lt;()&gt; {
         <line x1="160" y1="265" x2="190" y2="265" stroke="#f76d6d" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-red)"/>
         <text x="198" y="269" fill="#8a9bbf" font-size="10">feedback (!) no deadlock</text>
         <line x1="380" y1="265" x2="410" y2="265" stroke="#3ec97a" stroke-width="1.5" marker-end="url(#arr-green)"/>
-        <text x="418" y="269" fill="#8a9bbf" font-size="10">scope display (~)</text>
+        <text x="418" y="269" fill="#8a9bbf" font-size="10">scope display (~) — live signal</text>
       </svg>
     </div>
   </div>
