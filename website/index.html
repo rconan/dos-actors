@@ -791,69 +791,63 @@ async fn main() -> anyhow::Result&lt;()&gt; {
 
           <!-- Tab 2 -->
           <div class="code-pane" data-pane="2">
-            <pre><code class="language-rust">use gmt_dos_actors::actorscript;
+            <pre><code class="language-rust">use gmt_dos_actors::{actorscript, system::Sys};
 use gmt_dos_clients_io::{
-    gmt_m1::{M1RigidBodyMotions, assembly},
-    gmt_m2::{
-        M2PositionerForces, M2PositionerNodes, M2RigidBodyMotions,
-        asm::{M2ASMAsmCommand, M2ASMFluidDampingForces,
-              M2ASMVoiceCoilsForces, M2ASMVoiceCoilsMotion},
-    },
-    optics::{SegmentPiston, SegmentTipTilt, TipTilt},
+    cfd_wind_loads::{CFDM1WindLoads, CFDM2WindLoads, CFDMountWindLoads},
+    gmt_m1::M1RigidBodyMotions,
+    gmt_m2::{M2RigidBodyMotions, asm::M2ASMReferenceBodyNodes},
+    optics::WfeRms,
 };
+use gmt_dos_clients_lom::LinearOpticalModel;
+use gmt_dos_clients_servos::{
+    AsmsServo, GmtServoMechanisms, WindLoads, asms_servo::ReferenceBody,
+};
+use gmt_dos_clients_windloads::{CfdLoads, system::{M1, M2, Mount, SigmoidCfdLoads}};
 
 const ACTUATOR_RATE: usize = 80; // actuators run at 8000/80 = 100 Hz
 
 #[tokio::main]
 async fn main() -> anyhow::Result&lt;()&gt; {
-    let m1        = M1::&lt;ACTUATOR_RATE&gt;::new(&amp;fem)?;
-    let positioners = Positioners::new(&amp;fem)?;
-    let asms      = ASMS::&lt;1&gt;::new(&amp;fem)?.build()?;
-    let lom       = LinearOpticalModel::new()?;
+    // Load (or build) pre-serialised system state
+    let cfd_loads = Sys::&lt;SigmoidCfdLoads&gt;::from_data_repo_or_else("windloads.bin", || {
+        CfdLoads::foh(".", 8000).duration(5.0).windloads(&amp;fem, Default::default())
+    })?;
+
+    let gmt_servos = Sys::&lt;GmtServoMechanisms&lt;ACTUATOR_RATE, 1&gt;&gt;::from_data_repo_or_else(
+        "servos.bin",
+        || GmtServoMechanisms::&lt;ACTUATOR_RATE, 1&gt;::new(8000.0, fem)
+               .wind_loads(WindLoads::default())
+               .asms_servo(AsmsServo::new().reference_body(ReferenceBody::new())),
+    )?;
+
+    // Four optical models for independent WFE contributions
+    let lom          = LinearOpticalModel::new()?; // M1 + M2 combined
+    let m1_lom       = LinearOpticalModel::new()?; // M1 rigid-body only
+    let asm_shell_lom = LinearOpticalModel::new()?; // ASM shell
+    let asm_rb_lom   = LinearOpticalModel::new()?; // ASM reference body
 
     actorscript! {
-        #[labels(fem = "GMT Structural Model", mount = "Mount\nControl",
-                 lom = "Linear Optical\nModel")]
+        // Wind loads into the servo-mechanism system (FEM + controllers)
+        1: {cfd_loads::M1}[CFDM1WindLoads]       -> {gmt_servos::GmtFem}
+        1: {cfd_loads::M2}[CFDM2WindLoads]       -> {gmt_servos::GmtFem}
+        1: {cfd_loads::Mount}[CFDMountWindLoads] -> {gmt_servos::GmtFem}
 
-        // Mount control feedback
-        1: setpoint[MountSetPoint]
-               -> mount[MountTorques]
-               -> fem[MountEncoders]! -> mount
+        // Combined WFE — logged every 8 samples (1 kHz)
+        8: lom[WfeRms&lt;-6&gt;]~
+        1: {gmt_servos::GmtFem}[M1RigidBodyMotions] -> lom
+        1: {gmt_servos::GmtFem}[M2RigidBodyMotions] -> lom
 
-        // Wind loads (smoothed sigmoid ramp-on)
-        1: cfd_loads[CFDM1WindLoads]    -> m1_smoother
-        1: sigmoid[Weight]              -> m1_smoother[CFDM1WindLoads]    -> fem
-        1: cfd_loads[CFDM2WindLoads]    -> m2_smoother
-        1: sigmoid[Weight]              -> m2_smoother[CFDM2WindLoads]    -> fem
-        1: cfd_loads[CFDMountWindLoads] -> mount_smoother
-        1: sigmoid[Weight]              -> mount_smoother[CFDMountWindLoads] -> fem
+        // M1 rigid-body contribution
+        8: m1_lom[M1RbmWfeRms]~
+        1: {gmt_servos::GmtFem}[M1RigidBodyMotions] -> m1_lom
 
-        // M1 primary mirror: hardpoints feedback + actuator forces
-        1: m1_rbm[assembly::M1RigidBodyMotions]
-               -> {m1}[assembly::M1HardpointsForces]
-               -> fem[assembly::M1HardpointsMotion]! -> {m1}
-        1: actuators[assembly::M1ActuatorCommandForces]
-               -> {m1}[assembly::M1ActuatorAppliedForces] -> fem
+        // ASM shell contribution
+        8: asm_shell_lom[AsmShellWfeRms]~
+        1: {gmt_servos::GmtFem}[M2RigidBodyMotions] -> asm_shell_lom
 
-        // M2 positioners feedback loop
-        1: m2_rbm[M2RigidBodyMotions]
-               -> positioners[M2PositionerForces]
-               -> fem[M2PositionerNodes]! -> positioners
-
-        // ASM (Adaptive Secondary Mirror) voice coils + fluid damping
-        1: asm_cmd[M2ASMAsmCommand]
-               -> {asms}[M2ASMVoiceCoilsForces] -> fem
-        1: {asms}[M2ASMFluidDampingForces]
-               -> fem[M2ASMVoiceCoilsMotion]! -> {asms}
-
-        // Broadcast rigid-body motions to optical model
-        1: fem[M1RigidBodyMotions].. -> lom
-        1: fem[M2RigidBodyMotions].. -> lom
-
-        // Log optical metrics
-        1: lom[TipTilt]$
-        1: lom[SegmentTipTilt]$
-        1: lom[SegmentPiston]$
+        // ASM reference-body contribution
+        8: asm_rb_lom[AsmRefBodyWfeRms]~
+        1: {gmt_servos::GmtFem}[M2ASMReferenceBodyNodes] -> asm_rb_lom
     }
 
     Ok(())
