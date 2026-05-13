@@ -587,7 +587,7 @@
       <div class="feature-card">
         <div class="feature-icon amber">🔭</div>
         <div class="feature-title">GMT Integration</div>
-        <p class="feature-desc">First-class clients for every telescope subsystem: M1/M2 mirrors, mount control, ASM voice coils, wind loads, and linear optics.</p>
+        <p class="feature-desc">First-class clients for every telescope subsystem: M1/M2 mirrors, mount control, ASM voice coils, wind loads, and wavefront sensors.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon purple">🦀</div>
@@ -598,6 +598,11 @@
         <div class="feature-icon blue">📊</div>
         <div class="feature-title">Built-in Logging</div>
         <p class="feature-desc">Annotate any output with <code style="font-family:'JetBrains Mono',monospace;font-size:.8em">~</code> to stream it live to a scope display, or with <code style="font-family:'JetBrains Mono',monospace;font-size:.8em">$</code> to record it to Apache Arrow / Parquet.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon amber">⚡</div>
+        <div class="feature-title">GPU Acceleration</div>
+        <p class="feature-desc">The structural dynamics solver (<code style="font-family:'JetBrains Mono',monospace;font-size:.8em">gmt_dos-clients_fem</code> with the <code style="font-family:'JetBrains Mono',monospace;font-size:.8em">cuda</code> feature) and the full optical simulation (<code style="font-family:'JetBrains Mono',monospace;font-size:.8em">gmt_dos-clients_crseo</code>) are CUDA-accelerated, enabling high-fidelity real-time models.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon cyan">🌐</div>
@@ -1132,7 +1137,7 @@ async fn main() -> anyhow::Result&lt;()&gt; {
         <div class="crates-grid">
           <div class="crate-card">
             <div class="crate-name" style="color:var(--blue)">gmt_dos-clients_fem<span class="crate-version">v5</span></div>
-            <p class="crate-desc">Discrete-time state-space solver wrapping the GMT finite-element model. Supports exponential-matrix integration.</p>
+            <p class="crate-desc">Discrete-time state-space solver wrapping the GMT finite-element model. Enable the <code style="font-family:'JetBrains Mono',monospace">cuda</code> feature for GPU-accelerated solving via <code style="font-family:'JetBrains Mono',monospace">fem-cuda-solver</code>.</p>
             <div class="crate-links">
               <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_fem" target="_blank" rel="noopener">crates.io</a>
               <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_fem"          target="_blank" rel="noopener">docs.rs</a>
@@ -1208,7 +1213,7 @@ async fn main() -> anyhow::Result&lt;()&gt; {
           </div>
           <div class="crate-card">
             <div class="crate-name" style="color:var(--amber)">gmt_dos-clients_crseo</div>
-            <p class="crate-desc">Full optical simulation client wrapping the <em>crseo</em> ray-tracing library.</p>
+            <p class="crate-desc">Full optical simulation client wrapping the <em>crseo</em> CUDA-accelerated ray-tracing library for GPU-accelerated end-to-end wavefront simulation.</p>
             <div class="crate-links">
               <a class="crate-link cl-crates" href="https://crates.io/crates/gmt_dos-clients_crseo" target="_blank" rel="noopener">crates.io</a>
               <a class="crate-link cl-docs"   href="https://docs.rs/gmt_dos-clients_crseo"          target="_blank" rel="noopener">docs.rs</a>
