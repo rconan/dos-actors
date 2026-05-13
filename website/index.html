@@ -452,6 +452,17 @@
     }
     .arch-svg { display: block; margin: 0 auto; max-width: 100%; }
 
+    /* ── DEMO SOURCE LINK ── */
+    .demo-source {
+      display: inline-flex; align-items: center; gap: .3rem;
+      margin-top: .9rem;
+      font-size: .75rem; font-weight: 600;
+      color: var(--text3);
+      text-decoration: none;
+      transition: color .15s;
+    }
+    .demo-source:hover { color: var(--text2); }
+
     /* ── CRATE LINKS ── */
     .crate-links { display: flex; gap: .45rem; margin-top: .8rem; flex-wrap: wrap; }
     .crate-link {
@@ -884,6 +895,10 @@ async fn main() -> anyhow::Result&lt;()&gt; {
           <span class="demo-rate-badge">feedback</span>
           <span class="demo-rate-badge">optics</span>
         </div>
+        <a class="demo-source" href="https://github.com/rconan/dos-actors/blob/main/demos/src/bin/step-mount/main.rs" target="_blank" rel="noopener">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17 6.1 18 6.4 18 6.4c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3z"/></svg>
+          View source
+        </a>
       </div>
       <div class="demo-card">
         <div class="demo-card-header">
@@ -896,6 +911,10 @@ async fn main() -> anyhow::Result&lt;()&gt; {
           <span class="demo-rate-badge">8 kHz</span>
           <span class="demo-rate-badge">servos</span>
         </div>
+        <a class="demo-source" href="https://github.com/rconan/dos-actors/blob/main/demos/src/bin/step-servos-mount/main.rs" target="_blank" rel="noopener">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17 6.1 18 6.4 18 6.4c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3z"/></svg>
+          View source
+        </a>
       </div>
       <div class="demo-card">
         <div class="demo-card-header">
@@ -909,6 +928,10 @@ async fn main() -> anyhow::Result&lt;()&gt; {
           <span class="demo-rate-badge">CFD loads</span>
           <span class="demo-rate-badge">multi-rate</span>
         </div>
+        <a class="demo-source" href="https://github.com/rconan/dos-actors/blob/main/demos/src/bin/windloaded-mount/main.rs" target="_blank" rel="noopener">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17 6.1 18 6.4 18 6.4c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3z"/></svg>
+          View source
+        </a>
       </div>
       <div class="demo-card">
         <div class="demo-card-header">
@@ -922,6 +945,10 @@ async fn main() -> anyhow::Result&lt;()&gt; {
           <span class="demo-rate-badge">100 Hz M1</span>
           <span class="demo-rate-badge">M1 ctrl</span>
         </div>
+        <a class="demo-source" href="https://github.com/rconan/dos-actors/blob/main/demos/src/bin/windloaded-mount-m1/main.rs" target="_blank" rel="noopener">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17 6.1 18 6.4 18 6.4c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3z"/></svg>
+          View source
+        </a>
       </div>
       <div class="demo-card">
         <div class="demo-card-header">
@@ -935,6 +962,10 @@ async fn main() -> anyhow::Result&lt;()&gt; {
           <span class="demo-rate-badge">100 Hz ASM</span>
           <span class="demo-rate-badge">M1 + M2 + ASM</span>
         </div>
+        <a class="demo-source" href="https://github.com/rconan/dos-actors/blob/main/demos/src/bin/windloaded-mount-m1-asms-lom/main.rs" target="_blank" rel="noopener">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17 6.1 18 6.4 18 6.4c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3z"/></svg>
+          View source
+        </a>
       </div>
       <div class="demo-card">
         <div class="demo-card-header">
@@ -947,6 +978,10 @@ async fn main() -> anyhow::Result&lt;()&gt; {
           <span class="demo-rate-badge">servos</span>
           <span class="demo-rate-badge">parallel optics</span>
         </div>
+        <a class="demo-source" href="https://github.com/rconan/dos-actors/blob/main/demos/src/bin/windloaded-servos/main.rs" target="_blank" rel="noopener">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17 6.1 18 6.4 18 6.4c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3z"/></svg>
+          View source
+        </a>
       </div>
       <div class="demo-card">
         <div class="demo-card-header">
@@ -959,6 +994,10 @@ async fn main() -> anyhow::Result&lt;()&gt; {
           <span class="demo-rate-badge">FSM</span>
           <span class="demo-rate-badge">tip-tilt</span>
         </div>
+        <a class="demo-source" href="https://github.com/rconan/dos-actors/blob/main/demos/src/bin/windloaded-servos-fsm/main.rs" target="_blank" rel="noopener">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17 6.1 18 6.4 18 6.4c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3z"/></svg>
+          View source
+        </a>
       </div>
       <div class="demo-card">
         <div class="demo-card-header">
@@ -971,6 +1010,10 @@ async fn main() -> anyhow::Result&lt;()&gt; {
           <span class="demo-rate-badge">bootstrap</span>
           <span class="demo-rate-badge">state transfer</span>
         </div>
+        <a class="demo-source" href="https://github.com/rconan/dos-actors/blob/main/demos/src/bin/windloaded-servos-preloading/main.rs" target="_blank" rel="noopener">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17 6.1 18 6.4 18 6.4c.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3z"/></svg>
+          View source
+        </a>
       </div>
     </div>
   </div>
