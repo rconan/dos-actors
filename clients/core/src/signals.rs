@@ -8,6 +8,7 @@ use rand_distr::{Distribution, Normal, NormalError};
 /// Signal types
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum Signal {
     /// A constant signal
     Constant(f64),
@@ -24,6 +25,15 @@ pub enum Signal {
     Sigmoid {
         amplitude: f64,
         sampling_frequency_hz: f64,
+    },
+    /// Linear chirp signal
+    Chirp {
+        amplitude: f64,
+        sampling_frequency_hz: f64,
+        starting_frequency_hz: f64,
+        final_frequency_hz: f64,
+        sweep_time_s: f64,
+        phase_s: f64,
     },
     /// White noise
     #[cfg(feature = "noise")]
@@ -88,6 +98,22 @@ impl Signal {
                 let u = i as f64 / sampling_frequency_hz - 0.75;
                 let r = (1. + (-5. * u).exp()).recip();
                 amplitude * r * r
+            }
+            Chirp {
+                amplitude,
+                sampling_frequency_hz,
+                starting_frequency_hz,
+                final_frequency_hz,
+                sweep_time_s,
+                phase_s,
+            } => {
+                let t = i as f64 / sampling_frequency_hz;
+                let c = (final_frequency_hz - starting_frequency_hz) / sweep_time_s;
+                (2f64
+                    * std::f64::consts::PI
+                    * (phase_s + (0.5 * c * t + starting_frequency_hz) * t))
+                    .sin()
+                    * amplitude
             }
             #[cfg(feature = "noise")]
             WhiteNoise(noise) => noise.sample(&mut rand::rng()),
