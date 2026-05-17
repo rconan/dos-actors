@@ -8,7 +8,7 @@ impl Default for Model<Unknown> {
         Self {
             name: Default::default(),
             actors: Default::default(),
-            task_handles: Default::default(),
+            task_set: Default::default(),
             state: Default::default(),
             start: Instant::now(),
             verbose: true,
@@ -32,7 +32,7 @@ impl Model<Unknown> {
         Self {
             name: None,
             actors: Some(actors),
-            task_handles: None,
+            task_set: None,
             state: PhantomData,
             start: Instant::now(),
             verbose: true,
@@ -86,7 +86,7 @@ impl Model<Unknown> {
                 Ok(Model::<Ready> {
                     name: self.name,
                     actors: self.actors,
-                    task_handles: None,
+                    task_set: None,
                     state: PhantomData,
                     start: Instant::now(),
                     verbose: self.verbose,
@@ -100,7 +100,7 @@ impl Model<Unknown> {
         Model::<Ready> {
             name: self.name,
             actors: self.actors,
-            task_handles: None,
+            task_set: None,
             state: PhantomData,
             start: Instant::now(),
             verbose: self.verbose,

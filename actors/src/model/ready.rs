@@ -1,5 +1,6 @@
 use super::{Model, Ready, Running};
 use chrono::{DateTime, Local, SecondsFormat};
+use tokio::task::JoinSet;
 use std::{marker::PhantomData, time::Instant};
 
 impl Model<Ready> {
@@ -23,26 +24,27 @@ impl Model<Ready> {
                 actor.task().await;
             }));
         } */
-        let task_handles: Vec<_> = self
+        let mut set = JoinSet::new();
+        let _task_handles: Vec<_> = self
             .actors
             .into_iter()
             .flatten()
             .map(|actor| {
                 #[cfg(tokio_unstable)]
                 {
-                    tokio::task::Builder::new()
+                    set.build_task()
                         .name(actor.name())
                         .spawn(async move { actor.task().await })
                         .unwrap()
                 }
                 #[cfg(not(tokio_unstable))]
-                tokio::spawn(async move { actor.task().await })
+                set.spawn(async move { actor.task().await })
             })
             .collect();
         Model::<Running> {
             name: self.name,
             actors: None,
-            task_handles: Some(task_handles),
+            task_set: Some(set),
             state: PhantomData,
             start: Instant::now(),
             verbose: self.verbose,

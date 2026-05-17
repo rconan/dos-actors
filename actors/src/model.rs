@@ -171,7 +171,7 @@ use crate::framework::model::{CheckError, Task, TaskError};
 use std::{fmt::Display, marker::PhantomData, time::Instant};
 
 mod flowchart;
-use tokio::task::JoinHandle;
+use tokio::task::JoinSet;
 
 #[derive(thiserror::Error, Debug)]
 pub enum ModelError {
@@ -204,7 +204,7 @@ type Actors = Vec<Box<dyn Task>>;
 pub struct Model<State> {
     pub(crate) name: Option<String>,
     pub(crate) actors: Option<Actors>,
-    pub(crate) task_handles: Option<Vec<JoinHandle<std::result::Result<(), TaskError>>>>,
+    pub(crate) task_set: Option<JoinSet<std::result::Result<(), TaskError>>>,
     pub(crate) state: PhantomData<State>,
     pub(crate) start: Instant,
     pub(crate) verbose: bool,

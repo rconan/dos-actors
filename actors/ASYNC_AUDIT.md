@@ -67,7 +67,7 @@ async) or restructure the logging setup to occur outside any async context so th
 
 ## Medium
 
-### 5. Sequential task awaiting — `model/running.rs:17`
+### 5. ~~Sequential task awaiting~~ — `model/running.rs:17`
 
 ```rust
 for task_handle in task_handles.into_iter() {
@@ -89,6 +89,8 @@ use futures::future::try_join_all;
 
 try_join_all(task_handles).await?;
 ```
+
+*Solution: `tokio::task::JoinSet`*
 
 ### 6. No cancellation or shutdown signal
 

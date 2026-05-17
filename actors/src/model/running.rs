@@ -14,10 +14,11 @@ use std::{
 impl Model<Running> {
     /// Waits for the task of each actor to finish
     pub async fn wait(mut self) -> Result<Model<Completed>> {
-        let task_handles = self.task_handles.take().unwrap();
-        for task_handle in task_handles.into_iter() {
+        let mut task_set = self.task_set.take().unwrap();
+        // for task_handle in task_set.into_iter() {
+        while let Some(task_handle) = task_set.join_next().await {
             // task_handle.await?.map_err(|e| Box::new(e))?;
-            match task_handle.await? {
+            match task_handle? {
                 Ok(_) => {
                     log::debug!(
                         "{} succesfully completed",
@@ -57,7 +58,7 @@ impl Model<Running> {
         Ok(Model::<Completed> {
             name: self.name,
             actors: None,
-            task_handles: None,
+            task_set: None,
             state: PhantomData,
             start: Instant::now(),
             verbose: self.verbose,
