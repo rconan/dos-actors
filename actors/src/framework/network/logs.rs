@@ -1,6 +1,5 @@
-use std::any::type_name;
 
-use interface::{Entry, Size, TryRead, TryWrite, UniqueIdentifier, TryUpdate};
+use interface::{Entry, Size, TryRead, TryUpdate, TryWrite, UniqueIdentifier};
 use tokio::task;
 
 use crate::actor::Actor;
@@ -38,15 +37,12 @@ where
     /// Creates a new logging entry for the output
     fn logn(mut self, actor: &mut Actor<CI, NO, N>, size: usize) -> Self {
         match self {
-            Ok(()) => panic!(
-                r#"Input receivers have been exhausted, may be {} should be multiplexed"#,
-                type_name::<U>()
-            ),
-            Err(OutputRx {
+            Ok(()) => Err(OutputRx::ExhaustedRxs),
+            Err(OutputRx::Output {
                 hash, ref mut rxs, ..
             }) => {
                 let Some(recv) = rxs.pop() else {
-                    panic!(r#"Input receivers is empty"#)
+                    return Err(OutputRx::EmptyRxs);
                 };
                 // (*actor.client.lock().await).entry(size);
                 task::block_in_place(|| actor.client().blocking_lock().entry(size));
@@ -57,6 +53,7 @@ where
                     self
                 }
             }
+            Err(e) => Err(e),
         }
     }
 }
@@ -73,14 +70,14 @@ where
     fn log(mut self, actor: &mut Actor<CI, NO, N>) -> Self {
         match self {
             Ok(()) => panic!(r#"Input receivers have been exhausted"#),
-            Err(OutputRx {
+            Err(OutputRx::Output {
                 hash,
                 ref mut rxs,
                 ref client,
                 ..
             }) => {
                 let Some(recv) = rxs.pop() else {
-                    panic!(r#"Input receivers is empty"#)
+                    return Err(OutputRx::EmptyRxs);
                 };
                 // (*actor.client.lock().await).entry(<CO as Size<U>>::len(&*client.lock().await));
                 task::block_in_place(|| {
@@ -96,6 +93,7 @@ where
                     self
                 }
             }
+            Err(e) => Err(e),
         }
     }
 }

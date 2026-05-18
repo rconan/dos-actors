@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use interface::{Data, UniqueIdentifier, TryWrite};
+use interface::{Data, TryWrite, UniqueIdentifier};
 
 type Rx<U> = flume::Receiver<Data<U>>;
 
@@ -13,18 +13,22 @@ type Rx<U> = flume::Receiver<Data<U>>;
 /// [OutputRx] contains the data of an actor output
 /// that is necessary to create the associated input for
 /// the receiving actor
-pub struct OutputRx<U, C, const NI: usize, const NO: usize>
+#[non_exhaustive]
+pub enum OutputRx<U, C, const NI: usize, const NO: usize>
 where
     U: UniqueIdentifier,
     C: TryWrite<U>,
 {
-    pub actor: String,
-    pub output: String,
-    pub hash: u64,
-    pub rxs: Vec<Rx<U>>,
-    pub client: Arc<tokio::sync::Mutex<C>>,
+    Output {
+        actor: String,
+        output: String,
+        hash: u64,
+        rxs: Vec<Rx<U>>,
+        client: Arc<tokio::sync::Mutex<C>>,
+    },
+    ExhaustedRxs,
+    EmptyRxs,
 }
-
 impl<U, CO, const NO: usize, const NI: usize> std::error::Error for OutputRx<U, CO, NI, NO>
 where
     U: 'static + UniqueIdentifier,
@@ -34,7 +38,7 @@ where
 /// Type-erased version of [OutputRx]
 ///
 /// [ActorOutputsError ] is used to propagate [OuputRx] error.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ActorOutputsError {
     pub(crate) actor: String,
     pub(crate) output: String,
@@ -55,9 +59,10 @@ where
     CO: TryWrite<U>,
 {
     fn from(value: OutputRx<U, CO, NI, NO>) -> Self {
-        ActorOutputsError {
-            actor: value.actor,
-            output: value.output,
+        if let OutputRx::Output { actor, output, .. } = value {
+            ActorOutputsError { actor, output }
+        } else {
+            Default::default()
         }
     }
 }
@@ -67,12 +72,15 @@ where
     CO: TryWrite<U>,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let OutputRx { actor, output, .. } = self;
-        writeln!(
-            f,
-            r#"TryIntoInputs for output "{}" of actor "{}", check output multiplex #"#,
-            output, actor
-        )
+        match self {
+            OutputRx::Output { actor, output, .. } => writeln!(
+                f,
+                r#"TryIntoInputs for output "{}" of actor "{}", check output multiplex #"#,
+                output, actor
+            ),
+            Self::ExhaustedRxs => writeln!(f, r#"Input receivers have been exhausted"#),
+            Self::EmptyRxs => writeln!(f, r#"Input receivers is empty"#),
+        }
     }
 }
 impl<U, CO, const NO: usize, const NI: usize> Debug for OutputRx<U, CO, NI, NO>

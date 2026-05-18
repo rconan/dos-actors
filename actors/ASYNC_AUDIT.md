@@ -146,7 +146,7 @@ style preferred by Clippy's `clippy::clone_on_ref_ptr` lint.
 
 **Recommendation:** Standardise on `Arc::clone(&x)` throughout the crate.
 
-### 10. Full data clone per fanout sender — `actor/io/output.rs:152`
+### 10. ~~Full data clone per fanout sender~~ — `actor/io/output.rs:152`
 
 ```rust
 try_join_all(self.tx.iter().map(|tx| tx.send_async(data.clone())))
@@ -158,6 +158,8 @@ For large data vectors with many subscribers this multiplies allocation linearly
 **Recommendation:** Wrap the outgoing value in `Arc<_>` before the fanout so that
 all senders share a single allocation. This requires adjusting the channel type from
 `S<U>` to `Arc<S<U>>` on the fanout path.
+
+*Solution: already use Arc in custom impl.*
 
 ---
 

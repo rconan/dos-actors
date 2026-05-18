@@ -4,9 +4,9 @@ use std::{
 };
 
 use crate::actor::{
-        io::{Output, OutputObject, S},
-        Actor,
-    };
+    io::{Output, OutputObject, S},
+    Actor,
+};
 
 pub mod builder;
 pub use builder::ActorOutputBuilder;
@@ -92,7 +92,7 @@ where
             {
                 output.tx_push(txs);
                 let output_name = Who::who(output);
-                return Err(OutputRx {
+                return Err(OutputRx::Output {
                     hash: output.get_hash(),
                     rxs,
                     client: std::sync::Arc::clone(&actor.client),
@@ -120,7 +120,7 @@ where
             actor.outputs = Some(vec![Box::new(output)]);
         }
 
-        Err(OutputRx {
+        Err(OutputRx::Output {
             hash,
             rxs,
             client: std::sync::Arc::clone(&actor.client),

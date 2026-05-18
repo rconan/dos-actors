@@ -1,4 +1,4 @@
-use interface::{Data, TryRead, UniqueIdentifier, TryWrite};
+use interface::{Data, TryRead, TryWrite, UniqueIdentifier};
 
 use super::OutputRx;
 
@@ -56,21 +56,38 @@ where
     where
         CI: 'static + TryRead<U>,
     {
-        let Err(OutputRx {
-            hash, ref mut rxs, ..
-        }) = self
-        else {
-            panic!(r#"Input receivers have been exhausted"#)
-        };
-        let Some(recv) = rxs.pop() else {
-            panic!(r#"Input receivers is empty"#)
-        };
-        actor.add_input(recv, hash);
-        if rxs.is_empty() {
-            Ok(())
-        } else {
-            self
+        match self {
+            Err(OutputRx::Output {
+                hash, ref mut rxs, ..
+            }) => {
+                let Some(recv) = rxs.pop() else {
+                    return Err(OutputRx::EmptyRxs);
+                };
+                actor.add_input(recv, hash);
+                if rxs.is_empty() {
+                    Ok(())
+                } else {
+                    self
+                }
+            }
+            Err(e) => Err(e),
+            Ok(_) => Err(OutputRx::ExhaustedRxs),
         }
+        // let Err(OutputRx {
+        //     hash, ref mut rxs, ..
+        // }) = self
+        // else {
+        //     panic!(r#"Input receivers have been exhausted"#)
+        // };
+        // let Some(recv) = rxs.pop() else {
+        //     panic!(r#"Input receivers is empty"#)
+        // };
+        // actor.add_input(recv, hash);
+        // if rxs.is_empty() {
+        //     Ok(())
+        // } else {
+        //     self
+        // }
     }
 }
 // Unique hash for a pair of input/output

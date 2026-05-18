@@ -49,10 +49,11 @@ where
     CO: interface::TryWrite<U>,
 {
     fn from(value: OutputRx<U, CO, NI, NO>) -> Self {
-        SystemError::Ouputs(ActorOutputsError {
-            actor: value.actor,
-            output: value.output,
-        })
+        if let OutputRx::Output { actor, output, .. } = value {
+            SystemError::Ouputs(ActorOutputsError { actor, output })
+        } else {
+            SystemError::Ouputs(Default::default())
+        }
     }
 }
 
