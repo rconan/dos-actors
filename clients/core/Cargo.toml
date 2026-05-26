@@ -62,6 +62,17 @@ name = "iir"
 required-features = ["scope"]
 
 [[example]]
+name = "iir_butterworth_0"
+path = "examples/iir/butterworth_example0.rs"
+
+
+[[example]]
+name = "iir_butterworth_1"
+path = "examples/iir/butterworth_example1.rs"
+required-features = ["scope"]
+
+
+[[example]]
 name = "woofer-tweeter"
 required-features = ["scope"]
 

@@ -21,6 +21,19 @@ pub struct IIRFilter<T> {
     y_history: Vec<VecDeque<T>>,
 }
 
+/// Computes 2nd-order Butterworth IIR coefficients via the bilinear transform.
+/// Returns (b0, b1, b2, a1, a2) normalised so that a0 = 1.
+const fn bilinear_butterworth(wn_d: f64, zeta: f64, ts: f64) -> (f64, f64, f64, f64, f64) {
+    let k  = 2.0 / ts;
+    let a0 = k*k + 2.0*zeta*wn_d*k + wn_d*wn_d;
+    let b0 = wn_d*wn_d / a0;
+    let b1 = 2.0 * wn_d*wn_d / a0;
+    let b2 = b0;
+    let a1 = 2.0 * (wn_d*wn_d - k*k) / a0;
+    let a2 = (k*k - 2.0*zeta*wn_d*k + wn_d*wn_d) / a0;
+    (b0, b1, b2, a1, a2)
+}
+
 impl<T: Default + Clone> IIRFilter<T> {
     /// Create a new multi-dimensional IIR filter with the given coefficients
     pub fn new(b_coeffs: Vec<T>, a_coeffs: Vec<T>, filter_dim: usize) -> Self {
@@ -127,5 +140,28 @@ where
         // Return the most recent output from each dimension
         let y: Vec<T> = self.y_history.iter().map(|y| y[0]).collect();
         Some(Data::new(y))
+    }
+}
+
+impl IIRFilter<f64> {
+    /// Construct a 2nd-order Butterworth IIR filter via the bilinear transform.
+    ///
+    /// # Arguments
+    /// * `wn`         - Natural frequency [rad/s]. Pass the pre-warped value if desired:
+    ///                  `wn_pw = (2.0 / ts) * (wn * ts / 2.0).tan()`
+    /// * `zeta`       - Damping ratio (use `1.0 / 2.0_f64.sqrt()` ≈ 0.7071 for Butterworth)
+    /// * `ts`         - Sampling period [s]
+    /// * `filter_dim` - Number of independent channels to filter
+    pub fn butterworth(wn: f64, zeta: f64, ts: f64, filter_dim: usize) -> Self {
+        let (b0, b1, b2, a1, a2) = bilinear_butterworth(wn, zeta, ts);
+        // IIRFilter::new expects a_coeffs WITHOUT a0 (which is normalised to 1)
+        Self::new(vec![b0, b1, b2], vec![a1, a2], filter_dim)
+    }
+
+    /// Same as `butterworth` but applies frequency pre-warping so the -3 dB
+    /// point lands exactly at `wn` rad/s.
+    pub fn butterworth_prewarped(wn: f64, zeta: f64, ts: f64, filter_dim: usize) -> Self {
+        let wn_pw = (2.0 / ts) * (wn * ts / 2.0).tan();
+        Self::butterworth(wn_pw, zeta, ts, filter_dim)
     }
 }
