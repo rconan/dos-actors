@@ -23,7 +23,8 @@ pub struct IIRFilter<T> {
 
 /// Computes 2nd-order Butterworth IIR coefficients via the bilinear transform.
 /// Returns (b0, b1, b2, a1, a2) normalised so that a0 = 1.
-const fn bilinear_butterworth(wn_d: f64, zeta: f64, ts: f64) -> (f64, f64, f64, f64, f64) {
+const fn bilinear_butterworth(f_bw: f64, zeta: f64, ts: f64) -> (f64, f64, f64, f64, f64) {
+    let wn_d = 2.0 * std::f64::consts::PI * f_bw; // Convert from Hz to rad/s
     let k  = 2.0 / ts;
     let a0 = k*k + 2.0*zeta*wn_d*k + wn_d*wn_d;
     let b0 = wn_d*wn_d / a0;
@@ -147,21 +148,21 @@ impl IIRFilter<f64> {
     /// Construct a 2nd-order Butterworth IIR filter via the bilinear transform.
     ///
     /// # Arguments
-    /// * `wn`         - Natural frequency [rad/s]. Pass the pre-warped value if desired:
-    ///                  `wn_pw = (2.0 / ts) * (wn * ts / 2.0).tan()`
-    /// * `zeta`       - Damping ratio (use `1.0 / 2.0_f64.sqrt()` ≈ 0.7071 for Butterworth)
+    /// * `f_c`        - Cutoff frequency [Hz]
+    /// * `zeta`       - Damping ratio (for example, `1.0 / 2.0_f64.sqrt()` ≈ 0.7071 for Butterworth)
     /// * `ts`         - Sampling period [s]
     /// * `filter_dim` - Number of independent channels to filter
-    pub fn butterworth(wn: f64, zeta: f64, ts: f64, filter_dim: usize) -> Self {
-        let (b0, b1, b2, a1, a2) = bilinear_butterworth(wn, zeta, ts);
+    pub fn butterworth(f_c: f64, zeta: f64, ts: f64, filter_dim: usize) -> Self {
+        let (b0, b1, b2, a1, a2) = bilinear_butterworth(f_c, zeta, ts);
         // IIRFilter::new expects a_coeffs WITHOUT a0 (which is normalised to 1)
         Self::new(vec![b0, b1, b2], vec![a1, a2], filter_dim)
     }
 
     /// Same as `butterworth` but applies frequency pre-warping so the -3 dB
     /// point lands exactly at `wn` rad/s.
-    pub fn butterworth_prewarped(wn: f64, zeta: f64, ts: f64, filter_dim: usize) -> Self {
-        let wn_pw = (2.0 / ts) * (wn * ts / 2.0).tan();
-        Self::butterworth(wn_pw, zeta, ts, filter_dim)
+    pub fn butterworth_prewarped(f_c: f64, zeta: f64, ts: f64, filter_dim: usize) -> Self {
+        let wn_pw = (2.0 / ts) * (2.0 * std::f64::consts::PI *f_c * ts / 2.0).tan();
+        let f_pw = wn_pw / (2.0 * std::f64::consts::PI);
+        Self::butterworth(f_pw, zeta, ts, filter_dim)
     }
 }

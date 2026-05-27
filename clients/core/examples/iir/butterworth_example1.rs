@@ -12,10 +12,10 @@ async fn main() -> anyhow::Result<()> {
     
     // Pre-warped (recommended) — -3 dB exactly at 25 Hz
     let filter = IIRFilter::butterworth_prewarped(
-        25.0 * 2.0 * std::f64::consts::PI,  // wn [rad/s]
-        1.0 / 2.0_f64,                    // zeta (Butterworth)
-        5e-3,                               // Ts [s]
-        n_u,                        // number of channels
+        25.0,            // f_c [Hz]
+        1.0 / 2.0_f64,  // zeta (Butterworth)
+        5e-3,             // Ts [s]
+        n_u,      // number of channels
     );
 
     let n_step = 50; //1_000;
