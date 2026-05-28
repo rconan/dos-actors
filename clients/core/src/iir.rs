@@ -159,7 +159,7 @@ impl IIRFilter<f64> {
     }
 
     /// Same as `butterworth` but applies frequency pre-warping so the -3 dB
-    /// point lands exactly at `wn` rad/s.
+    /// point lands exactly at `f_c` [Hz].
     pub fn butterworth_prewarped(f_c: f64, zeta: f64, ts: f64, filter_dim: usize) -> Self {
         let wn_pw = (2.0 / ts) * (2.0 * std::f64::consts::PI *f_c * ts / 2.0).tan();
         let f_pw = wn_pw / (2.0 * std::f64::consts::PI);
