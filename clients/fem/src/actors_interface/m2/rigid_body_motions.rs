@@ -22,16 +22,6 @@ where
         <DiscreteModalSolver<S> as Get<fem_io::MCM2Lcl6D>>::get(self).map(|data| Data::new(data))
     }
 }
-#[cfg(all(fem, topend = "ASM"))]
-impl<S> Write<M2RigidBodyMotions> for DiscreteModalSolver<S>
-where
-    DiscreteModalSolver<S>: Iterator,
-    S: Solver + Default,
-{
-    fn write(&mut self) -> Option<Data<M2RigidBodyMotions>> {
-        <DiscreteModalSolver<S> as Get<fem_io::MCM2RB6D>>::get(self).map(|data| Data::new(data))
-    }
-}
 #[cfg(all(fem, m2_rbm = "MCM2Lcl"))]
 impl<S> Write<M2RigidBodyMotions> for DiscreteModalSolver<S>
 where
@@ -40,5 +30,15 @@ where
 {
     fn write(&mut self) -> Option<Data<M2RigidBodyMotions>> {
         <DiscreteModalSolver<S> as Get<fem_io::MCM2Lcl>>::get(self).map(|data| Data::new(data))
+    }
+}
+#[cfg(all(fem, m2_rbm = "MCM2Lcl6D"))]
+impl<S> Write<M2RigidBodyMotions> for DiscreteModalSolver<S>
+where
+    DiscreteModalSolver<S>: Iterator,
+    S: Solver + Default,
+{
+    fn write(&mut self) -> Option<Data<M2RigidBodyMotions>> {
+        <DiscreteModalSolver<S> as Get<fem_io::MCM2Lcl6D>>::get(self).map(|data| Data::new(data))
     }
 }
