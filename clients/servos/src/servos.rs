@@ -221,8 +221,13 @@ impl<const M1_RATE: usize, const M2_RATE: usize> System for GmtServoMechanisms<M
                             .filter_inputs_by_name(&["M2PositionerNodes"]),
                     )
                     .zip(
-                        PlainActor::from(&self.m1.dispatch_in)
-                            .filter_inputs_by_name(&["M1HardpointsMotion"]),
+                        PlainActor::from(&self.m1.dispatch_in).filter_inputs_by_name(
+                            if cfg!(m1_hp_force_extension) {
+                                &["M1HardpointsMotion", "M1HardpointsForces"]
+                            } else {
+                                &["M1HardpointsMotion"]
+                            },
+                        ),
                     )
                     .zip(
                         PlainActor::from(&self.m2.dispatch_in)

@@ -28,6 +28,8 @@ mod edge_sensors;
 pub use edge_sensors::EdgeSensors;
 mod m1_segment_figure;
 pub use m1_segment_figure::M1SegmentFigure;
+mod fem_io;
+pub use fem_io::FemIO;
 
 #[derive(Debug, Clone, Default)]
 #[non_exhaustive]
@@ -41,12 +43,15 @@ pub enum Telemetry {
 pub struct ServosBuilder<const M1_RATE: usize, const M2_RATE: usize> {
     pub(crate) sim_sampling_frequency: f64,
     pub(crate) fem: gmt_fem::FEM,
+    pub(crate) fem_zeta: Option<f64>,
+    pub(crate) fem_no_dcgc: bool,
     #[cfg(topend = "ASM")]
     pub(crate) asms_servo: Option<AsmsServo>,
     pub(crate) wind_loads: Option<WindLoads>,
     pub(crate) edge_sensors: Option<EdgeSensors>,
     pub(crate) m1_segment_figure: Option<M1SegmentFigure>,
     pub(crate) telemetry: Option<Telemetry>,
+    pub(crate) fem_io: Option<FemIO>,
 }
 
 impl<const M1_RATE: usize, const M2_RATE: usize> ServosBuilder<M1_RATE, M2_RATE> {
@@ -74,6 +79,21 @@ impl<const M1_RATE: usize, const M2_RATE: usize> ServosBuilder<M1_RATE, M2_RATE>
     /// Enables the telemetry
     pub fn with_telemetry(mut self) -> Self {
         self.telemetry = Some(Telemetry::Full);
+        self
+    }
+    /// Sets the fem inputs and outputs
+    pub fn fem_io(mut self, fem_io: FemIO) -> Self {
+        self.fem_io = Some(fem_io);
+        self
+    }
+    /// Sets the FEM proportional damping coefficients
+    pub fn proportial_damping(mut self, value: f64) -> Self {
+        self.fem_zeta = Some(value);
+        self
+    }
+    /// Disables FEM DC gain compensation
+    pub fn no_dc_gain_compensation(mut self) -> Self {
+        self.fem_no_dcgc = true;
         self
     }
 }
@@ -154,45 +174,43 @@ impl<'a, const M1_RATE: usize, const M2_RATE: usize> TryFrom<ServosBuilder<M1_RA
 
         log::info!("Building structural state space model");
         let sids: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7];
-        #[cfg(topend = "ASM")]
-        let state_space = DiscreteModalSolver::<ExponentialMatrix>::from_fem(fem.clone())
+        let state_space_builder = DiscreteModalSolver::<ExponentialMatrix>::from_fem(fem.clone())
             .sampling(builder.sim_sampling_frequency as f64)
-            .proportional_damping(2. / 100.)
-            .use_static_gain_compensation()
-            .including_mount()
-            .including_m1(Some(sids.clone()))?
+            .proportional_damping(builder.fem_zeta.unwrap_or(2. / 100.));
+        let state_space_builder = if builder.fem_no_dcgc {
+            log::info!("FEM without DC gain compensation");
+            state_space_builder
+        } else {
+            log::info!("FEM with DC gain compensation");
+            state_space_builder.use_static_gain_compensation()
+        }
+        .including_mount()
+        .including_m1(Some(sids.clone()))?
+        .including(builder.m1_segment_figure.as_mut())?
+        .including(builder.wind_loads.as_mut())?
+        .including(builder.edge_sensors.as_mut())?
+        .including(builder.fem_io.as_mut())?
+        .ins::<MCM2SmHexF>()
+        .outs::<MCM2SmHexD>()
+        .outs::<OSSM1Lcl>()
+        .outs::<MCM2Lcl6D>();
+
+        #[cfg(topend = "ASM")]
+        let state_space = state_space_builder
             // .including_asms(Some(sids.clone()), None, None)?
-            .outs::<OSSM1Lcl>()
-            .outs::<MCM2Lcl6D>()
-            .ins::<MCM2SmHexF>()
-            .outs::<MCM2SmHexD>()
-            .including(builder.m1_segment_figure.as_mut())?
             .including(builder.asms_servo.as_mut())?
-            .including(builder.wind_loads.as_mut())?
-            .including(builder.edge_sensors.as_mut())?
             .build()?;
 
         #[cfg(topend = "FSM")]
         let m2 = gmt_dos_systems_m2::M2::new()?;
 
         #[cfg(topend = "FSM")]
-        let state_space = DiscreteModalSolver::<ExponentialMatrix>::from_fem(fem.clone())
-            .sampling(builder.sim_sampling_frequency as f64)
-            .proportional_damping(2. / 100.)
-            .use_static_gain_compensation()
-            .including_mount()
-            .including_m1(Some(sids.clone()))?
+        let state_space = state_space_builder
             // .including_asms(Some(sids.clone()), None, None)?
             .ins::<MCM2PZTF>()
-            .ins::<MCM2SmHexF>()
             .outs::<MCM2PZTD>()
-            .outs::<MCM2SmHexD>()
-            .outs::<OSSM1Lcl>()
-            .outs::<MCM2Lcl6D>()
-            .including(builder.m1_segment_figure.as_mut())?
-            .including(builder.wind_loads.as_mut())?
-            .including(builder.edge_sensors.as_mut())?
             .build()?;
+
         Ok(Self {
             fem: Actor::new(state_space.into_arcx())
                 .name("GMT Structural\nDynamic Model")

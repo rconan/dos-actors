@@ -80,7 +80,7 @@ mod fem {
     use crate::builder::ServosBuilderError;
     #[cfg(topend = "ASM")]
     pub use crate::builder::{AsmsServo, asms_servo};
-    pub use crate::builder::{EdgeSensors, M1SegmentFigure, ServosBuilder, WindLoads};
+    pub use crate::builder::{EdgeSensors, FemIO, M1SegmentFigure, ServosBuilder, WindLoads};
     pub use crate::servos::GmtServoMechanisms;
     use gmt_dos_actors::system::{Sys, SystemError};
 
@@ -156,9 +156,11 @@ mod fem {
         fn builder() {
             let frequency = 1000_f64; // Hz
             let fem = gmt_fem::FEM::from_env().unwrap();
-            assert!(GmtServoMechanisms::<10, 1>::new(frequency, fem)
-                .build()
-                .is_ok());
+            assert!(
+                GmtServoMechanisms::<10, 1>::new(frequency, fem)
+                    .build()
+                    .is_ok()
+            );
         }
     }
 }
