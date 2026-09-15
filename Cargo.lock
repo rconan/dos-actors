@@ -4024,6 +4024,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "gmt_dos-clients_io-scope"
+version = "0.1.0"
+dependencies = [
+ "gmt_dos-actors-clients_interface 1.5.1",
+ "gmt_dos-clients_io 4.3.1",
+ "gmt_dos-clients_scope-client",
+ "tokio",
+]
+
+[[package]]
 name = "gmt_dos-clients_lom"
 version = "1.2.1"
 dependencies = [
@@ -4350,11 +4360,8 @@ dependencies = [
  "faer",
  "faer-ext",
  "gmt-fem",
- "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients_fem",
- "gmt_dos-clients_io 4.3.1",
- "gmt_dos-clients_m1-ctrl",
- "gmt_dos-systems_m1",
+ "nalgebra",
  "serde",
  "serde-pickle 1.2.0",
 ]

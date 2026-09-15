@@ -1,0 +1,10 @@
+[package]
+name = "gmt_dos-clients_io-scope"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+gmt_dos-clients_io.workspace = true
+gmt_dos-clients_scope-client.workspace = true
+interface.workspace = true
+tokio = { workspace = true, features = ["full"] }

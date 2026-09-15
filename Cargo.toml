@@ -19,6 +19,7 @@ members = [
   "systems/m1/modes",
   "clients/scope/hub",
   "clients/optics-state",
+  "clients/io/scope"
 ]
 resolver = "2"
 
