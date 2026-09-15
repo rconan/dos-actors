@@ -193,6 +193,9 @@ impl SegmentSingularModes {
             shape,
         }
     }
+    pub fn nodes_iter(&self) -> impl Iterator<Item = &[f64]> {
+        self.mode_nodes.iter().map(|x| x.as_slice())
+    }
     #[cfg(feature = "faer")]
     pub fn mat_ref(&self) -> faer::mat::MatRef<'_, f64> {
         let (ns, na) = self.shape;
