@@ -7,9 +7,9 @@ A pair of output/input defines a unique [channel](https://docs.rs/flume/latest/f
 The sender is given to the output and the receiver to the input. 
 
 Each actor performs the following task sequentially in a never ending inner loop and asynchronously with respect to the other actors :
- 1. if any inputs, receive inputs & invoke client `gmt_dos_actors::io::Read` trait implementation on each input,
- 2. update client state with the client `gmt_dos_actors::io::Update` trait implementation,
- 3. if any outputs, invoke the client `gmt_dos_actors::io::Write` trait implementation on each output & send outputs.
+ 1. if any inputs, receive inputs & invoke client `interface::Read` trait implementation on each input,
+ 2. update client state with the client `interface::Update` trait implementation,
+ 3. if any outputs, invoke the client `interface::Write` trait implementation on each output & send outputs.
 
  The default behavior of an actor is to pause the inner loop both until all the inputs have been received and until all the outputs have been received by other actors.
 
@@ -36,8 +36,8 @@ Note that events in the same row may occur simultaneously thanks to the asynchro
 
 Laying out the network consists in building actors outputs and relaying them to other actors inputs.
 A pair of output and input must meet the following requirements:
- * the client of the output actor must implement the trait `gmt_dos_actors::io::Write<I>`
- * the client of the input actor must implement the trait `gmt_dos_actors::io::Read<O>`
+ * the client of the output actor must implement the trait `interface::Write<I>`
+ * the client of the input actor must implement the trait `interface::Read<O>`
  * `I` and `O` must be of the same type i.e. `I=O`
  * the ouput rate `NO` must be equal to the input rate `NI` (`NO=NI`)
 

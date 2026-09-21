@@ -26,6 +26,8 @@ A client must:
  * have an implementation of the `Read` trait for each input,
  * have an implementation of the `Write` trait for each output.
 
+Any object that implements any of these traits also implements, through a blanket implementation, either `TryUpdate`, `TryWrite` or `TryRead` that returns the same type than the try-less traits but wrapped into a `Result`.
+
 Actor inputs and outputs are given a unique type, usually an empty Enum.
 Each input and output must implement the `UniqueIdentifier` trait which associated type `DataType` is set to the primitive type of the client data.
 
@@ -68,7 +70,7 @@ The type of the client data can be anything as long as the input that receives i
 Once the actor to client interface has been written, the client can then be used to build an actor.
 Here is the signature of the `Actor` type:
 ```rust,no_run,noplayground
-struct Actor<C, const NI: usize = 1, const NO: usize = 1> where C: Update
+struct Actor<C, const NI: usize = 1, const NO: usize = 1> where C: TryUpdate
 ```
 An actor takes 3 generic type parameters: 
  * `C`: the type of the client,
@@ -76,7 +78,9 @@ An actor takes 3 generic type parameters:
  * `NO`: the sampling rate of the outputs.
 
 Sampling rates are given as ratio between the simulation sampling frequency and the actor inputs or outputs sampling frequency.
-The where clause required that the client implements the `Update` trait, meaning that anything can be an actor's client as long as it implements the `Update` trait.
+The where clause required that the client implements at least the `Update` trait, meaning that anything can be an actor's client as long as it implements the `Update` trait.
+
+
 
 Actors implements the [From](https://doc.rust-lang.org/std/convert/trait.From.html) trait for any type that implements the `Update` trait. 
 As a consequence, a client can be converted into an actor with:
