@@ -14,6 +14,8 @@
   - [Aggregation](./gmt-actor-model/aggregation/aggregation.md)
   - [Correctness](./gmt-actor-model/correctness/correctness.md)
 
+- [actorscript](./actorscript.md)
+
 - [GRSIM](./grim/grim.md)
   - [IO](./grim/io/io.md)
   - [ARROW](./grim/arrow/arrow.md)
