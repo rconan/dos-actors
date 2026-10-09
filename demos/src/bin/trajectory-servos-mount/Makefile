@@ -36,3 +36,4 @@ run:
 plot:
 	$(PYTHON) plot_encoders.py atp_trajectory.csv model_data_1.parquet trajectory_vs_encoders.png $(SAMPLING_FREQUENCY)
 	$(PYTHON) plot_rbm.py model_data_1.parquet rigid_body_motions.png $(SAMPLING_FREQUENCY)
+	$(PYTHON) plot_orbits.py model_data_1.parquet rbm_orbits.png $(SAMPLING_FREQUENCY)
