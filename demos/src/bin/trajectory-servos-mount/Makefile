@@ -4,7 +4,7 @@
 #   make build       build the integrated model
 #   make run         run the integrated model, saves model_data_1.parquet
 #   make plot        plot the trajectory against the mount encoders, the M1 & M2 rigid body motions
-#                    and the segment orbits
+#                    and the segment orbits, and the segment tip-tilt orbits
 
 # FEM 2nd order model
 FEM_REPO ?= /media/rconan/b79153ac-7908-4e0f-9d29-fdfb542910ca/20251110_1617_zen_30_M1_202110_FSM_202305_Mount_202305_pier_202411_M1Fans
@@ -18,6 +18,8 @@ CUDACXX ?= /usr/local/cuda/bin/nvcc
 SIM_DURATION ?= 30
 # flowchart layout of the model: dot, neato or fdp (empty: no flowchart)
 FLOWCHART ?= dot
+# start time [s] of the segment tip-tilt orbit plot
+STT_START ?= 10
 # cargo features: drop cuda to use the CPU FEM solver
 FEATURES ?= cuda gmt_dos-clients_arrow
 
@@ -42,3 +44,4 @@ plot:
 	$(PYTHON) plot_orbits.py model_data_1.parquet rbm_orbits.png $(SAMPLING_FREQUENCY)
 	$(PYTHON) plot_orbits.py model_data_1.parquet rbm_orbits_s7.png $(SAMPLING_FREQUENCY) s7
 	$(PYTHON) plot_gir_orbits.py model_data_1.parquet rbm_orbits_gir.png $(SAMPLING_FREQUENCY)
+	$(PYTHON) plot_stt_orbits.py model_data_1.parquet segment_tiptilt_orbits.png $(SAMPLING_FREQUENCY) $(STT_START)

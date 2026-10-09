@@ -120,12 +120,19 @@ async fn main() -> anyhow::Result<()> {
     //   * elevation (channel #1)
     //   * GIR (channel #2)
     // * output: MountSetPoint
+    // TRAJECTORY (optional): path to an alternative trajectory file
+    let trajectory = env::var("TRAJECTORY").map_or_else(
+        |_| {
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("src")
+                .join("bin")
+                .join("trajectory-servos-mount")
+                .join("atp_trajectory.csv")
+        },
+        |path| path.into(),
+    );
     let setpoint = Trajectory::from_csv(
-        Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("src")
-            .join("bin")
-            .join("trajectory-servos-mount")
-            .join("atp_trajectory.csv"),
+        trajectory,
         sim_sampling_frequency,
         n_step,
     )?;
