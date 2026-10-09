@@ -1,10 +1,9 @@
 # Orbit plot of the M1 and M2 segment rigid body motions minus the rigid telescope rotation
 #  * each segment orbit (Tx vs Ty and Rx vs Ry) is drawn around the segment center,
-#    with the segments laid out as in the OSS (positions from the geotrans crate)
-#  * default: the rigid telescope rotation is removed as in plot_rbm.py
+#    with the segments laid out as in the OSS (rigid_body.py)
+#  * default: the rigid telescope motion is removed as in plot_rbm.py (rigid_body.py)
 #  * with "s7" as 4th argument: the rigid body motions of all the segments are transformed
-#    from their local frames into the frame of the center segment S7 (frame rotations from
-#    the geotrans crate)
+#    from their local frames into the frame of the center segment S7 (rigid_body.py)
 #  * left: whole run, right: after the start-up transient (t > T_SETTLE)
 import sys
 import numpy as np, pyarrow.parquet as pq, matplotlib
@@ -12,6 +11,7 @@ import numpy as np, pyarrow.parquet as pq, matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
+import rigid_body
 
 pqf, out = sys.argv[1:3]
 fs = int(sys.argv[3]) if len(sys.argv) > 3 else 1000
@@ -31,42 +31,6 @@ plt.rcParams.update(
 )
 
 
-def centers(distance, clocking0):
-    """segment centers [m] in the OSS XY plane, segment 7 at the origin"""
-    o = np.deg2rad(90 + clocking0 - 60 * np.arange(6))
-    return np.vstack(
-        [np.column_stack([distance * np.cos(o), distance * np.sin(o)]), [0, 0]]
-    )
-
-
-def rx(a):
-    c, s = np.cos(a), np.sin(a)
-    return np.array([[1, 0, 0], [0, c, -s], [0, s, c]])
-
-
-def ry(a):
-    c, s = np.cos(a), np.sin(a)
-    return np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]])
-
-
-def rz(a):
-    c, s = np.cos(a), np.sin(a)
-    return np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
-
-
-# segment local frames in the OSS (geotrans): v_oss = Q @ v_local
-d = np.deg2rad
-frames = {
-    "M1RigidBodyMotions": [rz(d(-60 * i)) @ rx(d(13.601685)) for i in range(6)]
-    + [np.eye(3)],
-    # M2 S7 frame is flipped w.r.t. the OSS (Rz(pi)Ry(pi)), as found from the rigid telescope rotation
-    "M2RigidBodyMotions": [
-        rz(d(180 - 60 * i)) @ ry(np.pi) @ rx(d(14.777498)) for i in range(6)
-    ]
-    + [rz(np.pi) @ ry(np.pi)],
-}
-
-
 def in_s7_frame(rbm, q):
     """rigid body motions (n, 7, 6) of each segment expressed in the S7 frame"""
     return np.concatenate(
@@ -78,10 +42,6 @@ def in_s7_frame(rbm, q):
     )
 
 
-layout = {
-    "M1RigidBodyMotions": centers(8.71, 0),
-    "M2RigidBodyMotions": centers(1.08774, 180),
-}
 enc = np.array(table.column("MountEncoders").to_pylist())
 angles = np.column_stack([enc[:, 0:4].mean(1), enc[:, 4:10].mean(1)])
 t = np.arange(enc.shape[0]) / fs
@@ -90,13 +50,13 @@ windows = [("whole run", t >= 0), (f"t > {T_SETTLE:.0f} s", t > T_SETTLE)]
 
 fig, ax = plt.subplots(4, 2, figsize=(11, 21), facecolor=SURF)
 row = 0
-for name, xy in layout.items():
+for name, (vertices, frames) in rigid_body.MIRRORS.items():
+    xy = vertices[:, :2]
     rbm = np.array(table.column(name).to_pylist())
     if relative_s7:
-        res = in_s7_frame(rbm.reshape(-1, 7, 6), frames[name])
+        res = in_s7_frame(rbm.reshape(-1, 7, 6), frames)
     else:
-        coefs, *_ = np.linalg.lstsq(angles, rbm, rcond=None)
-        res = (rbm - angles @ coefs).reshape(-1, 7, 6)
+        res = rigid_body.remove_rigid_motion(name, rbm, *angles.T)
     pitch = np.linalg.norm(xy[0])
     for dofs, unit, scale in [((0, 1), "nm", 1e9), ((3, 4), "mas", mas)]:
         for col, (label, mask) in enumerate(windows):

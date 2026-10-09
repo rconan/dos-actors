@@ -1,13 +1,14 @@
 # Plot the M1 and M2 segment rigid body motions saved in model_data_1.parquet
 #  * <out>: the rigid body motions as saved
-#  * <out stem>_minus_rigid.png: the same after removing the rigid rotation of the whole
-#    telescope, i.e. the part of each motion proportional to the azimuth and elevation
-#    angles (mean of the encoders), fitted by least squares over the run
+#  * <out stem>_minus_rigid.png: the same after removing the rigid motion of the whole
+#    telescope, the coordinate transformation of the segments by the azimuth and elevation
+#    rotations (mean of the encoders) in rigid_body.py
 import sys
 import numpy as np, pyarrow.parquet as pq, matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import rigid_body
 
 pqf, out = sys.argv[1:3]
 fs = int(sys.argv[3]) if len(sys.argv) > 3 else 1000
@@ -81,13 +82,7 @@ figure(rbms, dofs, "M1 & M2 rigid body motions along the ATP trajectory", out)
 
 residuals = {}
 for name, rbm in rbms.items():
-    coefs, *_ = np.linalg.lstsq(angles, rbm, rcond=None)
-    residuals[name] = rbm - angles @ coefs
-    # the rotations of a rigid telescope follow the axes 1:1, a sanity check of the fit
-    norms = np.linalg.norm(coefs.reshape(2, 7, 6)[:, :, 3:], axis=2)
-    print(
-        f"{name}: |rotation per radian| az {norms[0].min():.4f}-{norms[0].max():.4f}, el {norms[1].min():.4f}-{norms[1].max():.4f}"
-    )
+    residuals[name] = rigid_body.remove_rigid_motion(name, rbm, *angles.T).reshape(rbm.shape)
 mas = np.rad2deg(1) * 3600e3
 figure(
     residuals,
