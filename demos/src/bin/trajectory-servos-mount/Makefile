@@ -3,7 +3,7 @@
 #   make trajectory  compute atp_trajectory.csv with astropy
 #   make build       build the integrated model
 #   make run         run the integrated model, saves model_data_1.parquet
-#   make plot        plot the trajectory against the mount encoders
+#   make plot        plot the trajectory against the mount encoders and the M1 & M2 rigid body motions
 
 # FEM 2nd order model
 FEM_REPO ?= /media/rconan/b79153ac-7908-4e0f-9d29-fdfb542910ca/20251110_1617_zen_30_M1_202110_FSM_202305_Mount_202305_pier_202411_M1Fans
@@ -35,3 +35,4 @@ run:
 
 plot:
 	$(PYTHON) plot_encoders.py atp_trajectory.csv model_data_1.parquet trajectory_vs_encoders.png $(SAMPLING_FREQUENCY)
+	$(PYTHON) plot_rbm.py model_data_1.parquet rigid_body_motions.png $(SAMPLING_FREQUENCY)
