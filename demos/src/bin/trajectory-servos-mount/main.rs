@@ -26,6 +26,7 @@ use interface::{Data, Size, TimerMarker, UniqueIdentifier, Update, Write};
 //  * FEM 2nd order model: FEM_REPO
 
 /*
+make run (see Makefile for the parameters)
 MOUNT_MODEL=MOUNT_FDR_1kHz FEM_REPO=... CUDACXX=/usr/local/cuda/bin/nvcc cargo run --release --features "cuda gmt_dos-clients_arrow" --bin trajectory-servos-mount
 SIM_DURATION=10 (optional, in seconds, default: 300)
 */
