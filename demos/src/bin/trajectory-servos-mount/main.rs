@@ -1,8 +1,12 @@
 use std::{env, fs, path::Path};
 
 use gmt_dos_actors::actorscript;
-use gmt_dos_clients_io::mount::{MountEncoders, MountSetPoint};
-// use gmt_dos_clients_io::{gmt_m1::M1RigidBodyMotions, gmt_m2::M2RigidBodyMotions, optics::TipTilt};
+use gmt_dos_clients_io::{
+    gmt_m1::M1RigidBodyMotions,
+    gmt_m2::M2RigidBodyMotions,
+    mount::{MountEncoders, MountSetPoint},
+};
+// use gmt_dos_clients_io::optics::TipTilt;
 // use gmt_dos_clients_lom::LinearOpticalModel;
 use gmt_dos_clients_mount::Mount;
 use gmt_dos_clients_servos::{GmtFem, GmtMount, GmtServoMechanisms};
@@ -16,12 +20,13 @@ use interface::{Data, Size, TimerMarker, UniqueIdentifier, Update, Write};
 //    computed with astropy, the rotator following the change in parallactic angle
 //  * the setpoints are the trajectory offsets from the initial pointing,
 //    linearly interpolated to the mount sampling frequency
-//  * the mount encoders from the FEM are saved to `model_data_1.parquet` in this folder
+//  * the mount encoders and M1 & M2 rigid body motions from the FEM are saved to
+//    `model_data_1.parquet` in this folder
 // DATA:
 //  * FEM 2nd order model: FEM_REPO
 
 /*
-MOUNT_MODEL=MOUNT_FDR_1kHz FEM_REPO=... cargo run --release --features gmt_dos-clients_arrow --bin trajectory-servos-mount
+MOUNT_MODEL=MOUNT_FDR_1kHz FEM_REPO=... CUDACXX=/usr/local/cuda/bin/nvcc cargo run --release --features "cuda gmt_dos-clients_arrow" --bin trajectory-servos-mount
 SIM_DURATION=10 (optional, in seconds, default: 300)
 */
 
@@ -131,6 +136,8 @@ async fn main() -> anyhow::Result<()> {
         // 1: {servos::GmtFem}[M1RigidBodyMotions] -> lom
         // 1: {servos::GmtFem}[M2RigidBodyMotions] -> lom[Arcsec<TipTilt>]~
         1: {servos::GmtFem}[MountEncoders]${n_encoders}
+        1: {servos::GmtFem}[M1RigidBodyMotions]$
+        1: {servos::GmtFem}[M2RigidBodyMotions]$
     }
 
     Ok(())
