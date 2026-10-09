@@ -11,7 +11,7 @@ import numpy as np, pyarrow.parquet as pq, matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.patches import RegularPolygon
+from matplotlib.patches import Circle
 
 pqf, out = sys.argv[1:3]
 fs = int(sys.argv[3]) if len(sys.argv) > 3 else 1000
@@ -106,11 +106,9 @@ for name, xy in layout.items():
             k = 0.4 * pitch / amp  # largest excursion drawn at 40% of the segment pitch
             for s in range(7):
                 a.add_patch(
-                    RegularPolygon(
+                    Circle(
                         xy[s],
-                        6,
-                        radius=0.5 * pitch,
-                        orientation=np.pi / 6,
+                        radius=0.48 * pitch,  # segment diameter ~96% of the pitch
                         facecolor="none",
                         edgecolor=GRID,
                         lw=1,
