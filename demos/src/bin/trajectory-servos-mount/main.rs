@@ -1,7 +1,7 @@
 use std::{env, fs, path::Path};
 
 mod rigid_body;
-use rigid_body::RigidBodyRemoval;
+use rigid_body::{KinematicsCalibration, RigidBodyRemoval};
 
 use gmt_dos_actors::actorscript;
 use gmt_dos_clients_io::{
@@ -23,9 +23,9 @@ use interface::{Data, Size, TimerMarker, UniqueIdentifier, Update, Write};
 //    computed with astropy, the rotator following the change in parallactic angle
 //  * the setpoints are the trajectory offsets from the initial pointing,
 //    linearly interpolated to the mount sampling frequency
-//  * the rigid telescope motion, the kinematic gain of the FEM rigid body modes from the
-//    mount encoders, is removed from the M1 & M2 rigid body motions (`rigid_body.rs`)
-//    before the linear optical model
+//  * the rigid telescope motion, the kinematic gain from the mount encoders derived from the
+//    FEM DC gain with the azimuth calibrated in closed-loop (`make calibrate`), is removed
+//    from the M1 & M2 rigid body motions (`rigid_body.rs`) before the linear optical model
 //  * the mount encoders, the M1 & M2 rigid body motions from the FEM and the segment tip-tilt
 //    from the linear optical model are saved to `model_data_1.parquet` in this folder
 // DATA:
@@ -71,6 +71,15 @@ impl Trajectory {
             n_step,
         })
     }
+    /// Keeps only the azimuth, ramping along the trajectory for `ramp` samples and then holding
+    pub fn azimuth_ramp_hold(mut self, ramp: usize) -> Self {
+        let hold = self.samples[ramp.min(self.samples.len() - 1)][0];
+        self.samples
+            .iter_mut()
+            .enumerate()
+            .for_each(|(i, s)| *s = [if i < ramp { s[0] } else { hold }, 0., 0.]);
+        self
+    }
 }
 impl TimerMarker for Trajectory {}
 impl Update for Trajectory {}
@@ -112,16 +121,61 @@ async fn main() -> anyhow::Result<()> {
     // simulation discrete time steps #
     let n_step = sim_sampling_frequency * sim_duration;
 
+    let data_repo = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("bin")
+        .join("trajectory-servos-mount");
+    // closed-loop azimuth kinematics calibration file
+    let calibration = env::var("KINEMATICS_CALIBRATION")
+        .map_or_else(|_| data_repo.join("kinematics_calibration.csv"), |path| path.into());
+
     let fem = FEM::from_env()?;
-    // RIGID TELESCOPE MOTION REMOVAL (kinematics from the FEM rigid body modes)
+    // RIGID TELESCOPE MOTION REMOVAL (kinematics from the FEM DC gain)
     // * inputs: MountEncoders, M1RigidBodyMotions, M2RigidBodyMotions
     // * outputs: M1RigidBodyMotions, M2RigidBodyMotions
-    let rigid = RigidBodyRemoval::from_fem(&fem)?;
+    let fem_kinematics = RigidBodyRemoval::from_fem(&fem)?;
     println!(
         "FEM vs geometric kinematics, max difference per radian of [az, el, GIR]: {:?}",
-        rigid.max_difference(&RigidBodyRemoval::from_geometry())
+        fem_kinematics.max_difference(&RigidBodyRemoval::from_geometry())
     );
     let servos = GmtServoMechanisms::<10, 1>::new(sim_sampling_frequency as f64, fem).build()?;
+
+    // CLOSED-LOOP AZIMUTH KINEMATICS CALIBRATION (CALIBRATE env var)
+    //  * azimuth only: ramping along the ATP trajectory for CALIBRATION_RAMP seconds (default: 15s)
+    //    and holding still for 15s, the rigid body motions are averaged over the last 5s
+    //  * saved to KINEMATICS_CALIBRATION (default: kinematics_calibration.csv in this folder)
+    if env::var("CALIBRATE").is_ok() {
+        let ramp = env::var("CALIBRATION_RAMP")
+            .ok()
+            .map_or(Ok(15_usize), |s| s.parse())?; // second
+        let n_step = sim_sampling_frequency * (ramp + 15);
+        let setpoint = Trajectory::from_csv(
+            data_repo.join("atp_trajectory.csv"),
+            sim_sampling_frequency,
+            n_step,
+        )?
+        .azimuth_ramp_hold(ramp);
+        let calib = KinematicsCalibration::new(
+            &fem_kinematics,
+            n_step - 5 * sim_sampling_frequency..n_step,
+            &calibration,
+        );
+        actorscript! {
+            1: setpoint[MountSetPoint] -> {servos::GmtMount}
+            1: {servos::GmtFem}[MountEncoders]! -> calib
+            1: {servos::GmtFem}[M1RigidBodyMotions]! -> calib
+            1: {servos::GmtFem}[M2RigidBodyMotions]! -> calib
+        }
+        return Ok(());
+    }
+
+    let rigid = if calibration.exists() {
+        println!("loading the closed-loop azimuth kinematics from {calibration:?}");
+        fem_kinematics.with_azimuth_calibration(&calibration)?
+    } else {
+        println!("no closed-loop azimuth kinematics calibration, using the FEM DC gain");
+        fem_kinematics
+    };
 
     // [SET POINT]
     // ATP trajectory for the 3 axes of the mount:

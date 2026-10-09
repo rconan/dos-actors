@@ -2,6 +2,7 @@
 #
 #   make trajectory  compute atp_trajectory.csv with astropy
 #   make build       build the integrated model
+#   make calibrate   closed-loop calibration of the azimuth kinematics, saves kinematics_calibration.csv
 #   make run         run the integrated model, saves model_data_1.parquet
 #   make plot        plot the trajectory against the mount encoders, the M1 & M2 rigid body motions
 #                    and the segment orbits, and the segment tip-tilt orbits
@@ -27,13 +28,16 @@ BIN = trajectory-servos-mount
 PYTHON ?= python3
 export FEM_REPO MOUNT_MODEL CUDACXX SIM_DURATION FLOWCHART
 
-.PHONY: trajectory build run plot
+.PHONY: trajectory build calibrate run plot
 
 trajectory:
 	$(PYTHON) atp_trajectory.py atp_trajectory.csv
 
 build:
 	cargo build --release -p demos --features "$(FEATURES)" --bin $(BIN)
+
+calibrate:
+	CALIBRATE=1 cargo run --release -p demos --features "$(FEATURES)" --bin $(BIN)
 
 run:
 	cargo run --release -p demos --features "$(FEATURES)" --bin $(BIN)

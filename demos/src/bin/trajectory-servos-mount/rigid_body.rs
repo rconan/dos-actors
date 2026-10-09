@@ -5,6 +5,10 @@
 //! (all modes, the mount rigid body modes included) from the mount drive torques
 //! ([RigidBodyRemoval::from_fem]).
 //!
+//! The M1 & M2 control loops change the quasi-static response of the segments to the
+//! azimuth rotation, the azimuth kinematics are then calibrated in closed-loop
+//! ([KinematicsCalibration]) and loaded with [RigidBodyRemoval::with_azimuth_calibration].
+//!
 //! [RigidBodyRemoval::from_geometry] is the geometric equivalent: the coordinate transformation of the segment vertices
 //! and frames by the rotation about the azimuth and elevation axes, both through the OSS
 //! origin, linearized (small angles) as the FEM is linear:
@@ -29,7 +33,12 @@ use gmt_dos_clients_io::{
 };
 use gmt_fem::FEM;
 use interface::{Data, Read, Update, Write};
-use std::sync::Arc;
+use std::{
+    fs,
+    ops::Range,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 type Vec3 = [f64; 3];
 type Mat3 = [[f64; 3]; 3];
@@ -271,6 +280,33 @@ impl RigidBodyRemoval {
             m2_rbm: Default::default(),
         }
     }
+    /// Replaces the azimuth kinematics by the closed-loop calibration saved by [KinematicsCalibration]
+    pub fn with_azimuth_calibration(mut self, path: impl AsRef<Path>) -> anyhow::Result<Self> {
+        let mut m1 = vec![];
+        let mut m2 = vec![];
+        for line in fs::read_to_string(path)?.lines().filter(|l| !l.starts_with('#')).skip(1) {
+            let mut fields = line.split(',');
+            let (Some(mirror), Some(_), Some(value)) = (fields.next(), fields.next(), fields.next())
+            else {
+                anyhow::bail!("invalid calibration line: {line}")
+            };
+            let value: f64 = value.trim().parse()?;
+            match mirror {
+                "M1" => m1.push(value),
+                "M2" => m2.push(value),
+                _ => anyhow::bail!("unknown mirror {mirror} in calibration"),
+            }
+        }
+        anyhow::ensure!(
+            m1.len() == 42 && m2.len() == 42,
+            "expected 42 M1 & 42 M2 calibration values, found {} & {}",
+            m1.len(),
+            m2.len()
+        );
+        self.m1[0] = m1;
+        self.m2[0] = m2;
+        Ok(self)
+    }
     /// Largest difference between the kinematics of `self` and `other` per radian of
     /// [azimuth, elevation, GIR]
     pub fn max_difference(&self, other: &Self) -> [f64; 3] {
@@ -319,6 +355,119 @@ impl Write<M1RigidBodyMotions> for RigidBodyRemoval {
 impl Write<M2RigidBodyMotions> for RigidBodyRemoval {
     fn write(&mut self) -> Option<Data<M2RigidBodyMotions>> {
         Some(Data::new(self.remove(&self.m2_rbm, &self.m2)))
+    }
+}
+
+/// Closed-loop calibration of the azimuth kinematics
+///
+/// With the mount driven along an azimuth only ramp and then holding still, the M1 & M2
+/// rigid body motions and the encoders are averaged over the `window` of time steps of the
+/// hold and the rigid body motions per radian of azimuth are saved to `path`
+/// (the elevation and GIR contributions are removed with the given kinematics).
+///
+/// Inputs: [MountEncoders], [M1RigidBodyMotions], [M2RigidBodyMotions]
+pub struct KinematicsCalibration {
+    m1: [Vec<f64>; 3],
+    m2: [Vec<f64>; 3],
+    window: Range<usize>,
+    step: usize,
+    count: usize,
+    angles: [f64; 3],
+    angles_sum: [f64; 3],
+    m1_rbm: Arc<Vec<f64>>,
+    m2_rbm: Arc<Vec<f64>>,
+    m1_sum: Vec<f64>,
+    m2_sum: Vec<f64>,
+    path: PathBuf,
+}
+impl KinematicsCalibration {
+    pub fn new(kinematics: &RigidBodyRemoval, window: Range<usize>, path: impl Into<PathBuf>) -> Self {
+        Self {
+            m1: kinematics.m1.clone(),
+            m2: kinematics.m2.clone(),
+            window,
+            step: 0,
+            count: 0,
+            angles: [0f64; 3],
+            angles_sum: [0f64; 3],
+            m1_rbm: Default::default(),
+            m2_rbm: Default::default(),
+            m1_sum: vec![0f64; 42],
+            m2_sum: vec![0f64; 42],
+            path: path.into(),
+        }
+    }
+    fn save(&self) -> anyhow::Result<()> {
+        let n = self.count as f64;
+        let [az, el, gir] = self.angles_sum.map(|x| x / n);
+        anyhow::ensure!(az.abs() > 0., "no azimuth motion during the calibration");
+        let kinematics = |sum: &[f64], k: &[Vec<f64>; 3]| -> Vec<f64> {
+            sum.iter()
+                .enumerate()
+                .map(|(i, x)| (x / n - el * k[1][i] - gir * k[2][i]) / az)
+                .collect()
+        };
+        let mut csv = format!(
+            "# closed-loop azimuth kinematics: rigid body motions per radian of azimuth\n\
+             # hold: azimuth {:.6e}rad, elevation {:.3e}rad, GIR {:.3e}rad, {} samples\n\
+             mirror,index,azimuth\n",
+            az, el, gir, self.count
+        );
+        for (mirror, k) in [
+            ("M1", kinematics(&self.m1_sum, &self.m1)),
+            ("M2", kinematics(&self.m2_sum, &self.m2)),
+        ] {
+            k.iter()
+                .enumerate()
+                .for_each(|(i, x)| csv.push_str(&format!("{mirror},{i},{x:.12e}\n")));
+        }
+        fs::write(&self.path, csv)?;
+        println!("azimuth kinematics calibration saved to {:?}", self.path);
+        Ok(())
+    }
+}
+impl Update for KinematicsCalibration {
+    fn update(&mut self) {
+        if self.window.contains(&self.step) {
+            self.count += 1;
+            self.angles_sum
+                .iter_mut()
+                .zip(&self.angles)
+                .for_each(|(s, a)| *s += a);
+            self.m1_sum
+                .iter_mut()
+                .zip(self.m1_rbm.iter())
+                .for_each(|(s, x)| *s += x);
+            self.m2_sum
+                .iter_mut()
+                .zip(self.m2_rbm.iter())
+                .for_each(|(s, x)| *s += x);
+        }
+        self.step += 1;
+        if self.step == self.window.end {
+            if let Err(e) = self.save() {
+                eprintln!("azimuth kinematics calibration failed: {e}");
+            }
+        }
+    }
+}
+impl Read<MountEncoders> for KinematicsCalibration {
+    fn read(&mut self, data: Data<MountEncoders>) {
+        self.angles = [
+            data[..4].iter().sum::<f64>() / 4.,
+            data[4..10].iter().sum::<f64>() / 6.,
+            data[10..14].iter().sum::<f64>() / 4.,
+        ];
+    }
+}
+impl Read<M1RigidBodyMotions> for KinematicsCalibration {
+    fn read(&mut self, data: Data<M1RigidBodyMotions>) {
+        self.m1_rbm = data.into_arc();
+    }
+}
+impl Read<M2RigidBodyMotions> for KinematicsCalibration {
+    fn read(&mut self, data: Data<M2RigidBodyMotions>) {
+        self.m2_rbm = data.into_arc();
     }
 }
 
