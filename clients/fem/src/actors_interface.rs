@@ -40,6 +40,9 @@ where
     fn update(&mut self) {
         log::debug!("update");
         self.next();
+        if let Some(kinematics) = &self.kinematics {
+            kinematics.apply(&mut self.y);
+        }
     }
 }
 

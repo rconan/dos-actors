@@ -60,6 +60,9 @@ pub struct DiscreteStateSpace<'a, T: Solver + Default> {
     facesheet_nodes: Option<RbmRemoval>,
     m1_figure_nodes: Option<RbmRemoval>,
     m1_figure_transforms: Option<Vec<na::DMatrixView<'a, f64>>>,
+    kinematic_compensation: bool,
+    kinematic_calibrations: Vec<crate::kinematics::KinematicCalibration>,
+    kinematic_exclusions: Vec<crate::kinematics::KinematicExclusion>,
 }
 impl<'a, T: Solver + Default> From<FEM> for DiscreteStateSpace<'a, T> {
     /// Creates a state space model builder from a FEM structure
@@ -118,6 +121,45 @@ impl<'a, T: Solver + Default> DiscreteStateSpace<'a, T> {
             use_static_gain: true,
             ..self
         }
+    }
+    /// Removes the mount kinematic motion from all the outputs but the mount encoders
+    ///
+    /// See [KinematicCompensation](crate::KinematicCompensation)
+    pub fn kinematic_compensation(self) -> Self {
+        Self {
+            kinematic_compensation: true,
+            ..self
+        }
+    }
+    /// Excludes output `U` from the kinematic compensation
+    pub fn kinematic_exclusion<U>(mut self) -> Self
+    where
+        U: UniqueIdentifier + 'static,
+    {
+        self.kinematic_exclusions
+            .push(crate::kinematics::KinematicExclusion {
+                is_output: Box::new(|x| x.is::<SplitFem<U>>()),
+                name: std::any::type_name::<U>().to_string(),
+            });
+        self
+    }
+    /// Replaces the kinematic gain of output `U` for the mount `axis` by a calibrated `gain`
+    ///
+    /// `gain` is the motion of each element of `U` per radian of the mount `axis`;
+    /// it also turns on the [kinematic compensation](Self::kinematic_compensation)
+    pub fn kinematic_calibration<U>(mut self, axis: crate::MountAxis, gain: Vec<f64>) -> Self
+    where
+        U: UniqueIdentifier + 'static,
+    {
+        self.kinematic_calibrations
+            .push(crate::kinematics::KinematicCalibration {
+                is_output: Box::new(|x| x.is::<SplitFem<U>>()),
+                name: std::any::type_name::<U>().to_string(),
+                axis: axis.index(),
+                gain,
+            });
+        self.kinematic_compensation = true;
+        self
     }
     /// Overwrites some eigen frequencies
     ///

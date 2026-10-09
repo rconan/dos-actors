@@ -66,6 +66,9 @@ pub struct DiscreteModalSolver<T: Solver + Default> {
     pub facesheet_nodes: Option<RbmRemoval>,
     pub m1_figure_nodes: Option<RbmRemoval>,
     pub m1_figure_transforms: Option<Vec<na::DMatrix<f64>>>,
+    /// Kinematic compensation of the mount rigid body motion
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub kinematics: Option<crate::KinematicCompensation>,
 }
 impl<T: Solver + Default> DiscreteModalSolver<T> {
     /*

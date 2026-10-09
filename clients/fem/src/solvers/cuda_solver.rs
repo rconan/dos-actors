@@ -153,6 +153,7 @@ where
             facesheet_nodes,
             m1_figure_nodes,
             m1_figure_transforms,
+            kinematics,
         } = self;
         let mut cu_ss = CuStateSpace::new(state_space);
         if let Some(dcg) = &psi_dcg {
@@ -170,6 +171,7 @@ where
             facesheet_nodes,
             m1_figure_nodes,
             m1_figure_transforms,
+            kinematics,
         }
     }
 }

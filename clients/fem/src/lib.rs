@@ -47,6 +47,8 @@ pub mod solvers;
 pub use discrete_state_space::{DiscreteStateSpace, StateSpaceError};
 mod discrete_modal_solver;
 pub use discrete_modal_solver::DiscreteModalSolver;
+mod kinematics;
+pub use kinematics::{KinematicCompensation, MountAxis};
 pub mod actors_interface;
 #[cfg(feature = "serde")]
 mod impl_serde;

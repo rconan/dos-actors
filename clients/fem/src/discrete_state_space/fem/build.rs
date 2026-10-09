@@ -101,6 +101,11 @@ are set to zero."
                 } else {
                     None
                 };
+                let kinematics = if self.kinematic_compensation {
+                    Some(self.kinematic_compensator(&forces_2_modes, &modes_2_nodes, &w)?)
+                } else {
+                    None
+                };
                 Ok(DiscreteModalSolver {
                     u: vec![0f64; forces_2_modes.ncols()],
                     y: vec![0f64; modes_2_nodes.nrows()],
@@ -113,6 +118,7 @@ are set to zero."
                     m1_figure_transforms: self
                         .m1_figure_transforms
                         .map(|t| t.into_iter().map(|x| x.into_owned()).collect()),
+                    kinematics,
                     ..Default::default()
                 })
             }
