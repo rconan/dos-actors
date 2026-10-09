@@ -80,7 +80,10 @@ mod fem {
     use crate::builder::ServosBuilderError;
     #[cfg(topend = "ASM")]
     pub use crate::builder::{AsmsServo, asms_servo};
-    pub use crate::builder::{EdgeSensors, FemIO, M1SegmentFigure, ServosBuilder, WindLoads};
+    pub use crate::builder::{
+        EdgeSensors, FemIO, KinematicOutput, M1SegmentFigure, ServosBuilder, WindLoads,
+    };
+    pub use gmt_dos_clients_fem::MountAxis;
     pub use crate::servos::GmtServoMechanisms;
     use gmt_dos_actors::system::{Sys, SystemError};
 

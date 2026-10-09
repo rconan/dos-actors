@@ -4,7 +4,9 @@ use gmt_dos_actors::{
     system::{Sys, SystemError},
 };
 use gmt_dos_clients_arrow::Arrow;
-use gmt_dos_clients_fem::{DiscreteModalSolver, StateSpaceError, solvers::ExponentialMatrix};
+use gmt_dos_clients_fem::{
+    DiscreteModalSolver, MountAxis, StateSpaceError, solvers::ExponentialMatrix,
+};
 #[cfg(topend = "FSM")]
 use gmt_dos_clients_io::gmt_fem::{inputs::MCM2PZTF, outputs::MCM2PZTD};
 use gmt_dos_clients_io::gmt_fem::{
@@ -52,6 +54,16 @@ pub struct ServosBuilder<const M1_RATE: usize, const M2_RATE: usize> {
     pub(crate) m1_segment_figure: Option<M1SegmentFigure>,
     pub(crate) telemetry: Option<Telemetry>,
     pub(crate) fem_io: Option<FemIO>,
+    pub(crate) kinematics: Option<Vec<(KinematicOutput, MountAxis, Vec<f64>)>>,
+}
+
+/// FEM outputs with a calibrated kinematic gain
+#[derive(Debug, Clone, Copy)]
+pub enum KinematicOutput {
+    /// M1 segments rigid body motions ([OSSM1Lcl])
+    M1RigidBodyMotions,
+    /// M2 segments rigid body motions ([MCM2Lcl6D])
+    M2RigidBodyMotions,
 }
 
 impl<const M1_RATE: usize, const M2_RATE: usize> ServosBuilder<M1_RATE, M2_RATE> {
@@ -94,6 +106,31 @@ impl<const M1_RATE: usize, const M2_RATE: usize> ServosBuilder<M1_RATE, M2_RATE>
     /// Disables FEM DC gain compensation
     pub fn no_dc_gain_compensation(mut self) -> Self {
         self.fem_no_dcgc = true;
+        self
+    }
+    /// Removes the mount kinematic motion from all the FEM outputs but the mount encoders
+    ///
+    /// The outputs fed back to the servo-mechanisms (e.g. the M1 hardpoints forces) are
+    /// compensated too: otherwise the M1 actuators offload the kinematic part of the hardpoints
+    /// forces and the M1 segments drift with the mount azimuth
+    ///
+    /// See [KinematicCompensation](gmt_dos_clients_fem::KinematicCompensation)
+    pub fn kinematic_compensation(mut self) -> Self {
+        self.kinematics.get_or_insert_with(Vec::new);
+        self
+    }
+    /// Replaces the FEM kinematic gain of `output` for the mount `axis` by a calibrated `gain`
+    ///
+    /// It also turns on the [kinematic compensation](Self::kinematic_compensation)
+    pub fn kinematic_calibration(
+        mut self,
+        output: KinematicOutput,
+        axis: MountAxis,
+        gain: Vec<f64>,
+    ) -> Self {
+        self.kinematics
+            .get_or_insert_with(Vec::new)
+            .push((output, axis, gain));
         self
     }
 }
@@ -194,6 +231,26 @@ impl<'a, const M1_RATE: usize, const M2_RATE: usize> TryFrom<ServosBuilder<M1_RA
         .outs::<MCM2SmHexD>()
         .outs::<OSSM1Lcl>()
         .outs::<MCM2Lcl6D>();
+        let state_space_builder = match builder.kinematics.take() {
+            Some(calibrations) => {
+                log::info!("FEM with kinematic compensation");
+                // all the outputs, including the ones fed back to the servo-mechanisms,
+                // are compensated
+                let state_space_builder = state_space_builder.kinematic_compensation();
+                calibrations.into_iter().fold(
+                    state_space_builder,
+                    |ssb, (output, axis, gain)| match output {
+                        KinematicOutput::M1RigidBodyMotions => {
+                            ssb.kinematic_calibration::<OSSM1Lcl>(axis, gain)
+                        }
+                        KinematicOutput::M2RigidBodyMotions => {
+                            ssb.kinematic_calibration::<MCM2Lcl6D>(axis, gain)
+                        }
+                    },
+                )
+            }
+            None => state_space_builder,
+        };
 
         #[cfg(topend = "ASM")]
         let state_space = state_space_builder
