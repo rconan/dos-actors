@@ -16,12 +16,14 @@ SAMPLING_FREQUENCY ?= 1000
 CUDACXX ?= /usr/local/cuda/bin/nvcc
 # simulation duration [s], up to 300 (length of the trajectory)
 SIM_DURATION ?= 30
+# flowchart layout of the model: dot, neato or fdp (empty: no flowchart)
+FLOWCHART ?= dot
 # cargo features: drop cuda to use the CPU FEM solver
 FEATURES ?= cuda gmt_dos-clients_arrow
 
 BIN = trajectory-servos-mount
 PYTHON ?= python3
-export FEM_REPO MOUNT_MODEL CUDACXX SIM_DURATION
+export FEM_REPO MOUNT_MODEL CUDACXX SIM_DURATION FLOWCHART
 
 .PHONY: trajectory build run plot
 

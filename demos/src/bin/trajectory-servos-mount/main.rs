@@ -1,13 +1,16 @@
 use std::{env, fs, path::Path};
 
+mod rigid_body;
+use rigid_body::RigidBodyRemoval;
+
 use gmt_dos_actors::actorscript;
 use gmt_dos_clients_io::{
     gmt_m1::M1RigidBodyMotions,
     gmt_m2::M2RigidBodyMotions,
     mount::{MountEncoders, MountSetPoint},
 };
-// use gmt_dos_clients_io::optics::TipTilt;
-// use gmt_dos_clients_lom::LinearOpticalModel;
+use gmt_dos_clients_io::optics::SegmentTipTilt;
+use gmt_dos_clients_lom::LinearOpticalModel;
 use gmt_dos_clients_mount::Mount;
 use gmt_dos_clients_servos::{GmtFem, GmtMount, GmtServoMechanisms};
 use gmt_fem::FEM;
@@ -20,8 +23,10 @@ use interface::{Data, Size, TimerMarker, UniqueIdentifier, Update, Write};
 //    computed with astropy, the rotator following the change in parallactic angle
 //  * the setpoints are the trajectory offsets from the initial pointing,
 //    linearly interpolated to the mount sampling frequency
-//  * the mount encoders and M1 & M2 rigid body motions from the FEM are saved to
-//    `model_data_1.parquet` in this folder
+//  * the rigid telescope motion is removed from the M1 & M2 rigid body motions
+//    (`rigid_body.rs`) before the linear optical model
+//  * the mount encoders, the M1 & M2 rigid body motions from the FEM and the segment tip-tilt
+//    from the linear optical model are saved to `model_data_1.parquet` in this folder
 // DATA:
 //  * FEM 2nd order model: FEM_REPO
 
@@ -127,18 +132,26 @@ async fn main() -> anyhow::Result<()> {
     // number of mount encoders (logged size of MountEncoders)
     let n_encoders = <Mount as Size<MountEncoders>>::len(&Mount::new());
 
+    // RIGID TELESCOPE MOTION REMOVAL
+    // * inputs: MountEncoders, M1RigidBodyMotions, M2RigidBodyMotions
+    // * outputs: M1RigidBodyMotions, M2RigidBodyMotions
+    let rigid = RigidBodyRemoval::new();
     // [LOM (Linear Optical Model)](crates.io/crates/gmt_dos-clients_lom)
     // * inputs: M1RigidBodyMotions, M2RigidBodyMotions
-    // * output: Arcsec<TipTilt>
-    // let lom = LinearOpticalModel::new()?;
+    // * output: SegmentTipTilt
+    let lom = LinearOpticalModel::new()?;
 
     actorscript! {
         1: setpoint[MountSetPoint] -> {servos::GmtMount}
-        // 1: {servos::GmtFem}[M1RigidBodyMotions] -> lom
-        // 1: {servos::GmtFem}[M2RigidBodyMotions] -> lom[Arcsec<TipTilt>]~
         1: {servos::GmtFem}[MountEncoders]${n_encoders}
         1: {servos::GmtFem}[M1RigidBodyMotions]$
         1: {servos::GmtFem}[M2RigidBodyMotions]$
+        1: {servos::GmtFem}[MountEncoders]! -> rigid
+        1: {servos::GmtFem}[M1RigidBodyMotions]! -> rigid
+        1: {servos::GmtFem}[M2RigidBodyMotions]! -> rigid
+        1: rigid[M1RigidBodyMotions] -> lom
+        1: rigid[M2RigidBodyMotions] -> lom
+        1: lom[SegmentTipTilt]$
     }
 
     Ok(())
