@@ -23,8 +23,9 @@ use interface::{Data, Size, TimerMarker, UniqueIdentifier, Update, Write};
 //    computed with astropy, the rotator following the change in parallactic angle
 //  * the setpoints are the trajectory offsets from the initial pointing,
 //    linearly interpolated to the mount sampling frequency
-//  * the rigid telescope motion is removed from the M1 & M2 rigid body motions
-//    (`rigid_body.rs`) before the linear optical model
+//  * the rigid telescope motion, the kinematic gain of the FEM rigid body modes from the
+//    mount encoders, is removed from the M1 & M2 rigid body motions (`rigid_body.rs`)
+//    before the linear optical model
 //  * the mount encoders, the M1 & M2 rigid body motions from the FEM and the segment tip-tilt
 //    from the linear optical model are saved to `model_data_1.parquet` in this folder
 // DATA:
@@ -112,6 +113,14 @@ async fn main() -> anyhow::Result<()> {
     let n_step = sim_sampling_frequency * sim_duration;
 
     let fem = FEM::from_env()?;
+    // RIGID TELESCOPE MOTION REMOVAL (kinematics from the FEM rigid body modes)
+    // * inputs: MountEncoders, M1RigidBodyMotions, M2RigidBodyMotions
+    // * outputs: M1RigidBodyMotions, M2RigidBodyMotions
+    let rigid = RigidBodyRemoval::from_fem(&fem)?;
+    println!(
+        "FEM vs geometric kinematics, max difference per radian of [az, el, GIR]: {:?}",
+        rigid.max_difference(&RigidBodyRemoval::from_geometry())
+    );
     let servos = GmtServoMechanisms::<10, 1>::new(sim_sampling_frequency as f64, fem).build()?;
 
     // [SET POINT]
@@ -139,10 +148,6 @@ async fn main() -> anyhow::Result<()> {
     // number of mount encoders (logged size of MountEncoders)
     let n_encoders = <Mount as Size<MountEncoders>>::len(&Mount::new());
 
-    // RIGID TELESCOPE MOTION REMOVAL
-    // * inputs: MountEncoders, M1RigidBodyMotions, M2RigidBodyMotions
-    // * outputs: M1RigidBodyMotions, M2RigidBodyMotions
-    let rigid = RigidBodyRemoval::new();
     // [LOM (Linear Optical Model)](crates.io/crates/gmt_dos-clients_lom)
     // * inputs: M1RigidBodyMotions, M2RigidBodyMotions
     // * output: SegmentTipTilt

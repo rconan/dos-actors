@@ -1,6 +1,11 @@
 //! Rigid telescope motion removal from the M1 & M2 segment rigid body motions
 //!
-//! The rigid telescope motion is the coordinate transformation of the segment vertices
+//! The rigid telescope motion is K [azimuth, elevation, GIR] with K the kinematic gain from
+//! the mount encoders to the M1 & M2 rigid body motions derived from the DC gain of the FEM
+//! (all modes, the mount rigid body modes included) from the mount drive torques
+//! ([RigidBodyRemoval::from_fem]).
+//!
+//! [RigidBodyRemoval::from_geometry] is the geometric equivalent: the coordinate transformation of the segment vertices
 //! and frames by the rotation about the azimuth and elevation axes, both through the OSS
 //! origin, linearized (small angles) as the FEM is linear:
 //!  * azimuth axis: (0, sin(30deg), cos(30deg)) in the OSS for the FEM at 30deg zenith angle
@@ -10,9 +15,19 @@
 //! local frame Q (v_oss = Q v_local) is [Q^T (w x r), Q^T w].
 //! The segment vertices and frames are from the geotrans crate (see also `rigid_body.py`).
 
+use gmt_dos_clients_fem::Model;
 use gmt_dos_clients_io::{
-    gmt_m1::M1RigidBodyMotions, gmt_m2::M2RigidBodyMotions, mount::MountEncoders,
+    gmt_fem::{
+        inputs::{OSSAzDriveTorque, OSSElDriveTorque, OSSRotDriveTorque},
+        outputs::{
+            MCM2Lcl6D, OSSAzEncoderAngle, OSSElEncoderAngle, OSSM1Lcl, OSSRotEncoderAngle,
+        },
+    },
+    gmt_m1::M1RigidBodyMotions,
+    gmt_m2::M2RigidBodyMotions,
+    mount::MountEncoders,
 };
+use gmt_fem::FEM;
 use interface::{Data, Read, Update, Write};
 use std::sync::Arc;
 
@@ -95,11 +110,12 @@ fn mirror(
         .collect()
 }
 
-/// Rigid body motions [7x6] in the segment local frames per radian of azimuth and of elevation
-fn sensitivities(segments: &[Segment]) -> [Vec<f64>; 2] {
+/// Rigid body motions [7x6] in the segment local frames per radian of azimuth, elevation & GIR
+fn sensitivities(segments: &[Segment]) -> [Vec<f64>; 3] {
     let azimuth: Vec3 = [0., 30f64.to_radians().sin(), 30f64.to_radians().cos()];
     let elevation: Vec3 = [-1., 0., 0.];
-    [azimuth, elevation].map(|w| {
+    let gir: Vec3 = [0., 0., 0.];
+    [azimuth, elevation, gir].map(|w| {
         segments
             .iter()
             .flat_map(|s| {
@@ -116,15 +132,117 @@ fn sensitivities(segments: &[Segment]) -> [Vec<f64>; 2] {
 /// Inputs: [MountEncoders], [M1RigidBodyMotions], [M2RigidBodyMotions]
 /// Outputs: [M1RigidBodyMotions], [M2RigidBodyMotions] minus the rigid telescope motion
 pub struct RigidBodyRemoval {
-    m1: [Vec<f64>; 2],
-    m2: [Vec<f64>; 2],
-    azimuth: f64,
-    elevation: f64,
+    m1: [Vec<f64>; 3],
+    m2: [Vec<f64>; 3],
+    angles: [f64; 3],
     m1_rbm: Arc<Vec<f64>>,
     m2_rbm: Arc<Vec<f64>>,
 }
+
+/// Inverse of a 3x3 matrix
+fn inv3(m: &Mat3) -> Option<Mat3> {
+    let c = |i: usize, j: usize| {
+        let (i1, i2) = ((i + 1) % 3, (i + 2) % 3);
+        let (j1, j2) = ((j + 1) % 3, (j + 2) % 3);
+        m[i1][j1] * m[i2][j2] - m[i1][j2] * m[i2][j1]
+    };
+    let det: f64 = (0..3).map(|j| m[0][j] * c(0, j)).sum();
+    (det != 0. && det.is_finite()).then(|| {
+        let mut inv = [[0f64; 3]; 3];
+        for i in 0..3 {
+            for j in 0..3 {
+                inv[i][j] = c(j, i) / det;
+            }
+        }
+        inv
+    })
+}
+
 impl RigidBodyRemoval {
-    pub fn new() -> Self {
+    /// Kinematics from the DC gain of the FEM
+    ///
+    /// H = Φ diag(1/ω²) B, the DC gain of all the FEM modes from the azimuth, elevation and
+    /// GIR drive torques to the mount encoders and to the M1 & M2 rigid body motions,
+    /// K = H_rbm E⁺ with E = A H_encoders, A averaging the encoders of each axis
+    pub fn from_fem(fem: &FEM) -> anyhow::Result<Self> {
+        let n = fem.n_modes();
+        let w2: Vec<f64> = fem
+            .eigen_frequencies_to_radians()
+            .into_iter()
+            .map(|w| w * w)
+            .collect();
+        let out = |phi: Option<Vec<f64>>, name: &str| {
+            phi.ok_or_else(|| anyhow::anyhow!("{name} is missing from the FEM outputs"))
+        };
+        let inp = |b: Option<Vec<f64>>, name: &str| {
+            b.ok_or_else(|| anyhow::anyhow!("{name} is missing from the FEM inputs"))
+        };
+        // modal forces per drive torque: [n_modes x n_torques] row-wise
+        let b: Vec<Vec<f64>> = [
+            inp(fem.in2modes::<OSSAzDriveTorque>(), "OSSAzDriveTorque")?,
+            inp(fem.in2modes::<OSSElDriveTorque>(), "OSSElDriveTorque")?,
+            inp(fem.in2modes::<OSSRotDriveTorque>(), "OSSRotDriveTorque")?,
+        ]
+        .iter()
+        .fold(vec![vec![]; n], |mut b, x| {
+            let m = x.len() / n;
+            b.iter_mut()
+                .zip(x.chunks(m))
+                .for_each(|(b, x)| b.extend_from_slice(x));
+            b
+        });
+        let n_t = b[0].len();
+        // DC gain from the drive torques to outputs: [n_outputs x n_torques] row-wise
+        let dc_gain = |phi: Vec<f64>| -> Vec<Vec<f64>> {
+            phi.chunks(n)
+                .map(|row| {
+                    let mut h = vec![0f64; n_t];
+                    row.iter().zip(&w2).zip(&b).for_each(|((p, w2), b)| {
+                        let c = p / w2;
+                        h.iter_mut().zip(b).for_each(|(h, b)| *h += c * b);
+                    });
+                    h
+                })
+                .collect()
+        };
+        let mean = |h: Vec<Vec<f64>>| -> Vec<f64> {
+            let m = h.len() as f64;
+            (0..n_t).map(|j| h.iter().map(|h| h[j]).sum::<f64>() / m).collect()
+        };
+        // averaged encoders DC gain: [3 x n_torques]
+        let e = [
+            mean(dc_gain(out(fem.modes2out::<OSSAzEncoderAngle>(), "OSSAzEncoderAngle")?)),
+            mean(dc_gain(out(fem.modes2out::<OSSElEncoderAngle>(), "OSSElEncoderAngle")?)),
+            mean(dc_gain(out(fem.modes2out::<OSSRotEncoderAngle>(), "OSSRotEncoderAngle")?)),
+        ];
+        // E⁺ = E^T (E E^T)^-1: [n_torques x 3]
+        let mut eet = [[0f64; 3]; 3];
+        for i in 0..3 {
+            for j in 0..3 {
+                eet[i][j] = e[i].iter().zip(&e[j]).map(|(a, b)| a * b).sum();
+            }
+        }
+        let eet_inv = inv3(&eet).ok_or_else(|| anyhow::anyhow!("singular encoders DC gain"))?;
+        let e_pinv: Vec<[f64; 3]> = (0..n_t)
+            .map(|t| [0, 1, 2].map(|k| (0..3).map(|i| e[i][t] * eet_inv[i][k]).sum()))
+            .collect();
+        // rigid body motions per radian of [azimuth, elevation, GIR]
+        let kinematics = |phi: Vec<f64>| -> [Vec<f64>; 3] {
+            let h = dc_gain(phi);
+            [0, 1, 2].map(|k| {
+                h.iter()
+                    .map(|h| h.iter().zip(&e_pinv).map(|(h, p)| h * p[k]).sum())
+                    .collect()
+            })
+        };
+        Ok(Self {
+            m1: kinematics(out(fem.modes2out::<OSSM1Lcl>(), "OSSM1Lcl")?),
+            m2: kinematics(out(fem.modes2out::<MCM2Lcl6D>(), "MCM2Lcl6D")?),
+            ..Self::from_geometry()
+        })
+    }
+    /// Kinematics from the GMT geometry (geotrans)
+    pub fn from_geometry() -> Self {
         let m1 = mirror(
             8.71,
             0.,
@@ -148,25 +266,39 @@ impl RigidBodyRemoval {
         Self {
             m1: sensitivities(&m1),
             m2: sensitivities(&m2),
-            azimuth: 0.,
-            elevation: 0.,
+            angles: [0f64; 3],
             m1_rbm: Default::default(),
             m2_rbm: Default::default(),
         }
     }
-    fn remove(&self, rbm: &[f64], s: &[Vec<f64>; 2]) -> Vec<f64> {
+    /// Largest difference between the kinematics of `self` and `other` per radian of
+    /// [azimuth, elevation, GIR]
+    pub fn max_difference(&self, other: &Self) -> [f64; 3] {
+        [0, 1, 2].map(|k| {
+            self.m1[k]
+                .iter()
+                .zip(&other.m1[k])
+                .chain(self.m2[k].iter().zip(&other.m2[k]))
+                .map(|(a, b)| (a - b).abs())
+                .fold(0f64, f64::max)
+        })
+    }
+    fn remove(&self, rbm: &[f64], s: &[Vec<f64>; 3]) -> Vec<f64> {
         rbm.iter()
-            .zip(s[0].iter().zip(&s[1]))
-            .map(|(x, (a, e))| x - a * self.azimuth - e * self.elevation)
+            .enumerate()
+            .map(|(i, x)| x - (0..3).map(|k| s[k][i] * self.angles[k]).sum::<f64>())
             .collect()
     }
 }
 impl Update for RigidBodyRemoval {}
 impl Read<MountEncoders> for RigidBodyRemoval {
     fn read(&mut self, data: Data<MountEncoders>) {
-        // mean of the 4 azimuth and of the 6 elevation encoders
-        self.azimuth = data[..4].iter().sum::<f64>() / 4.;
-        self.elevation = data[4..10].iter().sum::<f64>() / 6.;
+        // mean of the 4 azimuth, of the 6 elevation and of the 4 GIR encoders
+        self.angles = [
+            data[..4].iter().sum::<f64>() / 4.,
+            data[4..10].iter().sum::<f64>() / 6.,
+            data[10..14].iter().sum::<f64>() / 4.,
+        ];
     }
 }
 impl Read<M1RigidBodyMotions> for RigidBodyRemoval {
@@ -196,7 +328,7 @@ mod tests {
 
     #[test]
     fn center_segment_azimuth_lever_arm() {
-        let r = RigidBodyRemoval::new();
+        let r = RigidBodyRemoval::from_geometry();
         // M1 S7 vertex 3.9m above the OSS origin: Tx = 0.5 x 3.9 per radian of azimuth
         assert!((r.m1[0][36] - 1.95).abs() < 1e-12);
         // the frame rotation has a unit norm for all segments
