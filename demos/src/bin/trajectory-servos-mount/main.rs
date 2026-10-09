@@ -1,7 +1,7 @@
 use std::{env, fs, path::Path};
 
 mod rigid_body;
-use rigid_body::{KinematicsCalibration, RigidBodyRemoval};
+use rigid_body::{KinematicsCalibration, RigidBodyRemoval, load_azimuth_calibration};
 
 use gmt_dos_actors::actorscript;
 use gmt_dos_clients_io::{
@@ -12,7 +12,7 @@ use gmt_dos_clients_io::{
 use gmt_dos_clients_io::optics::SegmentTipTilt;
 use gmt_dos_clients_lom::LinearOpticalModel;
 use gmt_dos_clients_mount::Mount;
-use gmt_dos_clients_servos::{GmtFem, GmtMount, GmtServoMechanisms};
+use gmt_dos_clients_servos::{GmtFem, GmtMount, GmtServoMechanisms, KinematicOutput, MountAxis};
 use gmt_fem::FEM;
 use interface::{Data, Size, TimerMarker, UniqueIdentifier, Update, Write};
 // use interface::units::Arcsec;
@@ -23,10 +23,11 @@ use interface::{Data, Size, TimerMarker, UniqueIdentifier, Update, Write};
 //    computed with astropy, the rotator following the change in parallactic angle
 //  * the setpoints are the trajectory offsets from the initial pointing,
 //    linearly interpolated to the mount sampling frequency
-//  * the rigid telescope motion, the kinematic gain from the mount encoders derived from the
-//    FEM DC gain with the azimuth calibrated in closed-loop (`make calibrate`), is removed
-//    from the M1 & M2 rigid body motions (`rigid_body.rs`) before the linear optical model
-//  * the mount encoders, the M1 & M2 rigid body motions from the FEM and the segment tip-tilt
+//  * the rigid telescope motion is removed from all the FEM outputs (but the mount encoders)
+//    by the FEM kinematic compensation, the kinematic gain from the mount encoders derived
+//    from the FEM DC gain, with the M1 & M2 azimuth gains calibrated in closed-loop
+//    (`make calibrate`, `rigid_body.rs`)
+//  * the mount encoders, the compensated M1 & M2 rigid body motions and the segment tip-tilt
 //    from the linear optical model are saved to `model_data_1.parquet` in this folder
 // DATA:
 //  * FEM 2nd order model: FEM_REPO
@@ -138,7 +139,6 @@ async fn main() -> anyhow::Result<()> {
         "FEM vs geometric kinematics, max difference per radian of [az, el, GIR]: {:?}",
         fem_kinematics.max_difference(&RigidBodyRemoval::from_geometry())
     );
-    let servos = GmtServoMechanisms::<10, 1>::new(sim_sampling_frequency as f64, fem).build()?;
 
     // CLOSED-LOOP AZIMUTH KINEMATICS CALIBRATION (CALIBRATE env var)
     //  * azimuth only: ramping along the ATP trajectory for CALIBRATION_RAMP seconds (default: 15s)
@@ -155,6 +155,9 @@ async fn main() -> anyhow::Result<()> {
             n_step,
         )?
         .azimuth_ramp_hold(ramp);
+        // FEM without kinematic compensation
+        let servos =
+            GmtServoMechanisms::<10, 1>::new(sim_sampling_frequency as f64, fem).build()?;
         let calib = KinematicsCalibration::new(
             &fem_kinematics,
             n_step - 5 * sim_sampling_frequency..n_step,
@@ -169,13 +172,19 @@ async fn main() -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let rigid = if calibration.exists() {
+    // FEM with kinematic compensation
+    let servos = GmtServoMechanisms::<10, 1>::new(sim_sampling_frequency as f64, fem);
+    let servos = if calibration.exists() {
         println!("loading the closed-loop azimuth kinematics from {calibration:?}");
-        fem_kinematics.with_azimuth_calibration(&calibration)?
+        let [m1, m2] = load_azimuth_calibration(&calibration)?;
+        servos
+            .kinematic_calibration(KinematicOutput::M1RigidBodyMotions, MountAxis::Azimuth, m1)
+            .kinematic_calibration(KinematicOutput::M2RigidBodyMotions, MountAxis::Azimuth, m2)
     } else {
         println!("no closed-loop azimuth kinematics calibration, using the FEM DC gain");
-        fem_kinematics
-    };
+        servos.kinematic_compensation()
+    }
+    .build()?;
 
     // [SET POINT]
     // ATP trajectory for the 3 axes of the mount:
@@ -212,11 +221,8 @@ async fn main() -> anyhow::Result<()> {
         1: {servos::GmtFem}[MountEncoders]${n_encoders}
         1: {servos::GmtFem}[M1RigidBodyMotions]$
         1: {servos::GmtFem}[M2RigidBodyMotions]$
-        1: {servos::GmtFem}[MountEncoders]! -> rigid
-        1: {servos::GmtFem}[M1RigidBodyMotions]! -> rigid
-        1: {servos::GmtFem}[M2RigidBodyMotions]! -> rigid
-        1: rigid[M1RigidBodyMotions] -> lom
-        1: rigid[M2RigidBodyMotions] -> lom
+        1: {servos::GmtFem}[M1RigidBodyMotions]! -> lom
+        1: {servos::GmtFem}[M2RigidBodyMotions]! -> lom
         1: lom[SegmentTipTilt]$
     }
 

@@ -7,7 +7,7 @@
 //!
 //! The M1 & M2 control loops change the quasi-static response of the segments to the
 //! azimuth rotation, the azimuth kinematics are then calibrated in closed-loop
-//! ([KinematicsCalibration]) and loaded with [RigidBodyRemoval::with_azimuth_calibration].
+//! ([KinematicsCalibration]) and loaded with [load_azimuth_calibration].
 //!
 //! [RigidBodyRemoval::from_geometry] is the geometric equivalent: the coordinate transformation of the segment vertices
 //! and frames by the rotation about the azimuth and elevation axes, both through the OSS
@@ -148,6 +148,32 @@ pub struct RigidBodyRemoval {
     m2_rbm: Arc<Vec<f64>>,
 }
 
+/// Loads the M1 & M2 closed-loop azimuth kinematics saved by [KinematicsCalibration]
+pub fn load_azimuth_calibration(path: impl AsRef<Path>) -> anyhow::Result<[Vec<f64>; 2]> {
+    let mut m1 = vec![];
+    let mut m2 = vec![];
+    for line in fs::read_to_string(path)?.lines().filter(|l| !l.starts_with('#')).skip(1) {
+        let mut fields = line.split(',');
+        let (Some(mirror), Some(_), Some(value)) = (fields.next(), fields.next(), fields.next())
+        else {
+            anyhow::bail!("invalid calibration line: {line}")
+        };
+        let value: f64 = value.trim().parse()?;
+        match mirror {
+            "M1" => m1.push(value),
+            "M2" => m2.push(value),
+            _ => anyhow::bail!("unknown mirror {mirror} in calibration"),
+        }
+    }
+    anyhow::ensure!(
+        m1.len() == 42 && m2.len() == 42,
+        "expected 42 M1 & 42 M2 calibration values, found {} & {}",
+        m1.len(),
+        m2.len()
+    );
+    Ok([m1, m2])
+}
+
 /// Inverse of a 3x3 matrix
 fn inv3(m: &Mat3) -> Option<Mat3> {
     let c = |i: usize, j: usize| {
@@ -279,33 +305,6 @@ impl RigidBodyRemoval {
             m1_rbm: Default::default(),
             m2_rbm: Default::default(),
         }
-    }
-    /// Replaces the azimuth kinematics by the closed-loop calibration saved by [KinematicsCalibration]
-    pub fn with_azimuth_calibration(mut self, path: impl AsRef<Path>) -> anyhow::Result<Self> {
-        let mut m1 = vec![];
-        let mut m2 = vec![];
-        for line in fs::read_to_string(path)?.lines().filter(|l| !l.starts_with('#')).skip(1) {
-            let mut fields = line.split(',');
-            let (Some(mirror), Some(_), Some(value)) = (fields.next(), fields.next(), fields.next())
-            else {
-                anyhow::bail!("invalid calibration line: {line}")
-            };
-            let value: f64 = value.trim().parse()?;
-            match mirror {
-                "M1" => m1.push(value),
-                "M2" => m2.push(value),
-                _ => anyhow::bail!("unknown mirror {mirror} in calibration"),
-            }
-        }
-        anyhow::ensure!(
-            m1.len() == 42 && m2.len() == 42,
-            "expected 42 M1 & 42 M2 calibration values, found {} & {}",
-            m1.len(),
-            m2.len()
-        );
-        self.m1[0] = m1;
-        self.m2[0] = m2;
-        Ok(self)
     }
     /// Largest difference between the kinematics of `self` and `other` per radian of
     /// [azimuth, elevation, GIR]
