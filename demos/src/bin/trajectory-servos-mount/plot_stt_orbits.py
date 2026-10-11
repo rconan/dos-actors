@@ -5,6 +5,7 @@ import sys
 import numpy as np, pyarrow.parquet as pq, matplotlib
 
 matplotlib.use("Agg")
+ALPHA = 0.5  # orbit lines transparency
 import matplotlib.pyplot as plt
 
 pqf, out = sys.argv[1:3]
@@ -25,13 +26,15 @@ x, y = stt[mask, :7], stt[mask, 7:]
 
 fig, ax = plt.subplots(figsize=(7.5, 7), facecolor=SURF)
 for s in range(7):
-    ax.plot(x[:, s], y[:, s], lw=1.2, color=SEG[s], label=f"S{s + 1}")
+    ax.plot(x[:, s], y[:, s], lw=1.2, color=SEG[s], alpha=ALPHA, label=f"S{s + 1}")
     ax.plot(x[-1, s], y[-1, s], "o", ms=5, color=SEG[s])
 ax.axhline(0, color=GRID, lw=0.8, zorder=0); ax.axvline(0, color=GRID, lw=0.8, zorder=0)
 ax.set_aspect("equal", adjustable="datalim")
 ax.set_facecolor(SURF); ax.grid(color=GRID, lw=0.8)
 ax.set_xlabel("Segment tip-tilt x [mas]"); ax.set_ylabel("Segment tip-tilt y [mas]")
-ax.legend(ncol=7, frameon=False, loc="lower left", bbox_to_anchor=(0, 1.0), handlelength=1.2, columnspacing=1)
+leg = ax.legend(ncol=7, frameon=False, loc="lower left", bbox_to_anchor=(0, 1.0), handlelength=1.2, columnspacing=1)
+for h in leg.legend_handles:
+    h.set_alpha(1)
 fig.suptitle(f"Segment tip-tilt orbits, {t[mask][0]:.0f}-{t[mask][-1]:.0f} s; dot: end", color=INK, x=0.02, ha="left")
 fig.tight_layout(); fig.savefig(out, dpi=130)
 print(f"max |tip-tilt| in {t[mask][0]:g}-{t[mask][-1]:g} s: {np.abs(stt[mask]).max():.2f} mas")
