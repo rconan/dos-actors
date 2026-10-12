@@ -45,6 +45,10 @@ text { fill: var(--text); }
 .node-label { font-size: 12px; font-weight: 600; }
 .port-label { font-size: 10px; fill: var(--muted); }
 .port { fill: var(--port); }
+.actor rect.veil { fill: var(--actor); opacity: 0.55; stroke: none; pointer-events: none; }
+.system rect.veil { fill: var(--system); opacity: 0.55; stroke: none; pointer-events: none; }
+.actor rect.outline, .system rect.outline { fill: none; pointer-events: none; }
+.block-image { pointer-events: none; }
 .wire { fill: none; stroke-width: 1.4; }
 .wire.bold { stroke-width: 2.6; }
 .wire.dashed { stroke-dasharray: 5 3; }
@@ -126,9 +130,10 @@ function buildGraph() {
     const name = h => MODEL.channels[h].name;
     const wIn = Math.max(0, ...ins.map(h => measure(name(h), 10)));
     const wOut = Math.max(0, ...outs.map(h => measure(name(h), 10)));
-    const width = Math.max(lw + (a.system ? 18 : 0) + 20, wIn + wOut + 36, 70);
+    // blocks with an image are made large enough for the image to be seen
+    const width = Math.max(lw + (a.system ? 18 : 0) + 20, wIn + wOut + 36, a.image ? 120 : 70);
     const HEAD = 24, ROW = 14;
-    const height = HEAD + Math.max(ins.length, outs.length, 1) * ROW + 4;
+    const height = Math.max(HEAD + Math.max(ins.length, outs.length, 1) * ROW + 4, a.image ? 80 : 0);
     const port = (h, side, i) => ({
       id: `${a.id}:${side === 'WEST' ? 'in' : 'out'}:${h}`, width: 6, height: 6,
       x: side === 'WEST' ? -6 : width, y: HEAD + i * ROW + ROW / 2 - 3, name: name(h),
@@ -165,6 +170,7 @@ function hideTip() { tip.style.display = 'none'; }
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
 let layout = null;
+let clipCount = 0;
 function draw(g) {
   world.replaceChildren();
   world.classList.remove('dim');
@@ -191,6 +197,16 @@ function draw(g) {
     }
     const grp = el('g', { class: a.system ? 'system' : 'actor', 'data-id': a.id }, nodesLayer);
     el('rect', { x: n.x, y: n.y, width: n.width, height: n.height, rx: 6 }, grp);
+    if (a.image) {
+      // image fitted inside the block, clipped to its rounded corners and veiled for the labels
+      const clip = 'clip-' + (++clipCount);
+      const cp = el('clipPath', { id: clip }, grp);
+      el('rect', { x: n.x, y: n.y, width: n.width, height: n.height, rx: 6 }, cp);
+      el('image', { href: a.image, x: n.x + 2, y: n.y + 2, width: n.width - 4, height: n.height - 4,
+        preserveAspectRatio: 'xMidYMid meet', 'clip-path': `url(#${clip})`, class: 'block-image' }, grp);
+      el('rect', { x: n.x, y: n.y, width: n.width, height: n.height, rx: 6, class: 'veil' }, grp);
+      el('rect', { x: n.x, y: n.y, width: n.width, height: n.height, rx: 6, class: 'outline' }, grp);
+    }
     const lw = measure(a.label, 12, 600) + (a.system ? 18 : 0);
     const t = el('text', { x: n.x + (n.width - lw) / 2, y: n.y + 16, class: 'node-label' }, grp);
     t.textContent = a.label;

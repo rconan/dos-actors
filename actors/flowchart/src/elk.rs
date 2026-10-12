@@ -10,6 +10,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use base64::{Engine, engine::general_purpose::STANDARD};
 use serde_json::{Map, Value, json};
 
 use crate::{COLORMAP, IO, graph::Graph, render::RenderError, trim};
@@ -28,6 +29,49 @@ fn style(io: &IO) -> &'static str {
         IO::Regular(_) => "solid",
         IO::Unbounded(_) => "dashed",
     }
+}
+
+/// Returns the media type of an image from its file extension
+fn media_type(path: &Path) -> &'static str {
+    match path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.to_lowercase())
+        .as_deref()
+    {
+        Some("png") => "image/png",
+        Some("jpg" | "jpeg") => "image/jpeg",
+        Some("gif") => "image/gif",
+        Some("svg") => "image/svg+xml",
+        Some("webp") => "image/webp",
+        Some("bmp") => "image/bmp",
+        _ => "application/octet-stream",
+    }
+}
+
+/// Reads an actor image and returns it as a base64 data URI
+///
+/// The image path is resolved against the working directory and then against `CARGO_MANIFEST_DIR`, if set.
+/// Returns `None`, with a warning, if the image is not found
+fn data_uri(image: &str) -> Option<String> {
+    let path = Path::new(image);
+    let candidates = std::iter::once(path.to_path_buf()).chain(
+        env::var("CARGO_MANIFEST_DIR")
+            .ok()
+            .filter(|_| path.is_relative())
+            .map(|dir| Path::new(&dir).join(path)),
+    );
+    for candidate in candidates {
+        if let Ok(bytes) = std::fs::read(&candidate) {
+            return Some(format!(
+                "data:{};base64,{}",
+                media_type(&candidate),
+                STANDARD.encode(bytes)
+            ));
+        }
+    }
+    log::warn!("flowchart image `{image}` not found, the block is drawn without it");
+    None
 }
 
 /// Adds the actors of a graph, and recursively of the graphs of its systems, to the model
@@ -72,6 +116,7 @@ fn walk(
             "system": actor.graph.is_some(),
             "inputs": inputs,
             "outputs": outputs,
+            "image": actor.image.as_deref().and_then(data_uri),
         }));
         if let Some(graph) = actor.graph.as_ref() {
             walk(graph, Some(&id), actors, channels);
@@ -179,6 +224,30 @@ mod tests {
         assert_eq!(actors[2]["parent"], actors[1]["id"]);
         assert_eq!(model["channels"]["2"]["name"], "Out</script>");
         assert_eq!(model["channels"]["2"]["rate"], 10);
+    }
+
+    #[test]
+    fn image() {
+        let dir = env::temp_dir().join(format!("flowchart-elk-image-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let png = dir.join("block.png");
+        std::fs::write(&png, b"\x89PNG\r\n\x1a\n").unwrap();
+        let graph = Graph::new(
+            "model".into(),
+            vec![
+                PlainActor::new("A").image(png.to_str().unwrap()).build(),
+                PlainActor::new("B")
+                    .image(dir.join("missing.png").to_str().unwrap())
+                    .build(),
+                PlainActor::new("C").build(),
+            ],
+        );
+        let model: Value = serde_json::from_str(&to_json(&graph).unwrap()).unwrap();
+        let actors = model["actors"].as_array().unwrap();
+        assert_eq!(actors[0]["image"], "data:image/png;base64,iVBORw0KGgo=");
+        assert!(actors[1]["image"].is_null());
+        assert!(actors[2]["image"].is_null());
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 
     #[test]

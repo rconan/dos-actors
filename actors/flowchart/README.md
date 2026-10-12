@@ -12,6 +12,10 @@ from which a `Graph` is built and written to `<name>_flowchart.html`, in the cur
 | `graphviz` (default) | The graph is laid out with [Graphviz](https://www.graphviz.org/) (`dot`, `neato` or `fdp` must be installed) and written as SVG diagrams, one per system |
 | `elk` | The graph is embedded as JSON in the page and laid out in the browser with [elkjs](https://github.com/kieler/elkjs), no external program is needed |
 
+With ELK, an actor image is embedded in the page as a base64 data URI and drawn as the block background
+(blocks with an image are at least 120×80); the image path is resolved against the working directory,
+then against `CARGO_MANIFEST_DIR`, and a missing image is skipped with a warning.
+
 In `gmt_dos-actors`, the features are forwarded as `flowchart-graphviz` (default) and `flowchart-elk`.
 
 ## Environment variables
