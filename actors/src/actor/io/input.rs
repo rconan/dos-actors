@@ -67,6 +67,15 @@ pub(crate) trait InputObject: Display + Send + Sync {
     /// Gets the input hash
     fn get_hash(&self) -> u64;
     fn capacity(&self) -> Option<usize>;
+    /// Returns the flowchart [IO](crate::actor::IO) of the input at the given rate
+    fn as_io(&self, rate: usize) -> crate::actor::IO {
+        use crate::actor::{IOData, IO};
+        if self.capacity().is_some() {
+            IO::Regular(IOData::new(self.who(), self.get_hash(), 1, rate))
+        } else {
+            IO::Unbounded(IOData::new(self.who(), self.get_hash(), 1, rate))
+        }
+    }
 }
 
 impl Debug for Box<dyn InputObject> {

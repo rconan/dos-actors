@@ -52,9 +52,9 @@ pub(crate) mod actor;
 mod serde_with;
 
 pub use actor::Actor;
-pub(crate) mod plain;
+mod plain;
 
-pub use plain::PlainActor;
+pub use gmt_dos_actors_flowchart::{IOData, PlainActor, PlainActorBuilder, IO};
 
 mod check;
 pub mod io;

@@ -124,6 +124,15 @@ pub(crate) trait OutputObject: Any + Display + Send + Sync {
     fn get_hash(&self) -> u64;
     // fn as_any(&self) -> &dyn Any;
     fn as_mut_any(&mut self) -> &mut dyn Any;
+    /// Returns the flowchart [IO](crate::actor::IO) of the output at the given rate
+    fn as_io(&self, rate: usize) -> crate::actor::IO {
+        use crate::actor::{IOData, IO};
+        if self.bootstrap() {
+            IO::Bootstrap(IOData::new(self.who(), self.get_hash(), self.len(), rate))
+        } else {
+            IO::Regular(IOData::new(self.who(), self.get_hash(), self.len(), rate))
+        }
+    }
 }
 
 impl Debug for Box<dyn OutputObject> {

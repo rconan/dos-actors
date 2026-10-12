@@ -140,17 +140,6 @@ impl<C: TryUpdate> ArcMutex for C {}
 /// Actors macros
 mod macros;
 
-pub(crate) fn trim(name: &str) -> String {
-    if let Some((prefix, suffix)) = name.split_once('<') {
-        let generics: Vec<_> = suffix.split(',').map(trim).collect();
-        format!("{}<{}", trim(prefix), generics.join(","))
-    } else if let Some((_, suffix)) = name.rsplit_once("::") {
-        suffix.into()
-    } else {
-        name.into()
-    }
-}
-
 pub mod prelude {
     pub use super::{
         actor::{Actor, Initiator, Terminator},

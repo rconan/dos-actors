@@ -1,7 +1,8 @@
 use std::ops::{Deref, DerefMut};
 
-use crate::{actor::PlainActor, framework::model::Check};
+use crate::PlainActor;
 
+/// A model as a collection of [PlainActor]s
 #[derive(Debug, Hash, Default, Clone)]
 pub struct PlainModel(Vec<PlainActor>);
 impl Deref for PlainModel {
@@ -26,12 +27,6 @@ impl From<Vec<PlainActor>> for PlainModel {
 impl FromIterator<PlainActor> for PlainModel {
     fn from_iter<T: IntoIterator<Item = PlainActor>>(iter: T) -> Self {
         Self(iter.into_iter().collect())
-    }
-}
-
-impl<'a> FromIterator<Box<&'a dyn Check>> for PlainModel {
-    fn from_iter<T: IntoIterator<Item = Box<&'a dyn Check>>>(iter: T) -> Self {
-        Self(iter.into_iter().map(|x| x._as_plain()).collect())
     }
 }
 

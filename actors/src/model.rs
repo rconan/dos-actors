@@ -268,10 +268,9 @@ pub trait UnknownOrReady {}
 impl UnknownOrReady for Unknown {}
 impl UnknownOrReady for Ready {}
 
-mod plain;
 pub mod ready;
 pub mod running;
 pub mod unknown;
-pub use plain::PlainModel;
+pub use gmt_dos_actors_flowchart::PlainModel;
 
 // mod task;

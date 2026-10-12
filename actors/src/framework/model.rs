@@ -86,6 +86,14 @@ pub trait Task: Check + std::fmt::Display + Send + Sync {
     }
 }
 
+/// Collects the [PlainActor]s of the components of a system into a [PlainModel]
+pub fn plain_model<'a, I>(components: I) -> PlainModel
+where
+    I: IntoIterator<Item = Box<&'a dyn Check>>,
+{
+    components.into_iter().map(|x| x._as_plain()).collect()
+}
+
 /// Flowchart name
 pub trait GetName {
     /// Returns the flowchart name
@@ -112,6 +120,8 @@ pub trait FlowChart: GetName {
     fn graph(&self) -> Option<Graph>;
     /// Writes the flowchart to an HTML file
     ///
+    /// The flowchart backend, Graphviz or ELK, is selected with the environment variable `FLOWCHART`
+    /// (see [Graph::render]).
     /// Optionnaly, one can get the [Graphviz](https://www.graphviz.org/) dot files to
     /// be written as well by setting the environment variable `TO_DOT` to 1.
     ///
@@ -125,9 +135,7 @@ pub trait FlowChart: GetName {
             .graph()
             .ok_or(FlowChartError::NoGraph)?
             .to_dot()?
-            .walk()
-            .into_svg()?
-            .to_html()?)
+            .render()?)
     }
 
     /// Writes the actors flowchart to an HTML file
@@ -135,7 +143,8 @@ pub trait FlowChart: GetName {
     /// The flowchart file is written either in the current directory
     /// or in the directory give by the environment variable `DATA_REPO`.
     /// The flowchart is created with [Graphviz](https://www.graphviz.org/) neato filter,
-    /// other filters can be specified with the environment variable `FLOWCHART`
+    /// other filters can be specified with the environment variable `FLOWCHART`,
+    /// `FLOWCHART=elk` selects the ELK backend (feature `flowchart-elk`)
     /// and the flowchart is disabled by setting `FLOWCHART` to an empty value or to `none`
     fn flowchart(self) -> Self
     where
@@ -223,8 +232,7 @@ where
     for<'a> &'a T: IntoIterator<Item = Box<&'a dyn Check>>,
 {
     fn graph(&self) -> Option<Graph> {
-        // let actors: Vec<_> = self.into_iter().map(|x| x._as_plain()).collect();
-        let actors = PlainModel::from_iter(self);
+        let actors = plain_model(self);
         if actors.is_empty() {
             None
         } else {

@@ -3770,8 +3770,8 @@ dependencies = [
  "futures",
  "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-actors_dsl",
+ "gmt_dos-actors_flowchart",
  "gmt_dos-clients",
- "html-escape",
  "humantime",
  "log",
  "open",
@@ -3779,7 +3779,6 @@ dependencies = [
  "rand_distr 0.6.0",
  "serde",
  "serde-pickle 1.2.0",
- "svg",
  "thiserror 2.0.18",
  "tokio",
  "tokio-test",
@@ -3821,6 +3820,17 @@ dependencies = [
  "quote",
  "syn 2.0.117",
  "tracing",
+]
+
+[[package]]
+name = "gmt_dos-actors_flowchart"
+version = "0.1.0"
+dependencies = [
+ "html-escape",
+ "log",
+ "serde_json",
+ "svg",
+ "thiserror 2.0.18",
 ]
 
 [[package]]

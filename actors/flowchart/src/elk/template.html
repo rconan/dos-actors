@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>__TITLE__ Flowchart</title>
+<style>
+:root {
+  --bg: #f7f7f5; --panel: #ffffff; --text: #1f2328; --muted: #6b7076; --border: #c9ccd1;
+  --actor: #ffffff; --actor-stroke: #8a9099; --system: #e8eef8; --system-stroke: #5b7bb5;
+  --container: rgba(91,123,181,0.06); --container-stroke: #5b7bb5; --port: #5d636b; --hl: #d62f4b;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1d1f22; --panel: #26292d; --text: #e6e6e6; --muted: #9aa0a6; --border: #3c4046;
+    --actor: #2d3136; --actor-stroke: #6c727a; --system: #263449; --system-stroke: #7e9fd8;
+    --container: rgba(126,159,216,0.07); --container-stroke: #7e9fd8; --port: #b9bec4; --hl: #ff6b81;
+  }
+}
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+#bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 8px 16px;
+  background: var(--panel); border-bottom: 1px solid var(--border); font-size: 13px; }
+#bar h1 { font-size: 15px; margin: 0 8px 0 0; font-weight: 600; }
+#bar button { font: inherit; padding: 3px 10px; border: 1px solid var(--border); border-radius: 5px;
+  background: var(--bg); color: var(--text); cursor: pointer; }
+#bar button:hover { border-color: var(--system-stroke); }
+.legend { display: flex; gap: 12px; align-items: center; color: var(--muted); }
+.legend svg { vertical-align: middle; }
+.rate { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin: 0 3px 0 6px; vertical-align: middle; }
+.hint { color: var(--muted); margin-left: auto; }
+#view { position: absolute; top: 46px; left: 0; right: 0; bottom: 0; overflow: hidden; cursor: grab; }
+#view.panning { cursor: grabbing; }
+#canvas { width: 100%; height: 100%; display: block; }
+#tip { position: fixed; pointer-events: none; background: var(--panel); border: 1px solid var(--border);
+  border-radius: 5px; padding: 4px 8px; font-size: 12px; display: none; white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15); }
+#busy { position: absolute; top: 56px; left: 16px; color: var(--muted); font-size: 12px; }
+text { fill: var(--text); }
+.actor rect { fill: var(--actor); stroke: var(--actor-stroke); }
+.system rect { fill: var(--system); stroke: var(--system-stroke); cursor: pointer; }
+.system text { cursor: pointer; }
+.container > rect { fill: var(--container); stroke: var(--container-stroke); stroke-dasharray: 4 3; }
+.container > .header { cursor: pointer; }
+.node-label { font-size: 12px; font-weight: 600; }
+.port-label { font-size: 10px; fill: var(--muted); }
+.port { fill: var(--port); }
+.wire { fill: none; stroke-width: 1.4; }
+.wire.bold { stroke-width: 2.6; }
+.wire.dashed { stroke-dasharray: 5 3; }
+.wire-hit { fill: none; stroke: transparent; stroke-width: 9; cursor: default; }
+.dim .wire { opacity: 0.15; }
+.dim .wire.on { opacity: 1; stroke-width: 2.6; }
+.toggle { font-size: 11px; fill: var(--system-stroke); font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="bar">
+  <h1>__TITLE__ flowchart</h1>
+  <button id="expand">Expand all</button>
+  <button id="collapse">Collapse all</button>
+  <button id="fit">Fit</button>
+  <span class="legend">
+    <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="currentColor" stroke-width="1.4"/></svg> regular</span>
+    <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="currentColor" stroke-width="2.6"/></svg> bootstrap</span>
+    <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 3"/></svg> unbounded</span>
+    <span id="rates"></span>
+  </span>
+  <span class="hint">Click a blue system to open it, click its header to close it. Scroll to zoom, drag to pan.</span>
+</div>
+<div id="view"><svg id="canvas"><g id="world"></g></svg></div>
+<div id="busy">laying out…</div>
+<div id="tip"></div>
+<script>__ELK__</script>
+<script>
+const MODEL = __MODEL__;
+const elk = new ELK();
+const NS = 'http://www.w3.org/2000/svg';
+const world = document.getElementById('world');
+const view = document.getElementById('view');
+const tip = document.getElementById('tip');
+const byId = new Map(MODEL.actors.map(a => [a.id, a]));
+const kids = new Map();
+MODEL.actors.forEach(a => { if (!kids.has(a.parent)) kids.set(a.parent, []); kids.get(a.parent).push(a); });
+const expanded = new Set();
+
+const ctx = document.createElement('canvas').getContext('2d');
+function measure(text, px, weight) {
+  ctx.font = `${weight || 400} ${px}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+  return Math.ceil(ctx.measureText(text).width);
+}
+function visible(a) { return a.parent === null || (expanded.has(a.parent) && visible(byId.get(a.parent))); }
+function isOpen(a) { return a.system && expanded.has(a.id); }
+function ancestors(id) { const out = []; let a = byId.get(id); while (a) { out.push(a.id); a = byId.get(a.parent); } return out; }
+function lca(x, y) { const ax = ancestors(x).slice(1); const ay = new Set(ancestors(y).slice(1)); return ax.find(i => ay.has(i)) || null; }
+
+function buildGraph() {
+  const ends = MODEL.actors.filter(a => visible(a) && !isOpen(a));
+  const wires = [];
+  for (const [h, ch] of Object.entries(MODEL.channels)) {
+    const src = ends.filter(a => a.outputs.includes(h));
+    const dst = ends.filter(a => a.inputs.includes(h));
+    for (const s of src) for (const d of dst) wires.push({ h, ch, s, d });
+  }
+  const usedOut = new Set(wires.map(w => w.s.id + '|' + w.h));
+  const usedIn = new Set(wires.map(w => w.d.id + '|' + w.h));
+  const edgeLists = new Map();
+  wires.forEach((w, i) => {
+    const owner = lca(w.s.id, w.d.id);
+    if (!edgeLists.has(owner)) edgeLists.set(owner, []);
+    edgeLists.get(owner).push({ id: 'e' + i, sources: [w.s.id + ':out:' + w.h], targets: [w.d.id + ':in:' + w.h], w });
+  });
+  function node(a) {
+    const lw = measure(a.label, 12, 600);
+    if (isOpen(a)) {
+      return {
+        id: a.id, a, labels: [{ text: a.label, width: lw + 22, height: 16 }],
+        layoutOptions: { 'elk.padding': '[top=34,left=14,bottom=14,right=14]',
+          'elk.nodeLabels.placement': '[H_LEFT, V_TOP, INSIDE]' },
+        children: kids.get(a.id).map(node), edges: edgeLists.get(a.id) || [],
+      };
+    }
+    // block geometry: name on top, inputs listed down the left side, outputs down the right side
+    const ins = a.inputs.filter(h => usedIn.has(a.id + '|' + h));
+    const outs = a.outputs.filter(h => usedOut.has(a.id + '|' + h));
+    const name = h => MODEL.channels[h].name;
+    const wIn = Math.max(0, ...ins.map(h => measure(name(h), 10)));
+    const wOut = Math.max(0, ...outs.map(h => measure(name(h), 10)));
+    const width = Math.max(lw + (a.system ? 18 : 0) + 20, wIn + wOut + 36, 70);
+    const HEAD = 24, ROW = 14;
+    const height = HEAD + Math.max(ins.length, outs.length, 1) * ROW + 4;
+    const port = (h, side, i) => ({
+      id: `${a.id}:${side === 'WEST' ? 'in' : 'out'}:${h}`, width: 6, height: 6,
+      x: side === 'WEST' ? -6 : width, y: HEAD + i * ROW + ROW / 2 - 3, name: name(h),
+      layoutOptions: { 'elk.port.side': side },
+    });
+    return {
+      id: a.id, a, width, height,
+      ports: [...ins.map((h, i) => port(h, 'WEST', i)), ...outs.map((h, i) => port(h, 'EAST', i))],
+      layoutOptions: { 'elk.portConstraints': 'FIXED_POS' },
+    };
+  }
+  return {
+    id: 'root',
+    layoutOptions: {
+      'elk.algorithm': 'layered', 'elk.direction': 'RIGHT',
+      'elk.hierarchyHandling': 'INCLUDE_CHILDREN', 'elk.edgeRouting': 'ORTHOGONAL',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '60', 'elk.spacing.nodeNode': '28',
+      'elk.layered.spacing.edgeNodeBetweenLayers': '18', 'elk.spacing.edgeEdge': '8',
+      'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
+      'elk.json.edgeCoords': 'ROOT',
+    },
+    children: kids.get(null).map(node), edges: edgeLists.get(null) || [],
+  };
+}
+
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function showTip(ev, html) { tip.innerHTML = html; tip.style.display = 'block'; tip.style.left = ev.clientX + 12 + 'px'; tip.style.top = ev.clientY + 12 + 'px'; }
+function hideTip() { tip.style.display = 'none'; }
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+let layout = null;
+function draw(g) {
+  world.replaceChildren();
+  world.classList.remove('dim');
+  hideTip();
+  const nodesLayer = el('g', {}, world);
+  const wiresLayer = el('g', {}, world);
+  const wireEls = [];
+  function drawNode(n0, ox = 0, oy = 0) {
+    // ELK node positions are relative to the parent node
+    const n = { ...n0, x: n0.x + ox, y: n0.y + oy };
+    const a = n.a;
+    if (n.children) {
+      const grp = el('g', { class: 'container' }, nodesLayer);
+      el('rect', { x: n.x, y: n.y, width: n.width, height: n.height, rx: 8 }, grp);
+      const head = el('g', { class: 'header' }, grp);
+      el('rect', { x: n.x, y: n.y, width: n.width, height: 28, fill: 'transparent', stroke: 'none' }, head);
+      const t = el('text', { x: n.x + 14, y: n.y + 19, class: 'node-label' }, head);
+      t.textContent = a.label;
+      const m = el('text', { x: n.x + 20 + measure(a.label, 12, 600), y: n.y + 19, class: 'toggle' }, head);
+      m.textContent = '−';
+      head.addEventListener('click', ev => { ev.stopPropagation(); toggle(a.id, n); });
+      n.children.forEach(c => drawNode(c, n.x, n.y));
+      return;
+    }
+    const grp = el('g', { class: a.system ? 'system' : 'actor', 'data-id': a.id }, nodesLayer);
+    el('rect', { x: n.x, y: n.y, width: n.width, height: n.height, rx: 6 }, grp);
+    const lw = measure(a.label, 12, 600) + (a.system ? 18 : 0);
+    const t = el('text', { x: n.x + (n.width - lw) / 2, y: n.y + 16, class: 'node-label' }, grp);
+    t.textContent = a.label;
+    if (a.system) {
+      const m = el('text', { x: n.x + (n.width + lw) / 2 - 10, y: n.y + 16, class: 'toggle' }, grp);
+      m.textContent = '+';
+      grp.addEventListener('click', ev => { ev.stopPropagation(); toggle(a.id, n); });
+    }
+    for (const p of n.ports || []) {
+      el('rect', { x: n.x + p.x, y: n.y + p.y, width: p.width, height: p.height, class: 'port' }, grp);
+      const west = p.x < 0;
+      const pt = el('text', { x: n.x + (west ? 6 : p.x - 6), y: n.y + p.y + 6, class: 'port-label', 'text-anchor': west ? 'start' : 'end' }, grp);
+      pt.textContent = p.name;
+    }
+    grp.addEventListener('mouseenter', () => { world.classList.add('dim'); wireEls.forEach(w => { if (w.s === a.id || w.d === a.id) w.path.classList.add('on'); }); });
+    grp.addEventListener('mouseleave', () => { world.classList.remove('dim'); wireEls.forEach(w => w.path.classList.remove('on')); });
+  }
+  function drawEdges(n) {
+    for (const e of n.edges || []) {
+      const w = e.w;
+      for (const s of e.sections || []) {
+        const pts = [s.startPoint, ...(s.bendPoints || []), s.endPoint];
+        const d = 'M' + pts.map(p => `${p.x},${p.y}`).join(' L');
+        const path = el('path', { d, class: `wire ${w.ch.style}`, stroke: w.ch.color, 'marker-end': `url(#arrow-${w.ch.color.slice(1)})` }, wiresLayer);
+        const hit = el('path', { d, class: 'wire-hit' }, wiresLayer);
+        const info = `<b>${esc(w.ch.name)}</b><br>${esc(w.s.label)} → ${esc(w.d.label)}`;
+        hit.addEventListener('mousemove', ev => showTip(ev, info));
+        hit.addEventListener('mouseenter', () => { world.classList.add('dim'); path.classList.add('on'); });
+        hit.addEventListener('mouseleave', () => { hideTip(); world.classList.remove('dim'); path.classList.remove('on'); });
+        wireEls.push({ s: w.s.id, d: w.d.id, path });
+      }
+    }
+    (n.children || []).forEach(drawEdges);
+  }
+  g.children.forEach(c => drawNode(c));
+  drawEdges(g);
+}
+
+function defs() {
+  const svg = document.getElementById('canvas');
+  const d = el('defs', {}, null);
+  const colors = new Set(Object.values(MODEL.channels).map(c => c.color));
+  for (const c of colors) {
+    const m = el('marker', { id: `arrow-${c.slice(1)}`, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse' }, d);
+    el('path', { d: 'M0,0 L10,5 L0,10 z', fill: c }, m);
+  }
+  svg.insertBefore(d, svg.firstChild);
+}
+
+// pan & zoom
+let T = { x: 0, y: 0, k: 1 };
+function apply() { world.setAttribute('transform', `translate(${T.x},${T.y}) scale(${T.k})`); }
+function fit() {
+  if (!layout) return;
+  const W = view.clientWidth, H = view.clientHeight, pad = 24;
+  const k = Math.min((W - 2 * pad) / layout.width, (H - 2 * pad) / layout.height, 1.5);
+  T = { k, x: (W - layout.width * k) / 2, y: (H - layout.height * k) / 2 };
+  apply();
+}
+view.addEventListener('wheel', ev => {
+  ev.preventDefault();
+  const r = view.getBoundingClientRect(), mx = ev.clientX - r.left, my = ev.clientY - r.top;
+  const f = Math.exp(-ev.deltaY * 0.0015), k = Math.min(Math.max(T.k * f, 0.05), 6);
+  T.x = mx - (mx - T.x) * k / T.k; T.y = my - (my - T.y) * k / T.k; T.k = k; apply();
+}, { passive: false });
+let drag = null;
+view.addEventListener('pointerdown', ev => { if (ev.button !== 0) return; drag = { x: ev.clientX - T.x, y: ev.clientY - T.y, moved: false }; });
+window.addEventListener('pointermove', ev => { if (!drag) return; drag.moved = true; view.classList.add('panning'); T.x = ev.clientX - drag.x; T.y = ev.clientY - drag.y; apply(); });
+let wasDrag = false;
+window.addEventListener('pointerup', () => { wasDrag = !!(drag && drag.moved); drag = null; view.classList.remove('panning'); });
+
+async function relayout(anchorId, before) {
+  const busy = document.getElementById('busy');
+  busy.style.display = 'block';
+  layout = await elk.layout(buildGraph());
+  busy.style.display = 'none';
+  draw(layout);
+  if (anchorId && before) {
+    // keeps the toggled system where it was on screen
+    const find = (n, ox, oy) => n.id === anchorId ? { x: n.x + ox, y: n.y + oy } : (n.children || []).map(c => find(c, ox + (n.x || 0), oy + (n.y || 0))).find(Boolean);
+    const after = find(layout, 0, 0);
+    if (after) { T.x += (before.x - after.x) * T.k; T.y += (before.y - after.y) * T.k; apply(); return; }
+  }
+  fit();
+}
+function toggle(id, n) {
+  if (wasDrag) return;
+  if (expanded.has(id)) {
+    expanded.delete(id);
+    MODEL.actors.forEach(a => { if (ancestors(a.id).includes(id)) expanded.delete(a.id); });
+  } else expanded.add(id);
+  relayout(id, { x: n.x, y: n.y });
+}
+document.getElementById('expand').onclick = () => { MODEL.actors.forEach(a => a.system && expanded.add(a.id)); relayout(); };
+document.getElementById('collapse').onclick = () => { expanded.clear(); relayout(); };
+document.getElementById('fit').onclick = fit;
+window.addEventListener('keydown', ev => { if (ev.key === 'Home') { expanded.clear(); relayout(); } });
+// sample rate legend: one colour swatch per rate
+function rates() {
+  const byRate = new Map();
+  Object.values(MODEL.channels).forEach(c => byRate.set(c.rate, c.color));
+  const span = document.getElementById('rates');
+  span.append('sample rate:');
+  [...byRate.entries()].sort((x, y) => x[0] - y[0]).forEach(([r, c]) => {
+    const sw = document.createElement('span');
+    sw.className = 'rate';
+    sw.style.background = c;
+    span.append(sw, String(r));
+  });
+}
+defs();
+rates();
+relayout();
+</script>
+</body>
+</html>
