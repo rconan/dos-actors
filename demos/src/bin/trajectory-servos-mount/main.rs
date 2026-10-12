@@ -33,7 +33,7 @@ use interface::{Data, Size, TimerMarker, UniqueIdentifier, Update, Write};
 //    by the FEM kinematic compensation, the kinematic gain from the mount encoders derived
 //    from the FEM DC gain
 //  * the mount encoders, the compensated M1 & M2 rigid body motions and the segment tip-tilt
-//    from the linear optical model are saved to `model_data_1.parquet` in this folder
+//    from the linear optical model are saved to `data/model_data_1.parquet`
 // DATA:
 //  * FEM 2nd order model: FEM_REPO
 
@@ -99,14 +99,15 @@ impl<U: UniqueIdentifier<DataType = Vec<f64>>> Write<U> for Trajectory {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // the simulation data (parquet files and flowchart) are saved in the `data` folder
+    let data_repo = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("bin")
+        .join("trajectory-servos-mount")
+        .join("data");
+    fs::create_dir_all(&data_repo)?;
     unsafe {
-        env::set_var(
-            "DATA_REPO",
-            Path::new(env!("CARGO_MANIFEST_DIR"))
-                .join("src")
-                .join("bin")
-                .join("trajectory-servos-mount"),
-        );
+        env::set_var("DATA_REPO", data_repo);
     }
     // simulation sampling frequency
     let sim_sampling_frequency = gmt_dos_clients_mount::sampling_frequency(); // Hz
@@ -191,7 +192,7 @@ async fn main() -> anyhow::Result<()> {
     //  * the M1 & M2 rigid body motions are rotated by the GIR angle (`gir_rotation.rs`)
     //  * the crseo optical model ray traces the GMT with the rotated rigid body motions
     //    every second (PUPIL_SAMPLING, default: 513) and the wavefront in the exit pupil
-    //    and the segment tip-tilt are saved to `model_data_1000.parquet`
+    //    and the segment tip-tilt are saved to `data/model_data_1000.parquet`
     #[cfg(feature = "gmt_dos-clients_crseo")]
     {
         use gmt_dos_clients_crseo::{

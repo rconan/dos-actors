@@ -1,9 +1,9 @@
 # ATP tracking trajectory driving the GMT mount (trajectory-servos-mount)
 #
-#   make trajectory  compute atp_trajectory.csv with astropy
+#   make trajectory  compute atp_trajectory.csv with astropy (scripts/atp_trajectory.py)
 #   make build       build the integrated model
-#   make run         run the integrated model, saves model_data_1.parquet
-#   make plot        plot the trajectory against the mount encoders, the M1 & M2 rigid body motions
+#   make run         run the integrated model, saves data/model_data_1.parquet
+#   make plot        plot (in figures/) the trajectory against the mount encoders, the M1 & M2 rigid body motions
 #                    and the segment orbits, and the segment tip-tilt orbits
 
 # FEM 2nd order model
@@ -30,7 +30,7 @@ export FEM_REPO MOUNT_MODEL CUDACXX SIM_DURATION FLOWCHART
 .PHONY: trajectory build run plot
 
 trajectory:
-	$(PYTHON) atp_trajectory.py atp_trajectory.csv
+	$(PYTHON) scripts/atp_trajectory.py atp_trajectory.csv
 
 build:
 	cargo build --release -p demos --features "$(FEATURES)" --bin $(BIN)
@@ -39,9 +39,10 @@ run:
 	cargo run --release -p demos --features "$(FEATURES)" --bin $(BIN)
 
 plot:
-	$(PYTHON) plot_encoders.py atp_trajectory.csv model_data_1.parquet trajectory_vs_encoders.png $(SAMPLING_FREQUENCY)
-	$(PYTHON) plot_rbm.py model_data_1.parquet rigid_body_motions.png $(SAMPLING_FREQUENCY)
-	$(PYTHON) plot_orbits.py model_data_1.parquet rbm_orbits.png $(SAMPLING_FREQUENCY)
-	$(PYTHON) plot_orbits.py model_data_1.parquet rbm_orbits_s7.png $(SAMPLING_FREQUENCY) s7
-	$(PYTHON) plot_gir_orbits.py model_data_1.parquet rbm_orbits_gir.png $(SAMPLING_FREQUENCY)
-	$(PYTHON) plot_stt_orbits.py model_data_1.parquet segment_tiptilt_orbits.png $(SAMPLING_FREQUENCY) $(STT_START)
+	mkdir -p figures
+	$(PYTHON) scripts/plot_encoders.py atp_trajectory.csv data/model_data_1.parquet figures/trajectory_vs_encoders.png $(SAMPLING_FREQUENCY)
+	$(PYTHON) scripts/plot_rbm.py data/model_data_1.parquet figures/rigid_body_motions.png $(SAMPLING_FREQUENCY)
+	$(PYTHON) scripts/plot_orbits.py data/model_data_1.parquet figures/rbm_orbits.png $(SAMPLING_FREQUENCY)
+	$(PYTHON) scripts/plot_orbits.py data/model_data_1.parquet figures/rbm_orbits_s7.png $(SAMPLING_FREQUENCY) s7
+	$(PYTHON) scripts/plot_gir_orbits.py data/model_data_1.parquet figures/rbm_orbits_gir.png $(SAMPLING_FREQUENCY)
+	$(PYTHON) scripts/plot_stt_orbits.py data/model_data_1.parquet figures/segment_tiptilt_orbits.png $(SAMPLING_FREQUENCY) $(STT_START)

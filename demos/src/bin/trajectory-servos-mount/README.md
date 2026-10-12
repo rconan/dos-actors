@@ -5,7 +5,7 @@ the ATP default tracking trajectory, with the segment tip-tilt from the linear o
 (LOM) and, optionally, the exit pupil wavefront from the crseo optical model.
 
 * **Trajectory:** `atp_trajectory.csv` holds 5 minutes of azimuth, elevation and rotator (GIR)
-  angles at 1 Hz. They are computed with astropy (`atp_trajectory.py`) for the ATP default
+  angles at 1 Hz. They are computed with astropy (`scripts/atp_trajectory.py`) for the ATP default
   pointing: alt 45°, az 0°, 2018-01-01T04:00:00 UTC, Las Campanas. The rotator follows the change
   in parallactic angle. The mount setpoints are the offsets from the initial pointing, linearly
   interpolated to the mount sampling frequency.
@@ -20,7 +20,15 @@ the ATP default tracking trajectory, with the segment tip-tilt from the linear o
   (800 kN·m at about 242 s). That torque is fed forward to the mount drives, after the drives
   saturation (`feedforward.rs`, `MountTorquesFeedForward` input of `gmt_dos-clients_mount`).
 * **Outputs:** the mount encoders, the compensated M1 & M2 rigid body motions and the segment
-  tip-tilt are saved to `model_data_1.parquet`.
+  tip-tilt are saved to `data/model_data_1.parquet`.
+
+## Folders
+
+| Folder | Content |
+|---|---|
+| `data/` | simulation data: `model_data_1.parquet`, `model_data_1000.parquet` (crseo) and `model_flowchart.html` |
+| `figures/` | plots |
+| `scripts/` | Python scripts: trajectory, plots and `rigid_body.py` |
 
 ## Quick start
 
@@ -41,7 +49,7 @@ Any parameter below can be set on the `make` command line, e.g. `make run SIM_DU
 | `SAMPLING_FREQUENCY` | `1000` | Sampling frequency [Hz] used by the plot scripts. Must match `MOUNT_MODEL` |
 | `CUDACXX` | `/usr/local/cuda/bin/nvcc` | CUDA compiler for the FEM CUDA solver (`cuda` feature) |
 | `SIM_DURATION` | `30` | Simulation duration [s], up to 300, the length of the trajectory. The binary defaults to 300 when it is not set |
-| `FLOWCHART` | `dot` | Layout of the model flowchart (`model_flowchart.html`): `dot`, `neato` or `fdp` |
+| `FLOWCHART` | `dot` | Layout of the model flowchart (`data/model_flowchart.html`): `dot`, `neato` or `fdp` |
 | `STT_START` | `10` | Start time [s] of the segment tip-tilt orbit plot |
 | `FEATURES` | `cuda gmt_dos-clients_arrow` | Cargo features, see below |
 | `PYTHON` | `python3` | Python interpreter for the trajectory and plot scripts |
@@ -77,23 +85,23 @@ GMT_MODES_PATH=<gmtMirrors directory> make run SIM_DURATION=120 FEATURES="cuda g
 * **GIR rotation:** the M1 and M2 rigid body motions are rotated as rigid bodies about the
   optical axis by the GIR angle (`gir_rotation.rs`), as seen by an instrument on the GIR.
 * **Optical model:** the crseo optical model ray traces the GMT every second. The exit pupil
-  wavefront and the segment tip-tilt are saved to `model_data_1000.parquet`, about 2 MB per
+  wavefront and the segment tip-tilt are saved to `data/model_data_1000.parquet`, about 2 MB per
   second at 513×513 pupil sampling.
 
 ## Make targets and scripts
 
 | Target / script | Output |
 |---|---|
-| `make trajectory` (`atp_trajectory.py`) | `atp_trajectory.csv` |
-| `make build` / `make run` | the integrated model and `model_data_1.parquet` (and `model_data_1000.parquet` with crseo) |
-| `make plot` | all the plots below, from `model_data_1.parquet` |
-| `plot_encoders.py` | `trajectory_vs_encoders.png`: trajectory vs mount encoders, and tracking error |
-| `plot_rbm.py` | `rigid_body_motions.png` (and `_minus_rigid.png`): M1 and M2 rigid body motions |
-| `plot_orbits.py` | `rbm_orbits.png`, `rbm_orbits_s7.png` (4th argument `s7`): segment orbits in the pupil |
-| `plot_gir_orbits.py` | `rbm_orbits_gir.png`: segment orbits seen from the GIR |
-| `plot_stt_orbits.py` | `segment_tiptilt_orbits.png`: segment tip-tilt orbits from `STT_START`, with an optional end time as 5th argument |
-| `plot_wavefronts.py` | first and last wavefronts from `model_data_1000.parquet` (crseo) |
+| `make trajectory` (`scripts/atp_trajectory.py`) | `atp_trajectory.csv` |
+| `make build` / `make run` | the integrated model and `data/model_data_1.parquet` (and `data/model_data_1000.parquet` with crseo) |
+| `make plot` | all the plots below, in `figures/`, from `data/model_data_1.parquet` |
+| `scripts/plot_encoders.py` | `trajectory_vs_encoders.png`: trajectory vs mount encoders, and tracking error |
+| `scripts/plot_rbm.py` | `rigid_body_motions.png` (and `_minus_rigid.png`): M1 and M2 rigid body motions |
+| `scripts/plot_orbits.py` | `rbm_orbits.png`, `rbm_orbits_s7.png` (4th argument `s7`): segment orbits in the pupil |
+| `scripts/plot_gir_orbits.py` | `rbm_orbits_gir.png`: segment orbits seen from the GIR |
+| `scripts/plot_stt_orbits.py` | `segment_tiptilt_orbits.png`: segment tip-tilt orbits from `STT_START`, with an optional end time as 5th argument |
+| `scripts/plot_wavefronts.py` | first and last wavefronts from `data/model_data_1000.parquet` (crseo): `python3 scripts/plot_wavefronts.py data/model_data_1000.parquet figures/wavefronts_first_last.png` |
 
-`plot_rbm.py`, `plot_orbits.py` and `plot_gir_orbits.py` use `rigid_body.py` to remove the
+`scripts/plot_rbm.py`, `scripts/plot_orbits.py` and `scripts/plot_gir_orbits.py` use `scripts/rigid_body.py` to remove the
 rigid telescope motion themselves. They were written for uncompensated rigid body motions. With
 the kinematic compensation on, use them on a run with `KINEMATIC_COMPENSATION=0`.
