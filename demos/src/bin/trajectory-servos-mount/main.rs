@@ -166,7 +166,7 @@ async fn main() -> anyhow::Result<()> {
     //  * the M1 & M2 rigid body motions are rotated by the GIR angle (`gir_rotation.rs`)
     //  * the crseo optical model ray traces the GMT with the rotated rigid body motions
     //    every second (PUPIL_SAMPLING, default: 513) and the wavefront in the exit pupil
-    //    is saved to `model_data_1000.parquet`
+    //    and the segment tip-tilt are saved to `model_data_1000.parquet`
     #[cfg(feature = "gmt_dos-clients_crseo")]
     {
         use gmt_dos_clients_crseo::{
@@ -194,6 +194,7 @@ async fn main() -> anyhow::Result<()> {
             1: {servos::GmtFem}[M2RigidBodyMotions]! -> rotation
             1000: rotation[M1RigidBodyMotions] -> om
             1000: rotation[M2RigidBodyMotions] -> om[Wavefront]$
+            1000: om[SegmentTipTilt]$
         }
     }
 
