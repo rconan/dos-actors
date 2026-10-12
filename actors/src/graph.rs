@@ -12,7 +12,7 @@ use std::{
 
 use crate::{model::PlainModel, trim};
 mod render;
-pub use render::{Render, RenderError};
+pub use render::{flowchart_enabled, Render, RenderError};
 
 #[derive(Debug)]
 pub struct ColorMap {

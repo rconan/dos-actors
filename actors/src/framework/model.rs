@@ -98,7 +98,9 @@ pub trait GetName {
 pub enum FlowChartError {
     #[error("no graph to walk, may be there is no actors!")]
     NoGraph,
-    #[error("failed to write SVG charts")]
+    #[error("flowchart is disabled (FLOWCHART is empty or none)")]
+    Disabled,
+    #[error("failed to write SVG charts: {0}")]
     Rendering(#[from] graph::RenderError),
     #[error("failed to process graph")]
     Graph(#[from] GraphError),
@@ -112,7 +114,13 @@ pub trait FlowChart: GetName {
     ///
     /// Optionnaly, one can get the [Graphviz](https://www.graphviz.org/) dot files to
     /// be written as well by setting the environment variable `TO_DOT` to 1.
+    ///
+    /// Returns [FlowChartError::Disabled] without doing anything if the environment variable
+    /// `FLOWCHART` is empty or set to `none`.
     fn to_html(&self) -> std::result::Result<PathBuf, FlowChartError> {
+        if !graph::flowchart_enabled()? {
+            return Err(FlowChartError::Disabled);
+        }
         Ok(self
             .graph()
             .ok_or(FlowChartError::NoGraph)?
@@ -128,12 +136,14 @@ pub trait FlowChart: GetName {
     /// or in the directory give by the environment variable `DATA_REPO`.
     /// The flowchart is created with [Graphviz](https://www.graphviz.org/) neato filter,
     /// other filters can be specified with the environment variable `FLOWCHART`
+    /// and the flowchart is disabled by setting `FLOWCHART` to an empty value or to `none`
     fn flowchart(self) -> Self
     where
         Self: Sized,
     {
-        if let Err(e) = self.to_html() {
-            println!("failed to write flowchart Web page caused by:\n {e:?}");
+        match self.to_html() {
+            Ok(_) | Err(FlowChartError::Disabled) => (),
+            Err(e) => println!("failed to write flowchart Web page caused by:\n {e}"),
         }
         self
     }
@@ -150,7 +160,8 @@ pub trait FlowChart: GetName {
                     log::info!("model flowchart written to {path:?}");
                 }
             }
-            Err(e) => println!("failed to write flowchart Web page caused by:\n {e:?}"),
+            Err(FlowChartError::Disabled) => (),
+            Err(e) => println!("failed to write flowchart Web page caused by:\n {e}"),
         };
         self
     }

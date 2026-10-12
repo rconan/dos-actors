@@ -2,9 +2,10 @@ use std::{
     env,
     fmt::Display,
     fs::File,
-    io::Write,
+    io::{ErrorKind, Write},
     path::{Path, PathBuf},
     process::{Command, Stdio},
+    thread,
 };
 
 use svg::{
@@ -62,12 +63,22 @@ const HEAD: &str = r#"
 
 #[derive(Debug, thiserror::Error)]
 pub enum RenderError {
-    #[error("failed to write flowchart")]
+    #[error("failed to write flowchart: {0}")]
     IO(#[from] std::io::Error),
     #[error("failed to convert to string")]
     Utf(#[from] std::string::FromUtf8Error),
-    #[error("flowchart layout is empty")]
+    #[error("unknown flowchart layout in FLOWCHART, expected dot, neato, fdp or none")]
     Layout,
+    #[error("flowchart is disabled (FLOWCHART is empty or none)")]
+    Disabled,
+    #[error("Graphviz `{0}` not found, is Graphviz installed?")]
+    GraphvizNotFound(String),
+    #[error("Graphviz `{layout}` failed on model `{name}`:\n{stderr}")]
+    Graphviz {
+        layout: String,
+        name: String,
+        stderr: String,
+    },
 }
 type Result<T> = std::result::Result<T, RenderError>;
 
@@ -105,17 +116,61 @@ impl Display for GraphLayout {
     }
 }
 impl GraphLayout {
-    pub fn new() -> Option<Self> {
+    /// Reads the layout from the environment variable `FLOWCHART`
+    ///
+    /// Returns `None` if `FLOWCHART` is empty or `none`, the default layout if `FLOWCHART` is not set
+    /// and an error if the layout is unknown
+    pub fn new() -> Result<Option<Self>> {
         match env::var("FLOWCHART") {
-            Ok(var) => match var.to_lowercase().as_str() {
-                "dot" => Some(Self::Dot),
-                "neato" => Some(Self::Neato),
-                "fdp" => Some(Self::Fdp),
-                _ => None,
+            Ok(var) => match var.trim().to_lowercase().as_str() {
+                "dot" => Ok(Some(Self::Dot)),
+                "neato" => Ok(Some(Self::Neato)),
+                "fdp" => Ok(Some(Self::Fdp)),
+                "" | "none" => Ok(None),
+                _ => Err(RenderError::Layout),
             },
-            Err(_) => Some(Self::default()),
+            Err(_) => Ok(Some(Self::default())),
         }
     }
+    /// Runs the Graphviz layout program on the `dot` graph and returns the SVG output
+    fn run(&self, name: &str, dot: &str) -> Result<String> {
+        let mut graphviz = Command::new(self.to_string())
+            .arg("-Tsvg")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .map_err(|e| match e.kind() {
+                ErrorKind::NotFound => RenderError::GraphvizNotFound(self.to_string()),
+                _ => e.into(),
+            })?;
+        // the graph is written to stdin from another thread so that Graphviz is never blocked
+        // writing to a stdout that is not being read
+        let mut stdin = graphviz.stdin.take().expect("Graphviz stdin is piped");
+        let dot = dot.to_string();
+        let writer = thread::spawn(move || stdin.write_all(dot.as_bytes()));
+        let output = graphviz.wait_with_output()?;
+        // a write error (e.g. broken pipe) shows up as a Graphviz failure below
+        let _ = writer.join();
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        if output.status.success() {
+            if !stderr.is_empty() {
+                log::warn!("Graphviz `{self}` on model `{name}`: {stderr}");
+            }
+            Ok(String::from_utf8(output.stdout)?)
+        } else {
+            Err(RenderError::Graphviz {
+                layout: self.to_string(),
+                name: name.to_string(),
+                stderr,
+            })
+        }
+    }
+}
+
+/// Returns `false` if the flowchart is disabled by setting `FLOWCHART` to an empty value or to `none`
+pub fn flowchart_enabled() -> Result<bool> {
+    GraphLayout::new().map(|layout| layout.is_some())
 }
 impl Render {
     fn id(&self) -> String {
@@ -127,26 +182,15 @@ impl Render {
     }
     /// Renders flowchart to SVG
     pub fn into_svg(&mut self) -> Result<&mut Self> {
-        let mut graph_layout = GraphLayout::new().ok_or(RenderError::Layout)?;
-        let result = loop {
-            let graph = Command::new("echo")
-                .arg(&self.render)
-                .stdout(Stdio::piped())
-                .spawn()?;
-            let svg = Command::new(graph_layout.to_string())
-                .arg("-Tsvg")
-                .stdin(Stdio::from(graph.stdout.unwrap()))
-                .stdout(Stdio::piped())
-                .spawn()?;
-            let output = svg.wait_with_output()?;
-            if output.status.success() {
-                break String::from_utf8(output.stdout)?;
-            } else if graph_layout == GraphLayout::Dot {
-                println!("failed to convert model `{:}` to SVG diagram", self.name);
-                return Ok(self);
-            } else {
-                graph_layout = GraphLayout::Dot;
+        let graph_layout = GraphLayout::new()?.ok_or(RenderError::Disabled)?;
+        let result = match graph_layout.run(&self.name, &self.render) {
+            Ok(svg) => svg,
+            // falls back to the dot layout if the requested layout fails
+            Err(e) if graph_layout != GraphLayout::Dot => {
+                log::warn!("{e}, falling back to `dot`");
+                GraphLayout::Dot.run(&self.name, &self.render)?
             }
+            Err(e) => return Err(e),
         };
         log::debug!("{:}", &result[..result.len().min(64)]);
         self.render = result
@@ -180,13 +224,15 @@ const {0} = document.getElementById('{0}');
 {0}.addEventListener('click', function () {{
     // Hide graph1
     {1}.classList.add('hidden');
-    // Show graph2
+    // Show graph2 and give it the focus for the Escape key
     {2}.classList.remove('hidden');
+    {2}.focus();
 }});
 {2}.addEventListener('keydown', function (event) {{
     if (event.key === 'Escape') {{
-        // Show graph1
+        // Show graph1 and give it the focus for the Escape key
         {1}.classList.remove('hidden');
+        {1}.focus();
         // Hide graph2
         {2}.classList.add('hidden');
     }}
@@ -314,6 +360,7 @@ document.addEventListener('keydown', function (event) {{
     if (event.key === 'Home') {{
 // Show graph1
 {0}.classList.remove('hidden');
+{0}.focus();
 // Hide other graphs
 {1}
     }}
