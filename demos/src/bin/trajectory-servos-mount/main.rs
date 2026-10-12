@@ -37,6 +37,7 @@ use interface::{Data, Size, TimerMarker, UniqueIdentifier, Update, Write};
 make run (see Makefile for the parameters)
 MOUNT_MODEL=MOUNT_FDR_1kHz FEM_REPO=... CUDACXX=/usr/local/cuda/bin/nvcc cargo run --release --features "cuda gmt_dos-clients_arrow" --bin trajectory-servos-mount
 SIM_DURATION=10 (optional, in seconds, default: 300)
+KINEMATIC_COMPENSATION=0 (optional, FEM without kinematic compensation)
 */
 
 /// Mount setpoints [azimuth, elevation, GIR] in radians, interpolated from 1Hz samples
@@ -117,9 +118,15 @@ async fn main() -> anyhow::Result<()> {
     let fem = FEM::from_env()?;
     // FEM with the kinematic compensation of the mount rigid body motion, applied to all the
     // FEM outputs but the mount encoders
-    let servos = GmtServoMechanisms::<10, 1>::new(sim_sampling_frequency as f64, fem)
-        .kinematic_compensation()
-        .build()?;
+    // KINEMATIC_COMPENSATION=0: FEM without kinematic compensation
+    let servos = GmtServoMechanisms::<10, 1>::new(sim_sampling_frequency as f64, fem);
+    let servos = if env::var("KINEMATIC_COMPENSATION").is_ok_and(|v| v == "0") {
+        println!("FEM without kinematic compensation");
+        servos
+    } else {
+        servos.kinematic_compensation()
+    }
+    .build()?;
 
     // [SET POINT]
     // ATP trajectory for the 3 axes of the mount:
