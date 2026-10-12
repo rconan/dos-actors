@@ -42,6 +42,10 @@ pub mod mount {
     #[derive(UID)]
     #[uid(port = 52_003)]
     pub enum MountSetPoint {}
+    /// Mount torques feed-forward, added to the mount drive torques after the drives saturation
+    #[derive(UID)]
+    #[uid(port = 52_012)]
+    pub enum MountTorquesFeedForward {}
 }
 /// CFD wind loads
 pub mod cfd_wind_loads {

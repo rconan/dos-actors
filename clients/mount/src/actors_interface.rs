@@ -1,6 +1,6 @@
 use std::ptr;
 
-use gmt_dos_clients_io::mount::{MountEncoders, MountSetPoint, MountTorques};
+use gmt_dos_clients_io::mount::{MountEncoders, MountSetPoint, MountTorques, MountTorquesFeedForward};
 use interface::{Data, Read, Size, Update, Write};
 
 use crate::Mount;
@@ -80,7 +80,18 @@ impl Write<MountTorques> for Mount {
                 data.len(),
             )
         };
+        // feed-forward added after the drives saturation
+        data.iter_mut()
+            .zip(&self.torques_feedforward)
+            .for_each(|(t, ff)| *t += ff);
         Some(data.into())
+    }
+}
+
+/// Drive torques feed-forward, added to the drive torques after the drives saturation
+impl Read<MountTorquesFeedForward> for Mount {
+    fn read(&mut self, data: Data<MountTorquesFeedForward>) {
+        self.torques_feedforward = data.into_arc().to_vec();
     }
 }
 

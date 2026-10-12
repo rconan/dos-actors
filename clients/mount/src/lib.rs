@@ -116,6 +116,9 @@ mod actors_interface;
 pub struct Mount {
     drive: MountDriver,
     control: MountController,
+    /// drive torques feed-forward ([MountTorquesFeedForward](gmt_dos_clients_io::mount::MountTorquesFeedForward))
+    #[serde(default)]
+    torques_feedforward: Vec<f64>,
 }
 impl Mount {
     /// Returns the mount controller
@@ -123,6 +126,7 @@ impl Mount {
         Self {
             drive: MountDriver::new(),
             control: MountController::new(),
+            torques_feedforward: Vec::new(),
         }
     }
 }

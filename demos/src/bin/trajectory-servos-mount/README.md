@@ -14,6 +14,11 @@ the ATP default tracking trajectory, with the segment tip-tilt from the linear o
   M1 and M2 control systems, e.g. the M1 hardpoint forces. The kinematic gain from the mount
   encoders comes from the DC gain of the FEM state space model
   (`DiscreteStateSpace::kinematic_compensation` in `gmt_dos-clients_fem`).
+* **Mount feed-forward:** the FEM azimuth, elevation and GIR "rigid body" modes have a small
+  stiffness (0.07–0.1 Hz). Holding the mount at an angle therefore takes a drive torque
+  proportional to that angle, and over the full trajectory the azimuth drives would saturate
+  (800 kN·m at about 242 s). That torque is fed forward to the mount drives, after the drives
+  saturation (`feedforward.rs`, `MountTorquesFeedForward` input of `gmt_dos-clients_mount`).
 * **Outputs:** the mount encoders, the compensated M1 & M2 rigid body motions and the segment
   tip-tilt are saved to `model_data_1.parquet`.
 
@@ -59,6 +64,7 @@ These are read by the binary. Set them on the `make run` command line, e.g.
 | `SIM_DURATION` | `300` | Simulation duration [s] |
 | `TRAJECTORY` | `atp_trajectory.csv` | Path to an alternative trajectory file in the same format: time [s], azimuth, elevation and rotator [deg] |
 | `KINEMATIC_COMPENSATION` | on | `0` runs the FEM without kinematic compensation |
+| `MOUNT_FEEDFORWARD` | on | `0` turns the mount drives feed-forward off. The azimuth drives then saturate at about 242 s |
 | `PUPIL_SAMPLING` | `513` | Pupil sampling of the crseo optical model (`gmt_dos-clients_crseo` feature) |
 | `GMT_MODES_PATH` | | Directory of the GMT mirror modes files required by crseo (`gmt_dos-clients_crseo` feature) |
 
@@ -91,9 +97,3 @@ GMT_MODES_PATH=<gmtMirrors directory> make run SIM_DURATION=120 FEATURES="cuda g
 `plot_rbm.py`, `plot_orbits.py` and `plot_gir_orbits.py` use `rigid_body.py` to remove the
 rigid telescope motion themselves. They were written for uncompensated rigid body motions. With
 the kinematic compensation on, use them on a run with `KINEMATIC_COMPENSATION=0`.
-
-## Known limitation
-
-Without a drive torque feed-forward, the azimuth drives saturate (800 kN·m) at about 242 s
-(0.024 rad of azimuth): the FEM azimuth "rigid" mode has a 0.07 Hz spring. Runs up to about
-240 s are not affected.

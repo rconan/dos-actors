@@ -1,5 +1,8 @@
 use std::{env, fs, path::Path};
 
+mod feedforward;
+use feedforward::SpringFeedForward;
+
 #[cfg(feature = "gmt_dos-clients_crseo")]
 mod gir_rotation;
 
@@ -7,7 +10,7 @@ use gmt_dos_actors::actorscript;
 use gmt_dos_clients_io::{
     gmt_m1::M1RigidBodyMotions,
     gmt_m2::M2RigidBodyMotions,
-    mount::{MountEncoders, MountSetPoint},
+    mount::{MountEncoders, MountSetPoint, MountTorquesFeedForward},
 };
 use gmt_dos_clients_io::optics::SegmentTipTilt;
 #[cfg(feature = "gmt_dos-clients_crseo")]
@@ -25,6 +28,7 @@ use interface::{Data, Size, TimerMarker, UniqueIdentifier, Update, Write};
 //    computed with astropy, the rotator following the change in parallactic angle
 //  * the setpoints are the trajectory offsets from the initial pointing,
 //    linearly interpolated to the mount sampling frequency
+//  * the FEM rigid body springs torque is fed forward to the mount drives (`feedforward.rs`)
 //  * the rigid telescope motion is removed from all the FEM outputs (but the mount encoders)
 //    by the FEM kinematic compensation, the kinematic gain from the mount encoders derived
 //    from the FEM DC gain
@@ -118,6 +122,19 @@ async fn main() -> anyhow::Result<()> {
     let fem = FEM::from_env()?;
     // FEM with the kinematic compensation of the mount rigid body motion, applied to all the
     // FEM outputs but the mount encoders
+    // MOUNT DRIVES FEED-FORWARD of the FEM rigid body springs (MOUNT_FEEDFORWARD=0 to disable)
+    // * input: MountSetPoint
+    // * output: MountTorquesFeedForward (added to the mount drive torques after the saturation)
+    let mut ff = SpringFeedForward::from_fem(&fem)?;
+    if env::var("MOUNT_FEEDFORWARD").is_ok_and(|v| v == "0") {
+        println!("mount drives feed-forward off");
+        ff = ff.off();
+    } else {
+        println!(
+            "mount drives feed-forward [az, el, GIR]: {:?}N.m/rad per drive",
+            ff.stiffness()
+        );
+    }
     // KINEMATIC_COMPENSATION=0: FEM without kinematic compensation
     let servos = GmtServoMechanisms::<10, 1>::new(sim_sampling_frequency as f64, fem);
     let servos = if env::var("KINEMATIC_COMPENSATION").is_ok_and(|v| v == "0") {
@@ -161,6 +178,7 @@ async fn main() -> anyhow::Result<()> {
     #[cfg(not(feature = "gmt_dos-clients_crseo"))]
     actorscript! {
         1: setpoint[MountSetPoint] -> {servos::GmtMount}
+        1: setpoint[MountSetPoint] -> ff[MountTorquesFeedForward] -> {servos::GmtMount}
         1: {servos::GmtFem}[MountEncoders]${n_encoders}
         1: {servos::GmtFem}[M1RigidBodyMotions]$
         1: {servos::GmtFem}[M2RigidBodyMotions]$
@@ -190,6 +208,7 @@ async fn main() -> anyhow::Result<()> {
             .build()?;
         actorscript! {
             1: setpoint[MountSetPoint] -> {servos::GmtMount}
+        1: setpoint[MountSetPoint] -> ff[MountTorquesFeedForward] -> {servos::GmtMount}
             1: {servos::GmtFem}[MountEncoders]${n_encoders}
             1: {servos::GmtFem}[M1RigidBodyMotions]$
             1: {servos::GmtFem}[M2RigidBodyMotions]$
