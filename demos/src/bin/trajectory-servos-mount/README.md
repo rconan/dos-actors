@@ -49,7 +49,7 @@ Any parameter below can be set on the `make` command line, e.g. `make run SIM_DU
 | `SAMPLING_FREQUENCY` | `1000` | Sampling frequency [Hz] used by the plot scripts. Must match `MOUNT_MODEL` |
 | `CUDACXX` | `/usr/local/cuda/bin/nvcc` | CUDA compiler for the FEM CUDA solver (`cuda` feature) |
 | `SIM_DURATION` | `30` | Simulation duration [s], up to 300, the length of the trajectory. The binary defaults to 300 when it is not set |
-| `FLOWCHART` | `dot` | Layout of the model flowchart (`data/model_flowchart.html`): `dot`, `neato` or `fdp` |
+| `FLOWCHART` | `dot` | Layout of the model flowchart (`data/model_flowchart.html`): `dot`, `neato` or `fdp` (Graphviz), `elk` (laid out in the browser with elkjs, no Graphviz needed), empty or `none` for no flowchart |
 | `STT_START` | `10` | Start time [s] of the segment tip-tilt orbit plot |
 | `FEATURES` | `cuda gmt_dos-clients_arrow` | Cargo features, see below |
 | `PYTHON` | `python3` | Python interpreter for the trajectory and plot scripts |

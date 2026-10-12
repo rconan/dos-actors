@@ -16,7 +16,7 @@ SAMPLING_FREQUENCY ?= 1000
 CUDACXX ?= /usr/local/cuda/bin/nvcc
 # simulation duration [s], up to 300 (length of the trajectory)
 SIM_DURATION ?= 30
-# flowchart layout of the model: dot, neato or fdp (empty: no flowchart)
+# flowchart layout of the model: dot, neato, fdp (Graphviz) or elk (laid out in the browser), empty: no flowchart
 FLOWCHART ?= dot
 # start time [s] of the segment tip-tilt orbit plot
 STT_START ?= 10
