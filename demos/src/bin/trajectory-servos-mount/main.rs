@@ -1,5 +1,7 @@
 use std::{env, fs, path::Path};
 
+#[cfg(feature = "gmt_dos-clients_crseo")]
+mod gir_rotation;
 
 use gmt_dos_actors::actorscript;
 use gmt_dos_clients_io::{
@@ -8,6 +10,8 @@ use gmt_dos_clients_io::{
     mount::{MountEncoders, MountSetPoint},
 };
 use gmt_dos_clients_io::optics::SegmentTipTilt;
+#[cfg(feature = "gmt_dos-clients_crseo")]
+use gmt_dos_clients_io::optics::Wavefront;
 use gmt_dos_clients_lom::LinearOpticalModel;
 use gmt_dos_clients_mount::Mount;
 use gmt_dos_clients_servos::{GmtFem, GmtMount, GmtServoMechanisms};
@@ -147,6 +151,7 @@ async fn main() -> anyhow::Result<()> {
     // * output: SegmentTipTilt
     let lom = LinearOpticalModel::new()?;
 
+    #[cfg(not(feature = "gmt_dos-clients_crseo"))]
     actorscript! {
         1: setpoint[MountSetPoint] -> {servos::GmtMount}
         1: {servos::GmtFem}[MountEncoders]${n_encoders}
@@ -155,6 +160,41 @@ async fn main() -> anyhow::Result<()> {
         1: {servos::GmtFem}[M1RigidBodyMotions]! -> lom
         1: {servos::GmtFem}[M2RigidBodyMotions]! -> lom
         1: lom[SegmentTipTilt]$
+    }
+
+    // GIR ROTATION & OPTICAL MODEL (feature gmt_dos-clients_crseo)
+    //  * the M1 & M2 rigid body motions are rotated by the GIR angle (`gir_rotation.rs`)
+    //  * the crseo optical model ray traces the GMT with the rotated rigid body motions
+    //    every second (PUPIL_SAMPLING, default: 513) and the wavefront in the exit pupil
+    //    is saved to `model_data_1000.parquet`
+    #[cfg(feature = "gmt_dos-clients_crseo")]
+    {
+        use gmt_dos_clients_crseo::{
+            OpticalModel,
+            crseo::{FromBuilder, Source},
+            sensors::NoSensor,
+        };
+        let pupil_sampling = env::var("PUPIL_SAMPLING")
+            .ok()
+            .map_or(Ok(513_usize), |s| s.parse())?;
+        let rotation = gir_rotation::GirRotation::new();
+        let om = OpticalModel::<NoSensor>::builder()
+            .source(Source::builder().pupil_sampling(pupil_sampling))
+            .build()?;
+        actorscript! {
+            1: setpoint[MountSetPoint] -> {servos::GmtMount}
+            1: {servos::GmtFem}[MountEncoders]${n_encoders}
+            1: {servos::GmtFem}[M1RigidBodyMotions]$
+            1: {servos::GmtFem}[M2RigidBodyMotions]$
+            1: {servos::GmtFem}[M1RigidBodyMotions]! -> lom
+            1: {servos::GmtFem}[M2RigidBodyMotions]! -> lom
+            1: lom[SegmentTipTilt]$
+            1: {servos::GmtFem}[MountEncoders]! -> rotation
+            1: {servos::GmtFem}[M1RigidBodyMotions]! -> rotation
+            1: {servos::GmtFem}[M2RigidBodyMotions]! -> rotation
+            1000: rotation[M1RigidBodyMotions] -> om
+            1000: rotation[M2RigidBodyMotions] -> om[Wavefront]$
+        }
     }
 
     Ok(())
