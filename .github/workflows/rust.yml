@@ -101,7 +101,17 @@ jobs:
       env:
         FEM_REPO: /home/ubuntu/mnt/20230131_1605_zen_30_M1_202110_ASM_202208_Mount_202111/
         MOUNT_MODEL: MOUNT_PDR_8kHz
-      run: cargo build --package demos --bins --features gmt_dos-clients_arrow
+      # the trajectory demos require the 2025 FEM (M1 hardpoints force extension) and are built in the next step
+      run: >
+        cargo build --package demos --features gmt_dos-clients_arrow
+        --bin step-mount --bin step-servos-mount
+        --bin windloaded-mount --bin windloaded-mount-m1 --bin windloaded-mount-m1-asms --bin windloaded-mount-m1-asms-lom
+        --bin windloaded-servos --bin windloaded-servos-fsm --bin windloaded-servos-preloading
+    - name: Build trajectory demos
+      env:
+        FEM_REPO: /home/ubuntu/mnt/20250516_1420_zen_30_M1_202110_FSM_202305_Mount_202305_pier_202411_M1_actDamping/
+        MOUNT_MODEL: MOUNT_FDR_1kHz
+      run: cargo build --package demos --features gmt_dos-clients_arrow --bin trajectory-mount --bin trajectory-servos-mount
 
   asm-test:
     name: Run ASM Tests
