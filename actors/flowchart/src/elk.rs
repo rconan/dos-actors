@@ -117,6 +117,7 @@ fn walk(
             "inputs": inputs,
             "outputs": outputs,
             "image": actor.image.as_deref().and_then(data_uri),
+            "uid": actor.uid.map(|uid| uid.to_string()),
         }));
         if let Some(graph) = actor.graph.as_ref() {
             walk(graph, Some(&id), actors, channels);
@@ -146,8 +147,10 @@ fn escape_html(text: &str) -> String {
 }
 
 /// Fills the template placeholders in a single pass
-fn fill(title: &str, model: &str) -> String {
-    let mut page = String::with_capacity(TEMPLATE.len() + ELK.len() + model.len());
+///
+/// `events` is the JSON of a recorded model run or `null`
+pub(crate) fn fill(title: &str, model: &str, events: &str) -> String {
+    let mut page = String::with_capacity(TEMPLATE.len() + ELK.len() + model.len() + events.len());
     let mut rest = TEMPLATE;
     while let Some(i) = rest.find("__") {
         page.push_str(&rest[..i]);
@@ -158,6 +161,8 @@ fn fill(title: &str, model: &str) -> String {
             (model, "__MODEL__".len())
         } else if tail.starts_with("__ELK__") {
             (ELK, "__ELK__".len())
+        } else if tail.starts_with("__EVENTS__") {
+            (events, "__EVENTS__".len())
         } else {
             ("__", 2)
         };
@@ -172,9 +177,13 @@ fn fill(title: &str, model: &str) -> String {
 pub fn to_html(graph: &Graph) -> Result<PathBuf, RenderError> {
     let data_repo = env::var("DATA_REPO").unwrap_or(".".into());
     let path = Path::new(&data_repo).join(format!("{}_flowchart.html", graph.name()));
-    let page = fill(&escape_html(&graph.name().to_uppercase()), &to_json(graph)?);
+    let title = escape_html(&graph.name().to_uppercase());
+    let model = to_json(graph)?;
+    let page = fill(&title, &model, "null");
     let mut file = File::create(&path)?;
     file.write_all(page.as_bytes())?;
+    #[cfg(feature = "replay")]
+    crate::replay::open(path.clone(), title, model);
     Ok(path)
 }
 
@@ -252,9 +261,12 @@ mod tests {
 
     #[test]
     fn page() {
-        let page = fill("MODEL", &to_json(&graph()).unwrap());
+        let page = fill("MODEL", &to_json(&graph()).unwrap(), "null");
         assert!(
-            !page.contains("__MODEL__") && !page.contains("__TITLE__") && !page.contains("__ELK__")
+            !page.contains("__MODEL__")
+                && !page.contains("__TITLE__")
+                && !page.contains("__ELK__")
+                && !page.contains("__EVENTS__")
         );
         assert!(page.contains("SPDX-License-Identifier: EPL-2.0"));
         assert_eq!(page.matches("</script>").count(), 2);

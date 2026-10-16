@@ -5,7 +5,7 @@ use interface::TryUpdate;
 
 use crate::framework::model::{Task, TaskError};
 
-use super::{Actor, PlainActor};
+use super::{replay::Replay, Actor, PlainActor};
 
 type Result<T> = std::result::Result<T, TaskError>;
 
@@ -41,7 +41,11 @@ where
     /// Starts the actor infinite loop
     async fn async_run(&mut self) -> Result<()> {
         log::debug!("ACTOR LOOP ({NI}/{NO}): {}", type_name::<C>());
+        let mut replay = Replay::new(self);
         let bootstrap = self.bootstrap().await?;
+        if bootstrap {
+            replay.bootstrap(self);
+        }
         match (self.inputs.as_ref(), self.outputs.as_ref()) {
             (Some(_), Some(_)) => {
                 if NO >= NI {
@@ -60,7 +64,9 @@ where
                             .lock()
                             .await
                             .boxed_try_update()?;
+                        replay.update();
                         self.distribute().await?;
+                        replay.send(0);
                     }
                     loop {
                         for _ in 0..NO / NI {
@@ -70,8 +76,10 @@ where
                                 .lock()
                                 .await
                                 .boxed_try_update()?;
+                            replay.update();
                         }
                         self.distribute().await?;
+                        replay.send(0);
                     }
                 } else {
                     // Upsampling
@@ -82,8 +90,10 @@ where
                             .lock()
                             .await
                             .boxed_try_update()?;
-                        for _ in 0..NI / NO {
+                        replay.update();
+                        for i in 0..NI / NO {
                             self.distribute().await?;
+                            replay.send(i * NO);
                         }
                     }
                 }
@@ -93,7 +103,9 @@ where
                 tokio::task::yield_now().await; // at least cooperates with other tasks
                 loop {
                     self.client.lock().await.boxed_try_update()?;
+                    replay.update();
                     self.distribute().await?;
+                    replay.send(0);
                 }
             }
             (Some(_), None) => loop {
@@ -104,6 +116,7 @@ where
                     .lock()
                     .await
                     .boxed_try_update()?;
+                replay.update();
             },
             (None, None) => Ok(()),
         }

@@ -1,3 +1,5 @@
+use std::hash::Hasher;
+
 use crate::{graph::Graph, trim};
 
 /// Actor input or output content
@@ -112,6 +114,7 @@ pub struct PlainActorBuilder {
     pub(crate) hash: u64,
     pub(crate) image: Option<String>,
     pub(crate) graph: Option<Graph>,
+    pub(crate) uid: Option<u64>,
 }
 
 impl PlainActorBuilder {
@@ -140,6 +143,11 @@ impl PlainActorBuilder {
         self.image = image;
         self
     }
+    /// Sets the identifier of the running actor, used to replay a model run in the flowchart
+    pub fn uid(mut self, uid: u64) -> Self {
+        self.uid = Some(uid);
+        self
+    }
     /// Sets or unsets the inputs
     pub fn maybe_inputs(mut self, inputs: Option<Vec<IO>>) -> Self {
         self.inputs = inputs;
@@ -159,11 +167,12 @@ impl PlainActorBuilder {
             graph: self.graph,
             hash: self.hash,
             image: self.image,
+            uid: self.uid,
         }
     }
 }
 /// Actor free of generic types and constants
-#[derive(Debug, Hash, Default, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct PlainActor {
     pub(crate) client: String,
     pub(crate) inputs: Option<Vec<IO>>,
@@ -171,6 +180,19 @@ pub struct PlainActor {
     pub(crate) hash: u64,
     pub(crate) image: Option<String>,
     pub(crate) graph: Option<Graph>,
+    #[cfg_attr(not(feature = "elk"), allow(dead_code))]
+    pub(crate) uid: Option<u64>,
+}
+/// The run identifier `uid` changes from one run to the next and is left out of the hash
+impl std::hash::Hash for PlainActor {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.client.hash(state);
+        self.inputs.hash(state);
+        self.outputs.hash(state);
+        self.hash.hash(state);
+        self.image.hash(state);
+        self.graph.hash(state);
+    }
 }
 impl PlainActor {
     /// Creates a new [PlainActorBuilder]
