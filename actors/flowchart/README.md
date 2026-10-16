@@ -27,7 +27,13 @@ In the page, `→` or space steps forward, `←` steps back, `Shift+→`/`Shift+
 the actors updated at the current step are outlined and the wires carrying data are highlighted, the bootstrapped outputs are shown in a frame before the first step.
 An actor inside a closed system is shown on the system block.
 
-The replay requires the ELK backend (`FLOWCHART=elk` if the `graphviz` feature is enabled too) and only the first `FLOWCHART_STEPS` steps are recorded.
+Each actor records its steps locally, as arithmetic progressions (`[start, period, count]`) that follow from its rate,
+and hands them over when its loop ends, so the recording costs a few integer operations per step and its size does not
+grow with the length of the run (a few kB for the GMT integrated models).
+The page is rewritten once the outermost model has completed (a system runs its actors as a nested model).
+
+The replay requires the ELK backend (`FLOWCHART=elk` if the `graphviz` feature is enabled too).
+The whole run is recorded unless `FLOWCHART_STEPS` limits the number of recorded steps.
 
 ## Environment variables
 
@@ -37,7 +43,7 @@ The replay requires the ELK backend (`FLOWCHART=elk` if the `graphviz` feature i
 | `FLOWCHART_THEME` | Graphviz theme: `screen` (dark, default) or `paper` (light) |
 | `TO_DOT` | If set, the Graphviz dot files are written as well |
 | `DATA_REPO` | Directory where the flowchart is written |
-| `FLOWCHART_STEPS` | Number of sample steps recorded for the replay, 100 by default |
+| `FLOWCHART_STEPS` | Number of sample steps recorded for the replay, the whole run by default |
 
 ## Licence
 

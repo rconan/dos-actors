@@ -43,7 +43,7 @@ impl Model<Running> {
             .map_err(Box::new)?;
         }
         #[cfg(feature = "flowchart-replay")]
-        match gmt_dos_actors_flowchart::replay::write() {
+        match gmt_dos_actors_flowchart::replay::model_completed() {
             Ok(Some(path)) => log::info!("model run replay written to {path:?}"),
             Ok(None) => (),
             Err(e) => println!("failed to write the model run replay caused by:\n {e}"),

@@ -274,14 +274,25 @@ function draw(g) {
 }
 
 // replay of a recorded model run: one frame for the bootstrap, if any, and one frame per sample step
+// EVENTS = {steps: n, bootstrap: [hash, ...], u: {uid: runs, ...}, s: {hash: runs, ...}}
+// where the runs [[start, period, count], ...] are the steps at which an actor is updated or an output is sent
 const blockEls = new Map();
 const wirePaths = [];
-const FRAMES = EVENTS ? [
-  ...(EVENTS.bootstrap.length ? [{ label: 'bootstrap', u: [], s: EVENTS.bootstrap }] : []),
-  ...EVENTS.steps.map((f, i) => ({ label: `step ${i}`, ...f })),
-] : [];
+const OFFSET = EVENTS && EVENTS.bootstrap.length ? 1 : 0; // the bootstrap frame
+const NF = EVENTS ? OFFSET + EVENTS.steps : 0;
 const uidToId = new Map(MODEL.actors.filter(a => a.uid).map(a => [a.uid, a.id]));
 let frame = -1, player = null;
+const last = ([a, p, n]) => a + p * (n - 1);
+// true if the step i belongs to a run
+const onRun = (r, i) => i >= r[0] && i <= last(r) && (r[1] === 0 || (i - r[0]) % r[1] === 0);
+const on = (runs, i) => runs.some(r => onRun(r, i));
+// the updated actors and the sent outputs of a frame
+function frameAt(f) {
+  const i = f - OFFSET;
+  if (i < 0) return { label: 'bootstrap', u: [], s: EVENTS.bootstrap };
+  const pick = m => Object.keys(m).filter(k => on(m[k], i));
+  return { label: `step ${i}`, u: pick(EVENTS.u), s: pick(EVENTS.s) };
+}
 // the block an actor is drawn in: itself or the closed system that contains it
 function drawnAs(id) {
   for (const x of ancestors(id).reverse()) if (!isOpen(byId.get(x))) return x;
@@ -293,9 +304,9 @@ function paint() {
   world.classList.toggle('replay', frame >= 0);
   if (!EVENTS) return;
   const label = document.getElementById('frame');
-  if (frame < 0) { label.textContent = `${EVENTS.steps.length} steps`; return; }
-  const f = FRAMES[frame];
-  label.textContent = `${f.label} / ${EVENTS.steps.length}`;
+  if (frame < 0) { label.textContent = `${EVENTS.steps} steps`; return; }
+  const f = frameAt(frame);
+  label.textContent = `${f.label} / ${EVENTS.steps}`;
   for (const uid of f.u) {
     const id = uidToId.get(uid);
     if (id) blockEls.get(drawnAs(id))?.classList.add('active');
@@ -304,23 +315,44 @@ function paint() {
   wirePaths.forEach(w => sent.has(w.h) && w.path.classList.add('sent'));
 }
 function go(i) {
-  frame = Math.max(-1, Math.min(i, FRAMES.length - 1));
-  if (frame === FRAMES.length - 1) pause();
+  frame = Math.max(-1, Math.min(i, NF - 1));
+  if (frame === NF - 1) pause();
   paint();
 }
-// frames are compared by their updated actors and sent outputs
-const signature = i => i < 0 ? '' : FRAMES[i].u.join() + '|' + FRAMES[i].s.join();
+// steps are compared by their updated actors and sent outputs
+const signature = i => { const f = frameAt(i + OFFSET); return f.u.join() + '|' + f.s.join(); };
+// the step after (dir = 1) or before (dir = -1) the step i where a run starts or stops matching
+function flip(r, i, dir) {
+  const [a, p] = r, l = last(r), dense = p <= 1;
+  if (dir > 0) {
+    if (i < a) return a;
+    if (i > l) return Infinity;
+    if (onRun(r, i)) return dense ? l + 1 : i + 1;
+    return a + p * Math.ceil((i - a) / p);
+  }
+  if (i > l) return l;
+  if (i < a) return -Infinity;
+  if (onRun(r, i)) return dense ? a - 1 : i - 1;
+  return a + p * Math.floor((i - a) / p);
+}
 // next (dir = 1) or previous (dir = -1) frame where the activity changes
 function change(dir) {
-  const here = signature(frame);
-  let i = frame + dir;
-  while (i >= 0 && i < FRAMES.length && signature(i) === here) i += dir;
-  return i;
+  let i = frame - OFFSET;
+  if (i < 0) return dir > 0 ? frame + 1 : -1;
+  const runs = [...Object.values(EVENTS.u), ...Object.values(EVENTS.s)].flat();
+  const here = signature(i);
+  for (;;) {
+    const flips = runs.map(r => flip(r, i, dir));
+    i = dir > 0 ? Math.min(...flips) : Math.max(...flips);
+    if (i >= EVENTS.steps) return NF - 1;
+    if (i < 0) return OFFSET - 1;
+    if (signature(i) !== here) return i + OFFSET;
+  }
 }
 function pause() { clearInterval(player); player = null; }
 function play() {
   if (player) return pause();
-  if (frame === FRAMES.length - 1) frame = -1;
+  if (frame === NF - 1) frame = -1;
   player = setInterval(() => go(frame + 1), 400);
 }
 if (EVENTS) {
@@ -330,11 +362,10 @@ if (EVENTS) {
   document.getElementById('prev').onclick = () => { pause(); go(frame - 1); };
   document.getElementById('next').onclick = () => { pause(); go(frame + 1); };
   document.getElementById('play').onclick = play;
-  const offset = FRAMES.length - EVENTS.steps.length; // the bootstrap frame
   document.getElementById('goto').addEventListener('keydown', ev => {
     if (ev.key !== 'Enter') return;
     const step = parseInt(ev.target.value, 10);
-    if (!Number.isNaN(step)) { pause(); go(step + offset); }
+    if (!Number.isNaN(step)) { pause(); go(step + OFFSET); }
     ev.target.blur();
   });
   window.addEventListener('keydown', ev => {
