@@ -5,9 +5,16 @@ on:
     branches: [ "main" ]
   pull_request:
     types: [opened, synchronize, reopened]
-  
+
+# a new push to a PR cancels its in-progress run; runs on main are queued, not cancelled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   CARGO_TERM_COLOR: always
+  # caps parallel rustc jobs to bound peak memory (avoids OOM SIGKILLs on smaller instances)
+  CARGO_BUILD_JOBS: 8
   GMT_MODES_PATH: /home/ubuntu/mnt/ceo
   NVCC: /usr/local/cuda/bin/nvcc
   CUDACXX: /usr/local/cuda/bin/nvcc
