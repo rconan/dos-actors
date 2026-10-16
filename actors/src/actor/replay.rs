@@ -23,13 +23,18 @@ pub(crate) use noop::Replay;
 
 #[cfg(feature = "flowchart-replay")]
 mod recording {
-    use gmt_dos_actors_flowchart::replay;
+    use gmt_dos_actors_flowchart::replay::{self, Runs};
     use interface::TryUpdate;
 
     use super::{super::Actor, uid};
 
     /// Actor loop recorder
+    ///
+    /// The steps are recorded locally and handed over to the replay session
+    /// when the recorder is dropped at the end of the actor loop
     pub(crate) struct Replay {
+        active: bool,
+        max_steps: usize,
         uid: u64,
         // step of the next update
         step: usize,
@@ -37,6 +42,8 @@ mod recording {
         last: usize,
         period: usize,
         outputs: Vec<u64>,
+        updates: Runs,
+        sends: Runs,
     }
     impl Replay {
         pub fn new<C, const NI: usize, const NO: usize>(actor: &Actor<C, NI, NO>) -> Self
@@ -44,6 +51,8 @@ mod recording {
             C: TryUpdate,
         {
             Self {
+                active: replay::is_recording(),
+                max_steps: replay::max_steps(),
                 uid: uid(actor),
                 step: 0,
                 last: 0,
@@ -54,6 +63,8 @@ mod recording {
                     .flatten()
                     .map(|output| output.get_hash())
                     .collect(),
+                updates: Runs::default(),
+                sends: Runs::default(),
             }
         }
         /// Records the bootstrapped outputs
@@ -61,25 +72,45 @@ mod recording {
         where
             C: TryUpdate,
         {
-            replay::record_send(
-                None,
-                actor
-                    .outputs
-                    .iter()
-                    .flatten()
-                    .filter(|output| output.bootstrap())
-                    .map(|output| output.get_hash()),
-            );
+            if self.active {
+                replay::record_bootstrap(
+                    actor
+                        .outputs
+                        .iter()
+                        .flatten()
+                        .filter(|output| output.bootstrap())
+                        .map(|output| output.get_hash()),
+                );
+            }
         }
         /// Records an update of the client
+        #[inline]
         pub fn update(&mut self) {
-            replay::record_update(self.uid, self.step);
+            if self.active && self.step < self.max_steps {
+                self.updates.push(self.step);
+            }
             self.last = self.step;
             self.step += self.period;
         }
         /// Records the outputs sent `offset` steps after the last update
-        pub fn send(&self, offset: usize) {
-            replay::record_send(Some(self.last + offset), self.outputs.iter().copied());
+        #[inline]
+        pub fn send(&mut self, offset: usize) {
+            let step = self.last + offset;
+            if self.active && step < self.max_steps {
+                self.sends.push(step);
+            }
+        }
+    }
+    impl Drop for Replay {
+        fn drop(&mut self) {
+            if self.active {
+                replay::record(
+                    self.uid,
+                    std::mem::take(&mut self.updates),
+                    &self.outputs,
+                    std::mem::take(&mut self.sends),
+                );
+            }
         }
     }
 }
@@ -109,6 +140,6 @@ mod noop {
         #[inline(always)]
         pub fn update(&mut self) {}
         #[inline(always)]
-        pub fn send(&self, _: usize) {}
+        pub fn send(&mut self, _: usize) {}
     }
 }
