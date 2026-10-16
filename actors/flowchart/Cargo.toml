@@ -23,3 +23,4 @@ base64 = { version = "0.22", optional = true }
 default = ["graphviz"]
 graphviz = ["dep:svg", "dep:html-escape"]
 elk = ["dep:serde_json", "dep:base64"]
+replay = ["elk"]

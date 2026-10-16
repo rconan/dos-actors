@@ -38,6 +38,7 @@ open = "5.3.4"
 default = ["flowchart-graphviz"]
 flowchart-graphviz = ["gmt_dos-actors_flowchart/graphviz"]
 flowchart-elk = ["gmt_dos-actors_flowchart/elk"]
+flowchart-replay = ["flowchart-elk", "gmt_dos-actors_flowchart/replay"]
 sampler = []
 feedback = []
 dta = []

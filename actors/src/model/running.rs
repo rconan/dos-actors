@@ -42,6 +42,12 @@ impl Model<Running> {
             }
             .map_err(Box::new)?;
         }
+        #[cfg(feature = "flowchart-replay")]
+        match gmt_dos_actors_flowchart::replay::write() {
+            Ok(Some(path)) => log::info!("model run replay written to {path:?}"),
+            Ok(None) => (),
+            Err(e) => println!("failed to write the model run replay caused by:\n {e}"),
+        }
         let elapsed_time = Instant::now().duration_since(self.start);
         let now: DateTime<Local> = Local::now();
         self.verbose.then(|| {
