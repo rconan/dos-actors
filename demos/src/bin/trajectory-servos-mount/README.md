@@ -61,6 +61,7 @@ Any parameter below can be set on the `make` command line, e.g. `make run SIM_DU
 | `cuda` | FEM state space solved on the GPU (`CuStateSpace`). Drop it to use the CPU solver (`ExponentialMatrix`), which is much slower |
 | `gmt_dos-clients_arrow` | Data logging to parquet files. Required |
 | `gmt_dos-clients_crseo` | Adds the GIR rotation and the crseo optical model, see below |
+| `flowchart-replay` | Records the run into the ELK flowchart (`FLOWCHART=elk`) to replay it step by step in the browser. The whole run is recorded unless `FLOWCHART_STEPS` limits the number of recorded steps, e.g. `make run FLOWCHART=elk SIM_DURATION=3 FEATURES="cuda gmt_dos-clients_arrow gmt_dos-clients_crseo flowchart-replay"` |
 
 ## Run time environment variables
 
