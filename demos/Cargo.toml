@@ -36,3 +36,5 @@ tokio = { workspace = true, features = ["rt-multi-thread"] }
 
 [features]
 cuda = ["gmt_dos-clients_fem/cuda", "gmt_dos-clients_servos/cuda"]
+# records the model run into the ELK flowchart to replay it step by step (FLOWCHART=elk)
+flowchart-replay = ["gmt_dos-actors/flowchart-replay"]

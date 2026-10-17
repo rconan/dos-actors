@@ -16,7 +16,24 @@ With ELK, an actor image is embedded in the page as a base64 data URI and drawn 
 (blocks with an image are at least 120×80); the image path is resolved against the working directory,
 then against `CARGO_MANIFEST_DIR`, and a missing image is skipped with a warning.
 
-In `gmt_dos-actors`, the features are forwarded as `flowchart-graphviz` (default) and `flowchart-elk`.
+In `gmt_dos-actors`, the features are forwarded as `flowchart-graphviz` (default), `flowchart-elk` and `flowchart-replay`.
+
+## Replay
+
+With the `replay` feature (`flowchart-replay` in `gmt_dos-actors`), a model run is recorded and played back in the ELK flowchart.
+The flowchart page is written as usual, then the actors record, at each sample step, that they have been updated and which outputs they have sent,
+and, once the model has completed, the page is rewritten with the recorded steps.
+In the page, `→` or space steps forward, `←` steps back, `Shift+→`/`Shift+←` jump to the next/previous step where the activity changes (e.g. a slower rate actor), a step number can be typed in the step box, `p` plays or pauses and `Esc` resets;
+the actors updated at the current step are outlined and the wires carrying data are highlighted, the bootstrapped outputs are shown in a frame before the first step.
+An actor inside a closed system is shown on the system block.
+
+Each actor records its steps locally, as arithmetic progressions (`[start, period, count]`) that follow from its rate,
+and hands them over when its loop ends, so the recording costs a few integer operations per step and its size does not
+grow with the length of the run (a few kB for the GMT integrated models).
+The page is rewritten once the outermost model has completed (a system runs its actors as a nested model).
+
+The replay requires the ELK backend (`FLOWCHART=elk` if the `graphviz` feature is enabled too).
+The whole run is recorded unless `FLOWCHART_STEPS` limits the number of recorded steps.
 
 ## Environment variables
 
@@ -26,6 +43,7 @@ In `gmt_dos-actors`, the features are forwarded as `flowchart-graphviz` (default
 | `FLOWCHART_THEME` | Graphviz theme: `screen` (dark, default) or `paper` (light) |
 | `TO_DOT` | If set, the Graphviz dot files are written as well |
 | `DATA_REPO` | Directory where the flowchart is written |
+| `FLOWCHART_STEPS` | Number of sample steps recorded for the replay, the whole run by default |
 
 ## Licence
 

@@ -14,6 +14,9 @@ The backend is selected with the environment variable `FLOWCHART`:
  * `elk`: ELK
  * empty or `none`: the flowchart is disabled
  * unset: Graphviz with the `neato` layout if the `graphviz` feature is enabled, otherwise ELK
+
+With the `replay` feature, a model run is recorded and written into the ELK flowchart
+to be played back step by step in the browser (see the `replay` module).
 */
 
 mod graph;
@@ -23,6 +26,8 @@ mod render;
 
 #[cfg(feature = "elk")]
 mod elk;
+#[cfg(feature = "replay")]
+pub mod replay;
 
 pub use graph::{COLORMAP, ColorMap, Graph, GraphError};
 pub use model::PlainModel;

@@ -53,6 +53,7 @@ mod serde_with;
 
 pub use actor::Actor;
 mod plain;
+mod replay;
 
 pub use gmt_dos_actors_flowchart::{IOData, PlainActor, PlainActorBuilder, IO};
 

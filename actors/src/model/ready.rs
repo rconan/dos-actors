@@ -24,6 +24,8 @@ impl Model<Ready> {
                 actor.task().await;
             }));
         } */
+        #[cfg(feature = "flowchart-replay")]
+        gmt_dos_actors_flowchart::replay::model_running();
         let mut set = JoinSet::new();
         let _task_handles: Vec<_> = self
             .actors
