@@ -23,14 +23,6 @@ const DARK28: [&str; 8] = [
     "#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e", "#e6ab02", "#a6761d", "#666666",
 ];
 
-fn style(io: &IO) -> &'static str {
-    match io {
-        IO::Bootstrap(_) => "bold",
-        IO::Regular(_) => "solid",
-        IO::Unbounded(_) => "dashed",
-    }
-}
-
 /// Returns the media type of an image from its file extension
 fn media_type(path: &Path) -> &'static str {
     match path
@@ -91,17 +83,18 @@ fn walk(
                 .flatten()
                 .map(|io| {
                     let hash = io.hash().to_string();
-                    if !channels.contains_key(&hash) {
+                    let channel = channels.entry(hash.clone()).or_insert_with(|| {
                         let color = COLORMAP.lock().unwrap().get(io.rate());
-                        channels.insert(
-                            hash.clone(),
-                            json!({
-                                "name": trim(io.name()),
-                                "color": DARK28[(color - 1) % DARK28.len()],
-                                "style": style(io),
-                                "rate": io.rate(),
-                            }),
-                        );
+                        json!({
+                            "name": trim(io.name()),
+                            "color": DARK28[(color - 1) % DARK28.len()],
+                            "rate": io.rate(),
+                            "bootstrap": false,
+                        })
+                    });
+                    // an output is bootstrapped, the channel is bootstrapped whichever end is seen first
+                    if matches!(io, IO::Bootstrap(_)) {
+                        channel["bootstrap"] = json!(true);
                     }
                     hash
                 })
@@ -109,6 +102,14 @@ fn walk(
         };
         let inputs = hashes(&actor.inputs);
         let outputs = hashes(&actor.outputs);
+        // an input is unbounded, a channel can feed both bounded and unbounded inputs
+        let unbounded: Vec<_> = actor
+            .inputs
+            .iter()
+            .flatten()
+            .filter(|io| matches!(io, IO::Unbounded(_)))
+            .map(|io| io.hash().to_string())
+            .collect();
         actors.push(json!({
             "id": id,
             "label": actor.client,
@@ -116,6 +117,7 @@ fn walk(
             "system": actor.graph.is_some(),
             "inputs": inputs,
             "outputs": outputs,
+            "unbounded": unbounded,
             "image": actor.image.as_deref().and_then(data_uri),
             "uid": actor.uid.map(|uid| uid.to_string()),
         }));
@@ -233,6 +235,26 @@ mod tests {
         assert_eq!(actors[2]["parent"], actors[1]["id"]);
         assert_eq!(model["channels"]["2"]["name"], "Out</script>");
         assert_eq!(model["channels"]["2"]["rate"], 10);
+    }
+
+    #[test]
+    fn bootstrap_into_unbounded() {
+        // the consumer is seen before the producer
+        let graph = Graph::new(
+            "model".into(),
+            vec![
+                PlainActor::new("Logger")
+                    .inputs(vec![IO::Unbounded(IOData::new("x::Y".into(), 3, 1, 1))])
+                    .build(),
+                PlainActor::new("Feedback")
+                    .outputs(vec![IO::Bootstrap(IOData::new("x::Y".into(), 3, 1, 1))])
+                    .build(),
+            ],
+        );
+        let model: Value = serde_json::from_str(&to_json(&graph).unwrap()).unwrap();
+        assert_eq!(model["channels"]["3"]["bootstrap"], true);
+        assert_eq!(model["actors"][0]["unbounded"], json!(["3"]));
+        assert_eq!(model["actors"][1]["unbounded"], json!([]));
     }
 
     #[test]
