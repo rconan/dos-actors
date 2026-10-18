@@ -25,6 +25,12 @@ The flowchart page is written as usual, then the actors record, at each sample s
 and, once the model has completed, the page is rewritten with the recorded steps.
 In the page, `→` or space steps forward, `←` steps back, `Shift+→`/`Shift+←` jump to the next/previous step where the activity changes (e.g. a slower rate actor), a step number can be typed in the step box, `p` plays or pauses and `Esc` resets;
 the actors updated at the current step are outlined and the wires carrying data are highlighted, the bootstrapped outputs are shown in a frame before the first step.
+
+By default, `→` and `←` go through each step stage by stage (`s` toggles the stages off and on):
+an actor comes after the actors it receives data from in the same step,
+and the data of a bootstrapped output, sent at the previous step, breaks the feedback loops.
+At each stage, the current actors and the data they send are highlighted, the earlier stages of the step are faded,
+and the bootstrapped data still to be sent again at that step is drawn dotted.
 An actor inside a closed system is shown on the system block.
 
 Each actor records its steps locally, as arithmetic progressions (`[start, period, count]`) that follow from its rate,
