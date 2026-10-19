@@ -5,7 +5,7 @@ use gmt_dos_clients_io::{
         M2ASMFaceSheetFigure, M2ASMFluidDampingForces, M2ASMVoiceCoilsForces, M2ASMVoiceCoilsMotion,
     },
 };
-use gmt_dos_clients_optics_state::{M2State, MirrorState};
+use gmt_dos_clients_optics_state::{M2State, MirrorState, SegmentState};
 use interface::{Data, Read, Size, Write};
 use std::sync::Arc;
 
@@ -222,7 +222,19 @@ where
         } else {
             Some(data)
         }
-        .map(|modes| MirrorState::new(rbms.chunks(6), modes))
+        .map(|modes| {
+            // the state of the 7 segments, the segments not in the assembly are left empty
+            let segment_rbms: Vec<_> = rbms.chunks(6).collect();
+            <M2ASMVoiceCoilsForces as Assembly>::SIDS
+                .into_iter()
+                .zip(modes)
+                .fold(MirrorState::default(), |state, (sid, modes)| {
+                    state.set_segment_state(
+                        sid,
+                        SegmentState::new(segment_rbms[sid as usize - 1], modes),
+                    )
+                })
+        })
         .map(|state| Data::new(state))
     }
 }
