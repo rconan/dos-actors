@@ -165,6 +165,8 @@ pub(crate) fn fill(title: &str, model: &str, events: &str) -> String {
             (ELK, "__ELK__".len())
         } else if tail.starts_with("__EVENTS__") {
             (events, "__EVENTS__".len())
+        } else if tail.starts_with("__SCOPE__") {
+            ("null", "__SCOPE__".len())
         } else {
             ("__", 2)
         };
@@ -289,6 +291,7 @@ mod tests {
                 && !page.contains("__TITLE__")
                 && !page.contains("__ELK__")
                 && !page.contains("__EVENTS__")
+                && !page.contains("__SCOPE__")
         );
         assert!(page.contains("SPDX-License-Identifier: EPL-2.0"));
         assert_eq!(page.matches("</script>").count(), 2);
