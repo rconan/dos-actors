@@ -10,11 +10,25 @@ impl Default for Assembly {
 
 impl From<String> for Assembly {
     fn from(sids: String) -> Self {
-        Self(
-            sids.split(',')
-                .map(|sid| sid.parse::<u8>().unwrap())
-                .collect(),
-        )
+        Self({
+            let mut sids: Vec<_> = sids
+                .split(',')
+                .map(|sid| {
+                    let sid = sid.trim();
+                    let id = sid.parse::<u8>().unwrap_or_else(|_| {
+                        panic!("ASSEMBLY: expected a segment id, found {sid:?}")
+                    });
+                    assert!(
+                        (1..=7).contains(&id),
+                        "ASSEMBLY: expected segment ids in [1,7], found {id}"
+                    );
+                    id
+                })
+                .collect();
+            sids.sort();
+            sids.dedup();
+            sids
+        })
     }
 }
 
