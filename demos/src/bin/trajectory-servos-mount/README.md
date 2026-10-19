@@ -85,9 +85,11 @@ GMT_MODES_PATH=<gmtMirrors directory> make run SIM_DURATION=120 FEATURES="cuda g
 
 * **GIR rotation:** the M1 and M2 rigid body motions are rotated as rigid bodies about the
   optical axis by the GIR angle (`gir_rotation.rs`), as seen by an instrument on the GIR.
-* **Optical model:** the crseo optical model ray traces the GMT every second. The exit pupil
-  wavefront and the segment tip-tilt are saved to `data/model_data_1000.parquet`, about 2 MB per
-  second at 513×513 pupil sampling.
+* **Optical model:** the crseo optical model ray traces the GMT every second with a J band
+  source (1.215 µm) and images it on a camera: λ/(5D) DFT sampling binned 2×2, i.e. a 3.93 mas
+  pixel scale over a 128×128 pixel frame (0.503" field-of-view). The exit pupil wavefront, the
+  segment tip-tilt and the camera frame (`Frame<Host>`) are saved to
+  `data/model_data_1000.parquet`, about 1.5 MB per second at 513×513 pupil sampling.
 
 ## Make targets and scripts
 
