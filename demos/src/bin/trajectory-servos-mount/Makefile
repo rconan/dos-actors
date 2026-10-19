@@ -22,12 +22,14 @@ FLOWCHART ?= dot
 STT_START ?= 10
 # cargo features: drop cuda to use the CPU FEM solver
 FEATURES ?= cuda gmt_dos-clients_arrow
+# flowchart-scope options of make replay, e.g. --signals MountEncoders,Wavefront --max-size 128 --steps 0..10000 --shape 'Frame<Host>=128x128'
+SCOPE_OPTIONS ?=
 
 BIN = trajectory-servos-mount
 PYTHON ?= python3
 export FEM_REPO MOUNT_MODEL CUDACXX SIM_DURATION FLOWCHART
 
-.PHONY: trajectory build run plot
+.PHONY: trajectory build run plot replay
 
 trajectory:
 	$(PYTHON) scripts/atp_trajectory.py atp_trajectory.csv
@@ -46,3 +48,7 @@ plot:
 	$(PYTHON) scripts/plot_orbits.py data/model_data_1.parquet figures/rbm_orbits_s7.png $(SAMPLING_FREQUENCY) s7
 	$(PYTHON) scripts/plot_gir_orbits.py data/model_data_1.parquet figures/rbm_orbits_gir.png $(SAMPLING_FREQUENCY)
 	$(PYTHON) scripts/plot_stt_orbits.py data/model_data_1.parquet figures/segment_tiptilt_orbits.png $(SAMPLING_FREQUENCY) $(STT_START)
+
+# embeds the signals of the parquet files into the replay page data/model_flowchart.html (run with the feature flowchart-replay)
+replay:
+	cargo run --release -p gmt_dos-actors_flowchart --features scope --bin flowchart-scope -- data/model_flowchart.html $(wildcard data/model_data_*.parquet) $(SCOPE_OPTIONS)
