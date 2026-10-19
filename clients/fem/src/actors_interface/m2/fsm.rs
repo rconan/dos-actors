@@ -3,7 +3,7 @@
 // use super::prelude::*;
 use gmt_dos_clients_io::Assembly;
 use gmt_dos_clients_io::gmt_m2::fsm::{M2FSMPiezoForces, M2FSMPiezoNodes};
-use gmt_dos_clients_optics_state::{M2State, SegmentState};
+use gmt_dos_clients_optics_state::{M2State, MirrorState, SegmentState};
 use interface::{Data, Write};
 
 use crate::{DiscreteModalSolver, Get};
@@ -19,12 +19,15 @@ where
         // M2 RBMs (42)
         let rbms = <DiscreteModalSolver<S> as Get<fem_io::MCM2Lcl6D>>::get(self);
         // Segment RBMS (6x7)
-        let mut segment_rbms = rbms.as_ref().map(|rbms| rbms.chunks(6));
+        let segment_rbms: Option<Vec<_>> = rbms.as_ref().map(|rbms| rbms.chunks(6).collect());
 
-        let mut segments = vec![];
+        // the state of the 7 segments, the segments not in the assembly are left empty
+        let mut state = MirrorState::default();
         for sid in <M2FSMPiezoForces as Assembly>::SIDS.into_iter() {
             // segment # sid RBMS
-            let rbms = segment_rbms.as_mut().map(|rbms| rbms.next());
+            let rbms = segment_rbms
+                .as_ref()
+                .map(|rbms| rbms.get(sid as usize - 1).copied());
             // segment # sid shape transforms
             // segment figure (aka shape)
             let figure = match sid {
@@ -48,9 +51,9 @@ where
                 }
                 _ => SegmentState::default(),
             };
-            segments.push(segment);
+            state = state.set_segment_state(sid, segment);
         }
-        Some(Data::new(segments.into_iter().collect()))
+        Some(Data::new(state))
     }
 }
 /// forces
