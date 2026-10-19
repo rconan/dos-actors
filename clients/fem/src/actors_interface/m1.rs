@@ -239,8 +239,10 @@ where
                 .expect("failed to remove RBM from M1 segment #{ID}");
             figure.copy_from_slice(&y);
         }
-        if let Some(transforms) = &self.m1_figure_transforms {
-            let mat = &transforms[ID as usize - 1];
+        if let Some(transforms) = &self.m1_figure_transforms
+            && let Some(idx) = <M1ModeShapes as Assembly>::position::<ID>()
+        {
+            let mat = &transforms[idx];
             let y = mat * nalgebra::DVector::from_column_slice(&figure);
             let y_slice = y.as_slice();
             figure.resize(y_slice.len(), Default::default());
