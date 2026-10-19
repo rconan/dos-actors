@@ -98,7 +98,7 @@ impl AsmsServo {
 impl<'a> Include<'a, AsmsServo> for DiscreteStateSpace<'a, ExponentialMatrix> {
     fn including(self, asms_servo: Option<&'a mut AsmsServo>) -> Result<Self, StateSpaceError> {
         let Some(asms_servo) = asms_servo else {
-            return Ok(self.including_asms(Some(vec![1, 2, 3, 4, 5, 6, 7]), None, None)?);
+            return voice_coils::including_asms(self, None);
         };
         self.including(asms_servo.voice_coils.as_mut())?
             .including(asms_servo.facesheet.as_mut())?

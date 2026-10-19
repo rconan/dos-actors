@@ -1,4 +1,5 @@
 use gmt_dos_clients_fem::{DiscreteStateSpace, StateSpaceError, solvers::ExponentialMatrix};
+use gmt_dos_clients_io::{Assembly, gmt_m2::asm::M2ASMVoiceCoilsForces};
 use nalgebra::{DMatrix, DMatrixView};
 
 use crate::builder::Include;
@@ -34,8 +35,49 @@ pub struct VoiceCoils {
     outs_transforms: Vec<DMatrix<f64>>,
 }
 
+/// Returns the matrices of the `ASSEMBLY` segments
+///
+/// `matrices` holds either one matrix per segment of the `ASSEMBLY`, in the same order,
+/// or one matrix for each of the 7 segments
+fn assembly<T>(matrices: &[T]) -> Vec<&T> {
+    if matrices.len() == 7 {
+        <M2ASMVoiceCoilsForces as Assembly>::SIDS
+            .into_iter()
+            .map(|sid| &matrices[sid as usize - 1])
+            .collect()
+    } else {
+        assert_eq!(
+            matrices.len(),
+            <M2ASMVoiceCoilsForces as Assembly>::N,
+            "expected 7 ASMS voice coils transforms or one per ASSEMBLY segment"
+        );
+        matrices.iter().collect()
+    }
+}
+
+/// Adds the ASMS voice coils of the `ASSEMBLY` segments to the state space model
+pub(crate) fn including_asms<'a>(
+    state_space: DiscreteStateSpace<'a, ExponentialMatrix>,
+    voice_coils: Option<&'a VoiceCoils>,
+) -> Result<DiscreteStateSpace<'a, ExponentialMatrix>, StateSpaceError> {
+    let sids = <M2ASMVoiceCoilsForces as Assembly>::SIDS.to_vec();
+    if let Some(voice_coils) = voice_coils {
+        state_space.including_asms(
+            Some(sids),
+            Some(voice_coils.ins_transforms_view()),
+            Some(voice_coils.outs_transforms_view()),
+        )
+    } else {
+        state_space.including_asms(Some(sids), None, None)
+    }
+}
+
 impl VoiceCoils {
     /// Creates a new `VoiceCoils` object from the modes to voice coil displacements transformation matrices
+    ///
+    /// Either one matrix per segment of the `ASSEMBLY`, in the same order,
+    /// or one matrix for each of the 7 segments
+    /// (only the matrices of the `ASSEMBLY` segments are used).
     pub fn new(ins_transforms: Vec<DMatrix<f64>>) -> Self {
         let outs_transforms: Vec<_> = ins_transforms.iter().map(|x| x.transpose()).collect();
         Self {
@@ -43,32 +85,35 @@ impl VoiceCoils {
             outs_transforms,
         }
     }
-    /// Returns the number of modes of each segment
+    /// Returns the number of modes of each segment of the `ASSEMBLY`
     pub fn n_modes(&self) -> Option<Vec<usize>> {
         if self.ins_transforms.is_empty() {
             None
         } else {
-            Some(self.ins_transforms.iter().map(|x| x.ncols()).collect())
+            Some(
+                assembly(&self.ins_transforms)
+                    .into_iter()
+                    .map(|x| x.ncols())
+                    .collect(),
+            )
         }
     }
     pub(crate) fn ins_transforms_view<'a>(&'a self) -> Vec<DMatrixView<'a, f64>> {
-        self.ins_transforms.iter().map(|x| x.as_view()).collect()
+        assembly(&self.ins_transforms)
+            .into_iter()
+            .map(|x| x.as_view())
+            .collect()
     }
     pub(crate) fn outs_transforms_view<'a>(&'a self) -> Vec<DMatrixView<'a, f64>> {
-        self.outs_transforms.iter().map(|x| x.as_view()).collect()
+        assembly(&self.outs_transforms)
+            .into_iter()
+            .map(|x| x.as_view())
+            .collect()
     }
 }
 
 impl<'a> Include<'a, VoiceCoils> for DiscreteStateSpace<'a, ExponentialMatrix> {
     fn including(self, voice_coils: Option<&'a mut VoiceCoils>) -> Result<Self, StateSpaceError> {
-        if let Some(voice_coils) = voice_coils {
-            self.including_asms(
-                Some(vec![1, 2, 3, 4, 5, 6, 7]),
-                Some(voice_coils.ins_transforms_view()),
-                Some(voice_coils.outs_transforms_view()),
-            )
-        } else {
-            self.including_asms(Some(vec![1, 2, 3, 4, 5, 6, 7]), None, None)
-        }
+        including_asms(self, voice_coils.map(|voice_coils| &*voice_coils))
     }
 }
