@@ -74,6 +74,27 @@ text { fill: var(--text); }
 .replay .wire.sent.past { opacity: 0.55; stroke-width: 2; }
 .replay .wire.delayed { opacity: 1; stroke-width: 2.8; stroke-dasharray: 2 3; }
 #stages[aria-pressed="true"] { border-color: var(--hl); color: var(--hl); }
+/* scopes of the embedded signals */
+.wire-hit.scopable { cursor: pointer; }
+.scope-mark { fill: var(--bg); stroke-width: 1.6; pointer-events: none; }
+#scopes { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 8px; padding: 8px;
+  overflow-x: auto; pointer-events: none; align-items: flex-end; }
+.scope { pointer-events: auto; flex: 0 0 auto; background: var(--panel); border: 1px solid var(--border);
+  border-radius: 6px; padding: 6px 8px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+.scope header { display: flex; gap: 8px; align-items: baseline; margin-bottom: 4px; }
+.scope header .meta { color: var(--muted); }
+.scope header .close { margin-left: auto; cursor: pointer; color: var(--muted); padding: 0 2px; }
+.scope header .close:hover { color: var(--hl); }
+.scope .tools { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; color: var(--muted); }
+.scope .tools input { font: inherit; width: 9em; padding: 1px 4px; border: 1px solid var(--border); border-radius: 4px;
+  background: var(--bg); color: var(--text); }
+.scope .tools button { font: inherit; padding: 1px 8px; border: 1px solid var(--border); border-radius: 4px;
+  background: var(--bg); color: var(--text); cursor: pointer; }
+.scope canvas { display: block; }
+.scope canvas.image { image-rendering: pixelated; background: var(--bg); }
+.scope .readout { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; max-width: 440px; min-height: 1.3em; margin-top: 2px; }
+.scope .notes { color: var(--muted); font-style: italic; max-width: 440px; }
 </style>
 </head>
 <body>
@@ -100,6 +121,7 @@ text { fill: var(--text); }
   <span class="hint">Click a blue system to open it, click its header to close it. Scroll to zoom, drag to pan.</span>
 </div>
 <div id="view"><svg id="canvas"><g id="world"></g></svg></div>
+<div id="scopes"></div>
 <div id="busy">laying out…</div>
 <div id="tip"></div>
 <script>__ELK__</script>
@@ -107,6 +129,8 @@ text { fill: var(--text); }
 const MODEL = __MODEL__;
 // recorded model run, `null` if the run has not been recorded
 const EVENTS = __EVENTS__;
+// signals of the recorded run embedded by `flowchart-scope`, `null` if none
+const SCOPE = __SCOPE__;
 const elk = new ELK();
 const NS = 'http://www.w3.org/2000/svg';
 const world = document.getElementById('world');
@@ -209,6 +233,7 @@ function draw(g) {
   const wireEls = [];
   blockEls.clear();
   wirePaths.length = 0;
+  const marked = new Set();
   function drawNode(n0, ox = 0, oy = 0) {
     // ELK node positions are relative to the parent node
     const n = { ...n0, x: n0.x + ox, y: n0.y + oy };
@@ -266,7 +291,16 @@ function draw(g) {
         const style = (w.ch.bootstrap ? ' bold' : '') + ((w.d.unbounded || []).includes(w.h) ? ' dashed' : '');
         const path = el('path', { d, class: `wire${style}`, stroke: w.ch.color, 'marker-end': `url(#arrow-${w.ch.color.slice(1)})` }, wiresLayer);
         const hit = el('path', { d, class: 'wire-hit' }, wiresLayer);
-        const info = `<b>${esc(w.ch.name)}</b><br>${esc(w.s.label)} → ${esc(w.d.label)}`;
+        const scopable = SIGNALS.has(w.h);
+        const info = `<b>${esc(w.ch.name)}</b><br>${esc(w.s.label)} → ${esc(w.d.label)}` + (scopable ? '<br><i>click to open the scope</i>' : '');
+        if (scopable) {
+          hit.classList.add('scopable');
+          hit.addEventListener('click', ev => { ev.stopPropagation(); if (!wasDrag) openScope(w.h); });
+          if (!marked.has(w.h)) {
+            marked.add(w.h);
+            el('circle', { cx: s.startPoint.x + 5, cy: s.startPoint.y, r: 3.2, class: 'scope-mark', stroke: w.ch.color }, wiresLayer);
+          }
+        }
         hit.addEventListener('mousemove', ev => showTip(ev, info));
         hit.addEventListener('mouseenter', () => { world.classList.add('dim'); path.classList.add('on'); });
         hit.addEventListener('mouseleave', () => { hideTip(); world.classList.remove('dim'); path.classList.remove('on'); });
@@ -340,6 +374,10 @@ function drawnAs(id) {
   return id;
 }
 function paint() {
+  paintFlow();
+  updateScopes();
+}
+function paintFlow() {
   blockEls.forEach(g => g.classList.remove('active', 'done'));
   wirePaths.forEach(w => w.path.classList.remove('sent', 'past', 'delayed'));
   world.classList.toggle('replay', frame >= 0);
@@ -473,6 +511,239 @@ function defs() {
     el('path', { d: 'M0,0 L10,5 L0,10 z', fill: c }, m);
   }
   svg.insertBefore(d, svg.firstChild);
+}
+
+// scopes of the signals of the recorded run embedded by `flowchart-scope`:
+// a signal is the rows of `n` values (float32, base64) received by a logger,
+// the k-th row being the k-th data sent on the channel, at the recorded sample step
+const SIGNALS = new Map((SCOPE ? SCOPE.signals : []).map(s => [s.hash, s]));
+const scopes = new Map();
+const PALETTE = ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e', '#e6ab02', '#a6761d', '#666666'];
+const fmt = v => Number.isFinite(v) ? (Math.abs(v) >= 1e4 || (Math.abs(v) < 1e-3 && v !== 0) ? v.toExponential(3) : v.toPrecision(4)) : '–';
+// decodes a signal the first time it is shown
+function decode(s) {
+  if (s.values) return s;
+  const bin = atob(s.data);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  s.values = new Float32Array(bytes.buffer);
+  const steps = s.b ? [-1] : [];
+  for (const [a, p, n] of s.t) for (let k = 0; k < n; k++) steps.push(a + k * p);
+  s.steps = Int32Array.from(steps);
+  delete s.data;
+  return s;
+}
+// the last row at or before a step, -1 if none
+function rowAt(s, step) {
+  let lo = 0, hi = s.steps.length - 1, r = -1;
+  while (lo <= hi) { const m = (lo + hi) >> 1; if (s.steps[m] <= step) { r = m; lo = m + 1; } else hi = m - 1; }
+  return r;
+}
+const currentStep = () => frame < 0 ? null : frame - OFFSET;
+// "all", "0-6,10" -> element indices
+function parseElements(text, n) {
+  text = text.trim();
+  if (!text || text === 'all') return [...Array(n).keys()];
+  const out = [];
+  for (const part of text.split(',')) {
+    const [a, b] = part.split('-').map(x => parseInt(x, 10));
+    if (Number.isNaN(a)) continue;
+    for (let i = Math.max(a, 0); i <= (Number.isFinite(b) ? b : a) && i < n; i++) out.push(i);
+  }
+  return out;
+}
+function canvas(cls, w, h) {
+  const c = document.createElement('canvas');
+  const r = window.devicePixelRatio || 1;
+  c.width = w * r; c.height = h * r; c.style.width = w + 'px'; c.style.height = h + 'px';
+  if (cls) c.className = cls;
+  c.getContext('2d').scale(r, r);
+  return c;
+}
+function openScope(h) {
+  if (scopes.has(h)) { scopes.get(h).el.scrollIntoView({ behavior: 'smooth', inline: 'nearest' }); return; }
+  const s = decode(SIGNALS.get(h));
+  const el = document.createElement('div');
+  el.className = 'scope';
+  const header = document.createElement('header');
+  header.innerHTML = `<b>${esc(s.name)}</b><span class="meta">${esc(s.file)} · ${s.shape ? s.shape.join('×') + ' image' : s.n + (s.n > 1 ? ' values' : ' value')} · ${s.rows} rows</span><span class="close" title="close">×</span>`;
+  header.querySelector('.close').onclick = () => { el.remove(); scopes.delete(h); };
+  el.append(header);
+  const scope = s.shape ? imageScope(s, el) : seriesScope(s, el);
+  if (s.notes.length) { const notes = document.createElement('div'); notes.className = 'notes'; notes.textContent = s.notes.join(', '); el.append(notes); }
+  document.getElementById('scopes').append(el);
+  scopes.set(h, { el, ...scope });
+  scope.update();
+}
+function updateScopes() { scopes.forEach(sc => sc.update()); }
+
+// time series: all the elements faded, the selected ones in color, a cursor at the current step
+function seriesScope(s, el) {
+  const W = 440, H = 170, L = 52, R = 8, T = 6, B = 18;
+  const tools = document.createElement('div');
+  tools.className = 'tools';
+  const input = document.createElement('input');
+  input.placeholder = 'all, 0-6, 10';
+  input.title = 'elements to highlight';
+  input.value = s.n <= 16 ? 'all' : '0';
+  if (s.n > 1) { tools.append('elements', input); el.append(tools); }
+  const base = canvas(null, W, H), view = canvas(null, W, H);
+  const readout = document.createElement('div');
+  readout.className = 'readout';
+  el.append(view, readout);
+  const x0 = Math.min(s.steps[0], 0), x1 = Math.max(s.steps[s.steps.length - 1], x0 + 1);
+  const X = step => L + (step - x0) / (x1 - x0) * (W - L - R);
+  let selected = [], Y = null;
+  function drawBase() {
+    selected = parseElements(input.value, s.n);
+    const els = selected.length ? selected : [...Array(s.n).keys()];
+    let lo = Infinity, hi = -Infinity;
+    for (let r = 0; r < s.steps.length; r++) for (const e of els) { const v = s.values[r * s.n + e]; if (Number.isFinite(v)) { if (v < lo) lo = v; if (v > hi) hi = v; } }
+    if (!(hi >= lo)) { lo = -1; hi = 1; }
+    if (hi === lo) { lo -= Math.abs(lo) * 0.1 || 1; hi += Math.abs(hi) * 0.1 || 1; }
+    const pad = (hi - lo) * 0.05; lo -= pad; hi += pad;
+    Y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+    const g = base.getContext('2d');
+    const css = getComputedStyle(document.body);
+    g.clearRect(0, 0, W, H);
+    g.font = '10px system-ui, sans-serif';
+    g.fillStyle = css.getPropertyValue('--muted');
+    g.strokeStyle = css.getPropertyValue('--border');
+    g.lineWidth = 1;
+    g.strokeRect(L, T, W - L - R, H - T - B);
+    g.textAlign = 'right';
+    for (const v of [hi - pad, (hi + lo) / 2, lo + pad]) g.fillText(fmt(v), L - 4, Y(v) + 3);
+    g.textAlign = 'left'; g.fillText(String(x0), L, H - 4);
+    g.textAlign = 'right'; g.fillText(String(x1), W - R, H - 4);
+    g.save();
+    g.beginPath(); g.rect(L, T, W - L - R, H - T - B); g.clip();
+    const sparse = s.steps.length < (W - L - R) / 3;
+    const trace = (e, color, alpha, width) => {
+      g.strokeStyle = color; g.fillStyle = color; g.globalAlpha = alpha; g.lineWidth = width;
+      // min and max per pixel column
+      const cols = new Map();
+      for (let r = 0; r < s.steps.length; r++) {
+        const v = s.values[r * s.n + e];
+        if (!Number.isFinite(v)) continue;
+        const px = Math.round(X(s.steps[r]));
+        const c = cols.get(px);
+        if (c) { if (v < c[0]) c[0] = v; if (v > c[1]) c[1] = v; c[2] = v; } else cols.set(px, [v, v, v]);
+      }
+      g.beginPath();
+      let first = true;
+      for (const [px, [mn, mx, last]] of cols) {
+        if (first) { g.moveTo(px, Y(mn)); first = false; } else g.lineTo(px, Y(mn));
+        g.lineTo(px, Y(mx)); g.lineTo(px, Y(last));
+      }
+      g.stroke();
+      if (sparse) for (const [px, [, , last]] of cols) { g.beginPath(); g.arc(px, Y(last), 2, 0, 2 * Math.PI); g.fill(); }
+    };
+    if (selected.length && selected.length < s.n) for (let e = 0; e < s.n; e++) if (!selected.includes(e)) trace(e, css.getPropertyValue('--muted'), 0.18, 1);
+    selected.forEach((e, i) => trace(e, PALETTE[i % PALETTE.length], 0.9, 1.2));
+    g.restore();
+  }
+  function update() {
+    const g = view.getContext('2d');
+    g.clearRect(0, 0, W, H);
+    g.drawImage(base, 0, 0, W, H);
+    const step = currentStep();
+    if (step === null) { readout.textContent = `steps ${x0} to ${x1}, click to go to a step`; return; }
+    const r = rowAt(s, step);
+    g.strokeStyle = getComputedStyle(document.body).getPropertyValue('--hl');
+    g.lineWidth = 1;
+    g.beginPath(); g.moveTo(X(step), T); g.lineTo(X(step), H - B); g.stroke();
+    if (r < 0) { readout.textContent = `step ${step}: no data yet`; return; }
+    selected.forEach((e, i) => { const v = s.values[r * s.n + e]; if (Number.isFinite(v)) { g.fillStyle = PALETTE[i % PALETTE.length]; g.beginPath(); g.arc(X(s.steps[r]), Y(v), 3, 0, 2 * Math.PI); g.fill(); } });
+    const shown = selected.slice(0, 8).map(e => `[${e}] ${fmt(s.values[r * s.n + e])}`).join('  ');
+    readout.textContent = `step ${s.steps[r] < 0 ? 'bootstrap' : s.steps[r]}: ${shown}${selected.length > 8 ? ' …' : ''}`;
+  }
+  view.addEventListener('click', ev => {
+    const x = ev.offsetX;
+    const step = Math.round(x0 + (x - L) / (W - L - R) * (x1 - x0));
+    if (step >= -1) { pause(); go(Math.min(step, EVENTS.steps - 1) + OFFSET); }
+  });
+  input.addEventListener('change', () => { drawBase(); update(); });
+  input.addEventListener('keydown', ev => ev.stopPropagation());
+  drawBase();
+  return { update };
+}
+
+// images: the last frame at or before the current step, the masked pixels (0 or NaN) transparent
+const VIRIDIS = ['#440154', '#482878', '#3e4a89', '#31688e', '#26828e', '#1f9e89', '#35b779', '#6ece58', '#b5de2b', '#fde725']
+  .map(c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)));
+const LUT = Array.from({ length: 256 }, (_, i) => {
+  const x = i / 255 * (VIRIDIS.length - 1), k = Math.min(Math.floor(x), VIRIDIS.length - 2), f = x - k;
+  return VIRIDIS[k].map((c, j) => Math.round(c + (VIRIDIS[k + 1][j] - c) * f));
+});
+function imageScope(s, el) {
+  const [w, h] = s.shape;
+  const size = 280, k = Math.min(size / w, size / h);
+  const tools = document.createElement('div');
+  tools.className = 'tools';
+  const scaleBtn = document.createElement('button');
+  let perFrame = false;
+  scaleBtn.textContent = 'scale: run';
+  scaleBtn.title = 'color scale over the whole run or per frame';
+  const logBtn = document.createElement('button');
+  let log = false;
+  logBtn.textContent = 'lin';
+  logBtn.title = 'linear or logarithmic color scale';
+  tools.append(scaleBtn, logBtn);
+  const range = document.createElement('span');
+  tools.append(range);
+  el.append(tools);
+  const view = document.createElement('canvas');
+  view.className = 'image';
+  view.width = w; view.height = h;
+  view.style.width = Math.round(w * k) + 'px'; view.style.height = Math.round(h * k) + 'px';
+  const bar = canvas(null, Math.round(w * k), 8);
+  const readout = document.createElement('div');
+  readout.className = 'readout';
+  el.append(view, bar, readout);
+  const masked = v => !Number.isFinite(v) || v === 0;
+  const extent = (a, b) => { let lo = Infinity, hi = -Infinity; for (let i = a; i < b; i++) { const v = s.values[i]; if (!masked(v)) { if (v < lo) lo = v; if (v > hi) hi = v; } } return hi >= lo ? [lo, hi] : [0, 1]; };
+  let runExtent = null, row = -1, lohi = [0, 1];
+  const g = view.getContext('2d');
+  const img = g.createImageData(w, h);
+  {
+    const b = bar.getContext('2d'), bw = bar.width / (window.devicePixelRatio || 1);
+    for (let i = 0; i < bw; i++) { const c = LUT[Math.round(i / (bw - 1) * 255)]; b.fillStyle = `rgb(${c})`; b.fillRect(i, 0, 1, 8); }
+  }
+  function render(r) {
+    const off = r * s.n;
+    lohi = perFrame ? extent(off, off + s.n) : (runExtent ||= extent(0, s.values.length));
+    const [lo, hi] = lohi, span = hi - lo || 1;
+    for (let i = 0; i < s.n; i++) {
+      const v = s.values[off + i], p = i * 4;
+      if (masked(v)) { img.data[p + 3] = 0; continue; }
+      const t = Math.max(0, Math.min(1, (v - lo) / span));
+      const c = LUT[Math.round((log ? Math.log1p(1e3 * t) / Math.log1p(1e3) : t) * 255)];
+      img.data[p] = c[0]; img.data[p + 1] = c[1]; img.data[p + 2] = c[2]; img.data[p + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+    range.textContent = `${fmt(lo)} … ${fmt(hi)}`;
+  }
+  function update() {
+    const step = currentStep();
+    const r = rowAt(s, step === null ? Infinity : step);
+    if (r !== row) {
+      row = r;
+      if (r < 0) { g.clearRect(0, 0, w, h); range.textContent = ''; }
+      else render(r);
+    }
+    readout.textContent = r < 0 ? 'no frame yet' : `frame ${r + 1}/${s.rows} at step ${s.steps[r] < 0 ? 'bootstrap' : s.steps[r]}`;
+  }
+  scaleBtn.onclick = () => { perFrame = !perFrame; scaleBtn.textContent = perFrame ? 'scale: frame' : 'scale: run'; if (row >= 0) render(row); };
+  logBtn.onclick = () => { log = !log; logBtn.textContent = log ? 'log' : 'lin'; if (row >= 0) render(row); };
+  view.addEventListener('mousemove', ev => {
+    if (row < 0) return;
+    const i = Math.floor(ev.offsetX / k), j = Math.floor(ev.offsetY / k);
+    if (i < 0 || j < 0 || i >= w || j >= h) return;
+    const v = s.values[row * s.n + j * w + i];
+    readout.textContent = `(${i}, ${j}) ${masked(v) ? 'masked' : fmt(v)} — frame ${row + 1}/${s.rows} at step ${s.steps[row] < 0 ? 'bootstrap' : s.steps[row]}`;
+  });
+  view.addEventListener('mouseleave', update);
+  return { update };
 }
 
 // pan & zoom

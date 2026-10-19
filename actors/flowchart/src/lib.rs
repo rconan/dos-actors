@@ -17,6 +17,8 @@ The backend is selected with the environment variable `FLOWCHART`:
 
 With the `replay` feature, a model run is recorded and written into the ELK flowchart
 to be played back step by step in the browser (see the `replay` module).
+With the `scope` feature, the signals saved in parquet files during the run are embedded into the replay page
+with the `flowchart-scope` command and displayed as time series or images in sync with the replay (see the `scope` module).
 */
 
 mod graph;
@@ -28,6 +30,8 @@ mod render;
 mod elk;
 #[cfg(feature = "replay")]
 pub mod replay;
+#[cfg(feature = "scope")]
+pub mod scope;
 
 pub use graph::{COLORMAP, ColorMap, Graph, GraphError};
 pub use model::PlainModel;

@@ -70,7 +70,7 @@ impl Runs {
     fn end(&self) -> usize {
         self.0.last().map_or(0, |run| run.last() + 1)
     }
-    fn to_json(&self) -> Value {
+    pub(crate) fn to_json(&self) -> Value {
         self.0
             .iter()
             .map(|run| json!([run.start, run.period, run.count]))

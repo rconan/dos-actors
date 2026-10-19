@@ -16,7 +16,7 @@ With ELK, an actor image is embedded in the page as a base64 data URI and drawn 
 (blocks with an image are at least 120×80); the image path is resolved against the working directory,
 then against `CARGO_MANIFEST_DIR`, and a missing image is skipped with a warning.
 
-In `gmt_dos-actors`, the features are forwarded as `flowchart-graphviz` (default), `flowchart-elk` and `flowchart-replay`.
+In `gmt_dos-actors`, the features are forwarded as `flowchart-graphviz` (default), `flowchart-elk` and `flowchart-replay`; `scope` is only used by the `flowchart-scope` command.
 
 ## Replay
 
@@ -40,6 +40,38 @@ The page is rewritten once the outermost model has completed (a system runs its 
 
 The replay requires the ELK backend (`FLOWCHART=elk` if the `graphviz` feature is enabled too).
 The whole run is recorded unless `FLOWCHART_STEPS` limits the number of recorded steps.
+
+## Scope
+
+With the `scope` feature, the `flowchart-scope` command embeds the signals saved in parquet files by the Arrow loggers
+(`gmt_dos-clients_arrow`) into the replay page of the same run, which remains a single self-contained file:
+
+```shell
+cargo run --release -p gmt_dos-actors_flowchart --features scope --bin flowchart-scope -- \
+    data/model_flowchart.html data/model_data_1.parquet data/model_data_1000.parquet
+```
+
+A parquet file is matched to the logger actor with the same name and a column to the input of that logger with the same name;
+the k-th row of a column is the k-th data sent on that channel, the bootstrapped data first, so it is placed at the recorded sample step.
+The command is run after the model, once the loggers have written their files.
+
+In the page, the wires of the embedded signals are marked and clicking one opens a scope at the bottom of the page:
+* a time series is plotted against the sample steps, the elements given in the `elements` box (e.g. `0-6,10`) in color and the others faded,
+  with a cursor at the current step of the replay; clicking in the plot moves the replay to that step,
+* an image (a signal with a square number of values, at least 32², or with a shape given with `--shape`) shows the last frame at or before
+  the current step, the pixels equal to 0 or NaN masked, with a color scale over the whole run or per frame, linear or logarithmic,
+  and the value of the pixel under the mouse.
+
+The values are embedded as float32 and the size of the embedded signals is limited (64 MB by default):
+above that limit, the time series are thinned and the images are downsampled by the same factor, and the page says so.
+
+| Option | Description |
+|---|---|
+| `--signals NAME,FILE:NAME,...` | Signals to embed, all by default |
+| `--max-size MB` | Size limit of the embedded signals, 64 MB by default, 0 for no limit |
+| `--steps START..END` | Embeds the data of the steps `START` to `END` (excluded), `START..` to the end |
+| `--shape NAME=WxH` | Image shape of a signal |
+| `--output OUT.html` | Output page, the input page is rewritten by default |
 
 ## Environment variables
 
