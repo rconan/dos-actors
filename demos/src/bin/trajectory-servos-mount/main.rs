@@ -14,7 +14,7 @@ use gmt_dos_clients_io::{
 };
 use gmt_dos_clients_io::optics::SegmentTipTilt;
 #[cfg(feature = "gmt_dos-clients_crseo")]
-use gmt_dos_clients_io::optics::Wavefront;
+use gmt_dos_clients_io::optics::{Frame, Host, Wavefront};
 use gmt_dos_clients_lom::LinearOpticalModel;
 use gmt_dos_clients_mount::Mount;
 use gmt_dos_clients_servos::{GmtFem, GmtMount, GmtServoMechanisms};
@@ -191,22 +191,41 @@ async fn main() -> anyhow::Result<()> {
     // GIR ROTATION & OPTICAL MODEL (feature gmt_dos-clients_crseo)
     //  * the M1 & M2 rigid body motions are rotated by the GIR angle (`gir_rotation.rs`)
     //  * the crseo optical model ray traces the GMT with the rotated rigid body motions
-    //    every second (PUPIL_SAMPLING, default: 513) and the wavefront in the exit pupil
-    //    and the segment tip-tilt are saved to `data/model_data_1000.parquet`
+    //    every second (PUPIL_SAMPLING, default: 513) for a J band source (1.215micron)
+    //    and images it on a camera with a pixel scale of lambda/(5D) binned 2x2 (~3.9mas)
+    //    over a 128x128 pixel frame (~0.5arcsec field-of-view)
+    //  * the wavefront in the exit pupil, the segment tip-tilt and the camera frame
+    //    are saved to `data/model_data_1000.parquet`
     #[cfg(feature = "gmt_dos-clients_crseo")]
     {
         use gmt_dos_clients_crseo::{
             OpticalModel,
-            crseo::{FromBuilder, Source},
-            sensors::NoSensor,
+            crseo::{
+                FromBuilder, Source,
+                imaging::{Detector, LensletArray},
+            },
+            sensors::Camera,
         };
         let pupil_sampling = env::var("PUPIL_SAMPLING")
             .ok()
             .map_or(Ok(513_usize), |s| s.parse())?;
         let rotation = gir_rotation::GirRotation::new();
-        let om = OpticalModel::<NoSensor>::builder()
-            .source(Source::builder().pupil_sampling(pupil_sampling))
+        // camera: the pupil sampling is set by the lenslet array (n_px_lenslet+1),
+        // the DFT sampling is lambda/(osf.D) and the 256px imagelet is binned to the 128px frame
+        let camera = Camera::<1>::builder()
+            .lenslet_array(LensletArray::default().n_px_lenslet(pupil_sampling - 1))
+            .detector(Detector {
+                n_px_framelet: 128,
+                n_px_imagelet: Some(256),
+                osf: 5,
+                noise_specs: None,
+            });
+        let om = OpticalModel::<Camera<1>>::builder()
+            .source(Source::builder().band("J"))
+            .sensor(camera)
             .build()?;
+        println!("{om}");
+        let n_frame = <OpticalModel<Camera<1>> as Size<Frame<Host>>>::len(&om);
         actorscript! {
             1: setpoint[MountSetPoint] -> {servos::GmtMount}
         1: setpoint[MountSetPoint] -> ff[MountTorquesFeedForward] -> {servos::GmtMount}
@@ -222,6 +241,7 @@ async fn main() -> anyhow::Result<()> {
             1000: rotation[M1RigidBodyMotions] -> om
             1000: rotation[M2RigidBodyMotions] -> om[Wavefront]$
             1000: om[SegmentTipTilt]$
+            1000: om[Frame<Host>]${n_frame}
         }
     }
 
