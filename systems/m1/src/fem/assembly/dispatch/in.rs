@@ -30,7 +30,6 @@ where
     m1_hardpoints_motion: Arc<Vec<Arc<Vec<f64>>>>,
     #[cfg(m1_hp_force_extension)]
     m1_hardpoints_forces: Arc<Vec<Arc<Vec<f64>>>>,
-    idx: Vec<usize>,
     mode_2_force_transforms: Option<Vec<nalgebra::DMatrix<f64>>>,
 }
 impl DispatchIn {
@@ -43,13 +42,6 @@ impl DispatchIn {
             .into_iter()
             .map(|_| Arc::new(vec![0f64; 6]))
             .collect();
-        let mut idx = vec![0; 7];
-        <Self as Assembly>::SIDS
-            .iter()
-            .enumerate()
-            .for_each(|(i, &id)| {
-                idx[id as usize - 1] = i;
-            });
         Self {
             m1_rigid_body_motions,
             m1_actuator_command_forces,
@@ -57,7 +49,6 @@ impl DispatchIn {
             m1_hardpoints_motion: Default::default(),
             #[cfg(m1_hp_force_extension)]
             m1_hardpoints_forces: Default::default(),
-            idx,
             mode_2_force_transforms: None,
         }
     }
@@ -149,13 +140,16 @@ impl Read<M1State> for DispatchIn {
 }
 
 impl Read<M1RigidBodyMotions> for DispatchIn {
+    /// Reads the rigid body motions of the 7 segments
     fn read(&mut self, data: Data<M1RigidBodyMotions>) {
         let data = data.into_arc();
-        self.m1_rigid_body_motions.iter_mut().fold(0, |i, out| {
-            let (slice, _) = data[i..].split_at(6);
-            *out = Arc::new(slice.to_vec());
-            i + 6
-        });
+        for (sid, out) in <Self as Assembly>::SIDS
+            .into_iter()
+            .zip(self.m1_rigid_body_motions.iter_mut())
+        {
+            let i = 6 * (sid as usize - 1);
+            *out = Arc::new(data[i..i + 6].to_vec());
+        }
     }
 }
 
@@ -189,15 +183,34 @@ impl<const ID: u8> Write<RBM<ID>> for DispatchIn {
 }
 
 impl Read<M1ActuatorCommandForces> for DispatchIn {
+    /// Reads the actuator forces of either the 7 segments or the `ASSEMBLY` segments
     fn read(&mut self, data: Data<M1ActuatorCommandForces>) {
         let data = data.into_arc();
-        NA.iter()
+        // the forces of the 7 segments: the forces of each ASSEMBLY segment
+        // start after the forces of all the segments with a lower id
+        let all_segments = data.len() == NA.iter().sum::<usize>();
+        if !all_segments {
+            assert_eq!(
+                data.len(),
+                <Self as Assembly>::SIDS
+                    .map(|sid| NA[sid as usize - 1])
+                    .iter()
+                    .sum::<usize>(),
+                "expected the M1 actuator forces of the 7 segments or of the ASSEMBLY segments"
+            );
+        }
+        let mut i = 0;
+        for (sid, out) in <Self as Assembly>::SIDS
+            .into_iter()
             .zip(self.m1_actuator_command_forces.iter_mut())
-            .fold(0, |i, (&s, out)| {
-                let (slice, _) = data[i..].split_at(s);
-                *out = Arc::new(slice.to_vec());
-                i + s
-            });
+        {
+            let na = NA[sid as usize - 1];
+            if all_segments {
+                i = NA[..sid as usize - 1].iter().sum();
+            }
+            *out = Arc::new(data[i..i + na].to_vec());
+            i += na;
+        }
     }
 }
 impl Read<M1ModeShapes> for DispatchIn {
@@ -225,22 +238,26 @@ impl Read<M1ModeShapes> for DispatchIn {
 }
 impl<const ID: u8> Read<ActuatorCommandForces<ID>> for DispatchIn {
     fn read(&mut self, data: Data<ActuatorCommandForces<ID>>) {
-        self.m1_actuator_command_forces[ID as usize - 1] = data.into_arc();
+        if let Some(idx) = <Self as Assembly>::position::<ID>() {
+            self.m1_actuator_command_forces[idx] = data.into_arc();
+        }
     }
 }
 impl<const ID: u8> Write<ActuatorCommandForces<ID>> for DispatchIn {
     fn write(&mut self) -> Option<Data<ActuatorCommandForces<ID>>> {
-        Some(
-            self.m1_actuator_command_forces[self.idx[ID as usize - 1]]
-                .clone()
-                .into(),
-        )
+        <Self as Assembly>::position::<ID>().and_then(|idx| {
+            self.m1_actuator_command_forces
+                .get(idx)
+                .map(|data| data.clone().into())
+        })
     }
 }
 impl<const ID: u8> Read<ModeShapes<ID>> for DispatchIn {
     fn read(&mut self, data: Data<ModeShapes<ID>>) {
+        let Some(i) = <Self as Assembly>::position::<ID>() else {
+            return;
+        };
         let data = data.into_arc();
-        let i = ID as usize - 1;
         let mat = &self
             .mode_2_force_transforms
             .as_ref()
