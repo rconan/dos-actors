@@ -1,4 +1,5 @@
 use gmt_dos_clients_fem::{DiscreteStateSpace, solvers::ExponentialMatrix};
+use gmt_dos_clients_io::{Assembly, gmt_m1::M1ModeShapes};
 use nalgebra as na;
 
 use super::Include;
@@ -6,7 +7,8 @@ use super::Include;
 /**
 M1 figure builder
 
-The M1 figure builder adds the following outputs to the FEM:
+The M1 figure builder adds the following outputs to the FEM,
+for the segments selected with the `ASSEMBLY` environment variable:
 * [`M1_segment_1_axial_d`](gmt_dos_clients_io::fem::M1_segment_1_axial_d)
 * [`M1_segment_2_axial_d`](gmt_dos_clients_io::fem::M1_segment_2_axial_d)
 * [`M1_segment_3_axial_d`](gmt_dos_clients_io::fem::M1_segment_3_axial_d)
@@ -32,6 +34,10 @@ impl M1SegmentFigure {
     /// Sets the matrices that will process the mirror figures
     ///
     /// The removal of the rigid body motion is applied beform the matrix transforms.
+    ///
+    /// Either one matrix per segment of the `ASSEMBLY`, in the same order,
+    /// or one matrix for each of the 7 segments
+    /// (only the matrices of the `ASSEMBLY` segments are used).
     pub fn transforms(mut self, transforms: Vec<na::DMatrix<f64>>) -> Self {
         self.transforms = Some(transforms);
         self
@@ -47,9 +53,21 @@ impl M1SegmentFigure {
         self
     }
     pub(crate) fn transforms_view<'a>(&'a mut self) -> Option<Vec<na::DMatrixView<'a, f64>>> {
-        self.transforms
-            .as_ref()
-            .map(|transforms| transforms.iter().map(|t| t.as_view()).collect())
+        self.transforms.as_ref().map(|transforms| {
+            if transforms.len() == 7 {
+                <M1ModeShapes as Assembly>::SIDS
+                    .into_iter()
+                    .map(|sid| transforms[sid as usize - 1].as_view())
+                    .collect()
+            } else {
+                assert_eq!(
+                    transforms.len(),
+                    <M1ModeShapes as Assembly>::N,
+                    "expected 7 M1 figure transforms or one per ASSEMBLY segment"
+                );
+                transforms.iter().map(|t| t.as_view()).collect()
+            }
+        })
     }
 }
 
@@ -73,7 +91,10 @@ impl<'a> Include<'a, M1SegmentFigure> for DiscreteStateSpace<'a, ExponentialMatr
         //     self.set_m1_figure_nodes()?
         //         .outs_by_name((1..=7).map(|i| format!("M1_segment_{i}_axial_d")).collect())
         // }
-        let names: Vec<_> = (1..=7).map(|i| format!("M1_segment_{i}_axial_d")).collect();
+        let names: Vec<_> = <M1ModeShapes as Assembly>::SIDS
+            .into_iter()
+            .map(|sid| format!("M1_segment_{sid}_axial_d"))
+            .collect();
         match (
             m1_segment_figure.keep_rbm,
             m1_segment_figure.transforms_view(),
