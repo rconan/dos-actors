@@ -48,6 +48,10 @@ impl M1SegmentFigure {
         self
     }
     /// Sets the matrices that convert modal shape coefficients to actuator forces
+    ///
+    /// Either one matrix per segment of the `ASSEMBLY`, in the same order,
+    /// or one matrix for each of the 7 segments
+    /// (only the matrices of the `ASSEMBLY` segments are used).
     pub fn modes_to_forces(mut self, transforms: Vec<na::DMatrix<f64>>) -> Self {
         self.mode_2_force_transforms = Some(transforms);
         self
