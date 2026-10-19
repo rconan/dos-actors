@@ -8,6 +8,7 @@ use crseo::{
     builders::{AtmosphereBuilder, GmtBuilder, SourceBuilder},
     pssn::{AtmosphereTelescopeError, PSSnBuilder, TelescopeError},
 };
+use gmt_dos_clients_io::Assembly;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -172,13 +173,18 @@ where
     }
 }
 
+impl<T: SensorPropagation> Assembly for OpticalModel<T> {}
+
 impl<T, S> OpticalModelBuilder<S>
 where
     S: Builder<Component = T> + SensorBuilderProperty,
     T: SensorPropagation,
 {
+    /// Builds the optical model
+    ///
+    /// Only the GMT segments selected with the `ASSEMBLY` environment variable are kept
     pub fn build(self) -> Result<OpticalModel<T>, OpticalModelError> {
-        let om = OpticalModel {
+        let mut om = OpticalModel {
             gmt: self.gmt.build()?,
             src: if let &Some(n) = &self
                 .sensor
@@ -215,6 +221,10 @@ where
             tau: self.sampling_frequency.map_or_else(|| 0f64, |x| x.recip()),
             phase_offset: None,
         };
+        if <OpticalModel<T> as Assembly>::N < 7 {
+            let sids = <OpticalModel<T> as Assembly>::SIDS.map(|sid| sid as i32);
+            om.gmt.keep(&sids);
+        }
         // Propagation to initialize the detector frame in case of bootstrapping
         // <OpticalModel<_> as interface::Update>::update(&mut om);
         Ok(om)
