@@ -5,6 +5,7 @@ use crseo::{Imaging, Pyramid, SegmentWiseSensor};
 use gmt_dos_clients_io::optics::{
     PSSn, SegmentD7Piston, SegmentPiston, SegmentTipTilt, SegmentWfe, SegmentWfeRms, TipTilt, Wavefront, WfeRms
 };
+use gmt_dos_clients_io::Assembly;
 use interface::{Data, Size, UniqueIdentifier, Write};
 
 impl<T: SensorPropagation, const E: i32> Size<WfeRms<E>> for OpticalModel<T> {
@@ -27,7 +28,7 @@ impl<T: SensorPropagation + SourceWavefront, const E: i32> Write<WfeRms<E>> for 
 
 impl<T: SensorPropagation, const E: i32> Size<SegmentWfeRms<E>> for OpticalModel<T> {
     fn len(&self) -> usize {
-        (self.src.size as usize) * 7
+        (self.src.size as usize) * <Self as Assembly>::N
     }
 }
 impl<T: SensorPropagation, const E: i32> Write<SegmentWfeRms<E>> for OpticalModel<T> {
@@ -46,7 +47,7 @@ impl<T: SensorPropagation + SourceWavefront, const E: i32> Size<SegmentPiston<E>
     for OpticalModel<T>
 {
     fn len(&self) -> usize {
-        (self.src.size as usize) * 7
+        (self.src.size as usize) * <Self as Assembly>::N
     }
 }
 impl<T: SensorPropagation + SourceWavefront, const E: i32> Write<SegmentPiston<E>>
@@ -70,7 +71,7 @@ impl<T: SensorPropagation + SourceWavefront, const E: i32> Write<SegmentPiston<E
 
 impl<T: SensorPropagation> Size<SegmentWfe> for OpticalModel<T> {
     fn len(&self) -> usize {
-        (self.src.size as usize) * 7
+        (self.src.size as usize) * <Self as Assembly>::N
     }
 }
 impl<T: SensorPropagation> Write<SegmentWfe> for OpticalModel<T> {
@@ -81,7 +82,7 @@ impl<T: SensorPropagation> Write<SegmentWfe> for OpticalModel<T> {
 
 impl<T: SensorPropagation + SourceWavefront> Size<SegmentTipTilt> for OpticalModel<T> {
     fn len(&self) -> usize {
-        (self.src.size as usize) * 7 * 2
+        (self.src.size as usize) * <Self as Assembly>::N * 2
     }
 }
 impl<T: SensorPropagation + SourceWavefront> Write<SegmentTipTilt> for OpticalModel<T> {
@@ -135,8 +136,13 @@ where
 
 impl<T: SegmentWiseSensor, const E: i32> Write<SegmentD7Piston<E>> for OpticalModel<T> {
     fn write(&mut self) -> Option<Data<SegmentD7Piston<E>>> {
+        assert!(
+            <Self as Assembly>::SIDS.contains(&7),
+            "segment #7 is not in the ASSEMBLY"
+        );
         let data = self.src.segment_wfe();
-        let p7 = data[6].0;
+        // segment #7 is the last segment of the assembly
+        let p7 = data[<Self as Assembly>::N - 1].0;
         // let data = &self.segment_wfe;
         Some(
             data.into_iter()
