@@ -19,6 +19,8 @@ log.workspace = true
 nalgebra = { workspace = true, features = ["serde-serialize"] }
 thiserror.workspace = true
 crseo.workspace = true
+# camera absolute pointing with the x axis along the frame columns (CEO imaging fix)
+crseo-sys = "1.3.3"
 serde = { version = "1.0.228", features = ["derive", "rc"] }
 anyhow.workspace = true
 toml = "1.1.2"
