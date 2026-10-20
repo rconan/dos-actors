@@ -17,6 +17,7 @@ impl OpticalModelBuilder<PyramidBuilder> {
             sensor: self.sensor.map(|sensor| sensor.build()).transpose()?,
             tau: self.sampling_frequency.map_or_else(|| 0f64, |x| x.recip()),
             phase_offset: None,
+            pointing: Default::default(),
             pssn: if let Some(kind) = self.pssn {
                 match kind {
                     PSSnKind::TelescopeError(pssn_builder) => {
