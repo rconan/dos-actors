@@ -58,6 +58,10 @@ pub struct Options {
     /// Image shapes `(width, height)` by `name` or `file:name`,
     /// a signal with a square number (at least 32²) of values is a square image otherwise
     pub shapes: HashMap<String, (usize, usize)>,
+    /// Image pixel sizes `(value, unit)` by `name` or `file:name`, e.g. `(3.93, "mas")`
+    pub pixels: HashMap<String, (f64, String)>,
+    /// Sampling frequency of the steps [Hz], to show the time in the page
+    pub sampling_frequency: Option<f64>,
 }
 impl Default for Options {
     fn default() -> Self {
@@ -66,6 +70,8 @@ impl Default for Options {
             max_size: MAX_SIZE,
             steps: None,
             shapes: HashMap::new(),
+            pixels: HashMap::new(),
+            sampling_frequency: None,
         }
     }
 }
@@ -79,6 +85,8 @@ struct Signal {
     // values per row
     n: usize,
     shape: Option<(usize, usize)>,
+    // pixel size and unit of an image
+    pixel: Option<(f64, String)>,
     // sample step of each row, -1 for the bootstrapped data
     steps: Vec<i64>,
     // rows of `n` values
@@ -131,6 +139,9 @@ impl Signal {
         self.data = data;
         self.shape = Some((w2, h2));
         self.n = w2 * h2;
+        if let Some((size, _)) = self.pixel.as_mut() {
+            *size *= q as f64;
+        }
         self.notes
             .push(format!("image downsampled from {w}×{h} to {w2}×{h2}"));
     }
@@ -148,6 +159,7 @@ impl Signal {
             "file": self.file,
             "n": self.n,
             "shape": self.shape.map(|(w, h)| [w, h]),
+            "pixel": self.pixel.as_ref().map(|(size, unit)| json!({"size": size, "unit": unit})),
             "rows": self.steps.len(),
             "b": bootstrap,
             "t": runs.to_json(),
@@ -309,12 +321,20 @@ fn read(
                 let w = (n as f64).sqrt().round() as usize;
                 (w >= 32 && w * w == n).then_some((w, w))
             });
+        let pixel = shape.and(
+            options
+                .pixels
+                .get(name.as_str())
+                .or_else(|| options.pixels.get(&format!("{file}:{name}")))
+                .cloned(),
+        );
         let mut signal = Signal {
             file: file.clone(),
             name: name.clone(),
             hash: hash.to_string(),
             n,
             shape,
+            pixel,
             steps,
             data,
             notes: vec![],
@@ -399,7 +419,14 @@ pub fn embed(
             s.steps.len(),
             s.n,
             s.shape
-                .map(|(w, h)| format!(" ({w}×{h} image)"))
+                .map(|(w, h)| match &s.pixel {
+                    Some((size, unit)) => format!(
+                        " ({w}×{h} image, {size}{unit} pixels, {}{unit}×{}{unit} field)",
+                        size * w as f64,
+                        size * h as f64
+                    ),
+                    None => format!(" ({w}×{h} image)"),
+                })
                 .unwrap_or_default(),
             if s.notes.is_empty() {
                 String::new()
@@ -409,7 +436,13 @@ pub fn embed(
         ));
     }
 
-    let scope = json!({ "signals": signals.iter().map(Signal::to_json).collect::<Vec<_>>() });
+    if let Some(fs) = options.sampling_frequency {
+        report.push(format!("sampling frequency: {fs}Hz"));
+    }
+    let scope = json!({
+        "fs": options.sampling_frequency,
+        "signals": signals.iter().map(Signal::to_json).collect::<Vec<_>>(),
+    });
     let scope = serde_json::to_string(&scope)?.replace("</", r"<\/");
     // replaces the `SCOPE` constant of the page
     let key = "\nconst SCOPE = ";
@@ -435,6 +468,7 @@ mod tests {
             hash: "1".into(),
             n,
             shape,
+            pixel: shape.map(|_| (2., "mas".to_string())),
             steps: (0..rows as i64).collect(),
             data: (0..rows * n).map(|v| v as f32).collect(),
             notes: vec![],
@@ -455,6 +489,7 @@ mod tests {
         // the 0 pixel is masked
         s.downsample(2);
         assert_eq!(s.shape, Some((2, 2)));
+        assert_eq!(s.pixel, Some((4., "mas".to_string())));
         assert_eq!(s.data, vec![(1. + 3. + 4.) / 3., 3.5, 6.5, 8.]);
     }
 
