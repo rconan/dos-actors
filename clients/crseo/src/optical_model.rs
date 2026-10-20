@@ -50,15 +50,22 @@ pub struct OpticalModel<T = NoSensor> {
 ///
 /// The telescope optical axis is offset by `error` `[x,y]` `[rd]` from the source and the
 /// instrument is rotated by `rotation` `[rd]` about the optical axis relative to the sky.
-/// The source directions seen from the instrument are rotated by `-rotation` and offset by `-error`.
+/// The source directions seen from the instrument are rotated by `-rotation` and offset by `-error`,
+/// the nominal directions (`Source::zenith` and `Source::azimuth`) being those without pointing error.
 #[derive(Debug, Default, Clone, Copy)]
 pub(crate) struct Pointing {
     pub(crate) error: [f64; 2],
     pub(crate) rotation: f64,
 }
 impl Pointing {
-    fn is_zero(&self) -> bool {
-        self.error == [0.; 2] && self.rotation == 0.
+    /// Sets the source directions to the directions seen from the instrument
+    ///
+    /// The source is ray traced along these directions and, with a camera in absolute pointing
+    /// ([OpticalModel::sensor_pointing](crate::OpticalModel::sensor_pointing)), the images are
+    /// offset by the difference between these directions and the camera pointing direction
+    pub(crate) fn apply(&self, src: &mut Source) {
+        let (zenith, azimuth) = self.directions(src);
+        src.update(zenith, azimuth);
     }
     /// Source (zenith, azimuth) directions seen from the instrument
     fn directions(&self, src: &Source) -> (Vec<f64>, Vec<f64>) {
@@ -131,20 +138,7 @@ where
 
 impl<T: SensorPropagation> Update for OpticalModel<T> {
     fn update(&mut self) {
-        if self.pointing.is_zero() {
-            self.src.through(&mut self.gmt).xpupil();
-        } else {
-            // ray tracing along the source directions seen from the instrument,
-            // the nominal directions being restored before the sensor
-            let (zenith, azimuth) = self.pointing.directions(&self.src);
-            self.src.update(zenith, azimuth);
-            self.src.through(&mut self.gmt);
-            self.src.update(
-                self.src.zenith.iter().map(|x| *x as f64).collect(),
-                self.src.azimuth.iter().map(|x| *x as f64).collect(),
-            );
-            self.src.xpupil();
-        }
+        self.src.through(&mut self.gmt).xpupil();
         if let Some(atm) = &mut self.atm {
             atm.secs += self.tau;
             self.src.through(atm);
