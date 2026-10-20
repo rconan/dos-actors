@@ -27,6 +27,14 @@ pub enum TipTilt {}
 #[uid(port = 55_012)]
 pub enum PointingError {}
 
+/// Telescope rotation error about the optical axis `[rd]`
+///
+/// Rotation of the instrument about the telescope optical axis relative to the sky,
+/// e.g. the GIR tracking error
+#[derive(UID)]
+#[uid(port = 55_013)]
+pub enum PointingRotationError {}
+
 /// M1 global tip-tilt (Rx,Ry)
 #[derive(UID)]
 #[uid(port = 55_101)]
