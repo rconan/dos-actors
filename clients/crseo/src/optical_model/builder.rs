@@ -220,6 +220,7 @@ where
             sensor: self.sensor.map(|sensor| sensor.build()).transpose()?,
             tau: self.sampling_frequency.map_or_else(|| 0f64, |x| x.recip()),
             phase_offset: None,
+            pointing: Default::default(),
         };
         if <OpticalModel<T> as Assembly>::N < 7 {
             let sids = <OpticalModel<T> as Assembly>::SIDS.map(|sid| sid as i32);
