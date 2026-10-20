@@ -7,10 +7,12 @@
 //! error in the OSS is (Δaz cos(el), Δel).
 //! As the M1 & M2 rigid body motions (`gir_rotation.rs`), the pointing error is rotated by the
 //! GIR angle γ (average GIR encoder) about the optical axis, as seen by an instrument on the GIR.
+//! The GIR tracking error Δγ (encoder - setpoint) is the rotation error of the instrument about
+//! the optical axis relative to the sky: the sources seen from the instrument are rotated by -Δγ.
 
 use gmt_dos_clients_io::{
     mount::{AverageMountEncoders, MountSetPoint},
-    optics::PointingError,
+    optics::{PointingError, PointingRotationError},
 };
 use interface::{Data, Read, Update, Write};
 use std::sync::Arc;
@@ -18,7 +20,7 @@ use std::sync::Arc;
 /// Mount tracking error to telescope pointing error
 ///
 /// Inputs: [MountSetPoint], [AverageMountEncoders] (azimuth, elevation, GIR)
-/// Output: [PointingError] (x, y) in the GIR rotated OSS
+/// Outputs: [PointingError] (x, y) in the GIR rotated OSS, [PointingRotationError] (GIR tracking error)
 pub struct Pointing {
     // cosine of the elevation
     cos_el: f64,
@@ -65,6 +67,14 @@ impl Write<PointingError> for Pointing {
         Some(Data::new(vec![c * x - s * y, s * x + c * y]))
     }
 }
+impl Write<PointingRotationError> for Pointing {
+    fn write(&mut self) -> Option<Data<PointingRotationError>> {
+        if !self.on {
+            return Some(Data::new(vec![0.]));
+        }
+        Some(Data::new(vec![self.encoders[2] - self.setpoint[2]]))
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -86,5 +96,14 @@ mod tests {
         let e = <_ as Write<PointingError>>::write(&mut p).unwrap();
         assert!(e[0].abs() < 1e-15);
         assert!((e[1] - 1e-6 * 45f64.to_radians().cos()).abs() < 1e-15);
+    }
+
+    #[test]
+    fn gir() {
+        let mut p = Pointing::new(45f64.to_radians());
+        <_ as Read<MountSetPoint>>::read(&mut p, Data::new(vec![0., 0., 3e-6]));
+        <_ as Read<AverageMountEncoders>>::read(&mut p, Data::new(vec![0., 0., 1e-6]));
+        let e = <_ as Write<PointingRotationError>>::write(&mut p).unwrap();
+        assert!((e[0] + 2e-6).abs() < 1e-15);
     }
 }

@@ -75,6 +75,7 @@ These are read by the binary. Set them on the `make run` command line, e.g.
 | `KINEMATIC_COMPENSATION` | on | `0` runs the FEM without kinematic compensation |
 | `MOUNT_FEEDFORWARD` | on | `0` turns the mount drives feed-forward off. The azimuth drives then saturate at about 242 s |
 | `POINTING_ERROR` | on | `0` turns off the telescope pointing error fed to the crseo optical model (`gmt_dos-clients_crseo` feature) |
+| `OFF_AXIS` | `0.25` | Field angle [arcsec] along x of the off-axis source of the crseo optical model (`gmt_dos-clients_crseo` feature) |
 | `PUPIL_SAMPLING` | `513` | Pupil sampling of the crseo optical model (`gmt_dos-clients_crseo` feature) |
 | `GMT_MODES_PATH` | | Directory of the GMT mirror modes files required by crseo (`gmt_dos-clients_crseo` feature) |
 
@@ -88,14 +89,19 @@ GMT_MODES_PATH=<gmtMirrors directory> make run SIM_DURATION=120 FEATURES="cuda g
   optical axis by the GIR angle (`gir_rotation.rs`), as seen by an instrument on the GIR.
 * **Pointing error:** the mount tracking error (average encoders − setpoint) is the telescope
   pointing error (Δaz·cos(el), Δel) in the OSS (`pointing.rs`), rotated by the GIR angle as the
-  mirrors. It offsets the source direction in the optical model (`PointingError` input of
-  `gmt_dos-clients_crseo`), so the image moves by −`PointingError` on top of the tip-tilt from the
-  structure deformations. The kinematic compensation having removed the rigid telescope motion
-  measured by the encoders, this is the only way the pointing error reaches the optics.
-* **Optical model:** the crseo optical model ray traces the GMT at 50 Hz with a J band
-  source (1.215 µm) and images it on a camera: λ/(5D) DFT sampling binned 2×2, i.e. a 3.93 mas
-  pixel scale over a 128×128 pixel frame (0.503" field-of-view). The camera frame (`Frame<Host>`),
-  the tip-tilt (`TipTilt`, ordered [y, x]) and the pointing error (`PointingError`) are saved at
+  mirrors. It offsets the source directions in the optical model (`PointingError` input of
+  `gmt_dos-clients_crseo`), so the images move by −`PointingError` on top of the tip-tilt from the
+  structure deformations. The GIR tracking error Δγ (encoder − setpoint) rotates the source
+  directions by −Δγ about the optical axis (`PointingRotationError`): the on-axis image does not
+  move, the off-axis image at θ moves by −Δγ·θ perpendicular to its field direction. The
+  kinematic compensation having removed the rigid telescope motion measured by the encoders,
+  this is the only way the pointing error reaches the optics.
+* **Optical model:** the crseo optical model ray traces the GMT at 50 Hz with 2 J band
+  sources (1.215 µm), on-axis and `OFF_AXIS` (0.25") off-axis along x, and images them on a camera:
+  λ/(5D) DFT sampling binned 2×2, i.e. a 3.93 mas pixel scale over a 128×128 pixel frame per
+  source (0.503" field-of-view). The camera frames (`Frame<Host>`, one after the other), the
+  tip-tilt (`TipTilt`, ordered [y₀, y₁, x₀, x₁]) and the pointing errors (`PointingError`,
+  `PointingRotationError`) are saved at
   50 Hz to `data/model_data_20.parquet`, together with `MountSetPoint` and `AverageMountEncoders`
   at 1 kHz in `data/model_data_1.parquet`.
 * **Flowchart:** the block of the optical model shows the GMT pupil (`gmt_pupil.rs`, written to
