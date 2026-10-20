@@ -96,7 +96,7 @@ GMT_MODES_PATH=<gmtMirrors directory> make run SIM_DURATION=120 FEATURES="cuda g
 | Target / script | Output |
 |---|---|
 | `make trajectory` (`scripts/atp_trajectory.py`) | `atp_trajectory.csv` |
-| `make replay` | embeds the signals of `data/model_data_*.parquet` into the replay page `data/model_flowchart.html` (`flowchart-replay` feature), options in `SCOPE_OPTIONS`, see `gmt_dos-actors_flowchart` |
+| `make replay` | embeds the signals of `data/model_data_*.parquet` into the replay page `data/model_flowchart.html` (`flowchart-replay` feature), options in `SCOPE_OPTIONS`, the pixel size of the camera frame in `FRAME_PIXEL` (3.93 mas) and the time of the steps from `SAMPLING_FREQUENCY`, see `gmt_dos-actors_flowchart` |
 | `make build` / `make run` | the integrated model and `data/model_data_1.parquet` (and `data/model_data_1000.parquet` with crseo) |
 | `make plot` | all the plots below, in `figures/`, from `data/model_data_1.parquet` |
 | `scripts/plot_encoders.py` | `trajectory_vs_encoders.png`: trajectory vs mount encoders, and tracking error |

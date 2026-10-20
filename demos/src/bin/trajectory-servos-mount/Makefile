@@ -24,6 +24,8 @@ STT_START ?= 10
 FEATURES ?= cuda gmt_dos-clients_arrow
 # flowchart-scope options of make replay, e.g. --signals MountEncoders,Wavefront --max-size 128 --steps 0..10000 --shape 'Frame<Host>=128x128'
 SCOPE_OPTIONS ?=
+# pixel size of the camera frame (Frame<Host>) of the crseo optical model, for the field of view in the frame scope
+FRAME_PIXEL ?= 3.93mas
 
 BIN = trajectory-servos-mount
 PYTHON ?= python3
@@ -51,4 +53,4 @@ plot:
 
 # embeds the signals of the parquet files into the replay page data/model_flowchart.html (run with the feature flowchart-replay)
 replay:
-	cargo run --release -p gmt_dos-actors_flowchart --features scope --bin flowchart-scope -- data/model_flowchart.html $(wildcard data/model_data_*.parquet) $(SCOPE_OPTIONS)
+	cargo run --release -p gmt_dos-actors_flowchart --features scope --bin flowchart-scope -- data/model_flowchart.html $(wildcard data/model_data_*.parquet) --sampling-frequency $(SAMPLING_FREQUENCY) --pixel 'Frame<Host>=$(FRAME_PIXEL)' $(SCOPE_OPTIONS)
