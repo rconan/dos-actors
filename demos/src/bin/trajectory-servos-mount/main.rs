@@ -25,7 +25,7 @@ use gmt_dos_clients_lom::LinearOpticalModel;
 use gmt_dos_clients_mount::Mount;
 use gmt_dos_clients_servos::{GmtFem, GmtMount, GmtServoMechanisms};
 use gmt_fem::FEM;
-use interface::{Data, Size, TimerMarker, UniqueIdentifier, Update, Write};
+use interface::{Data, Size, TimerMarker, UID, Update, Write};
 // use interface::units::Arcsec;
 
 // Drive the mount along the ATP default tracking trajectory
@@ -50,12 +50,23 @@ SIM_DURATION=10 (optional, in seconds, default: 300)
 KINEMATIC_COMPENSATION=0 (optional, FEM without kinematic compensation)
 */
 
+/// Field rotation \[rd\]: the change in parallactic angle that the GIR follows
+#[derive(UID)]
+pub enum FieldRotation {}
+
 /// Mount setpoints [azimuth, elevation, GIR] in radians, interpolated from 1Hz samples
+///
+/// The GIR setpoint is the field rotation, also given as [FieldRotation];
+/// without GIR tracking ([Trajectory::gir_tracking_off]) the GIR setpoint is 0
+/// but the field still rotates
 pub struct Trajectory {
     samples: Vec<[f64; 3]>,
     upsampling: usize,
     step: usize,
     n_step: usize,
+    gir_tracking: bool,
+    // [azimuth, elevation, field rotation] at the current step
+    current: Option<[f64; 3]>,
 }
 impl Trajectory {
     /// Loads the trajectory (in degrees) and removes the initial pointing
@@ -86,27 +97,42 @@ impl Trajectory {
             upsampling,
             step: 0,
             n_step,
+            gir_tracking: true,
+            current: None,
         })
+    }
+    /// Sets the GIR setpoint to 0, the GIR not following the field rotation
+    pub fn gir_tracking_off(mut self) -> Self {
+        self.gir_tracking = false;
+        self
     }
 }
 impl TimerMarker for Trajectory {}
-impl Update for Trajectory {}
-impl<U: UniqueIdentifier<DataType = Vec<f64>>> Write<U> for Trajectory {
-    fn write(&mut self) -> Option<Data<U>> {
-        if self.step >= self.n_step {
-            return None;
-        }
-        let i = self.step / self.upsampling;
-        let a = (self.step % self.upsampling) as f64 / self.upsampling as f64;
-        let s0 = self.samples.get(i)?;
-        let s1 = self.samples.get(i + 1).unwrap_or(s0);
+impl Update for Trajectory {
+    fn update(&mut self) {
+        self.current = if self.step < self.n_step {
+            let i = self.step / self.upsampling;
+            let a = (self.step % self.upsampling) as f64 / self.upsampling as f64;
+            self.samples.get(i).map(|s0| {
+                let s1 = self.samples.get(i + 1).unwrap_or(s0);
+                [0, 1, 2].map(|k| s0[k] + a * (s1[k] - s0[k]))
+            })
+        } else {
+            None
+        };
         self.step += 1;
-        Some(Data::new(
-            s0.iter()
-                .zip(s1)
-                .map(|(x0, x1)| x0 + a * (x1 - x0))
-                .collect(),
-        ))
+    }
+}
+impl Write<MountSetPoint> for Trajectory {
+    fn write(&mut self) -> Option<Data<MountSetPoint>> {
+        let [az, el, gir] = self.current?;
+        Some(Data::new(vec![az, el, if self.gir_tracking { gir } else { 0. }]))
+    }
+}
+impl Write<FieldRotation> for Trajectory {
+    fn write(&mut self) -> Option<Data<FieldRotation>> {
+        let [.., gir] = self.current?;
+        Some(Data::new(vec![gir]))
     }
 }
 
@@ -164,8 +190,9 @@ async fn main() -> anyhow::Result<()> {
     //   * azimuth (channel #0)
     //   * elevation (channel #1)
     //   * GIR (channel #2)
-    // * output: MountSetPoint
+    // * outputs: MountSetPoint, FieldRotation (the GIR setpoint without GIR_TRACKING=0)
     // TRAJECTORY (optional): path to an alternative trajectory file
+    // GIR_TRACKING=0 (optional): GIR setpoint set to 0, the field still rotating
     let trajectory = env::var("TRAJECTORY").map_or_else(
         |_| {
             Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -177,6 +204,12 @@ async fn main() -> anyhow::Result<()> {
         |path| path.into(),
     );
     let setpoint = Trajectory::from_csv(trajectory, sim_sampling_frequency, n_step)?;
+    let setpoint = if env::var("GIR_TRACKING").is_ok_and(|v| v == "0") {
+        println!("GIR tracking off");
+        setpoint.gir_tracking_off()
+    } else {
+        setpoint
+    };
     // number of mount encoders (logged size of MountEncoders)
     let n_encoders = <Mount as Size<MountEncoders>>::len(&Mount::new());
 
@@ -209,7 +242,8 @@ async fn main() -> anyhow::Result<()> {
     //    rotated by the GIR angle, offsets the source direction and the GIR tracking error
     //    rotates it about the optical axis (`pointing.rs`, POINTING_ERROR=0 to disable):
     //    the GIR compensating the field rotation, the image moves only by the pointing error
-    //    and by the GIR tracking error x off-axis angle
+    //    and by the GIR tracking error x off-axis angle; with GIR_TRACKING=0, the GIR does not
+    //    move and the image rotates with the field
     //  * the camera frame, the tip-tilt from the structure deformations and the pointing errors
     //    are saved to `data/model_data_20.parquet`
     #[cfg(feature = "gmt_dos-clients_crseo")]
@@ -279,6 +313,7 @@ async fn main() -> anyhow::Result<()> {
             // 1: lom[SegmentTipTilt]$
             1: {servos::GmtFem}[AverageMountEncoders]!$
             1: setpoint[MountSetPoint] -> pointing
+            1: setpoint[FieldRotation]${1} -> pointing
             1: {servos::GmtFem}[AverageMountEncoders]! -> pointing
             20: pointing[PointingError]${2} -> om
             20: pointing[PointingRotationError]${1} -> om

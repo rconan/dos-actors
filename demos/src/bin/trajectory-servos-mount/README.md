@@ -72,6 +72,7 @@ These are read by the binary. Set them on the `make run` command line, e.g.
 |---|---|---|
 | `SIM_DURATION` | `300` | Simulation duration [s] |
 | `TRAJECTORY` | `atp_trajectory.csv` | Path to an alternative trajectory file in the same format: time [s], azimuth, elevation and rotator [deg] |
+| `GIR_TRACKING` | on | `0` sets the GIR setpoint to 0: the GIR does not follow the field rotation and, with the crseo optical model, the image rotates with the field |
 | `KINEMATIC_COMPENSATION` | on | `0` runs the FEM without kinematic compensation |
 | `MOUNT_FEEDFORWARD` | on | `0` turns the mount drives feed-forward off. The azimuth drives then saturate at about 242 s |
 | `POINTING_ERROR` | on | `0` turns off the telescope pointing error fed to the crseo optical model (`gmt_dos-clients_crseo` feature) |
@@ -96,9 +97,12 @@ GMT_MODES_PATH=<gmtMirrors directory> make run SIM_DURATION=120 FEATURES="cuda g
   pointing error (Δaz·cos(el), Δel) in the OSS (`pointing.rs`), rotated by the GIR angle as the
   mirrors. It offsets the source direction in the optical model (`PointingError` input of
   `gmt_dos-clients_crseo`), so the image moves by −`PointingError`. The GIR compensates the
-  field rotation but for its tracking error Δγ (encoder − setpoint) that rotates the source
-  direction by −Δγ about the optical axis (`PointingRotationError`): the off-axis image at θ
-  moves by −Δγ·θ perpendicular to its field direction, at most 0.008 mas at 0.25". The
+  field rotation (`FieldRotation`, the rotator column of the trajectory) but for its tracking
+  error Δγ (encoder − field rotation) that rotates the source direction by −Δγ about the optical
+  axis (`PointingRotationError`): the off-axis image at θ moves by −Δγ·θ perpendicular to its
+  field direction, at most 0.008 mas at 0.25". With `GIR_TRACKING=0` the GIR setpoint is 0,
+  Δγ is the opposite of the field rotation and the image rotates with the field, by 0.68 mas
+  over 30 s and 6.8 mas over the 300 s trajectory at 0.25". The
   wavefront tip-tilt (`TipTilt`, ordered [y, x]) is from the structure deformations only. The
   kinematic compensation having removed the rigid telescope motion measured by the encoders,
   this is the only way the pointing error reaches the optics.

@@ -7,8 +7,10 @@
 //! error in the OSS is (Δaz cos(el), Δel).
 //! As the M1 & M2 rigid body motions (`gir_rotation.rs`), the pointing error is rotated by the
 //! GIR angle γ (average GIR encoder) about the optical axis, as seen by an instrument on the GIR.
-//! The GIR tracking error Δγ (encoder - setpoint) is the rotation error of the instrument about
-//! the optical axis relative to the sky: the sources seen from the instrument are rotated by -Δγ.
+//! The GIR tracking error Δγ (encoder - field rotation) is the rotation error of the instrument
+//! about the optical axis relative to the sky: the sources seen from the instrument are rotated
+//! by -Δγ. The field rotation is the GIR setpoint when the GIR tracks it, otherwise (GIR setpoint
+//! at 0) Δγ is the opposite of the field rotation and the sources rotate with the field.
 
 use gmt_dos_clients_io::{
     mount::{AverageMountEncoders, MountSetPoint},
@@ -17,14 +19,17 @@ use gmt_dos_clients_io::{
 use interface::{Data, Read, Update, Write};
 use std::sync::Arc;
 
+use crate::FieldRotation;
+
 /// Mount tracking error to telescope pointing error
 ///
-/// Inputs: [MountSetPoint], [AverageMountEncoders] (azimuth, elevation, GIR)
+/// Inputs: [MountSetPoint], [AverageMountEncoders] (azimuth, elevation, GIR), [FieldRotation]
 /// Outputs: [PointingError] (x, y) in the GIR rotated OSS, [PointingRotationError] (GIR tracking error)
 pub struct Pointing {
     // cosine of the elevation
     cos_el: f64,
     on: bool,
+    field_rotation: f64,
     setpoint: Arc<Vec<f64>>,
     encoders: Arc<Vec<f64>>,
 }
@@ -34,6 +39,7 @@ impl Pointing {
         Self {
             cos_el: elevation.cos(),
             on: true,
+            field_rotation: 0.,
             setpoint: Arc::new(vec![0.; 3]),
             encoders: Arc::new(vec![0.; 3]),
         }
@@ -48,6 +54,11 @@ impl Update for Pointing {}
 impl Read<MountSetPoint> for Pointing {
     fn read(&mut self, data: Data<MountSetPoint>) {
         self.setpoint = data.into_arc();
+    }
+}
+impl Read<FieldRotation> for Pointing {
+    fn read(&mut self, data: Data<FieldRotation>) {
+        self.field_rotation = data[0];
     }
 }
 impl Read<AverageMountEncoders> for Pointing {
@@ -72,7 +83,7 @@ impl Write<PointingRotationError> for Pointing {
         if !self.on {
             return Some(Data::new(vec![0.]));
         }
-        Some(Data::new(vec![self.encoders[2] - self.setpoint[2]]))
+        Some(Data::new(vec![self.encoders[2] - self.field_rotation]))
     }
 }
 
@@ -101,9 +112,16 @@ mod tests {
     #[test]
     fn gir() {
         let mut p = Pointing::new(45f64.to_radians());
+        // GIR tracking the field rotation
         <_ as Read<MountSetPoint>>::read(&mut p, Data::new(vec![0., 0., 3e-6]));
+        <_ as Read<FieldRotation>>::read(&mut p, Data::new(vec![3e-6]));
         <_ as Read<AverageMountEncoders>>::read(&mut p, Data::new(vec![0., 0., 1e-6]));
         let e = <_ as Write<PointingRotationError>>::write(&mut p).unwrap();
         assert!((e[0] + 2e-6).abs() < 1e-15);
+        // GIR at rest, the field rotating
+        <_ as Read<MountSetPoint>>::read(&mut p, Data::new(vec![0., 0., 0.]));
+        <_ as Read<AverageMountEncoders>>::read(&mut p, Data::new(vec![0., 0., 0.]));
+        let e = <_ as Write<PointingRotationError>>::write(&mut p).unwrap();
+        assert!((e[0] + 3e-6).abs() < 1e-15);
     }
 }
