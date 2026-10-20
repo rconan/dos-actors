@@ -13,6 +13,7 @@ use gmt_dos_clients_io::gmt_fem::{
     inputs::MCM2SmHexF,
     outputs::{MCM2Lcl6D, MCM2SmHexD, OSSM1Lcl},
 };
+use gmt_dos_clients_io::{Assembly, gmt_m1::assembly::M1ActuatorAppliedForces};
 use gmt_dos_clients_m2_ctrl::{Positioners, PositionersError};
 use gmt_dos_clients_mount::Mount;
 use gmt_dos_clients_windloads::system::SigmoidCfdLoads;
@@ -210,7 +211,7 @@ impl<'a, const M1_RATE: usize, const M2_RATE: usize> TryFrom<ServosBuilder<M1_RA
         };
 
         log::info!("Building structural state space model");
-        let sids: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7];
+        let sids: Vec<u8> = <M1ActuatorAppliedForces as Assembly>::SIDS.to_vec();
         let state_space_builder = DiscreteModalSolver::<ExponentialMatrix>::from_fem(fem.clone())
             .sampling(builder.sim_sampling_frequency as f64)
             .proportional_damping(builder.fem_zeta.unwrap_or(2. / 100.));

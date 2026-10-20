@@ -61,6 +61,7 @@ Any parameter below can be set on the `make` command line, e.g. `make run SIM_DU
 | `cuda` | FEM state space solved on the GPU (`CuStateSpace`). Drop it to use the CPU solver (`ExponentialMatrix`), which is much slower |
 | `gmt_dos-clients_arrow` | Data logging to parquet files. Required |
 | `gmt_dos-clients_crseo` | Adds the GIR rotation and the crseo optical model, see below |
+| `flowchart-replay` | Records the run into the ELK flowchart (`FLOWCHART=elk`) to replay it step by step in the browser. The whole run is recorded unless `FLOWCHART_STEPS` limits the number of recorded steps, e.g. `make run FLOWCHART=elk SIM_DURATION=3 FEATURES="cuda gmt_dos-clients_arrow gmt_dos-clients_crseo flowchart-replay"` |
 
 ## Run time environment variables
 
@@ -84,15 +85,18 @@ GMT_MODES_PATH=<gmtMirrors directory> make run SIM_DURATION=120 FEATURES="cuda g
 
 * **GIR rotation:** the M1 and M2 rigid body motions are rotated as rigid bodies about the
   optical axis by the GIR angle (`gir_rotation.rs`), as seen by an instrument on the GIR.
-* **Optical model:** the crseo optical model ray traces the GMT every second. The exit pupil
-  wavefront and the segment tip-tilt are saved to `data/model_data_1000.parquet`, about 2 MB per
-  second at 513×513 pupil sampling.
+* **Optical model:** the crseo optical model ray traces the GMT every second with a J band
+  source (1.215 µm) and images it on a camera: λ/(5D) DFT sampling binned 2×2, i.e. a 3.93 mas
+  pixel scale over a 128×128 pixel frame (0.503" field-of-view). The exit pupil wavefront, the
+  segment tip-tilt and the camera frame (`Frame<Host>`) are saved to
+  `data/model_data_1000.parquet`, about 1.5 MB per second at 513×513 pupil sampling.
 
 ## Make targets and scripts
 
 | Target / script | Output |
 |---|---|
 | `make trajectory` (`scripts/atp_trajectory.py`) | `atp_trajectory.csv` |
+| `make replay` | embeds the signals of `data/model_data_*.parquet` into the replay page `data/model_flowchart.html` (`flowchart-replay` feature), options in `SCOPE_OPTIONS`, see `gmt_dos-actors_flowchart` |
 | `make build` / `make run` | the integrated model and `data/model_data_1.parquet` (and `data/model_data_1000.parquet` with crseo) |
 | `make plot` | all the plots below, in `figures/`, from `data/model_data_1.parquet` |
 | `scripts/plot_encoders.py` | `trajectory_vs_encoders.png`: trajectory vs mount encoders, and tracking error |

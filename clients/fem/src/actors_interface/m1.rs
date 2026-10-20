@@ -7,7 +7,7 @@ use gmt_dos_clients_io::{
     Assembly,
     gmt_m1::{M1EdgeSensors, M1ModeShapes, M1RigidBodyMotions, segment::ModeShapes},
 };
-use gmt_dos_clients_optics_state::{M1State, SegmentState};
+use gmt_dos_clients_optics_state::{M1State, MirrorState, SegmentState};
 
 pub mod actuators;
 pub mod assembly;
@@ -103,19 +103,22 @@ where
         // M1 RBMs (42)
         let rbms = <DiscreteModalSolver<S> as Get<fem_io::OSSM1Lcl>>::get(self);
         // Segment RBMS (6x7)
-        let mut segment_rbms = rbms.as_ref().map(|rbms| rbms.chunks(6));
-        // M1 shape matrix transforms ([n_mode,n_node]x7)
+        let segment_rbms: Option<Vec<_>> = rbms.as_ref().map(|rbms| rbms.chunks(6).collect());
+        // M1 shape matrix transforms ([n_mode,n_node] for each segment of the assembly)
         let transforms = self.m1_figure_transforms.as_ref();
-        // M1 shape matrix transforms ([n_mode,n_node]x7) iterator
+        // M1 shape matrix transforms iterator
         let mut segment_transforms = transforms.map(|transforms| transforms.iter());
 
         // let state: MirrorState = <M1ModeShapes as Assembly>::SIDS
         //     .into_iter()
         // .map(|sid| {
-        let mut segments = vec![];
+        // the state of the 7 segments, the segments not in the assembly are left empty
+        let mut state = MirrorState::default();
         for sid in <M1ModeShapes as Assembly>::SIDS.into_iter() {
             // segment # sid RBMS
-            let rbms = segment_rbms.as_mut().map(|rbms| rbms.next());
+            let rbms = segment_rbms
+                .as_ref()
+                .map(|rbms| rbms.get(sid as usize - 1).copied());
             // segment # sid shape transforms
             let transforms = segment_transforms
                 .as_mut()
@@ -156,7 +159,7 @@ where
                 }
                 _ => SegmentState::default(),
             };
-            segments.push(segment);
+            state = state.set_segment_state(sid, segment);
         }
         // .collect();
 
@@ -209,7 +212,7 @@ where
         //     };
         //     state
         // };
-        Some(Data::new(segments.into_iter().collect()))
+        Some(Data::new(state))
     }
 }
 impl<const ID: u8, S> Write<ModeShapes<ID>> for DiscreteModalSolver<S>
@@ -239,8 +242,10 @@ where
                 .expect("failed to remove RBM from M1 segment #{ID}");
             figure.copy_from_slice(&y);
         }
-        if let Some(transforms) = &self.m1_figure_transforms {
-            let mat = &transforms[ID as usize - 1];
+        if let Some(transforms) = &self.m1_figure_transforms
+            && let Some(idx) = <M1ModeShapes as Assembly>::position::<ID>()
+        {
+            let mat = &transforms[idx];
             let y = mat * nalgebra::DVector::from_column_slice(&figure);
             let y_slice = y.as_slice();
             figure.resize(y_slice.len(), Default::default());

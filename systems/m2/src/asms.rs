@@ -1,5 +1,6 @@
 use gmt_dos_actors::system::{Sys, SystemError};
 use gmt_dos_clients_fem::{Model, Switch};
+use gmt_dos_clients_io::Assembly;
 use gmt_fem::FEM;
 
 mod assembly;
@@ -13,7 +14,7 @@ impl<const R: usize> ASMS<R> {
     /// Creates a new ASMS [builder](AsmsBuilder)
     pub fn new<'a>(fem: &mut FEM) -> Result<AsmsBuilder<'a, R>, M2Error> {
         let mut vc_f2d = vec![];
-        for i in 1..=7 {
+        for i in <ASMS<R> as Assembly>::SIDS {
             fem.switch_inputs(Switch::Off, None)
                 .switch_outputs(Switch::Off, None);
 

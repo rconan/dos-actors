@@ -1,6 +1,7 @@
 use gmt_dos_clients_fem::{
     DiscreteStateSpace, StateSpaceError, fem_io, solvers::ExponentialMatrix,
 };
+use gmt_dos_clients_io::{Assembly, gmt_m2::asm::M2ASMFaceSheetFigure};
 use matio_rs::MatFile;
 use nalgebra as na;
 use rayon::prelude::*;
@@ -155,6 +156,8 @@ impl Facesheet {
     ///
     /// The file should be a MATLAB file with the variables: `var_#` where `#` stands
     /// for the segment number.
+    /// Only the variables of the segments selected with the `ASSEMBLY` environment
+    /// variable are loaded.
     /// ```no_run
     /// # use gmt_dos_clients_servos::{asms_servo, AsmsServo, GmtServoMechanisms};
     /// # use gmt_fem::FEM;
@@ -184,10 +187,10 @@ impl Facesheet {
             (None, true) => {
                 println!("Filtering piston,tip and tilt from ASMS facesheets");
                 let now = Instant::now();
-                let ptt_free: Vec<_> = (0..7)
+                let ptt_free: Vec<_> = <M2ASMFaceSheetFigure as Assembly>::SIDS
                     .into_par_iter()
-                    .map(|i| {
-                        let output_name = format!("M2_segment_{}_axial_d", i + 1);
+                    .map(|sid| {
+                        let output_name = format!("M2_segment_{sid}_axial_d");
                         // println!("Loading nodes from {output_name}");
                         let idx = Box::<dyn fem_io::GetOut>::try_from(output_name.clone())
                             .map(|x| x.position(&fem.outputs))?
@@ -221,10 +224,11 @@ impl Facesheet {
                 let mat_file = MatFile::load(&path)?;
                 println!("Loading the ASMS facesheet matrix transforms");
                 let now = Instant::now();
-                let kl_mat_trans: Vec<na::DMatrix<f64>> = (1..=7)
-                    .map(|i| {
+                let kl_mat_trans: Vec<na::DMatrix<f64>> = <M2ASMFaceSheetFigure as Assembly>::SIDS
+                    .into_iter()
+                    .map(|sid| {
                         Ok(mat_file
-                            .var(format!("{var_prefix}_{i}"))
+                            .var(format!("{var_prefix}_{sid}"))
                             .map(|mat: na::DMatrix<f64>| mat.transpose())?)
                     })
                     .collect::<Result<Vec<_>, FacesheetError>>()?;
@@ -233,9 +237,9 @@ impl Facesheet {
                 let now = Instant::now();
                 let ptt_free_kl_mat_trans: Vec<_> = kl_mat_trans
                     .into_par_iter()
-                    .enumerate()
-                    .map(|(i, kl_mat_trans)| {
-                        let output_name = format!("M2_segment_{}_axial_d", i + 1);
+                    .zip(<M2ASMFaceSheetFigure as Assembly>::SIDS)
+                    .map(|(kl_mat_trans, sid)| {
+                        let output_name = format!("M2_segment_{sid}_axial_d");
                         // println!("Loading nodes from {output_name}");
                         let idx = Box::<dyn fem_io::GetOut>::try_from(output_name.clone())
                             .map(|x| x.position(&fem.outputs))?
@@ -268,10 +272,11 @@ impl Facesheet {
                 let mat_file = MatFile::load(&path)?;
                 println!("Loading the ASMS facesheet matrix transforms");
                 let now = Instant::now();
-                let kl_mat_trans: Vec<na::DMatrix<f64>> = (1..=7)
-                    .map(|i| {
+                let kl_mat_trans: Vec<na::DMatrix<f64>> = <M2ASMFaceSheetFigure as Assembly>::SIDS
+                    .into_iter()
+                    .map(|sid| {
                         Ok(mat_file
-                            .var(format!("{var_prefix}_{i}"))
+                            .var(format!("{var_prefix}_{sid}"))
                             .map(|mat: na::DMatrix<f64>| mat.transpose())?)
                     })
                     .collect::<Result<Vec<_>, FacesheetError>>()?;
@@ -316,13 +321,14 @@ impl<'a> Include<'a, Facesheet> for DiscreteStateSpace<'a, ExponentialMatrix> {
             return Ok(self);
         };
         let rbm_flag = facesheet.options.remove_rigid_body_motions();
+        let names: Vec<_> = <M2ASMFaceSheetFigure as Assembly>::SIDS
+            .into_iter()
+            .map(|sid| format!("M2_segment_{sid}_axial_d"))
+            .collect();
         let this = if let Some(transforms) = facesheet.transforms_view() {
-            self.outs_with_by_name(
-                (1..=7).map(|i| format!("M2_segment_{i}_axial_d")).collect(),
-                transforms,
-            )?
+            self.outs_with_by_name(names, transforms)?
         } else {
-            self.outs_by_name((1..=7).map(|i| format!("M2_segment_{i}_axial_d")).collect())?
+            self.outs_by_name(names)?
         };
         Ok(if rbm_flag {
             this.set_facesheet_nodes()?

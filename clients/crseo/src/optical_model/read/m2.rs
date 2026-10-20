@@ -1,4 +1,5 @@
 use gmt_dos_clients_io::{
+    Assembly,
     gmt_m2::{
         M2RigidBodyMotions,
         asm::{
@@ -121,8 +122,17 @@ impl<T: SensorPropagation, const ID: u8> Read<FaceSheetFigure<ID>> for OpticalMo
     }
 }
 impl<T: SensorPropagation> Read<M2ASMFaceSheetFigure> for OpticalModel<T> {
+    /// Reads the facesheet figures of the `ASSEMBLY` segments
     fn read(&mut self, data: Data<M2ASMFaceSheetFigure>) {
-        let q: Vec<_> = data.iter().flatten().cloned().collect();
+        let Some(n) = data.first().map(|figure| figure.len()) else {
+            return;
+        };
+        // the figures of the 7 segments, the segments not in the assembly set to 0
+        let mut q = vec![0f64; 7 * n];
+        for (sid, figure) in <Self as Assembly>::SIDS.into_iter().zip(data.iter()) {
+            let i = n * (sid as usize - 1);
+            q[i..i + n].copy_from_slice(figure);
+        }
         self.gmt.m2_modes(q.as_slice());
     }
 }

@@ -62,8 +62,14 @@ impl Update for DispatchOut {}
 
 impl Read<M2FSMPiezoNodes> for DispatchIn {
     fn read(&mut self, data: Data<M2FSMPiezoNodes>) {
-        self.fsms_pzt_motion =
-            Arc::new(data.chunks(6).map(|data| Arc::new(data.to_vec())).collect());
+        // the FEM piezostack motions are given for the 7 segments
+        let i = |sid: u8| 6 * (sid as usize - 1);
+        self.fsms_pzt_motion = Arc::new(
+            <Self as Assembly>::SIDS
+                .into_iter()
+                .map(|sid| Arc::new(data[i(sid)..i(sid) + 6].to_vec()))
+                .collect(),
+        );
     }
 }
 impl<const ID: u8> Write<PiezoNodes<ID>> for DispatchIn {
@@ -96,12 +102,17 @@ impl<const ID: u8> Read<PiezoForces<ID>> for DispatchOut {
 }
 impl Write<M2FSMPiezoForces> for DispatchOut {
     fn write(&mut self) -> Option<Data<M2FSMPiezoForces>> {
-        Some(Data::new(
-            self.fsms_pzt_forces
-                .iter()
-                .flat_map(|data| data.as_slice().to_vec())
-                .collect(),
-        ))
+        // the FEM piezostack forces are given for the 7 segments,
+        // the forces of the segments not in the assembly are set to 0
+        let mut forces = vec![0f64; 42];
+        for (sid, data) in <Self as Assembly>::SIDS
+            .into_iter()
+            .zip(&self.fsms_pzt_forces)
+        {
+            let i = 6 * (sid as usize - 1);
+            forces[i..i + 6].copy_from_slice(data);
+        }
+        Some(Data::new(forces))
     }
 }
 

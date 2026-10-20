@@ -21,6 +21,7 @@ where
                     .map(|outputs| outputs.iter().map(|o| o.as_io(NO)).collect()),
             )
             .maybe_image(actor.image.as_ref().cloned())
+            .uid(super::replay::uid(actor))
             .build()
     }
 }

@@ -18,8 +18,16 @@ svg = { version = "0.18.0", optional = true }
 html-escape = { version = "0.2.13", optional = true }
 serde_json = { version = "1.0", optional = true }
 base64 = { version = "0.22", optional = true }
+parquet = { workspace = true, optional = true }
+apache-arrow = { workspace = true, optional = true }
 
 [features]
 default = ["graphviz"]
 graphviz = ["dep:svg", "dep:html-escape"]
 elk = ["dep:serde_json", "dep:base64"]
+replay = ["elk"]
+scope = ["replay", "dep:parquet", "dep:apache-arrow"]
+
+[[bin]]
+name = "flowchart-scope"
+required-features = ["scope"]

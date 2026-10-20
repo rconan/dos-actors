@@ -3826,9 +3826,11 @@ dependencies = [
 name = "gmt_dos-actors_flowchart"
 version = "0.1.0"
 dependencies = [
+ "arrow 58.3.0",
  "base64 0.22.1",
  "html-escape",
  "log",
+ "parquet 58.3.0",
  "serde_json",
  "svg",
  "thiserror 2.0.18",
