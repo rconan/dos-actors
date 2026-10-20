@@ -5,6 +5,7 @@ use crate::{OpticalModel, sensors::SensorPropagation};
 
 mod m1;
 mod m2;
+mod pointing;
 
 impl<T: SensorPropagation> Read<OpticsState> for OpticalModel<T>
 where
