@@ -7,16 +7,18 @@ use feedforward::SpringFeedForward;
 mod gir_rotation;
 #[cfg(feature = "gmt_dos-clients_crseo")]
 mod gmt_pupil;
+#[cfg(feature = "gmt_dos-clients_crseo")]
+mod pointing;
 
 use gmt_dos_actors::actorscript;
+use gmt_dos_clients_io::optics::SegmentTipTilt;
+#[cfg(feature = "gmt_dos-clients_crseo")]
+use gmt_dos_clients_io::optics::{Frame, Host, PointingError, TipTilt, Wavefront};
 use gmt_dos_clients_io::{
     gmt_m1::M1RigidBodyMotions,
     gmt_m2::M2RigidBodyMotions,
-    mount::{MountEncoders, MountSetPoint, MountTorquesFeedForward},
+    mount::{AverageMountEncoders, MountEncoders, MountSetPoint, MountTorquesFeedForward},
 };
-use gmt_dos_clients_io::optics::SegmentTipTilt;
-#[cfg(feature = "gmt_dos-clients_crseo")]
-use gmt_dos_clients_io::optics::{Frame, Host, Wavefront};
 use gmt_dos_clients_lom::LinearOpticalModel;
 use gmt_dos_clients_mount::Mount;
 use gmt_dos_clients_servos::{GmtFem, GmtMount, GmtServoMechanisms};
@@ -55,7 +57,11 @@ pub struct Trajectory {
 }
 impl Trajectory {
     /// Loads the trajectory (in degrees) and removes the initial pointing
-    pub fn from_csv(path: impl AsRef<Path>, upsampling: usize, n_step: usize) -> anyhow::Result<Self> {
+    pub fn from_csv(
+        path: impl AsRef<Path>,
+        upsampling: usize,
+        n_step: usize,
+    ) -> anyhow::Result<Self> {
         let samples: Vec<[f64; 3]> = fs::read_to_string(path)?
             .lines()
             .skip(1)
@@ -94,7 +100,10 @@ impl<U: UniqueIdentifier<DataType = Vec<f64>>> Write<U> for Trajectory {
         let s1 = self.samples.get(i + 1).unwrap_or(s0);
         self.step += 1;
         Some(Data::new(
-            s0.iter().zip(s1).map(|(x0, x1)| x0 + a * (x1 - x0)).collect(),
+            s0.iter()
+                .zip(s1)
+                .map(|(x0, x1)| x0 + a * (x1 - x0))
+                .collect(),
         ))
     }
 }
@@ -165,11 +174,7 @@ async fn main() -> anyhow::Result<()> {
         },
         |path| path.into(),
     );
-    let setpoint = Trajectory::from_csv(
-        trajectory,
-        sim_sampling_frequency,
-        n_step,
-    )?;
+    let setpoint = Trajectory::from_csv(trajectory, sim_sampling_frequency, n_step)?;
     // number of mount encoders (logged size of MountEncoders)
     let n_encoders = <Mount as Size<MountEncoders>>::len(&Mount::new());
 
@@ -192,12 +197,15 @@ async fn main() -> anyhow::Result<()> {
 
     // GIR ROTATION & OPTICAL MODEL (feature gmt_dos-clients_crseo)
     //  * the M1 & M2 rigid body motions are rotated by the GIR angle (`gir_rotation.rs`)
+    //  * the telescope pointing error from the mount tracking error (encoders - setpoint),
+    //    rotated by the GIR angle, offsets the source direction in the optical model
+    //    (`pointing.rs`, POINTING_ERROR=0 to disable)
     //  * the crseo optical model ray traces the GMT with the rotated rigid body motions
-    //    every second (PUPIL_SAMPLING, default: 513) for a J band source (1.215micron)
+    //    at 50Hz (PUPIL_SAMPLING, default: 513) for a J band source (1.215micron)
     //    and images it on a camera with a pixel scale of lambda/(5D) binned 2x2 (~3.9mas)
     //    over a 128x128 pixel frame (~0.5arcsec field-of-view)
-    //  * the wavefront in the exit pupil, the segment tip-tilt and the camera frame
-    //    are saved to `data/model_data_1000.parquet`
+    //  * the camera frame, the tip-tilt and the pointing error
+    //    are saved to `data/model_data_20.parquet`
     #[cfg(feature = "gmt_dos-clients_crseo")]
     {
         use gmt_dos_clients_crseo::{
@@ -212,6 +220,14 @@ async fn main() -> anyhow::Result<()> {
             .ok()
             .map_or(Ok(513_usize), |s| s.parse())?;
         let rotation = gir_rotation::GirRotation::new();
+        // ATP pointing elevation
+        let pointing = pointing::Pointing::new(45f64.to_radians());
+        let pointing = if env::var("POINTING_ERROR").is_ok_and(|v| v == "0") {
+            println!("telescope pointing error off");
+            pointing.off()
+        } else {
+            pointing
+        };
         // camera: the pupil sampling is set by the lenslet array (n_px_lenslet+1),
         // the DFT sampling is lambda/(osf.D) and the 256px imagelet is binned to the 128px frame
         let camera = Camera::<1>::builder()
@@ -243,13 +259,18 @@ async fn main() -> anyhow::Result<()> {
             // 1: {servos::GmtFem}[M1RigidBodyMotions]! -> lom
             // 1: {servos::GmtFem}[M2RigidBodyMotions]! -> lom
             // 1: lom[SegmentTipTilt]$
+            1: {servos::GmtFem}[AverageMountEncoders]!$
+            1: setpoint[MountSetPoint] -> pointing
+            1: {servos::GmtFem}[AverageMountEncoders]! -> pointing
+            20: pointing[PointingError]${2} -> om
             1: {servos::GmtFem}[MountEncoders]! -> rotation
             1: {servos::GmtFem}[M1RigidBodyMotions]! -> rotation
             1: {servos::GmtFem}[M2RigidBodyMotions]! -> rotation
             20: rotation[M1RigidBodyMotions] -> om
-            // 1000: rotation[M2RigidBodyMotions] -> om[Wavefront]$
+            20: rotation[M2RigidBodyMotions] -> om //[Wavefront]$
             // 1000: om[SegmentTipTilt]$
-            10: om[Frame<Host>]${n_frame}
+            20: om[Frame<Host>]${n_frame}
+            20: om[TipTilt]$
         }
     }
 
