@@ -22,7 +22,7 @@ FLOWCHART ?= dot
 STT_START ?= 10
 # cargo features: drop cuda to use the CPU FEM solver
 FEATURES ?= cuda gmt_dos-clients_arrow
-# flowchart-scope options of make replay, e.g. --signals MountEncoders,Wavefront --max-size 128 --steps 0..10000 --shape 'Frame<Host>=128x128'
+# flowchart-scope options of make replay, e.g. --signals MountEncoders,Wavefront --max-size 128 --steps 0..10000 --shape 'Frame<Host>=256x256'
 SCOPE_OPTIONS ?=
 # pixel size of the camera frame (Frame<Host>) of the crseo optical model, for the field of view in the frame scope
 FRAME_PIXEL ?= 3.93mas

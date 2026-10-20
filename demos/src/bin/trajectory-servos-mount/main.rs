@@ -199,16 +199,18 @@ async fn main() -> anyhow::Result<()> {
 
     // GIR ROTATION & OPTICAL MODEL (feature gmt_dos-clients_crseo)
     //  * the M1 & M2 rigid body motions are rotated by the GIR angle (`gir_rotation.rs`)
-    //  * the telescope pointing error from the mount tracking error (encoders - setpoint),
-    //    rotated by the GIR angle, offsets the source directions in the optical model
-    //    and the GIR tracking error rotates them about the optical axis
-    //    (`pointing.rs`, POINTING_ERROR=0 to disable)
     //  * the crseo optical model ray traces the GMT with the rotated rigid body motions
-    //    at 50Hz (PUPIL_SAMPLING, default: 513) for 2 J band sources (1.215micron),
-    //    on-axis and 0.25arcsec off-axis along x (OFF_AXIS),
-    //    and images them on a camera with a pixel scale of lambda/(5D) binned 2x2 (~3.9mas)
-    //    over a 128x128 pixel frame (~0.5arcsec field-of-view)
-    //  * the camera frames, the tip-tilt and the pointing errors
+    //    at 50Hz (PUPIL_SAMPLING, default: 513) for a J band source (1.215micron)
+    //    0.25arcsec off-axis along x (OFF_AXIS) and images it on a camera with a pixel scale
+    //    of lambda/(5D) binned 2x2 (~3.9mas) over a 256x256 pixel frame (~1arcsec field-of-view)
+    //  * the camera is in absolute pointing along the optical axis: the image is offset by
+    //    the source direction seen from the instrument
+    //  * the telescope pointing error from the mount tracking error (encoders - setpoint),
+    //    rotated by the GIR angle, offsets the source direction and the GIR tracking error
+    //    rotates it about the optical axis (`pointing.rs`, POINTING_ERROR=0 to disable):
+    //    the GIR compensating the field rotation, the image moves only by the pointing error
+    //    and by the GIR tracking error x off-axis angle
+    //  * the camera frame, the tip-tilt from the structure deformations and the pointing errors
     //    are saved to `data/model_data_20.parquet`
     #[cfg(feature = "gmt_dos-clients_crseo")]
     {
@@ -233,31 +235,31 @@ async fn main() -> anyhow::Result<()> {
         } else {
             pointing
         };
-        // camera: the pupil sampling is set by the lenslet array (n_px_lenslet+1),
-        // the DFT sampling is lambda/(osf.D) and the 256px imagelet is binned to the 128px frame
-        // on-axis & off-axis sources
+        // off-axis source
         let off_axis = env::var("OFF_AXIS")
             .ok()
             .map_or(Ok(0.25_f64), |s| s.parse())?
             .from_arcsec();
+        // camera: the pupil sampling is set by the lenslet array (n_px_lenslet+1),
+        // the DFT sampling is lambda/(osf.D) and the 512px imagelet is binned to the 256px frame
         let camera = Camera::<1>::builder()
-            .n_sensor(2)
             .lenslet_array(LensletArray::default().n_px_lenslet(pupil_sampling - 1))
             .detector(Detector {
-                n_px_framelet: 128,
-                n_px_imagelet: Some(256),
+                n_px_framelet: 256,
+                n_px_imagelet: Some(512),
                 osf: 5,
                 noise_specs: None,
             });
-        let om = OpticalModel::<Camera<1>>::builder()
+        let mut om = OpticalModel::<Camera<1>>::builder()
             .source(
                 Source::builder()
                     .band("J")
-                    .size(2)
-                    .zenith_azimuth(vec![0., off_axis as f32], vec![0., 0.]),
+                    .zenith_azimuth(vec![off_axis as f32], vec![0.]),
             )
             .sensor(camera)
             .build()?;
+        // camera pointing along the optical axis (relative to the source)
+        om.sensor_pointing(&[(-off_axis, 0.)])?;
         println!("{om}");
         let n_frame = <OpticalModel<Camera<1>> as Size<Frame<Host>>>::len(&om);
         // flowchart image of the optical model: the GMT pupil with the segments of the assembly (ASSEMBLY) highlighted
