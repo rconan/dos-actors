@@ -74,6 +74,7 @@ These are read by the binary. Set them on the `make run` command line, e.g.
 | `TRAJECTORY` | `atp_trajectory.csv` | Path to an alternative trajectory file in the same format: time [s], azimuth, elevation and rotator [deg] |
 | `KINEMATIC_COMPENSATION` | on | `0` runs the FEM without kinematic compensation |
 | `MOUNT_FEEDFORWARD` | on | `0` turns the mount drives feed-forward off. The azimuth drives then saturate at about 242 s |
+| `POINTING_ERROR` | on | `0` turns off the telescope pointing error fed to the crseo optical model (`gmt_dos-clients_crseo` feature) |
 | `PUPIL_SAMPLING` | `513` | Pupil sampling of the crseo optical model (`gmt_dos-clients_crseo` feature) |
 | `GMT_MODES_PATH` | | Directory of the GMT mirror modes files required by crseo (`gmt_dos-clients_crseo` feature) |
 
@@ -85,11 +86,18 @@ GMT_MODES_PATH=<gmtMirrors directory> make run SIM_DURATION=120 FEATURES="cuda g
 
 * **GIR rotation:** the M1 and M2 rigid body motions are rotated as rigid bodies about the
   optical axis by the GIR angle (`gir_rotation.rs`), as seen by an instrument on the GIR.
-* **Optical model:** the crseo optical model ray traces the GMT every second with a J band
+* **Pointing error:** the mount tracking error (average encoders − setpoint) is the telescope
+  pointing error (Δaz·cos(el), Δel) in the OSS (`pointing.rs`), rotated by the GIR angle as the
+  mirrors. It offsets the source direction in the optical model (`PointingError` input of
+  `gmt_dos-clients_crseo`), so the image moves by −`PointingError` on top of the tip-tilt from the
+  structure deformations. The kinematic compensation having removed the rigid telescope motion
+  measured by the encoders, this is the only way the pointing error reaches the optics.
+* **Optical model:** the crseo optical model ray traces the GMT at 50 Hz with a J band
   source (1.215 µm) and images it on a camera: λ/(5D) DFT sampling binned 2×2, i.e. a 3.93 mas
-  pixel scale over a 128×128 pixel frame (0.503" field-of-view). The exit pupil wavefront, the
-  segment tip-tilt and the camera frame (`Frame<Host>`) are saved to
-  `data/model_data_1000.parquet`, about 1.5 MB per second at 513×513 pupil sampling.
+  pixel scale over a 128×128 pixel frame (0.503" field-of-view). The camera frame (`Frame<Host>`),
+  the tip-tilt (`TipTilt`, ordered [y, x]) and the pointing error (`PointingError`) are saved at
+  50 Hz to `data/model_data_20.parquet`, together with `MountSetPoint` and `AverageMountEncoders`
+  at 1 kHz in `data/model_data_1.parquet`.
 * **Flowchart:** the block of the optical model shows the GMT pupil (`gmt_pupil.rs`, written to
   `data/gmt_pupil.svg`) with the segments of the assembly highlighted, the assembly being set at
   build time with the `ASSEMBLY` environment variable (e.g. `ASSEMBLY=1,2,7`, all the segments by default).
@@ -107,6 +115,7 @@ GMT_MODES_PATH=<gmtMirrors directory> make run SIM_DURATION=120 FEATURES="cuda g
 | `scripts/plot_orbits.py` | `rbm_orbits.png`, `rbm_orbits_s7.png` (4th argument `s7`): segment orbits in the pupil |
 | `scripts/plot_gir_orbits.py` | `rbm_orbits_gir.png`: segment orbits seen from the GIR |
 | `scripts/plot_stt_orbits.py` | `segment_tiptilt_orbits.png`: segment tip-tilt orbits from `STT_START`, with an optional end time as 5th argument |
+| `scripts/plot_tiptilt_vs_tracking.py` | `tiptilt_vs_tracking.png` (crseo): mount tracking error vs `TipTilt`, the frame centroid and −`PointingError`: `python3 scripts/plot_tiptilt_vs_tracking.py data/model_data_1.parquet data/model_data_20.parquet figures/tiptilt_vs_tracking.png` |
 | `scripts/plot_wavefronts.py` | first and last wavefronts from `data/model_data_1000.parquet` (crseo): `python3 scripts/plot_wavefronts.py data/model_data_1000.parquet figures/wavefronts_first_last.png` |
 
 `scripts/plot_rbm.py`, `scripts/plot_orbits.py` and `scripts/plot_gir_orbits.py` use `scripts/rigid_body.py` to remove the
