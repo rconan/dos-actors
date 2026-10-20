@@ -90,6 +90,9 @@ GMT_MODES_PATH=<gmtMirrors directory> make run SIM_DURATION=120 FEATURES="cuda g
   pixel scale over a 128×128 pixel frame (0.503" field-of-view). The exit pupil wavefront, the
   segment tip-tilt and the camera frame (`Frame<Host>`) are saved to
   `data/model_data_1000.parquet`, about 1.5 MB per second at 513×513 pupil sampling.
+* **Flowchart:** the block of the optical model shows the GMT pupil (`gmt_pupil.rs`, written to
+  `data/gmt_pupil.svg`) with the segments of the assembly highlighted, the assembly being set at
+  build time with the `ASSEMBLY` environment variable (e.g. `ASSEMBLY=1,2,7`, all the segments by default).
 
 ## Make targets and scripts
 

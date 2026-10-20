@@ -5,6 +5,8 @@ use feedforward::SpringFeedForward;
 
 #[cfg(feature = "gmt_dos-clients_crseo")]
 mod gir_rotation;
+#[cfg(feature = "gmt_dos-clients_crseo")]
+mod gmt_pupil;
 
 use gmt_dos_actors::actorscript;
 use gmt_dos_clients_io::{
@@ -226,22 +228,28 @@ async fn main() -> anyhow::Result<()> {
             .build()?;
         println!("{om}");
         let n_frame = <OpticalModel<Camera<1>> as Size<Frame<Host>>>::len(&om);
+        // flowchart image of the optical model: the GMT pupil with the segments of the assembly (ASSEMBLY) highlighted
+        let pupil = Path::new(&env::var("DATA_REPO")?).join("gmt_pupil.svg");
+        fs::write(&pupil, gmt_pupil::svg())?;
+        println!("GMT assembly: {:?}", gmt_pupil::assembly());
+        let pupil = pupil.to_string_lossy().into_owned();
         actorscript! {
-            1: setpoint[MountSetPoint] -> {servos::GmtMount}
-        1: setpoint[MountSetPoint] -> ff[MountTorquesFeedForward] -> {servos::GmtMount}
-            1: {servos::GmtFem}[MountEncoders]${n_encoders}
-            1: {servos::GmtFem}[M1RigidBodyMotions]$
-            1: {servos::GmtFem}[M2RigidBodyMotions]$
-            1: {servos::GmtFem}[M1RigidBodyMotions]! -> lom
-            1: {servos::GmtFem}[M2RigidBodyMotions]! -> lom
-            1: lom[SegmentTipTilt]$
+            #[images(om = pupil)]
+            1: setpoint[MountSetPoint]${3} -> {servos::GmtMount}
+            1: setpoint[MountSetPoint] -> ff[MountTorquesFeedForward] -> {servos::GmtMount}
+            // 1: {servos::GmtFem}[MountEncoders]${n_encoders}
+            // 1: {servos::GmtFem}[M1RigidBodyMotions]$
+            // 1: {servos::GmtFem}[M2RigidBodyMotions]$
+            // 1: {servos::GmtFem}[M1RigidBodyMotions]! -> lom
+            // 1: {servos::GmtFem}[M2RigidBodyMotions]! -> lom
+            // 1: lom[SegmentTipTilt]$
             1: {servos::GmtFem}[MountEncoders]! -> rotation
             1: {servos::GmtFem}[M1RigidBodyMotions]! -> rotation
             1: {servos::GmtFem}[M2RigidBodyMotions]! -> rotation
-            1000: rotation[M1RigidBodyMotions] -> om
-            1000: rotation[M2RigidBodyMotions] -> om[Wavefront]$
-            1000: om[SegmentTipTilt]$
-            1000: om[Frame<Host>]${n_frame}
+            20: rotation[M1RigidBodyMotions] -> om
+            // 1000: rotation[M2RigidBodyMotions] -> om[Wavefront]$
+            // 1000: om[SegmentTipTilt]$
+            10: om[Frame<Host>]${n_frame}
         }
     }
 
