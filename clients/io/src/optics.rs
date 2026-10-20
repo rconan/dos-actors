@@ -20,6 +20,13 @@ pub enum Wavefront {}
 #[uid(port = 55_002)]
 pub enum TipTilt {}
 
+/// Telescope pointing error `[x,y]` `[rd]`
+///
+/// Direction of the telescope optical axis relative to the source, in the OSS coordinate system
+#[derive(UID)]
+#[uid(port = 55_012)]
+pub enum PointingError {}
+
 /// M1 global tip-tilt (Rx,Ry)
 #[derive(UID)]
 #[uid(port = 55_101)]
