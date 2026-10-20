@@ -56,12 +56,16 @@ the k-th row of a column is the k-th data sent on that channel, the bootstrapped
 The command is run after the model, once the loggers have written their files.
 
 In the page, the wires of the embedded signals are marked and clicking one opens a scope at the bottom of the page:
-* a time series is plotted against the sample steps, the elements given in the `elements` box (e.g. `0-6,10`) in color and the others faded,
-  with a cursor at the current step of the replay; clicking in the plot moves the replay to that step,
+* a time series is plotted with [Apache ECharts](https://echarts.apache.org/) against the sample steps (or the time, see `--sampling-frequency`),
+  the elements given in the `elements` box (e.g. `0-6,10`) in color and the others faded, or as their envelope (minimum and maximum)
+  if they are too many, with a cursor at the current step of the replay; the mouse wheel zooms, dragging pans, the slider below the plot
+  selects the time range, the tooltip gives the values of the highlighted elements, and clicking in the plot moves the replay to that step,
 * an image (a signal with a square number of values, at least 32², or with a shape given with `--shape`) shows the last frame at or before
   the current step, the pixels equal to 0 or NaN masked, with a color scale per frame (default) or over the whole run, linear or logarithmic,
   and the value of the pixel under the mouse; with the pixel size of the image (`--pixel`), the scope shows the field of view,
   a scale bar and the offset of the pixel under the mouse from the image center.
+
+ECharts (a custom build of about 550 kB, `src/elk/echarts/`) is inserted into the page only if time series are embedded.
 
 The values are embedded as float32 and the size of the embedded signals is limited (64 MB by default):
 above that limit, the time series are thinned and the images are downsampled by the same factor, and the page says so.
@@ -92,3 +96,18 @@ This crate is MIT licensed.
 The `elk` feature embeds the [elkjs](https://github.com/kieler/elkjs) 0.11.1 bundle (`src/elk/elk.bundled.js`)
 into the flowchart pages; elkjs is Copyright (c) 2017 Kiel University and others
 and is distributed under the [Eclipse Public License 2.0](https://www.eclipse.org/legal/epl-2.0/) (EPL-2.0).
+
+The `scope` feature embeds a custom build of [Apache ECharts](https://echarts.apache.org/) 5.6.0 (`src/elk/echarts/echarts.custom.min.js`)
+into the replay pages with time series; Apache ECharts is Copyright 2017-2024 The Apache Software Foundation and is distributed under the
+[Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0); it includes ZRender 5.6.1 (Copyright (c) 2017, Baidu Inc., BSD 3-Clause License)
+and tslib 2.3.0 (Copyright (c) Microsoft Corporation, 0BSD License).
+The build only includes the line chart, the grid, dataZoom, tooltip, legend and markLine components and the canvas renderer (`src/elk/echarts/entry.js`);
+it is rebuilt with:
+
+```shell
+npm install --ignore-scripts echarts@5.6.0 esbuild@0.24.2
+NODE_PATH=node_modules node_modules/.bin/esbuild src/elk/echarts/entry.js --bundle --minify --format=iife \
+    --global-name=echarts --legal-comments=inline --target=es2018 --outfile=src/elk/echarts/echarts.custom.min.js
+```
+
+and the licence header at the top of `echarts.custom.min.js` is added back.

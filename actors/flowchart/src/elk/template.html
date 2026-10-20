@@ -573,7 +573,7 @@ function openScope(h) {
   const header = document.createElement('header');
   const fov = s.shape && s.pixel ? ` · ${length(s.shape[0] * s.pixel.size, s.pixel.unit)}×${length(s.shape[1] * s.pixel.size, s.pixel.unit)} field` : '';
   header.innerHTML = `<b>${esc(s.name)}</b><span class="meta">${esc(s.file)} · ${s.shape ? s.shape.join('×') + ' image' : s.n + (s.n > 1 ? ' values' : ' value')}${esc(fov)} · ${s.rows} rows</span><span class="close" title="close">×</span>`;
-  header.querySelector('.close').onclick = () => { el.remove(); scopes.delete(h); };
+  header.querySelector('.close').onclick = () => { scopes.get(h)?.dispose?.(); el.remove(); scopes.delete(h); };
   el.append(header);
   const scope = s.shape ? imageScope(s, el) : seriesScope(s, el);
   if (s.notes.length) { const notes = document.createElement('div'); notes.className = 'notes'; notes.textContent = s.notes.join(', '); el.append(notes); }
@@ -591,8 +591,109 @@ function length(v, unit) {
   return unit ? `${p(v)} ${unit}` : p(v);
 }
 
-// time series: all the elements faded, the selected ones in color, a cursor at the current step
-function seriesScope(s, el) {
+// time series plotted with ECharts, inserted into the page by `flowchart-scope`, or on a canvas without it
+const seriesScope = (s, el) => (window.echarts ? echartsScope : canvasScope)(s, el);
+
+// time series with ECharts: the selected elements in color, the others faded or, if they are too many,
+// as their envelope (minimum and maximum), a cursor at the current step, zoom and pan
+function echartsScope(s, el) {
+  const W = 460, H = 230;
+  const tools = document.createElement('div');
+  tools.className = 'tools';
+  const input = document.createElement('input');
+  input.placeholder = 'all, 0-6, 10';
+  input.title = 'elements to highlight';
+  input.value = s.n <= 16 ? 'all' : '0';
+  if (s.n > 1) { tools.append('elements', input); el.append(tools); }
+  const div = document.createElement('div');
+  div.style.width = W + 'px'; div.style.height = H + 'px';
+  const readout = document.createElement('div');
+  readout.className = 'readout';
+  el.append(div, readout);
+  const chart = echarts.init(div, null, { renderer: 'canvas' });
+  const css = getComputedStyle(document.body), color = v => css.getPropertyValue(v).trim();
+  const X = step => FS ? step / FS : step;
+  const xs = Float64Array.from(s.steps, X);
+  const column = e => { const d = new Array(s.steps.length); for (let r = 0; r < d.length; r++) { const v = s.values[r * s.n + e]; d[r] = [xs[r], Number.isFinite(v) ? v : null]; } return d; };
+  const sparse = s.steps.length < 200;
+  let selected = [];
+  function build() {
+    selected = parseElements(input.value, s.n);
+    const others = [...Array(s.n).keys()].filter(e => !selected.includes(e));
+    const series = [];
+    const line = (id, name, data, lineColor, opacity, width, z) => ({
+      id, name, type: 'line', data, z, showSymbol: sparse, symbolSize: 4, sampling: 'lttb', large: true,
+      symbol: id.startsWith('sel') ? 'circle' : 'none',
+      animation: false, silent: !id.startsWith('sel'), emphasis: { disabled: true },
+      lineStyle: { color: lineColor, opacity, width }, itemStyle: { color: lineColor, opacity },
+    });
+    if (others.length * s.steps.length <= 1.5e6) {
+      others.forEach(e => series.push(line(`other${e}`, `[${e}]`, column(e), color('--muted'), 0.25, 1, 1)));
+    } else {
+      // the envelope of the other elements: their minimum and their maximum, reduced to 2 points per pixel column
+      const cols = 2 * W, x0 = xs[0], dx = (xs[xs.length - 1] - x0) / cols || 1;
+      const lo = [], hi = [];
+      let c = -1, mn = Infinity, mx = -Infinity, xc = 0;
+      const flush = () => { if (c >= 0 && mn <= mx) { lo.push([xc, mn]); hi.push([xc, mx]); } };
+      for (let r = 0; r < s.steps.length; r++) {
+        const k = Math.floor((xs[r] - x0) / dx);
+        if (k !== c) { flush(); c = k; mn = Infinity; mx = -Infinity; xc = xs[r]; }
+        for (const e of others) { const v = s.values[r * s.n + e]; if (Number.isFinite(v)) { if (v < mn) mn = v; if (v > mx) mx = v; } }
+      }
+      flush();
+      series.push(line('envlo', `min of ${others.length} others`, lo, color('--muted'), 0.6, 1, 1));
+      series.push(line('envhi', `max of ${others.length} others`, hi, color('--muted'), 0.6, 1, 1));
+    }
+    selected.forEach((e, i) => series.push(line(`sel${e}`, `[${e}]`, column(e), PALETTE[i % PALETTE.length], 0.95, 1.3, 3)));
+    series.push({ id: 'cursor', type: 'line', data: [], markLine: { silent: true, symbol: 'none', animation: false, label: { show: false }, lineStyle: { color: color('--hl'), type: 'solid', width: 1 }, data: [] } });
+    const axis = { axisLine: { lineStyle: { color: color('--border') } }, axisLabel: { color: color('--muted'), fontSize: 10 }, splitLine: { lineStyle: { color: color('--border'), opacity: 0.4 } } };
+    chart.setOption({
+      animation: false,
+      grid: { left: 58, right: 12, top: 10, bottom: 46 },
+      xAxis: { type: 'value', min: X(Math.min(s.steps[0], 0)), max: X(Math.max(s.steps[s.steps.length - 1], 1)), name: FS ? 's' : 'step', nameGap: 4, nameTextStyle: { color: color('--muted'), fontSize: 10 }, ...axis,
+        axisLine: { ...axis.axisLine, onZero: false }, axisLabel: { ...axis.axisLabel, showMaxLabel: false } },
+      yAxis: { type: 'value', scale: true, ...axis, axisLabel: { ...axis.axisLabel, formatter: fmt } },
+      dataZoom: [
+        { type: 'inside', xAxisIndex: 0, filterMode: 'filter' },
+        { type: 'slider', xAxisIndex: 0, height: 14, bottom: 6, filterMode: 'filter', showDetail: false, borderColor: color('--border'), textStyle: { color: color('--muted') } },
+      ],
+      tooltip: {
+        trigger: 'axis', confine: true, backgroundColor: color('--panel'), borderColor: color('--border'), textStyle: { color: color('--text'), fontSize: 11 },
+        axisPointer: { type: 'line', lineStyle: { color: color('--muted') } },
+        formatter: items => {
+          const sel = items.filter(it => String(it.seriesId).startsWith('sel')).slice(0, 8);
+          if (!sel.length) return '';
+          const x = sel[0].value[0];
+          return `${FS ? `${x.toFixed(Math.max(0, Math.ceil(Math.log10(FS))))} s` : `step ${x}`}<br>` + sel.map(it => `${it.marker}${it.seriesName} ${fmt(it.value[1])}`).join('<br>');
+        },
+      },
+      series,
+    }, { notMerge: true });
+  }
+  function update() {
+    const step = currentStep();
+    chart.setOption({ series: [{ id: 'cursor', markLine: { data: step === null ? [] : [{ xAxis: X(step) }] } }] });
+    if (step === null) { readout.textContent = (FS ? `${time(s.steps[0] < 0 ? 0 : s.steps[0])} to ${time(s.steps[s.steps.length - 1])}` : `steps ${s.steps[0]} to ${s.steps[s.steps.length - 1]}`) + ', scroll to zoom, drag to pan, click to go to a step'; return; }
+    const r = rowAt(s, step);
+    if (r < 0) { readout.textContent = `${when(step)}: no data yet`; return; }
+    const shown = selected.slice(0, 8).map(e => `[${e}] ${fmt(s.values[r * s.n + e])}`).join('  ');
+    readout.textContent = `${s.steps[r] < 0 ? 'bootstrap' : when(s.steps[r])}: ${shown}${selected.length > 8 ? ' …' : ''}`;
+  }
+  // a click in the plot moves the replay to that step
+  chart.getZr().on('click', ev => {
+    if (!chart.containPixel({ gridIndex: 0 }, [ev.offsetX, ev.offsetY])) return;
+    const [x] = chart.convertFromPixel({ gridIndex: 0 }, [ev.offsetX, ev.offsetY]);
+    const step = Math.round(FS ? x * FS : x);
+    if (step >= -1) { pause(); go(Math.min(step, EVENTS.steps - 1) + OFFSET); }
+  });
+  input.addEventListener('change', () => { build(); update(); });
+  input.addEventListener('keydown', ev => ev.stopPropagation());
+  build();
+  return { update, dispose: () => chart.dispose() };
+}
+
+// time series on a canvas: all the elements faded, the selected ones in color, a cursor at the current step
+function canvasScope(s, el) {
   const W = 440, H = 170, L = 52, R = 8, T = 6, B = 18;
   const tools = document.createElement('div');
   tools.className = 'tools';
