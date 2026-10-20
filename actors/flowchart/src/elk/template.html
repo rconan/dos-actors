@@ -108,7 +108,7 @@ text { fill: var(--text); }
     <button id="prev" title="Previous step (←)">◀</button>
     <button id="next" title="Next step (→ or space)">▶</button>
     <button id="play" title="Play or pause (p)">⏯</button>
-    <button id="stages" aria-pressed="true" title="Step through the stages of each step (s)">stages</button>
+    <button id="stages" aria-pressed="false" title="Step through the stages of each step (s)">stages</button>
     <span id="frame"></span>
     <input id="goto" type="number" min="0" placeholder="go to step" title="Go to step (Enter)">
   </span>
@@ -323,7 +323,12 @@ const wirePaths = [];
 const OFFSET = EVENTS && EVENTS.bootstrap.length ? 1 : 0; // the bootstrap frame
 const NF = EVENTS ? OFFSET + EVENTS.steps : 0;
 const uidToId = new Map(MODEL.actors.filter(a => a.uid).map(a => [a.uid, a.id]));
-let frame = -1, stage = -1, stageMode = true, player = null;
+// sampling frequency of the steps [Hz], given to `flowchart-scope`
+const FS = SCOPE && SCOPE.fs > 0 ? SCOPE.fs : null;
+// the time of a step in seconds, with the resolution of a step
+const time = step => (step / FS).toFixed(Math.max(0, Math.ceil(Math.log10(FS)))) + ' s';
+const when = step => FS ? `step ${step} (${time(step)})` : `step ${step}`;
+let frame = -1, stage = -1, stageMode = false, player = null;
 const last = ([a, p, n]) => a + p * (n - 1);
 // true if the step i belongs to a run
 const onRun = (r, i) => i >= r[0] && i <= last(r) && (r[1] === 0 || (i - r[0]) % r[1] === 0);
@@ -333,7 +338,7 @@ function frameAt(f) {
   const i = f - OFFSET;
   if (i < 0) return { label: 'bootstrap', u: [], s: EVENTS.bootstrap };
   const pick = m => Object.keys(m).filter(k => on(m[k], i));
-  return { label: `step ${i}`, u: pick(EVENTS.u), s: pick(EVENTS.s) };
+  return { label: when(i), u: pick(EVENTS.u), s: pick(EVENTS.s) };
 }
 // stages within a step: an actor comes after the actors it receives data from in the same step,
 // the data of a bootstrapped output is received from the previous step and breaks the feedback loops
@@ -383,7 +388,7 @@ function paintFlow() {
   world.classList.toggle('replay', frame >= 0);
   if (!EVENTS) return;
   const label = document.getElementById('frame');
-  if (frame < 0) { label.textContent = `${EVENTS.steps} steps`; return; }
+  if (frame < 0) { label.textContent = `${EVENTS.steps} steps` + (FS ? ` (${time(EVENTS.steps)})` : ''); return; }
   const f = frameAt(frame);
   const stages = stagesAt(frame);
   const k = stage >= 0 ? stages[stage] : undefined;
@@ -476,7 +481,7 @@ function play() {
 }
 if (EVENTS) {
   document.getElementById('replay').hidden = false;
-  document.querySelector('.hint').textContent += ' ← → or space to step through the run, stage by stage within a step (s to toggle), shift ← → to jump to the next change, p to play, Esc to reset.';
+  document.querySelector('.hint').textContent += ' ← → or space to step through the run (s to go stage by stage within a step), shift ← → to jump to the next change, p to play, Esc to reset.';
   document.getElementById('first').onclick = () => { pause(); go(-1); };
   document.getElementById('prev').onclick = () => { pause(); prev(); };
   document.getElementById('next').onclick = () => { pause(); next(); };
@@ -566,7 +571,8 @@ function openScope(h) {
   const el = document.createElement('div');
   el.className = 'scope';
   const header = document.createElement('header');
-  header.innerHTML = `<b>${esc(s.name)}</b><span class="meta">${esc(s.file)} · ${s.shape ? s.shape.join('×') + ' image' : s.n + (s.n > 1 ? ' values' : ' value')} · ${s.rows} rows</span><span class="close" title="close">×</span>`;
+  const fov = s.shape && s.pixel ? ` · ${length(s.shape[0] * s.pixel.size, s.pixel.unit)}×${length(s.shape[1] * s.pixel.size, s.pixel.unit)} field` : '';
+  header.innerHTML = `<b>${esc(s.name)}</b><span class="meta">${esc(s.file)} · ${s.shape ? s.shape.join('×') + ' image' : s.n + (s.n > 1 ? ' values' : ' value')}${esc(fov)} · ${s.rows} rows</span><span class="close" title="close">×</span>`;
   header.querySelector('.close').onclick = () => { el.remove(); scopes.delete(h); };
   el.append(header);
   const scope = s.shape ? imageScope(s, el) : seriesScope(s, el);
@@ -576,6 +582,14 @@ function openScope(h) {
   scope.update();
 }
 function updateScopes() { scopes.forEach(sc => sc.update()); }
+// a length in the pixel unit of an image, the angles in mas or arcsec whichever reads best
+function length(v, unit) {
+  const p = x => String(+x.toPrecision(3));
+  const arcsec = ['arcsec', '"', '″'].includes(unit);
+  if (unit === 'mas' && Math.abs(v) >= 1000) return p(v / 1000) + '″';
+  if (arcsec) return Math.abs(v) < 1 ? p(v * 1000) + ' mas' : p(v) + '″';
+  return unit ? `${p(v)} ${unit}` : p(v);
+}
 
 // time series: all the elements faded, the selected ones in color, a cursor at the current step
 function seriesScope(s, el) {
@@ -613,8 +627,9 @@ function seriesScope(s, el) {
     g.strokeRect(L, T, W - L - R, H - T - B);
     g.textAlign = 'right';
     for (const v of [hi - pad, (hi + lo) / 2, lo + pad]) g.fillText(fmt(v), L - 4, Y(v) + 3);
-    g.textAlign = 'left'; g.fillText(String(x0), L, H - 4);
-    g.textAlign = 'right'; g.fillText(String(x1), W - R, H - 4);
+    const tick = x => FS ? time(x) : String(x);
+    g.textAlign = 'left'; g.fillText(tick(x0), L, H - 4);
+    g.textAlign = 'right'; g.fillText(tick(x1), W - R, H - 4);
     g.save();
     g.beginPath(); g.rect(L, T, W - L - R, H - T - B); g.clip();
     const sparse = s.steps.length < (W - L - R) / 3;
@@ -647,15 +662,15 @@ function seriesScope(s, el) {
     g.clearRect(0, 0, W, H);
     g.drawImage(base, 0, 0, W, H);
     const step = currentStep();
-    if (step === null) { readout.textContent = `steps ${x0} to ${x1}, click to go to a step`; return; }
+    if (step === null) { readout.textContent = (FS ? `${time(x0)} to ${time(x1)}` : `steps ${x0} to ${x1}`) + ', click to go to a step'; return; }
     const r = rowAt(s, step);
     g.strokeStyle = getComputedStyle(document.body).getPropertyValue('--hl');
     g.lineWidth = 1;
     g.beginPath(); g.moveTo(X(step), T); g.lineTo(X(step), H - B); g.stroke();
-    if (r < 0) { readout.textContent = `step ${step}: no data yet`; return; }
+    if (r < 0) { readout.textContent = `${when(step)}: no data yet`; return; }
     selected.forEach((e, i) => { const v = s.values[r * s.n + e]; if (Number.isFinite(v)) { g.fillStyle = PALETTE[i % PALETTE.length]; g.beginPath(); g.arc(X(s.steps[r]), Y(v), 3, 0, 2 * Math.PI); g.fill(); } });
     const shown = selected.slice(0, 8).map(e => `[${e}] ${fmt(s.values[r * s.n + e])}`).join('  ');
-    readout.textContent = `step ${s.steps[r] < 0 ? 'bootstrap' : s.steps[r]}: ${shown}${selected.length > 8 ? ' …' : ''}`;
+    readout.textContent = `${s.steps[r] < 0 ? 'bootstrap' : when(s.steps[r])}: ${shown}${selected.length > 8 ? ' …' : ''}`;
   }
   view.addEventListener('click', ev => {
     const x = ev.offsetX;
@@ -681,8 +696,8 @@ function imageScope(s, el) {
   const tools = document.createElement('div');
   tools.className = 'tools';
   const scaleBtn = document.createElement('button');
-  let perFrame = false;
-  scaleBtn.textContent = 'scale: run';
+  let perFrame = true;
+  scaleBtn.textContent = 'scale: frame';
   scaleBtn.title = 'color scale over the whole run or per frame';
   const logBtn = document.createElement('button');
   let log = false;
@@ -699,7 +714,22 @@ function imageScope(s, el) {
   const bar = canvas(null, Math.round(w * k), 8);
   const readout = document.createElement('div');
   readout.className = 'readout';
-  el.append(view, bar, readout);
+  el.append(view);
+  // scale bar of 1, 2 or 5 × 10^k pixel units, about a quarter of the field
+  if (s.pixel) {
+    const W = Math.round(w * k), ruler = canvas(null, W, 18), g = ruler.getContext('2d');
+    const target = w * s.pixel.size / 4, e = 10 ** Math.floor(Math.log10(target));
+    const len = [5, 2, 1].map(m => m * e).find(l => l <= target) || e;
+    const px = len / s.pixel.size * k;
+    const css = getComputedStyle(document.body);
+    g.strokeStyle = g.fillStyle = css.getPropertyValue('--text');
+    g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(1, 4); g.lineTo(1, 10); g.moveTo(1, 7); g.lineTo(1 + px, 7); g.moveTo(1 + px, 4); g.lineTo(1 + px, 10); g.stroke();
+    g.font = '11px system-ui, sans-serif'; g.textBaseline = 'middle';
+    g.fillText(length(len, s.pixel.unit), px + 8, 8);
+    el.append(ruler);
+  }
+  el.append(bar, readout);
   const masked = v => !Number.isFinite(v) || v === 0;
   const extent = (a, b) => { let lo = Infinity, hi = -Infinity; for (let i = a; i < b; i++) { const v = s.values[i]; if (!masked(v)) { if (v < lo) lo = v; if (v > hi) hi = v; } } return hi >= lo ? [lo, hi] : [0, 1]; };
   let runExtent = null, row = -1, lohi = [0, 1];
@@ -731,7 +761,7 @@ function imageScope(s, el) {
       if (r < 0) { g.clearRect(0, 0, w, h); range.textContent = ''; }
       else render(r);
     }
-    readout.textContent = r < 0 ? 'no frame yet' : `frame ${r + 1}/${s.rows} at step ${s.steps[r] < 0 ? 'bootstrap' : s.steps[r]}`;
+    readout.textContent = r < 0 ? 'no frame yet' : `frame ${r + 1}/${s.rows} at ${s.steps[r] < 0 ? 'bootstrap' : when(s.steps[r])}`;
   }
   scaleBtn.onclick = () => { perFrame = !perFrame; scaleBtn.textContent = perFrame ? 'scale: frame' : 'scale: run'; if (row >= 0) render(row); };
   logBtn.onclick = () => { log = !log; logBtn.textContent = log ? 'log' : 'lin'; if (row >= 0) render(row); };
@@ -740,7 +770,9 @@ function imageScope(s, el) {
     const i = Math.floor(ev.offsetX / k), j = Math.floor(ev.offsetY / k);
     if (i < 0 || j < 0 || i >= w || j >= h) return;
     const v = s.values[row * s.n + j * w + i];
-    readout.textContent = `(${i}, ${j}) ${masked(v) ? 'masked' : fmt(v)} — frame ${row + 1}/${s.rows} at step ${s.steps[row] < 0 ? 'bootstrap' : s.steps[row]}`;
+    // offset of the pixel center from the image center
+    const at = s.pixel ? ` (${length((i + 0.5 - w / 2) * s.pixel.size, s.pixel.unit)}, ${length((h / 2 - j - 0.5) * s.pixel.size, s.pixel.unit)})` : '';
+    readout.textContent = `(${i}, ${j})${at} ${masked(v) ? 'masked' : fmt(v)} — frame ${row + 1}/${s.rows} at ${s.steps[row] < 0 ? 'bootstrap' : when(s.steps[row])}`;
   });
   view.addEventListener('mouseleave', update);
   return { update };

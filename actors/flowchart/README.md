@@ -26,7 +26,7 @@ and, once the model has completed, the page is rewritten with the recorded steps
 In the page, `→` or space steps forward, `←` steps back, `Shift+→`/`Shift+←` jump to the next/previous step where the activity changes (e.g. a slower rate actor), a step number can be typed in the step box, `p` plays or pauses and `Esc` resets;
 the actors updated at the current step are outlined and the wires carrying data are highlighted, the bootstrapped outputs are shown in a frame before the first step.
 
-By default, `→` and `←` go through each step stage by stage (`s` toggles the stages off and on):
+With the stages on (`s` or the **stages** button), `→` and `←` go through each step stage by stage:
 an actor comes after the actors it receives data from in the same step,
 and the data of a bootstrapped output, sent at the previous step, breaks the feedback loops.
 At each stage, the current actors and the data they send are highlighted, the earlier stages of the step are faded,
@@ -59,8 +59,9 @@ In the page, the wires of the embedded signals are marked and clicking one opens
 * a time series is plotted against the sample steps, the elements given in the `elements` box (e.g. `0-6,10`) in color and the others faded,
   with a cursor at the current step of the replay; clicking in the plot moves the replay to that step,
 * an image (a signal with a square number of values, at least 32², or with a shape given with `--shape`) shows the last frame at or before
-  the current step, the pixels equal to 0 or NaN masked, with a color scale over the whole run or per frame, linear or logarithmic,
-  and the value of the pixel under the mouse.
+  the current step, the pixels equal to 0 or NaN masked, with a color scale per frame (default) or over the whole run, linear or logarithmic,
+  and the value of the pixel under the mouse; with the pixel size of the image (`--pixel`), the scope shows the field of view,
+  a scale bar and the offset of the pixel under the mouse from the image center.
 
 The values are embedded as float32 and the size of the embedded signals is limited (64 MB by default):
 above that limit, the time series are thinned and the images are downsampled by the same factor, and the page says so.
@@ -71,6 +72,8 @@ above that limit, the time series are thinned and the images are downsampled by 
 | `--max-size MB` | Size limit of the embedded signals, 64 MB by default, 0 for no limit |
 | `--steps START..END` | Embeds the data of the steps `START` to `END` (excluded), `START..` to the end |
 | `--shape NAME=WxH` | Image shape of a signal |
+| `--sampling-frequency HZ` | Sampling frequency of the steps, to show the time of the steps in the page and the time axis of the scopes |
+| `--pixel NAME=SIZE[UNIT]` | Pixel size of an image, e.g. `'Frame<Host>=3.93mas'`; mas and arcsec are shown in mas or arcsec whichever reads best |
 | `--output OUT.html` | Output page, the input page is rewritten by default |
 
 ## Environment variables
