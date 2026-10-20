@@ -13,7 +13,9 @@ mod pointing;
 use gmt_dos_actors::actorscript;
 use gmt_dos_clients_io::optics::SegmentTipTilt;
 #[cfg(feature = "gmt_dos-clients_crseo")]
-use gmt_dos_clients_io::optics::{Frame, Host, PointingError, TipTilt, Wavefront};
+use gmt_dos_clients_io::optics::{
+    Frame, Host, PointingError, PointingRotationError, TipTilt, Wavefront,
+};
 use gmt_dos_clients_io::{
     gmt_m1::M1RigidBodyMotions,
     gmt_m2::M2RigidBodyMotions,
@@ -198,13 +200,15 @@ async fn main() -> anyhow::Result<()> {
     // GIR ROTATION & OPTICAL MODEL (feature gmt_dos-clients_crseo)
     //  * the M1 & M2 rigid body motions are rotated by the GIR angle (`gir_rotation.rs`)
     //  * the telescope pointing error from the mount tracking error (encoders - setpoint),
-    //    rotated by the GIR angle, offsets the source direction in the optical model
+    //    rotated by the GIR angle, offsets the source directions in the optical model
+    //    and the GIR tracking error rotates them about the optical axis
     //    (`pointing.rs`, POINTING_ERROR=0 to disable)
     //  * the crseo optical model ray traces the GMT with the rotated rigid body motions
-    //    at 50Hz (PUPIL_SAMPLING, default: 513) for a J band source (1.215micron)
-    //    and images it on a camera with a pixel scale of lambda/(5D) binned 2x2 (~3.9mas)
+    //    at 50Hz (PUPIL_SAMPLING, default: 513) for 2 J band sources (1.215micron),
+    //    on-axis and 0.25arcsec off-axis along x (OFF_AXIS),
+    //    and images them on a camera with a pixel scale of lambda/(5D) binned 2x2 (~3.9mas)
     //    over a 128x128 pixel frame (~0.5arcsec field-of-view)
-    //  * the camera frame, the tip-tilt and the pointing error
+    //  * the camera frames, the tip-tilt and the pointing errors
     //    are saved to `data/model_data_20.parquet`
     #[cfg(feature = "gmt_dos-clients_crseo")]
     {
@@ -216,6 +220,7 @@ async fn main() -> anyhow::Result<()> {
             },
             sensors::Camera,
         };
+        use skyangle::Conversion;
         let pupil_sampling = env::var("PUPIL_SAMPLING")
             .ok()
             .map_or(Ok(513_usize), |s| s.parse())?;
@@ -230,7 +235,13 @@ async fn main() -> anyhow::Result<()> {
         };
         // camera: the pupil sampling is set by the lenslet array (n_px_lenslet+1),
         // the DFT sampling is lambda/(osf.D) and the 256px imagelet is binned to the 128px frame
+        // on-axis & off-axis sources
+        let off_axis = env::var("OFF_AXIS")
+            .ok()
+            .map_or(Ok(0.25_f64), |s| s.parse())?
+            .from_arcsec();
         let camera = Camera::<1>::builder()
+            .n_sensor(2)
             .lenslet_array(LensletArray::default().n_px_lenslet(pupil_sampling - 1))
             .detector(Detector {
                 n_px_framelet: 128,
@@ -239,7 +250,12 @@ async fn main() -> anyhow::Result<()> {
                 noise_specs: None,
             });
         let om = OpticalModel::<Camera<1>>::builder()
-            .source(Source::builder().band("J"))
+            .source(
+                Source::builder()
+                    .band("J")
+                    .size(2)
+                    .zenith_azimuth(vec![0., off_axis as f32], vec![0., 0.]),
+            )
             .sensor(camera)
             .build()?;
         println!("{om}");
@@ -263,6 +279,7 @@ async fn main() -> anyhow::Result<()> {
             1: setpoint[MountSetPoint] -> pointing
             1: {servos::GmtFem}[AverageMountEncoders]! -> pointing
             20: pointing[PointingError]${2} -> om
+            20: pointing[PointingRotationError]${1} -> om
             1: {servos::GmtFem}[MountEncoders]! -> rotation
             1: {servos::GmtFem}[M1RigidBodyMotions]! -> rotation
             1: {servos::GmtFem}[M2RigidBodyMotions]! -> rotation
