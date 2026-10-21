@@ -396,20 +396,29 @@ M2 segments as rigid bodies about the OSS $z$ axis by $\gamma$, the mean of the 
 \subsection{Implementation}
 \label{sec:pupil-impl}
 
-For a segment with vertex $\vect{r}$ and local frame $Q$ ($\vect{v}_{\mathrm{OSS}} = Q\,\vect{v}_{\mathrm{local}}$),
-the rotation $R_z(\gamma)$ adds to the segment rigid body motions, expressed in the segment local frame:
+Consider a segment with vertex $\vect{r}$ and local frame $Q$ ($\vect{v}_{\mathrm{OSS}} = Q\,\vect{v}_{\mathrm{local}}$),
+deformed by the compensated rigid body motion $(\vect{t}_d, R_d)$ from the FEM, given in its local frame.
+The deformed segment vertex is at $\vect{r} + Q\vect{t}_d$ and its orientation is $QR_d$ in the OSS.
+Rotating the deformed mirror by $R_z(\gamma)$ and expressing the result in the nominal local frame gives
+the rigid body motion fed to the optical model:
 \begin{align}
-  \vect{t} &= Q^{T}\left(R_z(\gamma) - I\right)\vect{r}, \label{eq:gir-t}\\
-  M &= Q^{T} R_z(\gamma)\, Q, \label{eq:gir-r}
+  \vect{t} &= Q^{T}\left(R_z(\gamma) - I\right)\vect{r} + M\,\vect{t}_d, \label{eq:gir-t}\\
+  R &= M R_d, \qquad M = Q^{T} R_z(\gamma)\, Q, \label{eq:gir-r}
 \end{align}
-where the rotation $M$ is given as the $(x,y,z)$ Euler angles of the ray tracing coordinate systems,
-$M = R_z(c)R_y(b)R_x(a)$:
+$M$ being the mirror rotation in the segment local frame. The rotations are given as the $(x,y,z)$ Euler
+angles of the ray tracing coordinate systems, $R = R_z(c)R_y(b)R_x(a)$, from which
 \begin{equation}
-  b = -\arcsin M_{20},\quad a = \operatorname{atan2}(M_{21}, M_{22}),\quad
-  c = \operatorname{atan2}(M_{10}, M_{00}).
+  b = -\arcsin R_{20},\quad a = \operatorname{atan2}(R_{21}, R_{22}),\quad
+  c = \operatorname{atan2}(R_{10}, R_{00}).
 \end{equation}
-The translations and the Euler angles are added to the compensated rigid body motions from the FEM,
-the latter being small.
+The deformation thus rotates with the mirror, as it does seen from an instrument on the GIR.
+A first implementation added the rotation of the undeformed mirror to the deformation,
+$\vect{t} = Q^{T}(R_z(\gamma) - I)\vect{r} + \vect{t}_d$ and the sum of the Euler angles of $M$ and $R_d$:
+the deformation was left in the orientation of the telescope tube, an error of the order of
+$\gamma$ times the deformation. Over the 30\,s run of Section~\ref{sec:ver-e2e} ($\gamma \le 0.15^\circ$),
+the exact composition changes the wavefront tip-tilt by $1.3\times10^{-3}\mas$ on average and at most
+$6\times10^{-3}\mas$; at the end of the 300\,s trajectory ($\gamma = 1.55^\circ$) the error would have
+been about 2.7\% of the deformation terms.
 The segment geometry (Table~\ref{tab:geometry}) follows the geotrans conventions: the 6 outer
 segments at a radial distance $\rho$ with clocking $o_i = o_0 - 60^\circ i$, the vertex height being
 the mirror height plus the conic sag $z(\rho) = \rho^2/\big(R(1+\sqrt{1-(1+k)\rho^2/R^2})\big)$, and
@@ -548,7 +557,7 @@ are stored in the demo \code{data/} and \code{figures/} folders.
     Tracking        & encoders vs setpoint over 300\,s (Fig.~\ref{fig:encoders}) & pass \\
     Feed-forward    & 300\,s run with/without feed-forward; axes cross-coupling (Table~\ref{tab:coupling}) & saturation removed; coupling $\le 1.8\times10^{-6}$ \\
     Kinematics      & compensated RBMs (Fig.~\ref{fig:rbm}), segment tip-tilt drift (Fig.~\ref{fig:stt}) & drift removed \\
-    GIR rotation    & unit tests \code{zero\_angle}, \code{center\_segment} & see \S\ref{sec:ver-unit} \\
+    GIR rotation    & unit tests \code{zero\_angle}, \code{center\_segment}, \code{no\_rotation} and the deformation rotation test & see \S\ref{sec:ver-unit} \\
     Pointing        & unit tests \code{azimuth\_elevation}, \code{elevation}, \code{gir} & see \S\ref{sec:ver-unit} \\
     Optical model   & unit tests \code{pointing\_error}, \code{pointing\_rotation\_error} & pass \\
     End-to-end      & image centroid vs Eq.~(\ref{eq:expected}) (Figs.~\ref{fig:tt}, \ref{fig:tt-off}) & $\le 0.03\mas$ rms after 2\,s \\
@@ -696,6 +705,11 @@ the optical axis; results of the re-run:
 \item \code{gir\_rotation::tests::zero\_angle}: no rigid body motion for $\gamma = 0$, for M1 and M2.
 \item \code{gir\_rotation::tests::center\_segment}: for $\gamma = 10^{-2}$\,rad, M1 S7 (on axis) has no
   translation and a rotation of exactly $\gamma$ about $z$.
+\item \code{gir\_rotation::tests::no\_rotation}: for $\gamma = 0$, any deformation of the M1 and M2
+  segments is returned unchanged.
+\item \code{gir\_rotation::tests::deformation\_rotates\_with\_the\_mirror}: M1 S7 translated by
+  1\,\textmu m along $x$ and tilted by 2\,\textmu rad about $x$, rotated by $\gamma = 90^\circ$, is translated
+  along $y$ and its normal, initially tilted towards $-y$, is tilted towards $+x$.
 \end{itemize}
 
 \subsection{End-to-end verification of the image motion}
@@ -763,8 +777,6 @@ has decayed.
 \label{sec:open}
 
 \begin{itemize}
-\item The GIR rotation is added to the compensated rigid body motions as a superposition, valid while
-  the deformations stay small.
 \item The rotation term with GIR tracking ($\lesssim 0.008\mas$ at $0.25\arcsec$) is below what the
   frame centroid resolves; it is verified by the unit test and by the run without GIR tracking.
 \end{itemize}
