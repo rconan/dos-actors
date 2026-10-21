@@ -8,6 +8,8 @@
 \numberwithin{equation}{section}
 
 \graphicspath{{../figures/}}
+\tolerance=2000
+\emergencystretch=3em
 
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\mas}{\,\mathrm{mas}}
@@ -308,7 +310,7 @@ the 16 torques $[\kappa_{\mathrm{az}}\theta_{\mathrm{az}}\times 8,\;
 The mount controller (\code{gmt\_dos-clients\_mount}) adds them to the drive torques
 \emph{after} the drives saturation, so the saturation only applies to the feedback torques.
 The cross-coupling between axes is neglected: only the diagonal terms $g_{k,j}$, $j\in\mathcal{D}_k$,
-are used. The stiffness $[\kappa_{\mathrm{az}}, \kappa_{\mathrm{el}}, \kappa_{\mathrm{GIR}}]$
+are used; the coupling is estimated in Section~\ref{sec:ver-ff} and found negligible. The stiffness $[\kappa_{\mathrm{az}}, \kappa_{\mathrm{el}}, \kappa_{\mathrm{GIR}}]$
 is printed at start-up; for the 2025 FEM it is
 $[4.17\times10^{6},\; 1.08\times10^{7},\; 1.00\times10^{5}]$\,N\,m/rad per drive. \code{MOUNT\_FEEDFORWARD=0}
 turns the feed-forward off.
@@ -544,7 +546,7 @@ are stored in the demo \code{data/} and \code{figures/} folders.
     \midrule
     Trajectory      & regeneration with \code{atp\_trajectory.py} identical to \code{atp\_trajectory.csv} & pass \\
     Tracking        & encoders vs setpoint over 300\,s (Fig.~\ref{fig:encoders}) & pass \\
-    Feed-forward    & 300\,s run with/without feed-forward & saturation at 242\,s removed \\
+    Feed-forward    & 300\,s run with/without feed-forward; axes cross-coupling (Table~\ref{tab:coupling}) & saturation removed; coupling $\le 1.8\times10^{-6}$ \\
     Kinematics      & compensated RBMs (Fig.~\ref{fig:rbm}), segment tip-tilt drift (Fig.~\ref{fig:stt}) & drift removed \\
     GIR rotation    & unit tests \code{zero\_angle}, \code{center\_segment} & see \S\ref{sec:ver-unit} \\
     Pointing        & unit tests \code{azimuth\_elevation}, \code{elevation}, \code{gir} & see \S\ref{sec:ver-unit} \\
@@ -581,6 +583,40 @@ Without feed-forward (\code{MOUNT\_FEEDFORWARD=0}) the azimuth drives saturate a
 mount stops following the trajectory. With the feed-forward of Eq.~(\ref{eq:stiffness}) the full 300\,s
 trajectory runs without saturation and with the tracking error of Figure~\ref{fig:encoders}: the
 integrator of the mount controller no longer has to build up the spring torque.
+
+The cross-coupling neglected by the feed-forward is estimated from the same DC gain as
+Eq.~(\ref{eq:stiffness}). The coupling matrix
+\begin{equation}
+  C_{k,l} = \kappa_l \sum_{j\in\mathcal{D}_l} g_{k,j}
+\end{equation}
+is the averaged encoder angle of axis $k$ per radian of feed-forward on axis $l$; its diagonal is 1 by
+construction. For the 2025 FEM (Table~\ref{tab:coupling}) the off-diagonal terms are at most
+$1.8\times10^{-6}$, and the per drive gains $g_{k,j}$ across axes are $10^{-5}$ to $10^{-7}$ of those within
+an axis. The largest terms are the elevation and the GIR responses to the azimuth feed-forward, the
+azimuth having the largest setpoint ($-1.70^\circ$ at 300\,s). The static errors left by the uncoupled
+feed-forward at the end of the trajectory, $\sum_{l\neq k} C_{k,l}\theta_l$, are
+$5.0\times10^{-8}$\,rad ($10\mas$) in elevation, $7.3\times10^{-9}$\,rad ($1.5\mas$) for the GIR and below
+$1\mas$ in azimuth. They build up slowly (about $34\,\mu$as/s in elevation) and are removed by the mount
+feedback for a negligible torque, about 0.5\,N\,m per elevation drive against the 800\,kN\,m saturation,
+which is why no residual appears in the tracking error of Figure~\ref{fig:encoders}.
+A decoupled feed-forward, $C^{-1}$, would change the torques by at most $1.8\times10^{-6}$ of the diagonal
+terms and is not needed.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Mount axes cross-coupling $C_{k,l}$ of the feed-forward: averaged encoder angle of axis $k$
+    (rows) per radian of feed-forward on axis $l$ (columns), 2025 FEM.}
+  \label{tab:coupling}
+  \begin{tabular}{lccc}
+    \toprule
+         & az                    & el                    & GIR \\
+    \midrule
+    az   & 1                     & $-1.8\times10^{-6}$   & $-2.4\times10^{-9}$ \\
+    el   & $-1.7\times10^{-6}$   & 1                     & $-3.6\times10^{-9}$ \\
+    GIR  & $-2.5\times10^{-7}$   & $4.4\times10^{-9}$    & 1 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \subsection{Kinematic compensation}
 \label{sec:ver-kin}
@@ -727,7 +763,6 @@ has decayed.
 \label{sec:open}
 
 \begin{itemize}
-\item The feed-forward neglects the cross-coupling between mount axes.
 \item The GIR rotation is added to the compensated rigid body motions as a superposition, valid while
   the deformations stay small.
 \item The rotation term with GIR tracking ($\lesssim 0.008\mas$ at $0.25\arcsec$) is below what the
