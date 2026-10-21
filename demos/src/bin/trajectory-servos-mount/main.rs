@@ -65,6 +65,8 @@ pub struct Trajectory {
     step: usize,
     n_step: usize,
     gir_tracking: bool,
+    // initial pointing [azimuth, elevation, rotator] in radians
+    initial: [f64; 3],
     // [azimuth, elevation, field rotation] at the current step
     current: Option<[f64; 3]>,
 }
@@ -98,8 +100,13 @@ impl Trajectory {
             step: 0,
             n_step,
             gir_tracking: true,
+            initial: s0,
             current: None,
         })
+    }
+    /// Initial pointing [azimuth, elevation, rotator] in radians
+    pub fn initial_pointing(&self) -> [f64; 3] {
+        self.initial
     }
     /// Sets the GIR setpoint to 0, the GIR not following the field rotation
     pub fn gir_tracking_off(mut self) -> Self {
@@ -261,8 +268,9 @@ async fn main() -> anyhow::Result<()> {
             .ok()
             .map_or(Ok(513_usize), |s| s.parse())?;
         let rotation = gir_rotation::GirRotation::new();
-        // ATP pointing elevation
-        let pointing = pointing::Pointing::new(45f64.to_radians());
+        // initial elevation of the trajectory
+        let [_, elevation, _] = setpoint.initial_pointing();
+        let pointing = pointing::Pointing::new(elevation);
         let pointing = if env::var("POINTING_ERROR").is_ok_and(|v| v == "0") {
             println!("telescope pointing error off");
             pointing.off()
