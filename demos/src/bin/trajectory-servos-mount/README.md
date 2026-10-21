@@ -76,6 +76,7 @@ These are read by the binary. Set them on the `make run` command line, e.g.
 | `KINEMATIC_COMPENSATION` | on | `0` runs the FEM without kinematic compensation |
 | `MOUNT_FEEDFORWARD` | on | `0` turns the mount drives feed-forward off. The azimuth drives then saturate at about 242 s |
 | `POINTING_ERROR` | on | `0` turns off the telescope pointing error fed to the crseo optical model (`gmt_dos-clients_crseo` feature) |
+| `POINTING_ROTATION_GAIN` | `1` | Gain of the GIR tracking error (`PointingRotationError`) fed to the crseo optical model, for verification only: e.g. `1e4` makes the image rotation from the GIR tracking error measurable (`gmt_dos-clients_crseo` feature) |
 | `OFF_AXIS` | `0.25` | Field angle [arcsec] along x of the source of the crseo optical model, within ±0.5" (`gmt_dos-clients_crseo` feature) |
 | `PUPIL_SAMPLING` | `513` | Pupil sampling of the crseo optical model (`gmt_dos-clients_crseo` feature) |
 | `GMT_MODES_PATH` | | Directory of the GMT mirror modes files required by crseo (`gmt_dos-clients_crseo` feature) |

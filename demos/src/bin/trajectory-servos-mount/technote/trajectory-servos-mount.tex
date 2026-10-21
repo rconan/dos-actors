@@ -494,7 +494,9 @@ to the sky,
 \end{equation}
 is the \code{PointingRotationError} output. With the GIR tracking, $\Delta\gamma$ is the GIR tracking
 error; with \code{GIR\_TRACKING=0}, the GIR is at rest and $\Delta\gamma = -q$: the field rotates on
-the instrument. \code{POINTING\_ERROR=0} sets both outputs to zero.
+the instrument. \code{POINTING\_ERROR=0} sets both outputs to zero, and
+\code{POINTING\_ROTATION\_GAIN} scales $\Delta\gamma$ for verification only
+(Section~\ref{sec:ver-e2e}).
 Both outputs are decimated to 50\,Hz, the rate of the optical model.
 
 \subsection{Optical model}
@@ -561,6 +563,7 @@ are stored in the demo \code{data/} and \code{figures/} folders.
     Pointing        & unit tests \code{azimuth\_elevation}, \code{elevation}, \code{gir} & see \S\ref{sec:ver-unit} \\
     Optical model   & unit tests \code{pointing\_error}, \code{pointing\_rotation\_error} & pass \\
     End-to-end      & image centroid vs Eq.~(\ref{eq:expected}) (Figs.~\ref{fig:tt}, \ref{fig:tt-off}) & $\le 0.03\mas$ rms after 2\,s \\
+    GIR error       & GIR tracking error exaggerated by $10^{4}$ (Fig.~\ref{fig:tt-gain}) & fitted gain 0.999 \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -739,6 +742,37 @@ linearly and reaches $0.69\mas$ at 30\,s, against $0.676\mas$ expected from
 $\theta_0\,|q(30\,\mathrm{s})|$, and the image motion follows it once the start-up transient
 has decayed.
 
+With GIR tracking, the rotation term is the GIR tracking error times the off-axis angle: at most
+$3.3\times10^{-5}\,\mathrm{rad}\times 0.25\arcsec \simeq 0.008\mas$ during the start-up transient,
+when the residual reaches several mas, and about $10^{-4}\mas$ afterwards, below the $0.002$--$0.007\mas$
+residual. It cannot be measured as such. To verify the rotation path in that configuration, a 30\,s
+run with GIR tracking and the source $0.25\arcsec$ off-axis was made with \code{PointingRotationError}
+exaggerated by a gain of $10^{4}$ (\code{POINTING\_ROTATION\_GAIN=1e4}, Figure~\ref{fig:tt-gain}): the
+rotation error peaks at 0.33\,rad, moving the image by up to $82\mas$, and the GIR tracking ripple after
+the transient moves it by about $0.1\mas$. The image motion $y$ minus $(-\vect{p} + \vect{t}_{\mathrm{TT}})$
+is fitted by the rotation term times a gain (Table~\ref{tab:gain}): the fitted gain is 0.999 after
+5\,s, and the rotation term reduces the residual from $0.106\mas$ to $0.0013\mas$ rms. The only large
+residual, 50\,mas at 0.3\,s in $x$, occurs when the pointing transient brings the off-axis image to the
+edge of the field. The rotation by the GIR tracking error is therefore applied as predicted, and, the term
+being linear in $\Delta\gamma$, this holds for the actual, $10^{4}$ times smaller, error.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Image motion along $y$ explained by the rotation term, 30\,s run with GIR tracking, source
+    $0.25\arcsec$ off-axis and \code{PointingRotationError} exaggerated by $10^{4}$ (1468 out of 1500 frames
+    in the field). Residual rms [mas] without and with the rotation term, and fitted gain of the term.}
+  \label{tab:gain}
+  \begin{tabular}{lcccc}
+    \toprule
+                & rotation term & residual without & residual with & fitted gain \\
+    \midrule
+    $t > 0$\,s  & 5.904 & 5.802 & 0.231  & 0.982 \\
+    $t > 2$\,s  & 0.120 & 0.120 & 0.010  & 0.992 \\
+    $t > 5$\,s  & 0.106 & 0.106 & 0.0013 & 0.9992 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
 \begin{table}[htbp]
   \centering
   \caption{Image motion and residual rms [mas] of the 30\,s on-axis run with GIR tracking (1472 out of 1500
@@ -773,12 +807,12 @@ has decayed.
   \label{fig:tt-off}
 \end{figure}
 
-\subsection{Open points}
-\label{sec:open}
-
-\begin{itemize}
-\item The rotation term with GIR tracking ($\lesssim 0.008\mas$ at $0.25\arcsec$) is below what the
-  frame centroid resolves; it is verified by the unit test and by the run without GIR tracking.
-\end{itemize}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\linewidth]{tiptilt_vs_tracking_gir_gain1e4.png}
+  \caption{Same as Figure~\ref{fig:tt} for a 30\,s run with GIR tracking, a source $0.25\arcsec$
+    off-axis and the GIR tracking error exaggerated by $10^{4}$ (\code{POINTING\_ROTATION\_GAIN=1e4}).}
+  \label{fig:tt-gain}
+\end{figure}
 
 \end{document}

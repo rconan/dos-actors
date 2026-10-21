@@ -31,6 +31,8 @@ pub struct Pointing {
     // initial elevation of the trajectory [rad]
     elevation: f64,
     on: bool,
+    // gain of the rotation error (verification only)
+    rotation_gain: f64,
     field_rotation: f64,
     setpoint: Arc<Vec<f64>>,
     encoders: Arc<Vec<f64>>,
@@ -41,10 +43,18 @@ impl Pointing {
         Self {
             elevation,
             on: true,
+            rotation_gain: 1.,
             field_rotation: 0.,
             setpoint: Arc::new(vec![0.; 3]),
             encoders: Arc::new(vec![0.; 3]),
         }
+    }
+    /// Scales the rotation error by `gain`
+    ///
+    /// For verification only: an exaggerated rotation error makes the image rotation measurable
+    pub fn rotation_gain(mut self, gain: f64) -> Self {
+        self.rotation_gain = gain;
+        self
     }
     /// Turns the pointing error off (zero output)
     pub fn off(mut self) -> Self {
@@ -87,7 +97,9 @@ impl Write<PointingRotationError> for Pointing {
         if !self.on {
             return Some(Data::new(vec![0.]));
         }
-        Some(Data::new(vec![self.encoders[2] - self.field_rotation]))
+        Some(Data::new(vec![
+            self.rotation_gain * (self.encoders[2] - self.field_rotation),
+        ]))
     }
 }
 
@@ -139,5 +151,9 @@ mod tests {
         <_ as Read<AverageMountEncoders>>::read(&mut p, Data::new(vec![0., 0., 0.]));
         let e = <_ as Write<PointingRotationError>>::write(&mut p).unwrap();
         assert!((e[0] + 3e-6).abs() < 1e-15);
+        // exaggerated rotation error
+        let mut p = p.rotation_gain(1e4);
+        let e = <_ as Write<PointingRotationError>>::write(&mut p).unwrap();
+        assert!((e[0] + 3e-2).abs() < 1e-12);
     }
 }
