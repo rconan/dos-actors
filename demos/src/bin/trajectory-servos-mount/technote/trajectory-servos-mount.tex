@@ -1,0 +1,737 @@
+\documentclass{gmto}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage[section,above]{placeins}
+\numberwithin{table}{section}
+\numberwithin{equation}{section}
+
+\graphicspath{{../figures/}}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\mas}{\,\mathrm{mas}}
+\newcommand{\arcsec}{^{\prime\prime}}
+\newcommand{\vect}[1]{\boldsymbol{#1}}
+
+\DocID{GMT-XXX-\#\#\#\#}
+\DocVersion{Ver. X0}
+\DocStatus{Draft}
+
+\title{Mount Kinematics and Pointing Errors in Tracking Simulations}
+\subtitle{GMT Technical Note --- \code{trajectory-servos-mount}}
+\author{Claude Opus 5.5 (Anthropic)}
+\date{10/20/2026}
+
+\begin{document}
+
+\maketitle
+
+\clearpage
+
+\section*{Signatures}
+\vspace{1cm}
+\subsection*{Author}
+\vspace{1.5cm}
+\begin{tabu} to \linewidth {X[3,l]X[1,l]}
+  \rule{\linewidth}{.1pt} & \rule{\linewidth}{.1pt} \\
+  Claude Opus 5.5, AI model (Anthropic) & Date
+\end{tabu}
+\vspace{1.5cm}
+\subsection*{Approvers}
+\vspace{1.5cm}
+\begin{tabu} to \linewidth {X[3,l]X[1,l]}
+  \rule{\linewidth}{.1pt} & \rule{\linewidth}{.1pt} \\
+  Rod Conan               & Date                    \\[1cm]
+\end{tabu}
+
+\clearpage
+
+\section*{Revision Log}
+
+\begin{revisions}
+  X0 & 10/20/2026 & All & None & & Claude Opus 5.5 \\
+\end{revisions}
+
+\clearpage
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+\clearpage
+
+%======================================================================
+\section{Purpose}
+\label{sec:purpose}
+
+This note describes how the telescope motion along a sidereal tracking trajectory is modeled in the
+\code{trajectory-servos-mount} demonstration of the GMT integrated modeling framework
+(\code{dos-actors}, \code{demos/src/bin/trajectory-servos-mount}).
+It explains, and gives the equations implemented for:
+\begin{itemize}
+\item the generation of the tracking trajectory (Section~\ref{sec:trajectory}),
+\item the mount drives feed-forward of the FEM rigid body springs (Section~\ref{sec:feedforward}),
+\item the kinematic compensation of the rigid telescope motion in the FEM outputs (Section~\ref{sec:kinematics}),
+\item the rotation of the pupil as seen by an instrument on the Gregorian Instrument Rotator (GIR)
+  (Section~\ref{sec:pupil}),
+\item the telescope pointing and field rotation errors fed to the optical model (Section~\ref{sec:pointing}),
+\end{itemize}
+and it reports the verifications that were performed on each of them (Section~\ref{sec:verification}).
+
+\subsection{Introduction}
+\label{sec:introduction}
+
+The integrated model couples the GMT structural finite element model (FEM), the mount control
+system, the M1 and M2 control systems (\code{GmtServoMechanisms}), a linear optical model (LOM) and,
+optionally, the \code{crseo} ray tracing optical model.
+The mount is driven along the 5 minutes ATP default tracking trajectory and the model is sampled
+at the mount control rate, 1\,kHz for the default \code{MOUNT\_FDR\_1kHz} mount model.
+The FEM is the 2025 model
+\code{20251110\_1617\_zen\_30\_M1\_202110\_FSM\_202305\_}\linebreak\code{Mount\_202305\_pier\_202411\_M1Fans}
+computed at 30$^\circ$ zenith angle.
+
+The FEM is a linear model: a rotation of the mount by an angle $\theta$ appears in the FEM outputs as
+the linearized rigid displacement of every node of the telescope, superimposed on the structure
+deformations. Along a 300\,s trajectory the azimuth axis rotates by 1.7$^\circ$, which moves
+the M1 outer segments by about 0.25\,m, far beyond the range of validity of a linear optical model.
+Three things are therefore required:
+\begin{enumerate}
+\item the mount drives must be able to hold the FEM away from its reference position, whose
+  ``rigid body'' modes are in fact very soft springs (Section~\ref{sec:feedforward});
+\item the rigid motion must be removed from the FEM outputs, leaving the deformations only
+  (Section~\ref{sec:kinematics});
+\item the part of the rigid motion that \emph{does} matter optically, i.e.\ the difference between where
+  the telescope points and where it should point, and the rotation of the instrument relative to
+  the pupil and to the sky, must be reintroduced explicitly in the optical model
+  (Sections~\ref{sec:pupil} and~\ref{sec:pointing}).
+\end{enumerate}
+
+\subsection{Model overview}
+\label{sec:overview}
+
+Table~\ref{tab:clients} lists the clients of the model involved in this note and
+Table~\ref{tab:signals} the signals exchanged between them.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Clients of the \code{trajectory-servos-mount} model.}
+  \label{tab:clients}
+  \begin{tabularx}{\linewidth}{lX}
+    \toprule
+    Client (source file)                                      & Role \\
+    \midrule
+    \code{Trajectory} (\code{main.rs})                        & ATP trajectory, mount setpoints and field rotation \\
+    \code{SpringFeedForward} (\code{feedforward.rs})          & mount drive torques holding the FEM at the setpoint angles \\
+    \code{GmtServoMechanisms}                                 & FEM with kinematic compensation, mount, M1 and M2 control systems \\
+    \code{LinearOpticalModel}                                 & segment tip-tilt from the M1 and M2 rigid body motions \\
+    \code{GirRotation} (\code{gir\_rotation.rs})              & M1 and M2 rigid body motions rotated by the GIR angle \\
+    \code{Pointing} (\code{pointing.rs})                      & telescope pointing and rotation errors from the mount tracking error \\
+    \code{OpticalModel<Camera<1>>} & ray tracing optical model and imaging camera \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Signals of the model relevant to this note. Rates are given for the 1\,kHz mount model.}
+  \label{tab:signals}
+  \begin{tabularx}{\linewidth}{llX}
+    \toprule
+    Signal                          & Rate     & Content \\
+    \midrule
+    \code{MountSetPoint}            & 1\,kHz   & azimuth, elevation and GIR setpoints [rad] \\
+    \code{FieldRotation}            & 1\,kHz   & change of the parallactic angle [rad] \\
+    \code{MountTorquesFeedForward}  & 1\,kHz   & 8 azimuth, 4 elevation and 4 GIR drive torques [N\,m] \\
+    \code{MountEncoders}            & 1\,kHz   & all the mount encoders, GIR encoders at indices 10--13 \\
+    \code{AverageMountEncoders}     & 1\,kHz   & averaged azimuth, elevation and GIR encoders [rad] \\
+    \code{M1/M2RigidBodyMotions}    & 1\,kHz / 50\,Hz & $7\times 6$ segment rigid body motions in the segment local frames \\
+    \code{PointingError}            & 50\,Hz   & telescope optical axis relative to the source, $(x,y)$ in the OSS [rad] \\
+    \code{PointingRotationError}    & 50\,Hz   & instrument rotation about the optical axis relative to the sky [rad] \\
+    \code{TipTilt}                  & 50\,Hz   & wavefront tip-tilt, ordered $[y,x]$ [rad] \\
+    \code{Frame<Host>}              & 50\,Hz   & $256\times 256$ camera frame \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+%======================================================================
+\section{Definitions, Acronyms, and Reference Documents}
+\label{sec:definitions-acronyms-references}
+
+\subsection{Definitions}
+\label{sec:definitions}
+
+\begin{definitions}
+  OSS & Optical Support Structure coordinate system: $z$ along the optical axis, $x$ along the elevation axis \\
+  Tracking error & mount encoders minus mount setpoint \\
+  Field rotation & change of the parallactic angle along the trajectory, followed by the GIR \\
+  Kinematic gain & static gain $K$ from the averaged mount encoder angles to the FEM outputs \\
+  Absolute pointing & camera pointing fixed with respect to the optical axis, the image moving with the source direction
+\end{definitions}
+
+\subsection{Acronyms}
+\label{sec:acronyms}
+
+\begin{acronyms}
+  ATP  & Acquisition, Tracking and Pointing (TBC) \\
+  CEO  & CUDA Engined Optics \\
+  DC   & Direct Current (static, zero frequency) \\
+  DFT  & Discrete Fourier Transform \\
+  FEM  & Finite Element Model \\
+  FOV  & Field Of View \\
+  GIR  & Gregorian Instrument Rotator \\
+  GMT  & Giant Magellan Telescope \\
+  GMTO & Giant Magellan Telescope Corporation\\
+  ICRS & International Celestial Reference System \\
+  LOM  & Linear Optical Model \\
+  LST  & Local Sidereal Time \\
+  OSS  & Optical Support Structure \\
+  RBM  & Rigid Body Motion \\
+  TETE & True Equator True Equinox
+\end{acronyms}
+
+\subsection{Applicable Documents}
+\label{sec:aplicables}
+
+\begin{documents}[Applicable Documents]
+  TBD && \\
+\end{documents}
+
+\subsection{Reference Documents}
+\label{sec:references}
+
+\begin{documents}[Referenced Documents]
+  GMT-REF-00362 & GMT Project Acronyms and Glossary & \url{https://bit.ly/3l4reUC} \\
+  RD1 & \code{trajectory-servos-mount} demo: README, sources and scripts (\code{demos/src/bin/}) & \code{dos-actors} repository \\
+  RD2 & \code{gmt\_dos-clients\_fem} kinematic compensation (\code{kinematics.rs}) & \code{dos-actors} repository \\
+  RD3 & \code{gmt\_dos-clients\_crseo} pointing errors (\code{optical\_model.rs}) & \code{dos-actors} repository \\
+\end{documents}
+
+%======================================================================
+\section{Tracking trajectory}
+\label{sec:trajectory}
+
+\subsection{Computation with astropy}
+\label{sec:astropy}
+
+The trajectory \code{atp\_trajectory.csv} is computed by \code{scripts/atp\_trajectory.py}
+(\code{make trajectory}) with astropy for the ATP default pointing:
+\begin{itemize}
+\item site: Las Campanas, latitude $\phi = -29.049^\circ$, longitude $-70.682^\circ$, height 2514\,m;
+\item epoch: $t_0 = $ 2018-01-01T04:00:00 UTC;
+\item initial pointing: altitude 45$^\circ$, azimuth 0$^\circ$, rotator 0$^\circ$.
+\end{itemize}
+The sky target is fixed by converting the initial altitude and azimuth at $t_0$ to ICRS coordinates,
+without atmospheric refraction ($\alpha = 89.8175^\circ$, $\delta = 15.9532^\circ$).
+The target is then transformed back to the local horizontal frame (\code{AltAz}) at 301 epochs,
+$t_0 + k$\,s, $k = 0,\dots,300$, giving the elevation and the azimuth, the latter unwrapped to
+avoid the $\pm 180^\circ$ discontinuity.
+
+The rotator angle is the change of the parallactic angle
+\begin{equation}
+  q = \operatorname{atan2}\!\left(\sin H,\; \tan\phi\cos\delta - \sin\delta\cos H\right),
+  \label{eq:parallactic}
+\end{equation}
+where the hour angle $H$ is the apparent local sidereal time minus the target right ascension
+in the TETE frame (equinox based apparent place, consistent with the apparent LST), and
+$\delta$ the TETE declination. $q$ is unwrapped and the rotator angle is $q(t) - q(t_0)$.
+
+The file holds 4 columns: time [s], azimuth, elevation and rotator [deg].
+Over 300\,s the azimuth changes by $-1.704^\circ$ ($-6134\arcsec$, about $-20.4\arcsec$/s),
+the elevation by $-58.7\arcsec$ and the rotator by $-1.549^\circ$ ($-5577\arcsec$, about
+$-18.6\arcsec$/s).
+
+\subsection{Mount setpoints and field rotation}
+\label{sec:setpoints}
+
+The FEM is linearized about its reference configuration, so the mount setpoints are the
+offsets of the trajectory from its first sample. The \code{Trajectory} client reads the file,
+converts the angles to radians, subtracts the first sample, and linearly interpolates the 1\,Hz
+samples to the mount sampling frequency $f_s$: at step $n$, with $i = \lfloor n/f_s\rfloor$ and
+$a = (n \bmod f_s)/f_s$,
+\begin{equation}
+  \vect{s}(n) = \vect{s}_i + a\,(\vect{s}_{i+1} - \vect{s}_i),
+\end{equation}
+where $\vect{s}_i = [\mathrm{az}_i, \mathrm{el}_i, q_i]$.
+It writes two outputs:
+\begin{itemize}
+\item \code{MountSetPoint}: $[\mathrm{az}, \mathrm{el}, q]$, or $[\mathrm{az}, \mathrm{el}, 0]$
+  when \code{GIR\_TRACKING=0} (the GIR is at rest);
+\item \code{FieldRotation}: $q$, in both cases, since the field rotates whether or not the GIR
+  follows it.
+\end{itemize}
+
+%======================================================================
+\section{Mount drives feed-forward}
+\label{sec:feedforward}
+
+\subsection{Why it is needed}
+\label{sec:ff-why}
+
+In the FEM, the azimuth, elevation and GIR ``rigid body'' modes are not free: they have small but
+non-zero eigen frequencies, between 0.07\,Hz and 0.1\,Hz. Each mount axis therefore behaves as a
+very soft spring, and holding it at an angle $\theta$ away from the FEM reference requires a
+static drive torque proportional to $\theta$. In the mount controller this torque has to be built
+up by the integral action of the feedback loop. Along the trajectory the azimuth angle grows
+linearly, so does the required torque, and the azimuth drives reach their 800\,kN\,m saturation
+at about 242\,s: the mount then stops tracking. The spring is an artifact of the FEM, a real mount
+does not need a torque to hold an angle, so it is cancelled by a feed-forward rather than by
+retuning the controller.
+
+\subsection{How it works}
+\label{sec:ff-how}
+
+\code{SpringFeedForward::from\_fem} derives, from the FEM, the torque per drive and per radian of
+each axis. The static (DC) gain from the drive torques $\vect{\tau}$ (8 azimuth, 4 elevation and 4 GIR
+drives) to any FEM output $\vect{y}$ is computed from all the FEM modes,
+\begin{equation}
+  \vect{y} = \Phi\,\Omega^{-2}\,B\,\vect{\tau} = G\,\vect{\tau},
+  \label{eq:dcgain}
+\end{equation}
+with $B$ the inputs to modal forces matrix (\code{in2modes}) of the drive torques, $\Omega^2$ the
+diagonal matrix of the squared modal angular frequencies $\omega_i^2$ and $\Phi$ the modes to
+outputs matrix (\code{modes2out}).
+Applying Eq.~(\ref{eq:dcgain}) to the encoders of each axis and averaging over the encoders of the
+axis gives the gain $g_{k,j}$ from drive $j$ to the averaged encoder angle of axis
+$k \in \{\mathrm{az}, \mathrm{el}, \mathrm{GIR}\}$.
+If the same torque $\tau_k$ is applied on the $n_k$ drives $\mathcal{D}_k$ of axis $k$,
+the axis moves by $\theta_k = \tau_k\sum_{j\in\mathcal{D}_k} g_{k,j}$, so the torque per drive that
+holds the axis at the setpoint $\theta_k$ is
+\begin{equation}
+  \tau_k = \kappa_k\,\theta_k, \qquad
+  \kappa_k = \Big(\sum_{j\in\mathcal{D}_k} g_{k,j}\Big)^{-1}.
+  \label{eq:stiffness}
+\end{equation}
+At each step the client reads \code{MountSetPoint} and writes \code{MountTorquesFeedForward},
+the 16 torques $[\kappa_{\mathrm{az}}\theta_{\mathrm{az}}\times 8,\;
+\kappa_{\mathrm{el}}\theta_{\mathrm{el}}\times 4,\; \kappa_{\mathrm{GIR}}\theta_{\mathrm{GIR}}\times 4]$.
+The mount controller (\code{gmt\_dos-clients\_mount}) adds them to the drive torques
+\emph{after} the drives saturation, so the saturation only applies to the feedback torques.
+The cross-coupling between axes is neglected: only the diagonal terms $g_{k,j}$, $j\in\mathcal{D}_k$,
+are used. The stiffness $[\kappa_{\mathrm{az}}, \kappa_{\mathrm{el}}, \kappa_{\mathrm{GIR}}]$
+is printed at start-up; for the 2025 FEM it is
+$[4.17\times10^{6},\; 1.08\times10^{7},\; 1.00\times10^{5}]$\,N\,m/rad per drive. \code{MOUNT\_FEEDFORWARD=0}
+turns the feed-forward off.
+
+%======================================================================
+\section{Kinematic compensation}
+\label{sec:kinematics}
+
+\subsection{Principle}
+\label{sec:kin-principle}
+
+As the mount moves, every FEM output $\vect{y}$ (segment rigid body motions, hardpoint forces,
+M2 positioners, \ldots) includes the motion that follows the mount, i.e.\ the rigid telescope motion
+plus the static deflection of the structure that comes with it. The kinematic compensation removes
+from each output the part that is linearly related to the averaged mount encoder angles
+$\vect{\theta} = [\bar\theta_{\mathrm{az}}, \bar\theta_{\mathrm{el}}, \bar\theta_{\mathrm{GIR}}]$:
+\begin{equation}
+  \vect{y}_c = \vect{y} - K\,\vect{\theta},
+  \label{eq:kin}
+\end{equation}
+where $K$ is the $n_y\times 3$ kinematic gain.
+The compensation is applied in the FEM client after each state update
+(\code{DiscreteModalSolver::update}), so that every consumer of the FEM outputs, including the M1 and
+M2 control systems, sees compensated outputs.
+
+\subsection{Kinematic gain from the FEM DC gain}
+\label{sec:kin-gain}
+
+$K$ is derived from the same static gain as the feed-forward, Eq.~(\ref{eq:dcgain}), computed in
+\code{DiscreteStateSpace::kinematic\_compensator}.
+Let $H$ be the $n_y\times 16$ DC gain from the 16 drive torques to all the FEM outputs, and $E$ the
+$3\times 16$ DC gain from the drive torques to the averaged azimuth, elevation and GIR encoders (the
+row mean of $H$ over the encoders of each axis). A static torque $\vect{\tau}$ produces
+$\vect{y} = H\vect{\tau}$ and $\vect{\theta} = E\vect{\tau}$. The kinematic gain is the
+least-squares map from $\vect{\theta}$ to $\vect{y}$ over the torques:
+\begin{equation}
+  K = H E^{+}, \qquad E^{+} = E^{T}\left(E E^{T}\right)^{-1}.
+  \label{eq:kgain}
+\end{equation}
+Each column of $K$ is the static response of the outputs per radian of one mount axis, as measured
+by its encoders. Because $K$ is computed from all the FEM modes, it contains the exact linearized
+rigid motion of the FEM (with its actual geometry and axes) and the quasi-static flexure that goes
+with it, with no geometric model of the telescope.
+
+The rows of $K$ of the mount encoders are set to zero: the mount control system needs the
+uncompensated encoders. Other outputs can be left uncompensated
+(\code{kinematic\_exclusion}), and a column of $K$ can be replaced by a calibrated gain
+(\code{kinematic\_calibration}); neither is used in the demo, where
+\code{GmtServoMechanisms::kinematic\_compensation} compensates all the outputs but the mount encoders.
+
+\subsection{Compensation of the control feedback}
+\label{sec:kin-feedback}
+
+The outputs fed back to the control systems must be compensated too. The M1 hardpoint forces, in
+particular, contain a kinematic component as the telescope rotates: the M1 actuators force loop would
+offload it and make the M1 segments drift with the mount azimuth (Section~\ref{sec:ver-kin}).
+Compensating all the FEM outputs removes the drift without closed-loop calibration.
+
+\subsection{Consequence for the optics}
+\label{sec:kin-optics}
+
+After compensation the M1 and M2 rigid body motions only contain the structure deformations
+relative to the mount encoders (Figure~\ref{fig:rbm}). The rigid telescope motion, including the
+tracking error, has been removed with the encoders. That is the desired behavior for the large
+trajectory motion, which the sky follows, but it also removes the tracking error, which
+does move the image. The tracking error is therefore reintroduced as a pointing error in the optical
+model (Section~\ref{sec:pointing}). \code{KINEMATIC\_COMPENSATION=0} runs the FEM without compensation.
+
+%======================================================================
+\section{Pupil rotation}
+\label{sec:pupil}
+
+\subsection{Principle}
+\label{sec:pupil-principle}
+
+The FEM outputs are given in the OSS, which is fixed to the telescope tube. An instrument mounted on
+the GIR rotates with it about the optical axis by the GIR angle $\gamma$, and sees the pupil (the M1
+and M2 segments) rotated with respect to its own frame. With the optical model feature
+(\code{gmt\_dos-clients\_crseo}), \code{GirRotation} (\code{gir\_rotation.rs}) rotates the M1 and
+M2 segments as rigid bodies about the OSS $z$ axis by $\gamma$, the mean of the 4 GIR encoders
+(\code{MountEncoders} indices 10--13, uncompensated), before ray tracing.
+
+\subsection{Implementation}
+\label{sec:pupil-impl}
+
+For a segment with vertex $\vect{r}$ and local frame $Q$ ($\vect{v}_{\mathrm{OSS}} = Q\,\vect{v}_{\mathrm{local}}$),
+the rotation $R_z(\gamma)$ adds to the segment rigid body motions, expressed in the segment local frame:
+\begin{align}
+  \vect{t} &= Q^{T}\left(R_z(\gamma) - I\right)\vect{r}, \label{eq:gir-t}\\
+  M &= Q^{T} R_z(\gamma)\, Q, \label{eq:gir-r}
+\end{align}
+where the rotation $M$ is given as the $(x,y,z)$ Euler angles of the ray tracing coordinate systems,
+$M = R_z(c)R_y(b)R_x(a)$:
+\begin{equation}
+  b = -\arcsin M_{20},\quad a = \operatorname{atan2}(M_{21}, M_{22}),\quad
+  c = \operatorname{atan2}(M_{10}, M_{00}).
+\end{equation}
+The translations and the Euler angles are added to the compensated rigid body motions from the FEM,
+the latter being small.
+The segment geometry (Table~\ref{tab:geometry}) follows the geotrans conventions: the 6 outer
+segments at a radial distance $\rho$ with clocking $o_i = o_0 - 60^\circ i$, the vertex height being
+the mirror height plus the conic sag $z(\rho) = \rho^2/\big(R(1+\sqrt{1-(1+k)\rho^2/R^2})\big)$, and
+the local frames $Q_i = R_z(o_i)R_x(\beta)$ for M1 and $Q_i = R_z(o_i)R_y(\pi)R_x(\beta)$ for M2.
+The central segment (S7) frame is the identity for M1 and $R_z(\pi)R_y(\pi)$ for M2,
+whose S7 frame is flipped with respect to the OSS.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Segment geometry used by \code{GirRotation}.}
+  \label{tab:geometry}
+  \begin{tabular}{lcc}
+    \toprule
+                                 & M1            & M2 \\
+    \midrule
+    outer segment distance $\rho$ [m] & 8.71     & 1.08774 \\
+    clocking $o_0$ [deg]         & 0             & 180 \\
+    vertex height [m]            & 3.9           & 3.9 + 20.26247614 \\
+    radius of curvature $R$ [m]  & 36            & $-4.1639009$ \\
+    conic constant $k$           & $-0.9982857$  & $-0.71692784$ \\
+    outer segment tilt $\beta$ [deg] & 13.601685 & 14.777498 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The rotated rigid body motions are fed to the optical model at 50\,Hz. Rotating the pupil rotates
+the diffraction pattern of the segmented aperture (and any segment piston/tip-tilt pattern) on the
+detector; it does not move the image centroid of a perfectly phased telescope, which is set by the
+source direction (Section~\ref{sec:pointing}).
+
+%======================================================================
+\section{Telescope pointing errors}
+\label{sec:pointing}
+
+\subsection{Pointing error from the mount tracking error}
+\label{sec:pointing-error}
+
+The \code{Pointing} client (\code{pointing.rs}) reads \code{MountSetPoint},
+\code{AverageMountEncoders} and \code{FieldRotation} at 1\,kHz.
+The tracking errors are $\Delta\mathrm{az} = \bar\theta_{\mathrm{az}} - s_{\mathrm{az}}$ and
+$\Delta\mathrm{el} = \bar\theta_{\mathrm{el}} - s_{\mathrm{el}}$.
+In the OSS, with $\zeta$ the zenith angle, the azimuth axis is $(0, \sin\zeta, \cos\zeta)$ and the
+elevation axis is $(-1, 0, 0)$. The telescope rotation vector is
+\begin{equation}
+  \vect{w} = \Delta\mathrm{az}\,(0, \sin\zeta, \cos\zeta) + \Delta\mathrm{el}\,(-1, 0, 0),
+\end{equation}
+which moves the optical axis $\hat{\vect{z}}$ by
+$\vect{w}\times\hat{\vect{z}} = (w_y, -w_x, 0)$, i.e.\ the pointing error in the OSS is
+\begin{equation}
+  \vect{p}_{\mathrm{OSS}} = \left(\Delta\mathrm{az}\cos(\mathrm{el}),\; \Delta\mathrm{el}\right).
+  \label{eq:pe}
+\end{equation}
+The elevation is the telescope elevation, $\mathrm{el} = \mathrm{el}_0 + \bar\theta_{\mathrm{el}}$,
+with $\mathrm{el}_0$ the initial elevation of the trajectory (45$^\circ$, read from the first row of
+the trajectory file) and $\bar\theta_{\mathrm{el}}$ the averaged elevation encoder, the encoders being
+offsets from the initial pointing. Along the ATP trajectory the elevation decreases by $58.7\arcsec$,
+changing $\cos(\mathrm{el})$ by $3\times10^{-4}$ in relative terms.
+As the mirrors (Section~\ref{sec:pupil}), the pointing error is rotated by the GIR angle
+$\gamma = \bar\theta_{\mathrm{GIR}}$ into the instrument frame:
+\begin{equation}
+  \vect{p} = R(\gamma)\,\vect{p}_{\mathrm{OSS}}, \qquad
+  R(\gamma) = \begin{pmatrix}\cos\gamma & -\sin\gamma\\ \sin\gamma & \cos\gamma\end{pmatrix}.
+\end{equation}
+$\vect{p}$ is the \code{PointingError} output.
+
+\subsection{Field rotation error}
+\label{sec:rotation-error}
+
+The GIR compensates the field rotation $q$ (Section~\ref{sec:setpoints}). Its tracking error relative
+to the sky,
+\begin{equation}
+  \Delta\gamma = \bar\theta_{\mathrm{GIR}} - q,
+\end{equation}
+is the \code{PointingRotationError} output. With the GIR tracking, $\Delta\gamma$ is the GIR tracking
+error; with \code{GIR\_TRACKING=0}, the GIR is at rest and $\Delta\gamma = -q$: the field rotates on
+the instrument. \code{POINTING\_ERROR=0} sets both outputs to zero.
+Both outputs are decimated to 50\,Hz, the rate of the optical model.
+
+\subsection{Optical model}
+\label{sec:pointing-om}
+
+The optical model images a J band source (1.215\,\textmu m) at an off-axis angle $\theta_0$
+(\code{OFF\_AXIS}, default $0.25\arcsec$ along $x$) on a camera with a $\lambda/(5D)$ DFT sampling
+binned $2\times 2$, i.e.\ a $3.93\mas$ pixel over a $256\times 256$ frame ($\pm 0.5\arcsec$ FOV).
+The camera is in \emph{absolute pointing} along the optical axis
+(\code{sensor\_pointing}$(-\theta_0, 0)$): the image sits at the source direction seen from the
+instrument, $\theta_0$ from the frame center, and moves when that direction changes.
+This requires \code{crseo-sys}~1.3.3 or later (CEO imaging fix, the $x$ axis of the absolute pointing
+along the frame columns).
+
+When the optical model reads \code{PointingError} or \code{PointingRotationError}, the source
+directions are set to the directions seen from the instrument
+(\code{Pointing::apply} in \code{gmt\_dos-clients\_crseo}): for a nominal source at
+$(x, y) = \zeta_s(\cos a_s, \sin a_s)$,
+\begin{equation}
+  \begin{pmatrix} x' \\ y' \end{pmatrix} =
+  R(-\Delta\gamma)\begin{pmatrix} x \\ y \end{pmatrix} - \vect{p},
+  \label{eq:src}
+\end{equation}
+the nominal directions being kept unchanged. The source is ray traced along $(x', y')$, so the image
+moves by $-\vect{p}$ and is rotated by $-\Delta\gamma$ about the optical axis. For the off-axis source,
+the rotation moves the image by $\simeq -\Delta\gamma\,\theta_0$ perpendicular to its field
+direction. The wavefront tip-tilt (\code{TipTilt}, ordered $[y, x]$) is computed relative to the
+source direction, and thus contains the structure deformations only. The expected image motion is
+\begin{equation}
+  \delta\vect{c} = \big(R(-\Delta\gamma) - I\big)\begin{pmatrix}\theta_0\\0\end{pmatrix}
+  - \vect{p} + \vect{t}_{\mathrm{TT}},
+  \label{eq:expected}
+\end{equation}
+with $\vect{t}_{\mathrm{TT}}$ the wavefront tip-tilt.
+Since the kinematic compensation has removed the rigid telescope motion measured by the encoders,
+Eq.~(\ref{eq:src}) is the only path by which the mount tracking error reaches the optics.
+
+Magnitudes along the trajectory: the GIR tracking error peaks at about $6.9\arcsec$ during the
+mount start-up transient, i.e.\ $\Delta\gamma\,\theta_0 \lesssim 0.008\mas$ at $0.25\arcsec$.
+Without GIR tracking the field rotates by $0.155^\circ$ in 30\,s and $1.55^\circ$ in 300\,s,
+moving the off-axis image by $0.68\mas$ and $6.8\mas$, respectively.
+
+%======================================================================
+\section{Verifications}
+\label{sec:verification}
+
+Table~\ref{tab:verif} summarizes the verifications; they are detailed below. Unit tests were re-run
+on 10/20/2026 for this note; the integrated model results are from the runs whose data and figures
+are stored in the demo \code{data/} and \code{figures/} folders.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Summary of the verifications.}
+  \label{tab:verif}
+  \begin{tabularx}{\linewidth}{lXl}
+    \toprule
+    Item & Verification & Result \\
+    \midrule
+    Trajectory      & regeneration with \code{atp\_trajectory.py} identical to \code{atp\_trajectory.csv} & pass \\
+    Tracking        & encoders vs setpoint over 300\,s (Fig.~\ref{fig:encoders}) & pass \\
+    Feed-forward    & 300\,s run with/without feed-forward & saturation at 242\,s removed \\
+    Kinematics      & compensated RBMs (Fig.~\ref{fig:rbm}), segment tip-tilt drift (Fig.~\ref{fig:stt}) & drift removed \\
+    GIR rotation    & unit tests \code{zero\_angle}, \code{center\_segment} & see \S\ref{sec:ver-unit} \\
+    Pointing        & unit tests \code{azimuth\_elevation}, \code{elevation}, \code{gir} & see \S\ref{sec:ver-unit} \\
+    Optical model   & unit tests \code{pointing\_error}, \code{pointing\_rotation\_error} & pass \\
+    End-to-end      & image centroid vs Eq.~(\ref{eq:expected}) (Figs.~\ref{fig:tt}, \ref{fig:tt-off}) & $\le 0.03\mas$ rms after 2\,s \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Trajectory and mount tracking}
+\label{sec:ver-traj}
+
+Running \code{scripts/atp\_trajectory.py} again produced a file identical to the committed
+\code{atp\_trajectory.csv}; the script reports the target ICRS coordinates, the azimuth, elevation and
+rotator ranges of Section~\ref{sec:astropy}, and an initial parallactic angle of $-180^\circ$, as
+expected for a target on the meridian ($H=0$) north of a southern site.
+
+Figure~\ref{fig:encoders} compares the 1\,Hz trajectory to the averaged mount encoders over the full
+300\,s at 1\,kHz. The encoders follow the interpolated setpoints; the tracking error is a start-up
+transient of the first 2\,s (up to $1.4\arcsec$ in azimuth, $0.02\arcsec$ in elevation and
+$6.9\arcsec$ for the GIR) after which it is negligible, with a small GIR ripple.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{trajectory_vs_encoders.png}
+  \caption{ATP trajectory vs mount encoders (left) and tracking error (right), 300\,s at 1\,kHz.}
+  \label{fig:encoders}
+\end{figure}
+
+\subsection{Mount feed-forward}
+\label{sec:ver-ff}
+
+Without feed-forward (\code{MOUNT\_FEEDFORWARD=0}) the azimuth drives saturate at about 242\,s and the
+mount stops following the trajectory. With the feed-forward of Eq.~(\ref{eq:stiffness}) the full 300\,s
+trajectory runs without saturation and with the tracking error of Figure~\ref{fig:encoders}: the
+integrator of the mount controller no longer has to build up the spring torque.
+
+\subsection{Kinematic compensation}
+\label{sec:ver-kin}
+
+The kinematic compensation was reached in three steps, each verified on the segment tip-tilt
+from the LOM, the most sensitive indicator of a residual rigid motion:
+\begin{enumerate}
+\item \emph{Geometric removal} (\code{scripts/rigid\_body.py}): the rigid motion is modeled as the
+  linearized rotation of the segment vertices and frames about the azimuth axis
+  $(0, \sin 30^\circ, \cos 30^\circ)$ and the elevation axis $(-1, 0, 0)$ of the 30$^\circ$ zenith FEM.
+  The mismatch between this geometric model and the FEM kinematics left a segment tip-tilt drift that
+  grows with the azimuth angle.
+\item \emph{FEM DC gain} (Eq.~\ref{eq:kgain}) applied to the M1 and M2 rigid body motions only:
+  the geometric mismatch is gone, but the segments still drift radially by up to 15--20\,mas in 50\,s
+  (Figure~\ref{fig:stt}, left). The same drift is obtained with a FEM and M1 only model
+  (\code{trajectory-mount} demo), which pointed to the M1 hardpoint forces: their kinematic component
+  is offloaded by the M1 actuators force loop. A closed-loop calibration of the azimuth column of $K$
+  was tried as a workaround.
+\item \emph{Compensation of all the FEM outputs} but the mount encoders, including the control
+  feedback (Section~\ref{sec:kin-feedback}): the drift disappears without any calibration. Over
+  30--300\,s the segment tip-tilt stays within $\pm 1.5\mas$ with no secular trend
+  (Figure~\ref{fig:stt}, right).
+\end{enumerate}
+With the final compensation, the M1 and M2 rigid body motions show the start-up transient
+(tens of \textmu m, sub-arcsecond) decaying to zero within about 20\,s and no motion following the
+1.7$^\circ$ azimuth rotation (Figure~\ref{fig:rbm}).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.49\linewidth]{segment_tiptilt_orbits_60s_nocal.png}
+  \includegraphics[width=0.49\linewidth]{segment_tiptilt_orbits_300s.png}
+  \caption{Segment tip-tilt orbits. Left: FEM DC gain kinematics on the M1 and M2 rigid body motions
+    only, 10--60\,s. Right: kinematic compensation of all the FEM outputs, 30--300\,s.}
+  \label{fig:stt}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\linewidth]{rigid_body_motions.png}
+  \caption{M1 and M2 segment rigid body motions with kinematic compensation along the 300\,s trajectory.}
+  \label{fig:rbm}
+\end{figure}
+
+\subsection{Unit tests}
+\label{sec:ver-unit}
+
+\paragraph{\code{gmt\_dos-clients\_crseo} (\code{optical\_model/read/pointing.rs}).}
+The tests use a V band camera ($\lambda/(4D)$ sampling binned $2\times2$) in absolute pointing along
+the optical axis; results of the re-run:
+\begin{itemize}
+\item \code{pointing\_error}: on-axis source, pointing errors of $20\mas$ along $x$ then $y$. The frame
+  centroid moves to $(-19.758, 0.001)\mas$ and $(0.003, -19.752)\mas$, i.e.\ by $-\vect{p}$ (the
+  centroid of the truncated frame is $\sim$1\% short), and the wavefront tip-tilt stays at
+  $0.000\mas$. The test passes within $5\%\,|\vect{p}| + 0.01\mas$ on the image and $0.01\mas$ on the
+  tip-tilt.
+\item \code{pointing\_rotation\_error}: source $100\mas$ off-axis along $x$. Without error the centroid
+  is at $(98.313, -0.009)\mas$; with $\Delta\gamma = 0.04$\,rad it moves to $(98.230, -3.964)\mas$,
+  i.e.\ by $(-0.083, -3.955)\mas$ against $((\cos\Delta\gamma - 1)\theta_0, -\sin\Delta\gamma\,\theta_0)
+  = (-0.080, -3.999)\mas$: the image is rotated by $-\Delta\gamma$. Resetting the error restores the
+  initial position.
+\item \code{pointing\_scan} (ignored by default) scans the pointing error over $1.5$ pixel and compares
+  the absolute pointing image motion to the one of an equivalent wavefront tilt. It revealed the CEO
+  imaging axis convention fixed in \code{crseo-sys}~1.3.3.
+\end{itemize}
+
+\paragraph{\code{trajectory-servos-mount}.}
+\begin{itemize}
+\item \code{pointing::tests::azimuth\_elevation}: for a trajectory starting at $45^\circ$ elevation,
+  encoders $(1, 2)$\,\textmu rad away from the setpoint give
+  $\vect{p} = (10^{-6}\cos(45^\circ + 2\,\mu\mathrm{rad}), 2\times 10^{-6})$; a quarter turn of
+  the GIR maps $x\to y$ and $y\to -x$.
+\item \code{pointing::tests::elevation}: for a trajectory starting at $45^\circ$ elevation with the
+  telescope $15^\circ$ lower and a 1\,\textmu rad azimuth error, $p_x = 10^{-6}\cos 30^\circ$: the
+  $\cos(\mathrm{el})$ factor follows the telescope elevation.
+\item \code{pointing::tests::gir}: with the GIR tracking a field rotation of 3\,\textmu rad and an encoder
+  at 1\,\textmu rad, $\Delta\gamma = -2$\,\textmu rad; with the GIR at rest, $\Delta\gamma = -q$.
+\item \code{gir\_rotation::tests::zero\_angle}: no rigid body motion for $\gamma = 0$, for M1 and M2.
+\item \code{gir\_rotation::tests::center\_segment}: for $\gamma = 10^{-2}$\,rad, M1 S7 (on axis) has no
+  translation and a rotation of exactly $\gamma$ about $z$.
+\end{itemize}
+
+\subsection{End-to-end verification of the image motion}
+\label{sec:ver-e2e}
+
+\code{scripts/plot\_tiptilt\_vs\_tracking.py} compares the centroid of the image on the camera
+to the prediction of Eq.~(\ref{eq:expected}) built from the logged \code{PointingError},
+\code{PointingRotationError} and \code{TipTilt}. Frames where the predicted image is outside 80\% of the
+FOV are discarded (the centroid is biased near the frame edges) and a static centroid bias,
+estimated after 2\,s, is removed. The off-axis angle $\theta_0$ of the run is given to the script
+as its 6th argument (default $0.25\arcsec$).
+
+Figure~\ref{fig:tt} is a 30\,s run with GIR tracking and an on-axis source (\code{OFF\_AXIS=0}),
+so it verifies the pointing error and the structure tip-tilt terms of Eq.~(\ref{eq:expected}), the
+rotation term being zero on axis. The static centroid bias is $(0.97, 0.98)\mas$, a quarter of a pixel.
+During the first second the pointing error reaches about $1\arcsec$ in $x$ and the image leaves the
+field. The image then follows $-\vect{p}$, and after a few seconds the structure tip-tilt dominates
+over the pointing error. Re-running the script on the stored data gives the rms values of
+Table~\ref{tab:e2e}: the image motion is explained to $0.27\mas$ rms in $x$ over the whole run,
+the largest residuals (up to $4\mas$) occurring during the first 1.5\,s when the image is close to the
+edge of the field, to $0.03\mas$ rms after 2\,s and to $0.007\mas$ after 5\,s. After 10\,s the image
+motion settles to $0.1$--$0.3\mas$, dominated by the structure tip-tilt, the on-sky tracking error
+being below $0.1\mas$.
+
+Figure~\ref{fig:tt-off} is a 30\,s run with \code{GIR\_TRACKING=0}: the field rotation term grows
+linearly and reaches $0.69\mas$ at 30\,s, against $0.676\mas$ expected from
+$\theta_0\,|q(30\,\mathrm{s})|$, and the image motion follows it once the start-up transient
+has decayed.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Image motion and residual rms [mas] of the 30\,s on-axis run with GIR tracking (1472 out of 1500
+    frames in the field).}
+  \label{tab:e2e}
+  \begin{tabular}{lcccccc}
+    \toprule
+                & \multicolumn{2}{c}{image motion} & \multicolumn{2}{c}{$-\vect{p}$} & \multicolumn{2}{c}{residual} \\
+                & $x$ & $y$ & $x$ & $y$ & $x$ & $y$ \\
+    \midrule
+    $t > 0$\,s  & 28.35 & 4.24 & 27.52 & 1.36 & 0.274 & 0.034 \\
+    $t > 2$\,s  & 3.35  & 1.80 & 2.37  & 0.21 & 0.028 & 0.014 \\
+    $t > 5$\,s  & 0.49  & 0.34 & 0.11  & 0.07 & 0.007 & 0.002 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\linewidth]{tiptilt_vs_tracking_onaxis.png}
+  \caption{Mount tracking error and image motion, 30\,s on-axis run with GIR tracking. From top to
+    bottom: tracking error, image centroid vs $-\vect{p}$, magnitudes of each term of
+    Eq.~(\ref{eq:expected}), residual.}
+  \label{fig:tt}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\linewidth]{tiptilt_vs_tracking_gir_off.png}
+  \caption{Same as Figure~\ref{fig:tt} for a 30\,s run with \code{GIR\_TRACKING=0} and a source
+    $0.25\arcsec$ off-axis: the image rotates with the field.}
+  \label{fig:tt-off}
+\end{figure}
+
+\subsection{Open points}
+\label{sec:open}
+
+\begin{itemize}
+\item The feed-forward neglects the cross-coupling between mount axes.
+\item The GIR rotation is added to the compensated rigid body motions as a superposition, valid while
+  the deformations stay small.
+\item The rotation term with GIR tracking ($\lesssim 0.008\mas$ at $0.25\arcsec$) is below what the
+  frame centroid resolves; it is verified by the unit test and by the run without GIR tracking.
+\end{itemize}
+
+\end{document}
