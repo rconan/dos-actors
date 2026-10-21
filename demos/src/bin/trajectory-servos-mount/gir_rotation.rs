@@ -2,11 +2,15 @@
 //!
 //! The mirrors are rotated as rigid bodies about the optical axis (OSS z axis) by the GIR
 //! angle γ (mean of the GIR encoders), as an instrument on the GIR would see them.
-//! For a segment with vertex r and local frame Q (v_oss = Q v_local), the rotation adds to the
-//! segment rigid body motions:
-//!  * the translation Qᵀ (Rz(γ) - I) r,
-//!  * the rotation Qᵀ Rz(γ) Q, given as the (x,y,z) Euler angles of the ray tracing coordinate
-//!    systems (R = Rz Ry Rx).
+//! For a segment with vertex r and local frame Q (v_oss = Q v_local), deformed by the rigid body
+//! motion (t, R) in its local frame, the rotated segment rigid body motion is the composition
+//! of the deformation with the mirror rotation, M = Qᵀ Rz(γ) Q being the mirror rotation in the
+//! local frame:
+//!  * the translation Qᵀ (Rz(γ) - I) r + M t,
+//!  * the rotation M R,
+//!
+//! the rotations being given as the (x,y,z) Euler angles of the ray tracing coordinate systems
+//! (R = Rz Ry Rx).
 //!
 //! The segment vertices and frames are from the geotrans crate.
 
@@ -93,23 +97,39 @@ fn mirror(
         .collect()
 }
 
-/// Rigid body motions [7x6] in the segment local frames of a mirror rotated by `angle` about z
-fn rotation(segments: &[Segment], angle: f64) -> Vec<f64> {
+/// Rotation matrix R = Rz(g) Ry(b) Rx(a) of the (x,y,z) Euler angles [a, b, g]
+fn euler_to_matrix(e: &[f64]) -> Mat3 {
+    mul(&rz(e[2]), &mul(&ry(e[1]), &rx(e[0])))
+}
+/// (x,y,z) Euler angles [a, b, g] of the rotation matrix R = Rz(g) Ry(b) Rx(a)
+fn matrix_to_euler(m: &Mat3) -> [f64; 3] {
+    [m[2][1].atan2(m[2][2]), -m[2][0].asin(), m[1][0].atan2(m[0][0])]
+}
+
+/// Rigid body motions [7x6] `rbm` in the segment local frames of a mirror rotated by `angle` about z
+fn rotate(segments: &[Segment], rbm: &[f64], angle: f64) -> Vec<f64> {
     let r = rz(angle);
     segments
         .iter()
-        .flat_map(|s| {
+        .zip(rbm.chunks(6))
+        .flat_map(|(s, rbm)| {
             let qt = transpose(&s.frame);
-            let v = mulv(&r, &s.vertex);
-            let t = mulv(&qt, &[0, 1, 2].map(|i| v[i] - s.vertex[i]));
-            // segment frame rotation in the local frame, R = Rz(g) Ry(b) Rx(a)
+            // mirror rotation in the segment local frame
             let m = mul(&qt, &mul(&r, &s.frame));
-            let b = -m[2][0].asin();
-            let a = m[2][1].atan2(m[2][2]);
-            let g = m[1][0].atan2(m[0][0]);
-            t.into_iter().chain([a, b, g])
+            let v = mulv(&r, &s.vertex);
+            let dv = mulv(&qt, &[0, 1, 2].map(|i| v[i] - s.vertex[i]));
+            let mt = mulv(&m, &[rbm[0], rbm[1], rbm[2]]);
+            let t = [0, 1, 2].map(|i| dv[i] + mt[i]);
+            let e = matrix_to_euler(&mul(&m, &euler_to_matrix(&rbm[3..6])));
+            t.into_iter().chain(e)
         })
         .collect()
+}
+
+/// Rigid body motions [7x6] in the segment local frames of an undeformed mirror rotated by `angle` about z
+#[cfg(test)]
+fn rotation(segments: &[Segment], angle: f64) -> Vec<f64> {
+    rotate(segments, &[0f64; 42], angle)
 }
 
 /// Rotates the M1 & M2 segments rigid body motions by the GIR angle
@@ -152,10 +172,7 @@ impl GirRotation {
         }
     }
     fn rotate(&self, rbm: &[f64], segments: &[Segment]) -> Vec<f64> {
-        rbm.iter()
-            .zip(rotation(segments, self.gir))
-            .map(|(x, r)| x + r)
-            .collect()
+        rotate(segments, rbm, self.gir)
     }
 }
 impl Update for GirRotation {}
@@ -204,5 +221,30 @@ mod tests {
         let s7 = &rotation(&g.m1, a)[36..];
         assert!(s7[..5].iter().all(|x| x.abs() < 1e-12));
         assert!((s7[5] - a).abs() < 1e-12);
+    }
+    #[test]
+    fn no_rotation() {
+        // the deformation is unchanged for a zero GIR angle
+        let g = GirRotation::new();
+        let rbm: Vec<f64> = (0..42).map(|i| 1e-6 * (i as f64 - 20.)).collect();
+        for segments in [&g.m1, &g.m2] {
+            let r = rotate(segments, &rbm, 0.);
+            assert!(rbm.iter().zip(&r).all(|(x, y)| (x - y).abs() < 1e-15));
+        }
+    }
+    #[test]
+    fn deformation_rotates_with_the_mirror() {
+        // M1 S7 on axis, translated along x and tilted about x, rotated by a quarter turn:
+        // the translation is along y and the tilt is about y
+        let g = GirRotation::new();
+        let a = std::f64::consts::FRAC_PI_2;
+        let mut rbm = vec![0f64; 42];
+        rbm[36] = 1e-6;
+        rbm[39] = 2e-6;
+        let s7 = &rotate(&g.m1, &rbm, a)[36..];
+        assert!(s7[0].abs() < 1e-15 && (s7[1] - 1e-6).abs() < 1e-15 && s7[2].abs() < 1e-15);
+        // R = Rz(a) Rx(2e-6): the segment normal, tilted towards -y, is tilted towards +x
+        let n = mulv(&euler_to_matrix(&s7[3..6]), &[0., 0., 1.]);
+        assert!((n[0] - 2e-6).abs() < 1e-12 && n[1].abs() < 1e-12);
     }
 }
