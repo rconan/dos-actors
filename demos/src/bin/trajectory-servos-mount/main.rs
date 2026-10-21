@@ -277,6 +277,15 @@ async fn main() -> anyhow::Result<()> {
         } else {
             pointing
         };
+        // POINTING_ROTATION_GAIN (verification only): gain of the rotation error
+        let pointing = match env::var("POINTING_ROTATION_GAIN") {
+            Ok(gain) => {
+                let gain: f64 = gain.parse()?;
+                println!("pointing rotation error gain: {gain}");
+                pointing.rotation_gain(gain)
+            }
+            Err(_) => pointing,
+        };
         // off-axis source
         let off_axis = env::var("OFF_AXIS")
             .ok()
