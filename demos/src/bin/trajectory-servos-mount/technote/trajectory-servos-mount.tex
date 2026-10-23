@@ -380,6 +380,49 @@ trajectory motion, which the sky follows, but it also removes the tracking error
 does move the image. The tracking error is therefore reintroduced as a pointing error in the optical
 model (Section~\ref{sec:pointing}). \code{KINEMATIC\_COMPENSATION=0} runs the FEM without compensation.
 
+\subsection{Validity range}
+\label{sec:kin-range}
+
+The FEM being linear, a mount rotation $\vect{\theta}$ appears in all its outputs as a term exactly
+proportional to $\vect{\theta}$: the linearized rigid motion and the static flexure that comes with it,
+including the flexure from the drive torques against the soft ``rigid body'' springs. $K$ being derived
+from the DC gain of the same model, Eq.~(\ref{eq:kin}) removes that term exactly whatever the amplitude
+of the mount angles. The subtraction is also numerically safe: at $1.7^\circ$ in azimuth, the rigid
+motion of the M1 outer segments is about 0.3\,m and the FP64 rounding error of the subtraction is about
+$10^{-17}$\,m. Within the model, the kinematic compensation itself does not limit the range of motion of the
+mount axes.
+
+The limit comes from the linear FEM being the model of a single telescope configuration, the
+errors growing with the mount angles:
+\begin{enumerate}
+\item The compensated outputs are the deformations in the frame of the unrotated telescope, whereas
+  the actual deformations rotate with the structure. As for the pupil rotation
+  (Section~\ref{sec:pupil-impl}), the error is of the order of $\theta$ times the deformations:
+  about 3\,\% at the $1.7^\circ$ in azimuth reached at the end of the ATP trajectory, i.e.\ tens of
+  nm for \textmu m deformations.
+\item The FEM is computed at 30$^\circ$ zenith angle: its stiffness, the direction of gravity relative
+  to the structure and the direction of the azimuth axis in the OSS, $(0, \sin 30^\circ, \cos 30^\circ)$,
+  are fixed. A change of elevation changes all of them for the actual telescope but not in the model.
+  The ATP trajectory is already at 45$^\circ$ elevation, i.e.\ 15$^\circ$ away from the FEM pointing,
+  but the elevation changes by $59\arcsec$ only over the 300\,s, so this is a constant offset rather
+  than an error growing along the trajectory.
+\item $K$ is derived for the minimum-norm drive torques, $E^{+}\vect{\theta}$, about the same torque on
+  each drive of an axis, as with the feed-forward (Section~\ref{sec:ff-how}). The static flexure from a
+  different distribution of the torques between the drives of an axis is not removed and grows with
+  $\vect{\theta}$.
+\end{enumerate}
+The feed-forward is also proportional to the mount angles: without it, the azimuth drives saturate
+at about $1.4^\circ$ (242\,s along the trajectory, Section~\ref{sec:ff-why}).
+
+The model is therefore valid within a few degrees of the FEM pointing, where $\theta$ times the
+deformations is negligible and the structure does not change. The 300\,s ATP trajectory, $1.70^\circ$ in
+azimuth, $1.55^\circ$ for the GIR and $59\arcsec$ in elevation, is well within that range: the segment
+tip-tilt shows no drift proportional to the azimuth angle over 30--300\,s (Section~\ref{sec:ver-kin}).
+These error estimates follow from the structure of the model; the absence of drift is the only measured
+evidence. Motions of tens of degrees, e.g.\ slews or long tracks, require the FEM at the new zenith angle
+or switching FEMs along the trajectory, and a full turn of the azimuth axis cannot be represented by a
+linear model.
+
 %======================================================================
 \section{Pupil rotation}
 \label{sec:pupil}
