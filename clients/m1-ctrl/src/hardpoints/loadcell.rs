@@ -4,6 +4,7 @@ use gmt_dos_clients_io::gmt_m1::segment;
 use interface::{Data, Read, Size, Update, Write};
 use serde::{Deserialize, Serialize};
 
+#[cfg(fem)]
 use crate::Calibration;
 
 type M = nalgebra::Matrix6<f64>;
@@ -63,6 +64,7 @@ pub struct LoadCells<const ID: u8> {
     m1_hpk: Option<f64>,
     lc_2_cg: M,
 }
+#[cfg(fem)]
 impl<const ID: u8> From<&Calibration> for LoadCells<ID> {
     fn from(c: &Calibration) -> Self {
         if cfg!(any(

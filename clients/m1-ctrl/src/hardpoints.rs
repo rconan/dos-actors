@@ -21,6 +21,7 @@ pub struct Hardpoints<const ID: u8> {
     // hardpoints stiffness (from FEM static gain)
     m1_hpk: f64,
 }
+#[cfg(fem)]
 impl<const ID: u8> From<&Calibration> for Hardpoints<ID> {
     fn from(c: &Calibration) -> Self {
         Self {
@@ -87,6 +88,7 @@ impl<const ID: u8> Write<HardpointsForces<ID>> for Hardpoints<ID> {
 #[cfg(m1_hp_force_extension)]
 use gmt_dos_clients_io::gmt_m1::segment::HardpointsMotion;
 
+#[cfg(fem)]
 use crate::Calibration;
 #[cfg(m1_hp_force_extension)]
 impl<const ID: u8> Write<HardpointsMotion<ID>> for Hardpoints<ID> {
