@@ -18,6 +18,8 @@ where
     rx: Receiver<S<U>>,
     client: Arc<Mutex<C>>,
     hash: u64,
+    // data received and not yet read by the client
+    data: Option<S<U>>,
 }
 impl<C, U, const N: usize> Input<C, U, N>
 where
@@ -26,7 +28,12 @@ where
 {
     /// Creates a new intput from a [Receiver], an [Actor] client and an identifier [hash]
     pub fn new(rx: Receiver<S<U>>, client: Arc<Mutex<C>>, hash: u64) -> Self {
-        Self { rx, client, hash }
+        Self {
+            rx,
+            client,
+            hash,
+            data: None,
+        }
     }
 }
 impl<C, U, const N: usize> Who<U> for Input<C, U, N>
@@ -61,7 +68,11 @@ where
 #[async_trait]
 pub(crate) trait InputObject: Display + Send + Sync {
     /// Receives output data
+    ///
+    /// The data is kept until it is passed to the client with [read](InputObject::read)
     async fn recv(&mut self) -> Result<()>;
+    /// Passes the received data to the client
+    async fn read(&mut self) -> Result<()>;
     /// Returns the input UID
     fn who(&self) -> String;
     /// Gets the input hash
@@ -69,7 +80,7 @@ pub(crate) trait InputObject: Display + Send + Sync {
     fn capacity(&self) -> Option<usize>;
     /// Returns the flowchart [IO](crate::actor::IO) of the input at the given rate
     fn as_io(&self, rate: usize) -> crate::actor::IO {
-        use crate::actor::{IOData, IO};
+        use crate::actor::{IO, IOData};
         if self.capacity().is_some() {
             IO::Regular(IOData::new(self.who(), self.get_hash(), 1, rate))
         } else {
@@ -93,13 +104,19 @@ where
 {
     async fn recv(&mut self) -> Result<()> {
         // log::debug!("{} receiving", Who::highlight(self));
-        // log::debug!("{} receiving (locking client)", Who::who(self));
         let data = self.rx.recv_async().await.map_err(|e| {
             ActorError::DropRecv {
                 msg: format!("input {} to {}", type_name::<U>(), type_name::<C>()), //Who::lite(self),
                 source: e,
             }
         })?;
+        self.data = Some(data);
+        Ok(())
+    }
+    async fn read(&mut self) -> Result<()> {
+        let Some(data) = self.data.take() else {
+            return Ok(());
+        };
         let mut client = self.client.lock().await;
         // log::debug!("{} receiving (client locked)", Who::who(self));
         (*client).boxed_try_read(data)?;

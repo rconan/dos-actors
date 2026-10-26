@@ -1,7 +1,7 @@
 use super::io::{Input, InputObject, OutputObject};
 use crate::{
-    framework::network::{ActorOutput, ActorOutputBuilder, AddActorInput, AddActorOutput},
     Result,
+    framework::network::{ActorOutput, ActorOutputBuilder, AddActorInput, AddActorOutput},
 };
 use futures::future::try_join_all;
 use interface::{Data, TryRead, TryUpdate, UniqueIdentifier, Who};
@@ -163,8 +163,13 @@ where
     /// Gathers all the inputs from other [Actor] outputs
     pub(super) async fn collect(&mut self) -> Result<&mut Self> {
         if let Some(inputs) = &mut self.inputs {
+            // all the inputs are received before the client reads any of them, so the client never reads
+            // the inputs of a step that is cut short when the model ends (an input closed while others have data)
             let futures = inputs.iter_mut().map(|input| input.recv());
             try_join_all(futures).await?;
+            for input in inputs.iter_mut() {
+                input.read().await?;
+            }
         }
         Ok(self)
     }
