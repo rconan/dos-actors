@@ -6,7 +6,7 @@ use crate::sensors::{
 use crseo::{
     Builder, PSSnEstimates,
     builders::{AtmosphereBuilder, GmtBuilder, SourceBuilder},
-    pssn::{AtmosphereTelescopeError, PSSnBuilder, TelescopeError},
+    pssn::{AtmosphereTelescopeError, PSSn, PSSnBuilder, PSSnErrors, TelescopeError},
 };
 use gmt_dos_clients_io::Assembly;
 use serde::{Deserialize, Serialize};
@@ -196,12 +196,13 @@ where
                 self.src.build()?
             },
             pssn: if let Some(kind) = self.pssn {
+                let sids = <OpticalModel<T> as Assembly>::SIDS;
                 match kind {
                     PSSnKind::TelescopeError(pssn_builder) => {
-                        Some(Box::new(pssn_builder.build()?) as Box<dyn PSSnEstimates>)
+                        Some(Box::new(build_pssn(pssn_builder, &sids)?) as Box<dyn PSSnEstimates>)
                     }
                     PSSnKind::AtmosphereTelescopeError(pssn_builder) => {
-                        Some(Box::new(pssn_builder.build()?) as Box<dyn PSSnEstimates>)
+                        Some(Box::new(build_pssn(pssn_builder, &sids)?) as Box<dyn PSSnEstimates>)
                     }
                 }
             } else {
@@ -230,6 +231,41 @@ where
         // <OpticalModel<_> as interface::Update>::update(&mut om);
         Ok(om)
     }
+}
+
+/// Builds the PSSn estimator of the GMT segments `sids`
+///
+/// The PSSn is normalized by the PSSn of the diffraction limited GMT: with all the segments,
+/// the estimator is built with [PSSnBuilder]; otherwise it is built as [PSSnBuilder] does it but with a GMT
+/// reduced to the segments `sids`, so the PSSn is normalized by the pupil of the optical model
+fn build_pssn<E>(builder: PSSnBuilder<E>, sids: &[u8]) -> Result<PSSn<E>, OpticalModelError>
+where
+    E: PSSnErrors,
+    PSSnBuilder<E>: Builder<Component = PSSn<E>>,
+{
+    if sids.len() == 7 {
+        return Ok(builder.build()?);
+    }
+    // the reference source of the PSSn builder
+    let mut src = SourceBuilder::default().build()?;
+    let mut pssn = PSSn::<E> {
+        _c_: Default::default(),
+        r0_at_zenith: builder.r0_at_zenith as f32,
+        oscale: builder.oscale as f32,
+        zenith_angle: builder.zenith_angle as f32,
+        wavelength: src.wavelength() as f32,
+        estimates: vec![],
+        mode: std::marker::PhantomData,
+        otf: Vec::new(),
+    };
+    let mut gmt = GmtBuilder::default().build()?;
+    gmt.keep(&sids.iter().map(|&sid| sid as i32).collect::<Vec<_>>());
+    src.through(&mut gmt).xpupil();
+    unsafe {
+        pssn._c_.setup(src.as_raw_mut_ptr(), pssn.r0(), pssn.oscale);
+    }
+    pssn.estimates = vec![0.0; pssn._c_.N as usize];
+    Ok(pssn)
 }
 
 impl<T, S> From<&OpticalModelBuilder<S>> for OpticalModelBuilder<WaveSensorBuilder>
