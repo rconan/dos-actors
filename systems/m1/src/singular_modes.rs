@@ -229,3 +229,6 @@ impl SingularModes {
             .collect()
     }
 }
+
+#[cfg(feature = "filing")]
+impl interface::filing::Codec for SingularModes {}
