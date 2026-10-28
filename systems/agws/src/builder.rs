@@ -219,6 +219,7 @@ where
             )
         };
 
+        #[allow(unused_variables)]
         let AgwsParts {
             sh48,
             sh24,
@@ -236,6 +237,7 @@ where
             sh24_kernel: sh24_kernel.into(),
             #[cfg(feature = "shk48")]
             sh48_kernel: sh48_kernel.into(),
+            kernels: std::marker::PhantomData,
         })
         .build()?)
     }

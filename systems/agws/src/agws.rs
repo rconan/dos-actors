@@ -15,7 +15,7 @@ The default feature includes both *shk24* and *shk48*.
 pub mod sh24;
 pub mod sh48;
 
-use std::fmt::Display;
+use std::{fmt::Display, marker::PhantomData};
 
 use gmt_dos_actors::{
     actor::{Actor, PlainActor},
@@ -55,6 +55,8 @@ pub struct Agws<
     pub(crate) sh24_kernel: Actor<Sh24Kern<K24>, SH24_I, SH24_I>,
     #[cfg(feature = "shk48")]
     pub(crate) sh48_kernel: Actor<Sh48Kern<K48>, SH48_I, SH48_I>,
+    // the kernel types are not used when the SH48 or the SH24 kernel is not included
+    pub(crate) kernels: PhantomData<(K48, K24)>,
 }
 pub struct AgwsParts<
     const SH48_I: usize = 1,
@@ -90,6 +92,7 @@ where
             sh24_kernel: self.sh24_kernel.clone(),
             #[cfg(feature = "shk48")]
             sh48_kernel: self.sh48_kernel.clone(),
+            kernels: PhantomData,
         }
     }
 }
