@@ -393,6 +393,7 @@ impl Hub {
             Msg::Events(events) => {
                 let value: Value = serde_json::from_str(&events).unwrap_or(Value::Null);
                 self.flush();
+                self.histories();
                 self.broadcast("events", &value);
                 self.events = Some(events);
             }
@@ -486,6 +487,21 @@ impl Hub {
             }
         }
         self.step = self.step.max(Some(row.step));
+    }
+    /// Sends to the pages the history of the time series they are not subscribed to,
+    /// so they can be shown once the run is recorded and the server is gone
+    fn histories(&mut self) {
+        let signals = &self.signals;
+        self.clients.retain(|_, client| {
+            signals
+                .iter()
+                .filter(|(hash, signal)| signal.shape.is_none() && !client.pending.contains_key(hash))
+                .all(|(&hash, signal)| {
+                    let mut history = signal.history.to_json(hash);
+                    history["notes"] = json!(signal.notes());
+                    client.send("history", &history)
+                })
+        });
     }
     fn catalog(&self) -> Value {
         json!(
@@ -707,5 +723,13 @@ mod tests {
         assert_eq!(event("signals")[0]["name"], "X");
         assert_eq!(event("signals")[0]["file"], "logs");
         assert!(hub.page().contains(r#""live":true"#));
+        // the histories of the time series not subscribed to are sent when the run is recorded
+        hub.handle(Msg::Row(Row { uid: 7, hash: 4, step: 4, values: vec![1.] }));
+        hub.handle(Msg::Events(json!({"steps": 5}).to_string()));
+        let events: Vec<String> = rx.try_iter().collect();
+        let histories: Vec<&String> = events.iter().filter(|e| e.starts_with("event: history\n")).collect();
+        assert_eq!(histories.len(), 1);
+        assert!(histories[0].contains(r#""hash":"4""#));
+        assert!(events.last().unwrap().starts_with("event: events\n"));
     }
 }

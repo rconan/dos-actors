@@ -576,8 +576,10 @@ function canvas(cls, w, h) {
 }
 function openScope(h) {
   if (scopes.has(h)) { scopes.get(h).el.scrollIntoView({ behavior: 'smooth', inline: 'nearest' }); return; }
-  // a live scope is opened once the history of its signal is received
-  if (LIVE && !SIGNALS.get(h).loaded) return live.open(h);
+  // a live scope is opened once the history of its signal is received, a closed scope is subscribed again
+  // while the model runs and the server is connected
+  const signal = SIGNALS.get(h);
+  if (LIVE && (!signal.loaded || (!EVENTS && live.id !== null && !live.wanted.has(h)))) return live.open(h);
   const s = decode(SIGNALS.get(h));
   const el = document.createElement('div');
   el.className = 'scope';
@@ -1002,7 +1004,7 @@ if (LIVE) {
     status('new model, reloading…');
     setTimeout(() => location.reload(), 300);
   });
-  es.onerror = () => status(EVENTS ? 'run recorded, server closed' : 'disconnected, retrying…');
+  es.onerror = () => { live.id = null; status(EVENTS ? 'run recorded, server closed' : 'disconnected, retrying…'); };
   setInterval(() => {
     if (live.dirty.size) { live.dirty.forEach(h => scopes.get(h)?.refresh()); live.dirty.clear(); live.tick = true; }
     if (!live.tick) return;
