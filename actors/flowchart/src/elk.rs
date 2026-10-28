@@ -17,6 +17,9 @@ use crate::{COLORMAP, IO, graph::Graph, render::RenderError, trim};
 
 const TEMPLATE: &str = include_str!("elk/template.html");
 const ELK: &str = include_str!("elk/elk.bundled.js");
+/// Custom build of Apache ECharts for the time series scopes (`elk/echarts/entry.js`)
+#[cfg(any(feature = "scope", feature = "live"))]
+pub(crate) const ECHARTS: &str = include_str!("elk/echarts/echarts.custom.min.js");
 
 /// `dark28` color scheme, the same colors than the Graphviz backend
 const DARK28: [&str; 8] = [
@@ -150,8 +153,8 @@ fn escape_html(text: &str) -> String {
 
 /// Fills the template placeholders in a single pass
 ///
-/// `events` is the JSON of a recorded model run or `null`
-pub(crate) fn fill(title: &str, model: &str, events: &str) -> String {
+/// `events` is the JSON of a recorded model run or `null` and `scope` the JSON of the signals or `null`
+pub(crate) fn fill(title: &str, model: &str, events: &str, scope: &str) -> String {
     let mut page = String::with_capacity(TEMPLATE.len() + ELK.len() + model.len() + events.len());
     let mut rest = TEMPLATE;
     while let Some(i) = rest.find("__") {
@@ -166,7 +169,7 @@ pub(crate) fn fill(title: &str, model: &str, events: &str) -> String {
         } else if tail.starts_with("__EVENTS__") {
             (events, "__EVENTS__".len())
         } else if tail.starts_with("__SCOPE__") {
-            ("null", "__SCOPE__".len())
+            (scope, "__SCOPE__".len())
         } else {
             ("__", 2)
         };
@@ -177,13 +180,30 @@ pub(crate) fn fill(title: &str, model: &str, events: &str) -> String {
     page
 }
 
+/// Inserts ECharts, for the time series scopes, into a page, replacing the one already there
+#[cfg(any(feature = "scope", feature = "live"))]
+pub(crate) fn with_echarts(mut page: String) -> String {
+    let open = r#"<script id="echarts">"#;
+    if let Some(start) = page.find(open) {
+        let end = start
+            + page[start..]
+                .find("</script>\n")
+                .map_or(0, |i| i + "</script>\n".len());
+        page.replace_range(start..end, "");
+    }
+    if let Some(at) = page.find("<script>\nconst MODEL = ") {
+        page.insert_str(at, &format!("{open}{ECHARTS}</script>\n"));
+    }
+    page
+}
+
 /// Writes the ELK flowchart of a [Graph] to an HTML file
 pub fn to_html(graph: &Graph) -> Result<PathBuf, RenderError> {
     let data_repo = env::var("DATA_REPO").unwrap_or(".".into());
     let path = Path::new(&data_repo).join(format!("{}_flowchart.html", graph.name()));
     let title = escape_html(&graph.name().to_uppercase());
     let model = to_json(graph)?;
-    let page = fill(&title, &model, "null");
+    let page = fill(&title, &model, "null", "null");
     let mut file = File::create(&path)?;
     file.write_all(page.as_bytes())?;
     #[cfg(feature = "replay")]
@@ -285,7 +305,7 @@ mod tests {
 
     #[test]
     fn page() {
-        let page = fill("MODEL", &to_json(&graph()).unwrap(), "null");
+        let page = fill("MODEL", &to_json(&graph()).unwrap(), "null", "null");
         assert!(
             !page.contains("__MODEL__")
                 && !page.contains("__TITLE__")

@@ -27,6 +27,7 @@ graphviz = ["dep:svg", "dep:html-escape"]
 elk = ["dep:serde_json", "dep:base64"]
 replay = ["elk"]
 scope = ["replay", "dep:parquet", "dep:apache-arrow"]
+live = ["replay"]
 
 [[bin]]
 name = "flowchart-scope"

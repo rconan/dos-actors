@@ -16,7 +16,7 @@ With ELK, an actor image is embedded in the page as a base64 data URI and drawn 
 (blocks with an image are at least 120×80); the image path is resolved against the working directory,
 then against `CARGO_MANIFEST_DIR`, and a missing image is skipped with a warning.
 
-In `gmt_dos-actors`, the features are forwarded as `flowchart-graphviz` (default), `flowchart-elk` and `flowchart-replay`; `scope` is only used by the `flowchart-scope` command.
+In `gmt_dos-actors`, the features are forwarded as `flowchart-graphviz` (default), `flowchart-elk`, `flowchart-replay` and `flowchart-live`; `scope` is only used by the `flowchart-scope` command.
 
 ## Replay
 
@@ -80,6 +80,26 @@ above that limit, the time series are thinned and the images are downsampled by 
 | `--pixel NAME=SIZE[UNIT]` | Pixel size of an image, e.g. `'Frame<Host>=3.93mas'`; mas and arcsec are shown in mas or arcsec whichever reads best |
 | `--output OUT.html` | Output page, the input page is rewritten by default |
 
+## Live
+
+With the `live` feature (`flowchart-live` in `gmt_dos-actors` and in `gmt_dos-clients_arrow`) and `FLOWCHART_LIVE` set to a port,
+the flowchart page of the running model is served at `http://localhost:<port>/` and the data received by the Arrow loggers
+is streamed into the scopes of the page while the model runs:
+
+```shell
+FLOWCHART=elk FLOWCHART_LIVE=8001 FLOWCHART_LIVE_FS=1000 cargo run --release --features flowchart-live
+```
+
+The wires of the signals logged so far are marked and clicking one opens its scope, as in the replay, with the run so far
+(the server keeps one row every `k` rows of each signal, `k` doubling as the run goes) and then all its new rows.
+The cursor follows the last step of the run; clicking in a scope moves the cursor back to that step and `● live` follows the run again.
+The models run in series with `chain_replay` are served one after the other, the page is reloaded with the open scopes.
+When a model run is completed, the page turns into its replay, with the signals received so far.
+
+A logger hands its rows over without waiting and the rows are dropped from the stream, never from the logs, if the streaming falls behind,
+so the streaming does not slow the model down; without `FLOWCHART_LIVE`, a logged row costs an atomic load.
+The page is still written at the end of the run, and the parquet files can still be embedded with `flowchart-scope`.
+
 ## Environment variables
 
 | Variable | Description |
@@ -89,6 +109,9 @@ above that limit, the time series are thinned and the images are downsampled by 
 | `TO_DOT` | If set, the Graphviz dot files are written as well |
 | `DATA_REPO` | Directory where the flowchart is written |
 | `FLOWCHART_STEPS` | Number of sample steps recorded for the replay, the whole run by default |
+| `FLOWCHART_LIVE` | Port (or `address:port`, `127.0.0.1` by default) of the live page (`live` feature) |
+| `FLOWCHART_LIVE_FS` | Sampling frequency of the steps [Hz], to show the time in the live page |
+| `FLOWCHART_LIVE_PIXEL` | Pixel sizes of the images in the live page, e.g. `Frame<Host>=3.93mas;Wavefront=1.6cm` |
 
 ## Licence
 
@@ -97,7 +120,7 @@ The `elk` feature embeds the [elkjs](https://github.com/kieler/elkjs) 0.11.1 bun
 into the flowchart pages; elkjs is Copyright (c) 2017 Kiel University and others
 and is distributed under the [Eclipse Public License 2.0](https://www.eclipse.org/legal/epl-2.0/) (EPL-2.0).
 
-The `scope` feature embeds a custom build of [Apache ECharts](https://echarts.apache.org/) 5.6.0 (`src/elk/echarts/echarts.custom.min.js`)
+The `scope` and `live` features embed a custom build of [Apache ECharts](https://echarts.apache.org/) 5.6.0 (`src/elk/echarts/echarts.custom.min.js`)
 into the replay pages with time series; Apache ECharts is Copyright 2017-2024 The Apache Software Foundation and is distributed under the
 [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0); it includes ZRender 5.6.1 (Copyright (c) 2017, Baidu Inc., BSD 3-Clause License)
 and tslib 2.3.0 (Copyright (c) Microsoft Corporation, 0BSD License).

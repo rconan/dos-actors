@@ -74,6 +74,8 @@ text { fill: var(--text); }
 .replay .wire.sent.past { opacity: 0.55; stroke-width: 2; }
 .replay .wire.delayed { opacity: 1; stroke-width: 2.8; stroke-dasharray: 2 3; }
 #stages[aria-pressed="true"] { border-color: var(--hl); color: var(--hl); }
+#follow[aria-pressed="true"] { border-color: var(--hl); color: var(--hl); }
+#live #livestep { min-width: 12em; font-variant-numeric: tabular-nums; color: var(--muted); }
 /* scopes of the embedded signals */
 .wire-hit.scopable { cursor: pointer; }
 .scope-mark { fill: var(--bg); stroke-width: 1.6; pointer-events: none; }
@@ -112,6 +114,10 @@ text { fill: var(--text); }
     <span id="frame"></span>
     <input id="goto" type="number" min="0" placeholder="go to step" title="Go to step (Enter)">
   </span>
+  <span id="live" hidden>
+    <button id="follow" aria-pressed="true" title="Follow the last step of the running model">● live</button>
+    <span id="livestep">connecting…</span>
+  </span>
   <span class="legend">
     <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="currentColor" stroke-width="1.4"/></svg> regular</span>
     <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="currentColor" stroke-width="2.6"/></svg> bootstrap</span>
@@ -128,7 +134,7 @@ text { fill: var(--text); }
 <script>
 const MODEL = __MODEL__;
 // recorded model run, `null` if the run has not been recorded
-const EVENTS = __EVENTS__;
+let EVENTS = __EVENTS__;
 // signals of the recorded run embedded by `flowchart-scope`, `null` if none
 const SCOPE = __SCOPE__;
 const elk = new ELK();
@@ -320,8 +326,8 @@ function draw(g) {
 // where the runs [[start, period, count], ...] are the steps at which an actor is updated or an output is sent
 const blockEls = new Map();
 const wirePaths = [];
-const OFFSET = EVENTS && EVENTS.bootstrap.length ? 1 : 0; // the bootstrap frame
-const NF = EVENTS ? OFFSET + EVENTS.steps : 0;
+let OFFSET = EVENTS && EVENTS.bootstrap.length ? 1 : 0; // the bootstrap frame
+let NF = EVENTS ? OFFSET + EVENTS.steps : 0;
 const uidToId = new Map(MODEL.actors.filter(a => a.uid).map(a => [a.uid, a.id]));
 // sampling frequency of the steps [Hz], given to `flowchart-scope`
 const FS = SCOPE && SCOPE.fs > 0 ? SCOPE.fs : null;
@@ -385,7 +391,7 @@ function paint() {
 function paintFlow() {
   blockEls.forEach(g => g.classList.remove('active', 'done'));
   wirePaths.forEach(w => w.path.classList.remove('sent', 'past', 'delayed'));
-  world.classList.toggle('replay', frame >= 0);
+  world.classList.toggle('replay', !!EVENTS && frame >= 0);
   if (!EVENTS) return;
   const label = document.getElementById('frame');
   if (frame < 0) { label.textContent = `${EVENTS.steps} steps` + (FS ? ` (${time(EVENTS.steps)})` : ''); return; }
@@ -479,7 +485,9 @@ function play() {
   if (frame === NF - 1) { frame = -1; stage = -1; }
   player = setInterval(next, 400);
 }
-if (EVENTS) {
+// the replay or the live cursor moved to a step
+function seek(step) { pause(); follow(false); go(Math.min(step, NF - 1 - OFFSET) + OFFSET); }
+function replayControls() {
   document.getElementById('replay').hidden = false;
   document.querySelector('.hint').textContent += ' ← → or space to step through the run (s to go stage by stage within a step), shift ← → to jump to the next change, p to play, Esc to reset.';
   document.getElementById('first').onclick = () => { pause(); go(-1); };
@@ -506,6 +514,7 @@ if (EVENTS) {
     ev.preventDefault();
   });
 }
+if (EVENTS) replayControls();
 
 function defs() {
   const svg = document.getElementById('canvas');
@@ -567,18 +576,21 @@ function canvas(cls, w, h) {
 }
 function openScope(h) {
   if (scopes.has(h)) { scopes.get(h).el.scrollIntoView({ behavior: 'smooth', inline: 'nearest' }); return; }
+  // a live scope is opened once the history of its signal is received
+  if (LIVE && !SIGNALS.get(h).loaded) return live.open(h);
   const s = decode(SIGNALS.get(h));
   const el = document.createElement('div');
   el.className = 'scope';
   const header = document.createElement('header');
   const fov = s.shape && s.pixel ? ` · ${length(s.shape[0] * s.pixel.size, s.pixel.unit)}×${length(s.shape[1] * s.pixel.size, s.pixel.unit)} field` : '';
-  header.innerHTML = `<b>${esc(s.name)}</b><span class="meta">${esc(s.file)} · ${s.shape ? s.shape.join('×') + ' image' : s.n + (s.n > 1 ? ' values' : ' value')}${esc(fov)} · ${s.rows} rows</span><span class="close" title="close">×</span>`;
-  header.querySelector('.close').onclick = () => { scopes.get(h)?.dispose?.(); el.remove(); scopes.delete(h); };
+  header.innerHTML = `<b>${esc(s.name)}</b><span class="meta">${esc(s.file)} · ${s.shape ? s.shape.join('×') + ' image' : s.n + (s.n > 1 ? ' values' : ' value')}${esc(fov)} · <span class="rows">${s.steps.length}</span> rows</span><span class="close" title="close">×</span>`;
+  header.querySelector('.close').onclick = () => { scopes.get(h)?.dispose?.(); el.remove(); scopes.delete(h); if (LIVE) live.close(h); };
   el.append(header);
   const scope = s.shape ? imageScope(s, el) : seriesScope(s, el);
   if (s.notes.length) { const notes = document.createElement('div'); notes.className = 'notes'; notes.textContent = s.notes.join(', '); el.append(notes); }
   document.getElementById('scopes').append(el);
-  scopes.set(h, { el, ...scope });
+  const rows = header.querySelector('.rows');
+  scopes.set(h, { el, ...scope, refresh: () => { scope.refresh?.(); rows.textContent = s.steps.length; } });
   scope.update();
 }
 function updateScopes() { scopes.forEach(sc => sc.update()); }
@@ -613,11 +625,13 @@ function echartsScope(s, el) {
   const chart = echarts.init(div, null, { renderer: 'canvas' });
   const css = getComputedStyle(document.body), color = v => css.getPropertyValue(v).trim();
   const X = step => FS ? step / FS : step;
-  const xs = Float64Array.from(s.steps, X);
+  let xs, sparse;
   const column = e => { const d = new Array(s.steps.length); for (let r = 0; r < d.length; r++) { const v = s.values[r * s.n + e]; d[r] = [xs[r], Number.isFinite(v) ? v : null]; } return d; };
-  const sparse = s.steps.length < 200;
   let selected = [];
-  function build() {
+  // the chart is rebuilt when the selection changes and updated, keeping the zoom, when live rows are received
+  function build(merge) {
+    xs = Float64Array.from(s.steps, X);
+    sparse = s.steps.length < 200;
     selected = parseElements(input.value, s.n);
     const others = [...Array(s.n).keys()].filter(e => !selected.includes(e));
     const series = [];
@@ -668,7 +682,7 @@ function echartsScope(s, el) {
         },
       },
       series,
-    }, { notMerge: true });
+    }, { notMerge: !merge });
   }
   function update() {
     const step = currentStep();
@@ -684,12 +698,12 @@ function echartsScope(s, el) {
     if (!chart.containPixel({ gridIndex: 0 }, [ev.offsetX, ev.offsetY])) return;
     const [x] = chart.convertFromPixel({ gridIndex: 0 }, [ev.offsetX, ev.offsetY]);
     const step = Math.round(FS ? x * FS : x);
-    if (step >= -1) { pause(); go(Math.min(step, EVENTS.steps - 1) + OFFSET); }
+    if (step >= -1) seek(step);
   });
   input.addEventListener('change', () => { build(); update(); });
   input.addEventListener('keydown', ev => ev.stopPropagation());
   build();
-  return { update, dispose: () => chart.dispose() };
+  return { update, refresh: () => build(true), dispose: () => chart.dispose() };
 }
 
 // time series on a canvas: all the elements faded, the selected ones in color, a cursor at the current step
@@ -706,10 +720,11 @@ function canvasScope(s, el) {
   const readout = document.createElement('div');
   readout.className = 'readout';
   el.append(view, readout);
-  const x0 = Math.min(s.steps[0], 0), x1 = Math.max(s.steps[s.steps.length - 1], x0 + 1);
+  let x0, x1;
   const X = step => L + (step - x0) / (x1 - x0) * (W - L - R);
   let selected = [], Y = null;
   function drawBase() {
+    x0 = Math.min(s.steps[0], 0); x1 = Math.max(s.steps[s.steps.length - 1], x0 + 1);
     selected = parseElements(input.value, s.n);
     const els = selected.length ? selected : [...Array(s.n).keys()];
     let lo = Infinity, hi = -Infinity;
@@ -776,12 +791,12 @@ function canvasScope(s, el) {
   view.addEventListener('click', ev => {
     const x = ev.offsetX;
     const step = Math.round(x0 + (x - L) / (W - L - R) * (x1 - x0));
-    if (step >= -1) { pause(); go(Math.min(step, EVENTS.steps - 1) + OFFSET); }
+    if (step >= -1) seek(step);
   });
   input.addEventListener('change', () => { drawBase(); update(); });
   input.addEventListener('keydown', ev => ev.stopPropagation());
   drawBase();
-  return { update };
+  return { update, refresh: drawBase };
 }
 
 // images: the last frame at or before the current step, the masked pixels (0 or NaN) transparent
@@ -862,7 +877,7 @@ function imageScope(s, el) {
       if (r < 0) { g.clearRect(0, 0, w, h); range.textContent = ''; }
       else render(r);
     }
-    readout.textContent = r < 0 ? 'no frame yet' : `frame ${r + 1}/${s.rows} at ${s.steps[r] < 0 ? 'bootstrap' : when(s.steps[r])}`;
+    readout.textContent = r < 0 ? 'no frame yet' : `frame ${r + 1}/${s.steps.length} at ${s.steps[r] < 0 ? 'bootstrap' : when(s.steps[r])}`;
   }
   scaleBtn.onclick = () => { perFrame = !perFrame; scaleBtn.textContent = perFrame ? 'scale: frame' : 'scale: run'; if (row >= 0) render(row); };
   logBtn.onclick = () => { log = !log; logBtn.textContent = log ? 'log' : 'lin'; if (row >= 0) render(row); };
@@ -873,10 +888,128 @@ function imageScope(s, el) {
     const v = s.values[row * s.n + j * w + i];
     // offset of the pixel center from the image center
     const at = s.pixel ? ` (${length((i + 0.5 - w / 2) * s.pixel.size, s.pixel.unit)}, ${length((h / 2 - j - 0.5) * s.pixel.size, s.pixel.unit)})` : '';
-    readout.textContent = `(${i}, ${j})${at} ${masked(v) ? 'masked' : fmt(v)} — frame ${row + 1}/${s.rows} at ${s.steps[row] < 0 ? 'bootstrap' : when(s.steps[row])}`;
+    readout.textContent = `(${i}, ${j})${at} ${masked(v) ? 'masked' : fmt(v)} — frame ${row + 1}/${s.steps.length} at ${s.steps[row] < 0 ? 'bootstrap' : when(s.steps[row])}`;
   });
   view.addEventListener('mouseleave', update);
-  return { update };
+  return { update, refresh: () => { runExtent = null; row = -1; } };
+}
+
+// live streaming of the signals of the running model (`gmt_dos-actors_flowchart` feature `live`):
+// the server sends the signals logged so far, the thinned history of a signal when its scope is opened,
+// then its new rows, and the last step of the run; the cursor follows the last step unless a step is picked
+const LIVE = !!(SCOPE && SCOPE.live);
+const live = { id: null, step: null, following: true, wanted: new Set(), requested: new Set(), dirty: new Set(), tick: false };
+const STORE = 'flowchart-live-scopes';
+function follow(on) {
+  if (!LIVE) return;
+  live.following = on && !EVENTS;
+  document.getElementById('follow').setAttribute('aria-pressed', live.following);
+  live.tick = true;
+  if (live.following && live.step !== null) go(NF - 1);
+}
+function b64f32(data) {
+  const bin = atob(data);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Float32Array(bytes.buffer);
+}
+// appends rows to a signal, into buffers growing by half, keeping every other row above the memory budget
+function append(s, steps, values) {
+  const n = s.n, rows = s.steps.length, m = steps.length;
+  if (!s.tbuf || s.tbuf.length < rows + m) {
+    const cap = Math.ceil((rows + m) * 1.5) + 8;
+    const v = new Float32Array(cap * n); v.set(s.values); s.vbuf = v;
+    const t = new Int32Array(cap); t.set(s.steps); s.tbuf = t;
+  }
+  s.vbuf.set(values, rows * n); s.tbuf.set(steps, rows);
+  let total = rows + m;
+  if (total * n > 32e6 || total > 500000) {
+    let k = 0;
+    for (let r = 0; r < total; r += 2, k++) { s.tbuf[k] = s.tbuf[r]; s.vbuf.copyWithin(k * n, r * n, (r + 1) * n); }
+    total = k;
+  }
+  s.values = s.vbuf.subarray(0, total * n); s.steps = s.tbuf.subarray(0, total);
+}
+function liveRequest(h, add) {
+  if (live.id === null) return;
+  if (add) live.requested.add(h); else live.requested.delete(h);
+  fetch(`subscribe?id=${live.id}&${add ? 'add' : 'remove'}=${h}`).catch(() => {});
+}
+live.open = h => { live.wanted.add(h); liveRequest(h, true); };
+live.close = h => { live.wanted.delete(h); liveRequest(h, false); };
+if (LIVE) {
+  document.getElementById('live').hidden = false;
+  document.querySelector('.hint').textContent += ' Live: click in a scope to look back at a step, ● live to follow the run.';
+  document.getElementById('follow').onclick = () => follow(!live.following);
+  const status = text => { document.getElementById('livestep').textContent = text; };
+  // the scopes open before a reload of the page are opened again
+  try { JSON.parse(sessionStorage.getItem(STORE) || '[]').forEach(h => live.wanted.add(h)); sessionStorage.removeItem(STORE); } catch (e) { }
+  const es = new EventSource('events');
+  const listen = (name, f) => es.addEventListener(name, ev => f(JSON.parse(ev.data)));
+  listen('hello', ({ id }) => {
+    live.id = id;
+    live.requested.clear();
+    live.wanted.forEach(h => SIGNALS.has(h) && liveRequest(h, true));
+    status(EVENTS ? 'run recorded' : 'waiting for data…');
+  });
+  listen('signals', list => {
+    let added = false;
+    for (const m of list) {
+      if (SIGNALS.has(m.hash)) continue;
+      SIGNALS.set(m.hash, { ...m, notes: [], values: new Float32Array(0), steps: new Int32Array(0), loaded: false });
+      added = true;
+    }
+    live.wanted.forEach(h => SIGNALS.has(h) && !live.requested.has(h) && liveRequest(h, true));
+    // the wires of the new signals open their scopes
+    if (added && layout) draw(layout);
+  });
+  listen('history', ({ hash, steps, data, notes }) => {
+    const s = SIGNALS.get(hash);
+    if (!s) return;
+    s.values = b64f32(data); s.steps = Int32Array.from(steps); s.tbuf = s.vbuf = null;
+    s.notes = notes; s.loaded = true;
+    if (scopes.has(hash)) live.dirty.add(hash);
+    else if (live.wanted.has(hash)) openScope(hash);
+  });
+  listen('rows', ({ hash, steps, data }) => {
+    const s = SIGNALS.get(hash);
+    if (!s || !s.loaded) return;
+    append(s, steps, b64f32(data));
+    live.dirty.add(hash);
+  });
+  listen('step', ({ step }) => {
+    if (step === null || EVENTS) return;
+    live.step = step;
+    NF = OFFSET + step + 1;
+    if (live.following) frame = NF - 1;
+    live.tick = true;
+  });
+  // the run of the model is recorded: the replay of the run with the signals received so far
+  listen('events', events => {
+    EVENTS = events;
+    OFFSET = EVENTS.bootstrap.length ? 1 : 0;
+    NF = OFFSET + EVENTS.steps;
+    follow(false);
+    document.getElementById('follow').hidden = true;
+    status('run recorded');
+    replayControls();
+    go(NF - 1);
+  });
+  // a new model is run: the page is reloaded with its flowchart
+  listen('reload', () => {
+    try { sessionStorage.setItem(STORE, JSON.stringify([...live.wanted])); } catch (e) { }
+    es.close();
+    status('new model, reloading…');
+    setTimeout(() => location.reload(), 300);
+  });
+  es.onerror = () => status(EVENTS ? 'run recorded, server closed' : 'disconnected, retrying…');
+  setInterval(() => {
+    if (live.dirty.size) { live.dirty.forEach(h => scopes.get(h)?.refresh()); live.dirty.clear(); live.tick = true; }
+    if (!live.tick) return;
+    live.tick = false;
+    if (!EVENTS && live.step !== null) status(`${when(live.step)}` + (live.following ? '' : ` · showing ${frame < 0 ? 'none' : when(frame - OFFSET)}`));
+    updateScopes();
+  }, 200);
 }
 
 // pan & zoom

@@ -119,6 +119,11 @@ where
         };
         let mut client = self.client.lock().await;
         // log::debug!("{} receiving (client locked)", Who::who(self));
+        #[cfg(feature = "flowchart-live")]
+        crate::actor::replay::live::read(self.hash, || {
+            (*client).boxed_try_read(data).map(|_| ())
+        })?;
+        #[cfg(not(feature = "flowchart-live"))]
         (*client).boxed_try_read(data)?;
         log::debug!(
             "{} RECV@{N}: {} - {}",

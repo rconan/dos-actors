@@ -31,9 +31,6 @@ use crate::replay::Runs;
 /// Default size budget of the embedded signals [bytes]
 pub const MAX_SIZE: usize = 64 * 1024 * 1024;
 
-/// Custom build of Apache ECharts for the time series scopes (`elk/echarts/entry.js`)
-const ECHARTS: &str = include_str!("elk/echarts/echarts.custom.min.js");
-
 #[derive(Debug, thiserror::Error)]
 pub enum ScopeError {
     #[error("failed to read or write file: {0}")]
@@ -457,16 +454,11 @@ pub fn embed(
     let end = start + html[start..].find(";\n").unwrap();
     html.replace_range(start..end, &scope);
     // the time series are plotted with ECharts, inserted before the page script or replaced
-    let open = r#"<script id="echarts">"#;
-    if let Some(start) = html.find(open) {
-        let end = start + html[start..].find("</script>\n").map_or(0, |i| i + "</script>\n".len());
-        html.replace_range(start..end, "");
-    }
     if signals.iter().any(|s| s.shape.is_none()) {
-        let at = html
-            .find("<script>\nconst MODEL = ")
-            .ok_or_else(|| ScopeError::Page("no page script in the flowchart page".into()))?;
-        html.insert_str(at, &format!("{open}{ECHARTS}</script>\n"));
+        if !html.contains("<script>\nconst MODEL = ") {
+            return Err(ScopeError::Page("no page script in the flowchart page".into()));
+        }
+        html = crate::elk::with_echarts(html);
     }
     fs::write(output.as_ref(), html)?;
     Ok(report)

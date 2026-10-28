@@ -3880,6 +3880,7 @@ dependencies = [
  "env_logger",
  "gmt_dos-actors",
  "gmt_dos-actors-clients_interface 1.5.1",
+ "gmt_dos-actors_flowchart",
  "gmt_dos-clients",
  "log",
  "matio-rs",

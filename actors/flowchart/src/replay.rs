@@ -298,7 +298,18 @@ pub(crate) fn open(path: PathBuf, title: String, model: String) {
         }
     }
     OFFSET.store(session.as_ref().map_or(0, |s| s.offset), Ordering::Release);
+    #[cfg(feature = "live")]
+    if let Some(session) = session.as_ref() {
+        crate::live::open(&session.title, &session.model);
+    }
     ACTIVE.store(true, Ordering::Release);
+}
+
+/// Returns the 1st step of the model being recorded within the chained runs
+#[cfg(feature = "live")]
+#[inline]
+pub(crate) fn offset() -> usize {
+    OFFSET.load(Ordering::Acquire)
 }
 
 /// Returns true if a model run is being recorded
@@ -400,7 +411,9 @@ fn write() -> Result<Option<PathBuf>, RenderError> {
         return Ok(None);
     };
     let events = serde_json::to_string(&to_json(session))?;
-    let page = crate::elk::fill(&session.title, &session.model, &events);
+    let page = crate::elk::fill(&session.title, &session.model, &events, "null");
+    #[cfg(feature = "live")]
+    crate::live::recorded(&events);
     let mut file = File::create(&session.path)?;
     file.write_all(page.as_bytes())?;
     let path = session.path.clone();

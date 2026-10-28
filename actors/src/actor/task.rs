@@ -35,6 +35,12 @@ where
                 }
             }
         } */
+        #[cfg(feature = "flowchart-live")]
+        {
+            let uid = super::replay::uid(self.as_ref());
+            super::replay::live::scope(uid, self.async_run()).await
+        }
+        #[cfg(not(feature = "flowchart-live"))]
         self.async_run().await
     }
 

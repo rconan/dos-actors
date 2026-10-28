@@ -20,6 +20,11 @@ parquet.workspace = true
 paste = "1.0.15"
 thiserror.workspace = true
 regex = "1.12.3"
+gmt_dos-actors_flowchart = { version = "0.2", path = "../../actors/flowchart", default-features = false, optional = true }
+
+[features]
+# streams the logged data into the flowchart page while the model runs (gmt_dos-actors/flowchart-live)
+flowchart-live = ["gmt_dos-actors_flowchart/live"]
 
 [dev-dependencies]
 env_logger.workspace = true

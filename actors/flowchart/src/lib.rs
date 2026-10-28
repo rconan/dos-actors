@@ -19,6 +19,8 @@ With the `replay` feature, a model run is recorded and written into the ELK flow
 to be played back step by step in the browser (see the `replay` module).
 With the `scope` feature, the signals saved in parquet files during the run are embedded into the replay page
 with the `flowchart-scope` command and displayed as time series or images in sync with the replay (see the `scope` module).
+With the `live` feature, the signals logged by the Arrow loggers are streamed into the flowchart page
+while the model runs (see the `live` module).
 */
 
 mod graph;
@@ -28,6 +30,8 @@ mod render;
 
 #[cfg(feature = "elk")]
 mod elk;
+#[cfg(feature = "live")]
+pub mod live;
 #[cfg(feature = "replay")]
 pub mod replay;
 #[cfg(feature = "scope")]

@@ -210,6 +210,7 @@ where
 pub trait BufferDataType {
     type ArrayType;
     fn buffer_data_type() -> DataType;
+    fn to_f32(self) -> f32;
 }
 use paste::paste;
 macro_rules! impl_buffer_types {
@@ -220,6 +221,10 @@ impl BufferDataType for $rs {
     type ArrayType = apache_arrow::datatypes::[<$arw Type>];
     fn buffer_data_type() -> DataType {
         apache_arrow::datatypes::DataType::$arw
+    }
+    #[inline]
+    fn to_f32(self) -> f32 {
+        self as f32
     }
 }
         }
@@ -251,7 +256,7 @@ pub use arrow::{Arrow, ArrowBuilder, iter::ArrowIter};
 impl Update for Arrow {}
 impl<T, U> Read<U> for Arrow
 where
-    T: ArrowNativeType,
+    T: ArrowNativeType + BufferDataType,
     U: 'static + UniqueIdentifier<DataType = Vec<T>>,
 {
     fn read(&mut self, data: Data<U>) {
@@ -262,6 +267,8 @@ where
         }
         if let Some(buffer) = self.data::<T, U>() {
             buffer.append_slice(&data);
+            #[cfg(feature = "flowchart-live")]
+            gmt_dos_actors_flowchart::live::push(data.iter().map(|&x| x.to_f32()));
             self.count += 1;
             match self.batch_size {
                 Some(batch_size) if self.count % (self.n_entry * batch_size) == 0 => {
