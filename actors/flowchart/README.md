@@ -94,7 +94,9 @@ The wires of the signals logged so far are marked and clicking one opens its sco
 (the server keeps one row every `k` rows of each signal, `k` doubling as the run goes) and then all its new rows.
 The cursor follows the last step of the run; clicking in a scope moves the cursor back to that step and `● live` follows the run again.
 The models run in series with `chain_replay` are served one after the other, the page is reloaded with the open scopes.
-When a model run is completed, the page turns into its replay, with the signals received so far.
+When a model run is completed, the page turns into its replay and receives the history of all the signals,
+so any signal can still be shown once the server is gone; the model waits until the pages have received them
+(at most `FLOWCHART_LIVE_LINGER` seconds).
 
 A logger hands its rows over without waiting and the rows are dropped from the stream, never from the logs, if the streaming falls behind,
 so the streaming does not slow the model down; without `FLOWCHART_LIVE`, a logged row costs an atomic load.
@@ -111,6 +113,7 @@ The page is still written at the end of the run, and the parquet files can still
 | `FLOWCHART_STEPS` | Number of sample steps recorded for the replay, the whole run by default |
 | `FLOWCHART_LIVE` | Port (or `address:port`, `127.0.0.1` by default) of the live page (`live` feature) |
 | `FLOWCHART_LIVE_FS` | Sampling frequency of the steps [Hz], to show the time in the live page |
+| `FLOWCHART_LIVE_LINGER` | Maximum time [s] the model waits, at the end of a run, for the pages to receive the recorded run and the signals history, 60 by default |
 | `FLOWCHART_LIVE_PIXEL` | Pixel sizes of the images in the live page, e.g. `Frame<Host>=3.93mas;Wavefront=1.6cm` |
 
 ## Licence

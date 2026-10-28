@@ -26,7 +26,7 @@ use std::{
     net::{TcpListener, TcpStream},
     sync::{
         Mutex, OnceLock,
-        atomic::{AtomicBool, AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
         mpsc::{Receiver, RecvTimeoutError, SyncSender, TrySendError, sync_channel},
     },
     thread,
@@ -43,6 +43,8 @@ static QUEUE: OnceLock<SyncSender<Msg>> = OnceLock::new();
 // server address, once started
 static ADDRESS: Mutex<Option<String>> = Mutex::new(None);
 static CLIENT_ID: AtomicU64 = AtomicU64::new(0);
+// number of pages the recorded run has been queued to and not yet written to
+static DELIVERING: AtomicUsize = AtomicUsize::new(0);
 
 /// Capacity of the queue of the rows logged by the model
 const QUEUE_CAPACITY: usize = 8192;
@@ -130,10 +132,30 @@ pub(crate) fn open(title: &str, model: &str) {
     });
 }
 
-/// Sends the recorded run `events` (JSON) of the model to the pages
+/// Sends the recorded run `events` (JSON) of the model to the pages, with the history of all the signals
+///
+/// Waits until the pages have received them, at most `FLOWCHART_LIVE_LINGER` seconds (60 by default),
+/// so the pages can show any signal of the run once the server is gone
 pub(crate) fn recorded(events: &str) {
-    if QUEUE.get().is_some() {
-        send(Msg::Events(events.to_string()));
+    if QUEUE.get().is_none() {
+        return;
+    }
+    let (tx, rx) = sync_channel(1);
+    send(Msg::Events(events.to_string(), tx));
+    let _ = rx.recv();
+    let linger = env::var("FLOWCHART_LIVE_LINGER")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(60.);
+    let deadline = Instant::now() + Duration::from_secs_f64(linger);
+    let start = Instant::now();
+    let mut told = false;
+    while DELIVERING.load(Ordering::Acquire) > 0 && Instant::now() < deadline {
+        if !told && start.elapsed() > Duration::from_secs(2) {
+            println!("flowchart live: sending the run to the pages (at most {linger}s, FLOWCHART_LIVE_LINGER)");
+            told = true;
+        }
+        thread::sleep(Duration::from_millis(50));
     }
 }
 
@@ -219,7 +241,8 @@ struct Row {
 enum Msg {
     Row(Row),
     Model { title: String, model: String },
-    Events(String),
+    // the recorded run, acknowledged once queued to the pages
+    Events(String, SyncSender<()>),
     Connect(u64, SyncSender<String>),
     Disconnect(u64),
     Subscribe(u64, u64),
@@ -390,12 +413,23 @@ impl Hub {
                 self.events = None;
                 self.broadcast("reload", &Value::Null);
             }
-            Msg::Events(events) => {
+            Msg::Events(events, ack) => {
                 let value: Value = serde_json::from_str(&events).unwrap_or(Value::Null);
                 self.flush();
                 self.histories();
-                self.broadcast("events", &value);
+                // the pages the recorded run is queued to, the page thread counts it down once written
+                let event = format!("event: events\ndata: {value}\n\n");
+                self.clients
+                    .retain(|_, client| match client.tx.try_send(event.clone()) {
+                        Ok(()) => {
+                            DELIVERING.fetch_add(1, Ordering::AcqRel);
+                            true
+                        }
+                        Err(TrySendError::Full(_)) => true,
+                        Err(TrySendError::Disconnected(_)) => false,
+                    });
                 self.events = Some(events);
+                let _ = ack.send(());
             }
             Msg::Connect(id, tx) => {
                 let client = Client {
@@ -488,14 +522,14 @@ impl Hub {
         }
         self.step = self.step.max(Some(row.step));
     }
-    /// Sends to the pages the history of the time series they are not subscribed to,
+    /// Sends to the pages the history of the signals they are not subscribed to,
     /// so they can be shown once the run is recorded and the server is gone
     fn histories(&mut self) {
         let signals = &self.signals;
         self.clients.retain(|_, client| {
             signals
                 .iter()
-                .filter(|(hash, signal)| signal.shape.is_none() && !client.pending.contains_key(hash))
+                .filter(|(hash, _)| !client.pending.contains_key(hash))
                 .all(|(&hash, signal)| {
                     let mut history = signal.history.to_json(hash);
                     history["notes"] = json!(signal.notes());
@@ -638,15 +672,29 @@ fn events(mut stream: TcpStream) -> std::io::Result<()> {
     send(Msg::Connect(id, tx));
     let result = (|| loop {
         match rx.recv_timeout(Duration::from_secs(10)) {
-            Ok(event) => stream.write_all(event.as_bytes())?,
+            Ok(event) => {
+                stream.write_all(event.as_bytes())?;
+                if event.starts_with(RECORDED) {
+                    stream.flush()?;
+                    DELIVERING.fetch_sub(1, Ordering::AcqRel);
+                }
+            }
             // a comment checks that the page is still there
             Err(RecvTimeoutError::Timeout) => stream.write_all(b": ping\n\n")?,
             Err(RecvTimeoutError::Disconnected) => return Ok(()),
         }
     })();
     send(Msg::Disconnect(id));
+    // the recorded run is not delivered to a page that is gone
+    rx.try_iter()
+        .filter(|event| event.starts_with(RECORDED))
+        .for_each(|_| {
+            DELIVERING.fetch_sub(1, Ordering::AcqRel);
+        });
     result
 }
+
+const RECORDED: &str = "event: events\n";
 
 #[cfg(test)]
 mod tests {
@@ -723,9 +771,12 @@ mod tests {
         assert_eq!(event("signals")[0]["name"], "X");
         assert_eq!(event("signals")[0]["file"], "logs");
         assert!(hub.page().contains(r#""live":true"#));
-        // the histories of the time series not subscribed to are sent when the run is recorded
+        // the histories of the signals not subscribed to are sent when the run is recorded
         hub.handle(Msg::Row(Row { uid: 7, hash: 4, step: 4, values: vec![1.] }));
-        hub.handle(Msg::Events(json!({"steps": 5}).to_string()));
+        let (ack, done) = sync_channel(1);
+        hub.handle(Msg::Events(json!({"steps": 5}).to_string(), ack));
+        assert!(done.try_recv().is_ok());
+        DELIVERING.store(0, Ordering::Release);
         let events: Vec<String> = rx.try_iter().collect();
         let histories: Vec<&String> = events.iter().filter(|e| e.starts_with("event: history\n")).collect();
         assert_eq!(histories.len(), 1);
