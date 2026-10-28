@@ -171,11 +171,14 @@ impl Signal {
 
 /// Returns the JSON value of the line `const <name> = <json>;` of the page
 fn constant(page: &str, name: &str) -> Result<Value> {
-    let key = format!("\nconst {name} = ");
-    let start = page
-        .find(&key)
-        .ok_or_else(|| ScopeError::Page(format!("no `{name}` in the flowchart page, is it an ELK flowchart?")))?
-        + key.len();
+    // `let` in the pages of the live feature
+    let start = ["const", "let"]
+        .into_iter()
+        .find_map(|decl| {
+            let key = format!("\n{decl} {name} = ");
+            page.find(&key).map(|i| i + key.len())
+        })
+        .ok_or_else(|| ScopeError::Page(format!("no `{name}` in the flowchart page, is it an ELK flowchart?")))?;
     let end = start
         + page[start..]
             .find(";\n")
@@ -467,6 +470,14 @@ pub fn embed(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn constants() {
+        let page = "x\nconst MODEL = {\"a\": 1};\nlet EVENTS = [2];\n";
+        assert_eq!(constant(page, "MODEL").unwrap()["a"], 1);
+        assert_eq!(constant(page, "EVENTS").unwrap()[0], 2);
+        assert!(constant(page, "NF").is_err());
+    }
 
     fn signal(shape: Option<(usize, usize)>, n: usize, rows: usize) -> Signal {
         Signal {
