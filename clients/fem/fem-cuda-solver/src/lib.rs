@@ -20,6 +20,7 @@ impl Default for state_space {
             d_x0: ptr::null_mut(),
             d_y: ptr::null_mut(),
             handle: ptr::null_mut(),
+            stream: ptr::null_mut(),
             d_mss: ptr::null_mut(),
             d_dcg: ptr::null_mut(),
         }
