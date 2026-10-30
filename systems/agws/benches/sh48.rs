@@ -1,34 +1,19 @@
 use criterion::*;
-use crseo::{
-    FromBuilder, Source,
-    imaging::{Detector, LensletArray},
-};
 use gmt_dos_clients_crseo::{
-    DeviceInitialize, OpticalModel, centroiding::CentroidsProcessing, sensors::Camera,
+    DeviceInitialize, OpticalModel, OpticalModelBuilder,
+    calibration::ClosedLoopReconstructor,
+    centroiding::CentroidsProcessing,
+    sensors::{Camera, builders::CameraBuilder},
 };
 use gmt_dos_clients_io::optics::{Dev, Frame, SensorData};
+use gmt_dos_systems_agws::builder::shack_hartmann::ShackHartmannBuilder;
 use interface::{Read, Update, Write};
-use skyangle::Conversion;
 
-/// AGWS SH48 with the default parameters of `gmt_dos-systems_agws`
-/// (`ShackHartmannBuilder::sh48()`)
-///
-/// 3 guide stars (VIS) at (6',15°), (5',145°) and (7',255°),
-/// 48x48 lenslets, 0.4" pixel scale and 3.2" lenslet field-of-view
+/// AGWS SH48 with the default parameters
 fn agws_sh48() -> (OpticalModel<Camera<1>>, CentroidsProcessing) {
-    let agws_gs = Source::builder().band("VIS").size(3).zenith_azimuth(
-        vec![6f32.from_arcmin(), 5f32.from_arcmin(), 7f32.from_arcmin()],
-        vec![15f32.to_radians(), 145f32.to_radians(), 255f32.to_radians()],
-    );
-    let sh48 = Camera::<1>::builder()
-        .n_sensor(3)
-        .lenslet_array(LensletArray::default().n_side_lenslet(48).n_px_lenslet(18))
-        .detector(Detector::default().n_px_imagelet(24).n_px_framelet(8))
-        .lenslet_flux(0.75);
-    let mut centroids: CentroidsProcessing = CentroidsProcessing::try_from(&sh48).unwrap();
-    let omb = OpticalModel::<Camera<1>>::builder()
-        .source(agws_gs)
-        .sensor(sh48);
+    let sh48 = ShackHartmannBuilder::<ClosedLoopReconstructor>::sh48();
+    let omb = OpticalModelBuilder::<CameraBuilder<1>>::from(&sh48);
+    let mut centroids: CentroidsProcessing = CentroidsProcessing::try_from(&omb).unwrap();
     omb.initialize(&mut centroids);
     let om = omb.build().unwrap();
     (om, centroids)
