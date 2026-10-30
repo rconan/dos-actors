@@ -260,12 +260,26 @@ where
     }
 }
 
+unsafe extern "C" {
+    fn cudaGetDeviceCount(count: *mut i32) -> i32;
+}
+
+/// Returns the number of CUDA devices
+///
+/// The CUDA runtime is called directly: calling `crseo_sys` from this crate links a second
+/// copy of CEO when `crseo` is patched with a different `crseo-sys` version
+pub fn device_count() -> i32 {
+    let mut n = 0;
+    unsafe { cudaGetDeviceCount(&mut n) };
+    n
+}
+
 /// Checks that the CUDA `device` exists
 ///
 /// CUDA does not report an invalid device to [crseo::set_gpu] callers,
 /// the optical model would be built on the current device instead
 pub(crate) fn check_device(device: i32) -> Result<(), OpticalModelError> {
-    let n = unsafe { crseo_sys::get_device_count() };
+    let n = device_count();
     if device < 0 || device >= n {
         Err(OpticalModelError::InvalidDevice { device, n })
     } else {
@@ -333,7 +347,7 @@ mod tests {
 
     #[test]
     fn device() -> Result<(), Box<dyn Error>> {
-        let n = unsafe { crseo_sys::get_device_count() };
+        let n = device_count();
         let om = OpticalModel::<NoSensor>::builder().device(n - 1).build()?;
         assert_eq!(om.device(), n - 1);
         assert!(matches!(
