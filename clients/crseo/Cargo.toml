@@ -50,3 +50,7 @@ default = ["faer", "faer-ext"]
 [[bench]]
 name = "ray_tracing"
 harness = false
+
+[[bench]]
+name = "agws_sh48"
+harness = false
