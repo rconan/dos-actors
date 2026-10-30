@@ -39,6 +39,9 @@ pub struct OpticalModelBuilder<S = NoSensor> {
     pub(crate) sensor: Option<S>,
     pub(crate) pssn: Option<PSSnKind>,
     pub(crate) sampling_frequency: Option<f64>,
+    /// CUDA device of the optical model
+    #[serde(default)]
+    pub(crate) device: i32,
 }
 
 impl<T, S> OpticalModelBuilder<S>
@@ -140,6 +143,24 @@ where
             ..self
         }
     }
+    /// Sets the CUDA device of the optical model (default: 0)
+    ///
+    /// The optical model is built on and runs on this device
+    ///
+    /// ```
+    /// use gmt_dos_clients_crseo::{OpticalModel, sensors::NoSensor};
+    ///
+    /// let om = OpticalModel::<NoSensor>::builder().device(0).build()?;
+    /// assert_eq!(om.device(), 0);
+    /// # Ok::<(),Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn device(self, device: i32) -> Self {
+        Self { device, ..self }
+    }
+    /// Returns the CUDA device of the optical model
+    pub fn get_device(&self) -> i32 {
+        self.device
+    }
     /// Clones the builder with a new [sensor](crate::sensors) builder
     /// ```
     /// use gmt_dos_clients_crseo::{OpticalModel, sensors::{NoSensor, Camera}};
@@ -157,6 +178,7 @@ where
             atm_builder,
             sampling_frequency,
             pssn,
+            device,
             ..
         } = self;
         OpticalModelBuilder {
@@ -166,6 +188,7 @@ where
             sensor: Some(sensor),
             sampling_frequency: sampling_frequency.clone(),
             pssn: pssn.clone(),
+            device: *device,
         }
     }
     pub fn get_pupil_size_px(&self) -> usize {
@@ -184,6 +207,9 @@ where
     ///
     /// Only the GMT segments selected with the `ASSEMBLY` environment variable are kept
     pub fn build(self) -> Result<OpticalModel<T>, OpticalModelError> {
+        // the GPU memory of the optical model is allocated on its device
+        check_device(self.device)?;
+        crseo::set_gpu(self.device);
         let mut om = OpticalModel {
             gmt: self.gmt.build()?,
             src: if let &Some(n) = &self
@@ -222,6 +248,7 @@ where
             tau: self.sampling_frequency.map_or_else(|| 0f64, |x| x.recip()),
             phase_offset: None,
             pointing: Default::default(),
+            device: self.device,
         };
         if <OpticalModel<T> as Assembly>::N < 7 {
             let sids = <OpticalModel<T> as Assembly>::SIDS.map(|sid| sid as i32);
@@ -230,6 +257,19 @@ where
         // Propagation to initialize the detector frame in case of bootstrapping
         // <OpticalModel<_> as interface::Update>::update(&mut om);
         Ok(om)
+    }
+}
+
+/// Checks that the CUDA `device` exists
+///
+/// CUDA does not report an invalid device to [crseo::set_gpu] callers,
+/// the optical model would be built on the current device instead
+pub(crate) fn check_device(device: i32) -> Result<(), OpticalModelError> {
+    let n = unsafe { crseo_sys::get_device_count() };
+    if device < 0 || device >= n {
+        Err(OpticalModelError::InvalidDevice { device, n })
+    } else {
+        Ok(())
     }
 }
 
@@ -289,6 +329,18 @@ mod tests {
     #[test]
     fn builder() {
         assert!(OpticalModel::<NoSensor>::builder().build().is_ok());
+    }
+
+    #[test]
+    fn device() -> Result<(), Box<dyn Error>> {
+        let n = unsafe { crseo_sys::get_device_count() };
+        let om = OpticalModel::<NoSensor>::builder().device(n - 1).build()?;
+        assert_eq!(om.device(), n - 1);
+        assert!(matches!(
+            OpticalModel::<NoSensor>::builder().device(n).build(),
+            Err(OpticalModelError::InvalidDevice { .. })
+        ));
+        Ok(())
     }
 
     #[test]

@@ -8,6 +8,7 @@ use crate::{OpticalModel, sensors::SensorPropagation};
 /// The images move on a camera in absolute pointing ([OpticalModel::sensor_pointing])
 impl<T: SensorPropagation> Read<PointingError> for OpticalModel<T> {
     fn read(&mut self, data: Data<PointingError>) {
+        self.select_device();
         self.pointing.error = [data[0], data[1]];
         self.pointing.apply(&mut self.src);
     }
@@ -18,6 +19,7 @@ impl<T: SensorPropagation> Read<PointingError> for OpticalModel<T> {
 /// The images move on a camera in absolute pointing ([OpticalModel::sensor_pointing])
 impl<T: SensorPropagation> Read<PointingRotationError> for OpticalModel<T> {
     fn read(&mut self, data: Data<PointingRotationError>) {
+        self.select_device();
         self.pointing.rotation = data[0];
         self.pointing.apply(&mut self.src);
     }

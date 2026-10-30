@@ -51,6 +51,7 @@ impl SensorPropagation for SegmentPistonSensor {
 
 impl Write<SegmentPiston> for OpticalModel<SegmentPistonSensor> {
     fn write(&mut self) -> Option<Data<SegmentPiston>> {
+        self.select_device();
         self.sensor
             .as_ref()
             .unwrap()

@@ -100,6 +100,7 @@ impl From<OpticalModel<NoSensor>> for WaveSensor {
 
 impl Write<Wavefront> for OpticalModel<WaveSensor> {
     fn write(&mut self) -> Option<Data<Wavefront>> {
+        self.select_device();
         Some(self.sensor.as_ref()?.phase.clone().into())
     }
 }
@@ -110,6 +111,7 @@ impl Size<Wavefront> for OpticalModel<WaveSensor> {
 }
 impl<const E: i32> Write<WfeRms<E>> for OpticalModel<WaveSensor> {
     fn write(&mut self) -> Option<Data<WfeRms<E>>> {
+        self.select_device();
         let sensor = self.sensor.as_ref().unwrap();
         let mut iter = sensor
             .phase
@@ -133,6 +135,7 @@ impl<const E: i32> Write<WfeRms<E>> for OpticalModel<WaveSensor> {
 }
 impl Write<SegmentPiston> for OpticalModel<WaveSensor> {
     fn write(&mut self) -> Option<Data<SegmentPiston>> {
+        self.select_device();
         self.sensor
             .as_ref()
             .unwrap()
@@ -144,6 +147,7 @@ impl Write<SegmentPiston> for OpticalModel<WaveSensor> {
 
 impl Write<SegmentTipTilt> for OpticalModel<WaveSensor> {
     fn write(&mut self) -> Option<Data<SegmentTipTilt>> {
+        self.select_device();
         self.sensor
             .as_ref()
             .unwrap()

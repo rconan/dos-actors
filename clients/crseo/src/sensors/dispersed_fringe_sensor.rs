@@ -75,6 +75,7 @@ impl<const C: usize, const F: usize> Write<Frame<Dev>>
     for OpticalModel<DispersedFringeSensor<C, F>>
 {
     fn write(&mut self) -> Option<Data<Frame<Dev>>> {
+        self.select_device();
         self.sensor_mut()
             .map(|sensor| Data::new(sensor.frame().clone()))
     }
@@ -84,6 +85,7 @@ impl<const C: usize, const F: usize> Write<Frame<Host>>
     for OpticalModel<DispersedFringeSensor<C, F>>
 {
     fn write(&mut self) -> Option<Data<Frame<Host>>> {
+        self.select_device();
         self.sensor_mut()
             .map(|sensor| { Vec::<f32>::from(&mut sensor.frame()) }.into())
     }
@@ -103,6 +105,7 @@ impl<const C: usize, const F: usize> Write<DfsFftFrame<Dev>>
     for OpticalModel<DispersedFringeSensor<C, F>>
 {
     fn write(&mut self) -> Option<Data<DfsFftFrame<Dev>>> {
+        self.select_device();
         log::info!("writing fft frame");
         self.sensor
             .as_mut()
@@ -114,6 +117,7 @@ impl<const C: usize, const F: usize> Write<DfsFftFrame<Host>>
     for OpticalModel<DispersedFringeSensor<C, F>>
 {
     fn write(&mut self) -> Option<Data<DfsFftFrame<Host>>> {
+        self.select_device();
         self.sensor
             .as_mut()
             .map(|sensor| Data::new(Vec::<f32>::from(&mut sensor.fft_frame())))

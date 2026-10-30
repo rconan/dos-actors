@@ -39,6 +39,7 @@ impl<const I: usize> From<OpticalModelBuilder<CameraBuilder<I>>>
             sensor,
             sampling_frequency,
             pssn,
+            device,
         } = omc;
         OpticalModelBuilder {
             gmt,
@@ -47,6 +48,7 @@ impl<const I: usize> From<OpticalModelBuilder<CameraBuilder<I>>>
             sensor: sensor.map(|camera| camera.0),
             sampling_frequency,
             pssn,
+            device,
         }
     }
 }
@@ -62,6 +64,7 @@ impl<const I: usize> From<&OpticalModelBuilder<CameraBuilder<I>>>
             sensor,
             sampling_frequency,
             pssn,
+            device,
         } = omc.clone();
         OpticalModelBuilder {
             gmt,
@@ -70,6 +73,7 @@ impl<const I: usize> From<&OpticalModelBuilder<CameraBuilder<I>>>
             sensor: sensor.map(|camera| camera.0),
             sampling_frequency,
             pssn,
+            device,
         }
     }
 }

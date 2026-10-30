@@ -12,6 +12,7 @@ where
     OpticalModel: Read<M1State> + Read<M2State>,
 {
     fn read(&mut self, data: Data<OpticsState>) {
+        self.select_device();
         let OpticalState { m1, m2, .. } = &*data;
         if let Some(s1) = m1 {
             <_ as Read<M1State>>::read(self, Data::new(s1.clone()));

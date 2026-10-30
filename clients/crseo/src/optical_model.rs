@@ -19,6 +19,8 @@ pub enum OpticalModelError {
     AtmosphereWithoutSamplingFrequency,
     #[error("no sensor has been set")]
     MissingSensor,
+    #[error("CUDA device #{device} does not exist ({n} devices)")]
+    InvalidDevice { device: i32, n: i32 },
 }
 
 /// GMT optical model
@@ -44,6 +46,7 @@ pub struct OpticalModel<T = NoSensor> {
     pub(crate) tau: f64,
     pub(crate) phase_offset: Option<Vec<f64>>,
     pub(crate) pointing: Pointing,
+    pub(crate) device: i32,
 }
 
 /// Telescope pointing error
@@ -105,6 +108,25 @@ impl<T> OpticalModel<T> {
         self.phase_offset = Some(phase_offset.to_vec());
         self
     }
+    /// Returns the CUDA device of the optical model
+    pub fn device(&self) -> i32 {
+        self.device
+    }
+    /// Makes the CUDA device of the optical model the current device of the calling thread
+    ///
+    /// The CUDA device is a property of the host thread and the actor of the optical model
+    /// may run on any thread, so the device is selected at every entry point
+    /// of the optical model (update, read, write and drop)
+    pub fn select_device(&self) {
+        crseo::set_gpu(self.device);
+    }
+}
+
+/// The GPU memory of the optical model is freed on its own device
+impl<T> Drop for OpticalModel<T> {
+    fn drop(&mut self) {
+        self.select_device();
+    }
 }
 unsafe impl<T> Send for OpticalModel<T> {}
 unsafe impl<T> Sync for OpticalModel<T> {}
@@ -123,6 +145,7 @@ where
             atm_builder,
             sampling_frequency,
             pssn,
+            device,
             ..
         } = OpticalModelBuilder::<NoSensor>::default();
         OpticalModelBuilder {
@@ -132,12 +155,14 @@ where
             sensor: Some(T::builder()),
             sampling_frequency,
             pssn,
+            device,
         }
     }
 }
 
 impl<T: SensorPropagation> Update for OpticalModel<T> {
     fn update(&mut self) {
+        self.select_device();
         self.src.through(&mut self.gmt).xpupil();
         if let Some(atm) = &mut self.atm {
             atm.secs += self.tau;
