@@ -47,7 +47,15 @@ impl From<ExponentialMatrix> for ModeStateSpace {
     }
 }
 
+unsafe extern "C" {
+    fn cudaGetDevice(device: *mut i32) -> i32;
+    fn cudaSetDevice(device: i32) -> i32;
+}
+
 /// State space model using [fem_cuda_solver]
+///
+/// The model is built on the current CUDA device, which is selected again before each call
+/// to the solver as the actor may run on host threads where other clients selected another device
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone)]
 #[allow(dead_code)]
@@ -61,6 +69,8 @@ pub struct CuStateSpace {
     n_output: usize,
     i2m_rows: Vec<f64>,
     m2o_cols: Vec<f64>,
+    #[cfg_attr(feature = "serde", serde(skip))]
+    device: i32,
 }
 impl CuStateSpace {
     /// Creates a new instance of [CuStateSpace]
@@ -79,7 +89,9 @@ impl CuStateSpace {
         let mut i2m_rows: Vec<_> = i2m_rows.into_iter().flatten().collect();
         let mut m2o_cols: Vec<_> = m2o_cols.into_iter().flatten().collect();
         let mut cu_ss = state_space::default();
+        let mut device = 0;
         unsafe {
+            cudaGetDevice(&mut device);
             cu_ss.build(
                 n_mode as i32,
                 mss.as_mut_ptr(),
@@ -97,16 +109,26 @@ impl CuStateSpace {
             n_output,
             i2m_rows,
             m2o_cols,
+            device,
         }
+    }
+    /// Returns the CUDA device of the state space model
+    pub fn device(&self) -> i32 {
+        self.device
+    }
+    fn select_device(&self) {
+        unsafe { cudaSetDevice(self.device) };
     }
     /// Set the DC gain compensation matrix
     pub fn set_dc_gain_compensator(&mut self, dcg: &[f64]) {
+        self.select_device();
         unsafe {
             self.cu_ss.dc_gain_compensator(dcg.as_ptr() as *mut _);
         }
     }
     /// Steps the state space model
     pub fn step(&mut self, u: &mut [f64], y: &mut [f64]) {
+        self.select_device();
         unsafe {
             self.cu_ss.step(u.as_mut_ptr(), y.as_mut_ptr());
         }
@@ -115,6 +137,7 @@ impl CuStateSpace {
 
 impl Drop for CuStateSpace {
     fn drop(&mut self) {
+        self.select_device();
         unsafe { self.cu_ss.free() };
     }
 }
