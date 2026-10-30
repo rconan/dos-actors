@@ -14,6 +14,7 @@ struct state_space {
   int n_mode, n_input, n_output;
   double *d_i2m, *d_m2o, *d_u, *d_v, *d_x0, *d_y, *d_dcg;
   cublasHandle_t handle;
+  cudaStream_t stream;
   mode_state_space *d_mss;
   void build(int n_mode, mode_state_space *mss, int n_input, double *i2m,
              int n_output, double *m2o);
