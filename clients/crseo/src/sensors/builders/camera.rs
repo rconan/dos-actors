@@ -182,6 +182,7 @@ impl<const I: usize> OpticalModel<Camera<I>> {
         let Some(sensor) = &mut self.sensor else {
             return Err(OpticalModelError::MissingSensor);
         };
+        crseo::set_gpu(self.device);
         sensor.pointing(xy, &self.src);
         Ok(self)
     }
