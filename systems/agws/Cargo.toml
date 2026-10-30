@@ -53,7 +53,3 @@ harness = false
 [[bench]]
 name = "kernels"
 harness = false
-
-[[bench]]
-name = "sh48"
-harness = false
