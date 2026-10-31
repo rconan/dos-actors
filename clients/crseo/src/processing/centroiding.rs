@@ -63,6 +63,8 @@ where
     pub(crate) centroids: Centroiding,
     frame: Option<Arc<crseo::imaging::Frame>>,
     kind: PhantomData<K>,
+    // CUDA device of the optical model the frames come from
+    device: i32,
 }
 
 impl<K: CentroidKind> Display for CentroidsProcessing<K> {
@@ -93,6 +95,7 @@ impl<K: CentroidKind> TryFrom<&ImagingBuilder> for CentroidsProcessing<K> {
             centroids: CentroidingBuilder::from(imgr).build()?,
             frame: None,
             kind: PhantomData,
+            device: 0,
         })
     }
 }
@@ -111,7 +114,10 @@ impl<K: CentroidKind, const I: usize> TryFrom<&OpticalModelBuilder<CameraBuilder
     type Error = CentroidsError;
 
     fn try_from(om: &OpticalModelBuilder<CameraBuilder<I>>) -> Result<Self> {
-        Self::try_from(om.sensor.as_ref().unwrap())
+        crseo::set_gpu(om.device);
+        let mut centroids = Self::try_from(om.sensor.as_ref().unwrap())?;
+        centroids.device = om.device;
+        Ok(centroids)
     }
 }
 
@@ -146,6 +152,14 @@ impl<K: CentroidKind> DeviceInitialize<CentroidsProcessing<K>>
 }
 
 impl<K: CentroidKind> CentroidsProcessing<K> {
+    /// Returns the CUDA device of the centroids processing
+    pub fn device(&self) -> i32 {
+        self.device
+    }
+    /// Makes the CUDA device of the centroids processing the current device of the calling thread
+    pub fn select_device(&self) {
+        crseo::set_gpu(self.device);
+    }
     /// Sets up centroiding for [OpticalModel]`<`[Imaging]`>`
     pub fn setup(&mut self, optical_model: &mut OpticalModel<Imaging>) {
         optical_model.update();
@@ -182,11 +196,18 @@ impl CentroidsProcessing<ZeroMean> {
 
 impl<K: CentroidKind> Update for CentroidsProcessing<K> {
     fn update(&mut self) {
+        self.select_device();
         self.frame.as_ref().map(|frame| {
             if !frame.is_empty() {
                 self.centroids.process(frame, Some(&self.reference));
             }
         });
+    }
+}
+
+impl<K: CentroidKind> Drop for CentroidsProcessing<K> {
+    fn drop(&mut self) {
+        self.select_device();
     }
 }
 
@@ -201,6 +222,7 @@ where
     U: UniqueIdentifier<DataType = Vec<f64>>,
 {
     fn write(&mut self) -> Option<Data<U>> {
+        self.select_device();
         Some(
             self.centroids
                 .grab()
@@ -218,6 +240,7 @@ where
     U: UniqueIdentifier<DataType = Vec<f64>>,
 {
     fn write(&mut self) -> Option<Data<U>> {
+        self.select_device();
         Some(
             self.centroids
                 .grab()

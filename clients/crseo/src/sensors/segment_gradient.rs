@@ -51,6 +51,7 @@ impl SensorPropagation for SegmentGradientSensor {
 
 impl Write<SegmentTipTilt> for OpticalModel<SegmentGradientSensor> {
     fn write(&mut self) -> Option<Data<SegmentTipTilt>> {
+        self.select_device();
         self.sensor
             .as_ref()
             .unwrap()

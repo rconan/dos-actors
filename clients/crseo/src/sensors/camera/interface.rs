@@ -7,6 +7,7 @@ use super::Camera;
 
 impl<const I: usize> Write<Frame<Dev>> for OpticalModel<Camera<I>> {
     fn write(&mut self) -> Option<Data<Frame<Dev>>> {
+        self.select_device();
         self.sensor.as_mut().map(|imgr| {
             let frame = imgr.frame().clone();
             Data::new(frame)
@@ -16,6 +17,7 @@ impl<const I: usize> Write<Frame<Dev>> for OpticalModel<Camera<I>> {
 
 impl<const I: usize> Write<Frame<Host>> for OpticalModel<Camera<I>> {
     fn write(&mut self) -> Option<Data<Frame<Host>>> {
+        self.select_device();
         self.sensor.as_mut().map(|imgr| {
             {
                 let frame = Vec::<f32>::from(&mut imgr.frame());

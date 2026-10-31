@@ -48,6 +48,7 @@ pub struct ShackHartmannBuilder<R, const I: usize = 1> {
     recon: Option<R>,
     calibration_src_fwhm: Option<f64>,
     use_calibration_src: bool,
+    device: i32,
 }
 impl<R, const I: usize> Default for ShackHartmannBuilder<R, I> {
     fn default() -> Self {
@@ -57,6 +58,7 @@ impl<R, const I: usize> Default for ShackHartmannBuilder<R, I> {
             recon: Default::default(),
             calibration_src_fwhm: Default::default(),
             use_calibration_src: Default::default(),
+            device: Default::default(),
         }
     }
 }
@@ -105,12 +107,18 @@ impl<R, const I: usize> ShackHartmannBuilder<R, I> {
         self.use_calibration_src = true;
         self
     }
+    /// Sets the CUDA device of the sensor optical model and of its kernel (default: 0)
+    pub fn device(mut self, device: i32) -> Self {
+        self.device = device;
+        self
+    }
 }
 impl<R, const I: usize> From<&ShackHartmannBuilder<R, I>>
     for OpticalModelBuilder<CameraBuilder<I>>
 {
     fn from(value: &ShackHartmannBuilder<R, I>) -> Self {
         OpticalModel::<Camera<I>>::builder()
+            .device(value.device)
             .sensor(value.sh.clone())
             .source(if value.use_calibration_src {
                 value
@@ -142,12 +150,16 @@ where
             mut src,
             recon,
             calibration_src_fwhm,
+            device,
             ..
         } = value;
         if let Some(fwhm) = calibration_src_fwhm {
             src = src.fwhm(fwhm);
         }
-        let model = OpticalModel::<Camera<I>>::builder().sensor(sh).source(src);
+        let model = OpticalModel::<Camera<I>>::builder()
+            .device(device)
+            .sensor(sh)
+            .source(src);
         if let Some(estimator) = recon {
             Ok(Kernel::new(&model)?.estimator(estimator))
         } else {

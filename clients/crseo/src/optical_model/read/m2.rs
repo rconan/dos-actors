@@ -16,6 +16,7 @@ use crate::{OpticalModel, sensors::SensorPropagation};
 
 impl<T: SensorPropagation> Read<M2RigidBodyMotions> for OpticalModel<T> {
     fn read(&mut self, data: Data<M2RigidBodyMotions>) {
+        self.select_device();
         data.chunks(6).enumerate().for_each(|(sid, data)| {
             self.gmt
                 .m2_segment_state(1 + sid as i32, &data[..3], &data[3..]);
@@ -25,18 +26,21 @@ impl<T: SensorPropagation> Read<M2RigidBodyMotions> for OpticalModel<T> {
 
 impl<T: SensorPropagation, const SID: u8> Read<AsmCommand<SID>> for OpticalModel<T> {
     fn read(&mut self, data: Data<AsmCommand<SID>>) {
+        self.select_device();
         self.gmt.m2_segment_modes(SID, &data);
     }
 }
 
 impl<T: SensorPropagation> Read<M2ASMAsmCommand> for OpticalModel<T> {
     fn read(&mut self, data: Data<M2ASMAsmCommand>) {
+        self.select_device();
         self.gmt.m2_modes(&data);
     }
 }
 
 impl<T: SensorPropagation> Read<M2GlobalTipTilt> for OpticalModel<T> {
     fn read(&mut self, data: Data<M2GlobalTipTilt>) {
+        self.select_device();
         let rbms = geotrans::Mirror::<geotrans::M2>::tiptilt_2_rigidbodymotions((data[0], data[1]));
         /* rbms.chunks(6).enumerate().for_each(|(i, c)| {
             println!(
@@ -51,6 +55,7 @@ impl<T: SensorPropagation> Read<M2GlobalTipTilt> for OpticalModel<T> {
 }
 impl<T: SensorPropagation> Read<M2GlobalTxyz> for OpticalModel<T> {
     fn read(&mut self, data: Data<M2GlobalTxyz>) {
+        self.select_device();
         let rbms = geotrans::Mirror::<geotrans::M2>::translations_2_rigidbodymotions((
             data[0], data[1], data[2],
         ));
@@ -79,6 +84,7 @@ impl<T: SensorPropagation> Read<M2GlobalTxyz> for OpticalModel<T> {
 // }
 impl<T: SensorPropagation> Read<M2Modes> for OpticalModel<T> {
     fn read(&mut self, data: Data<M2Modes>) {
+        self.select_device();
         // assert_eq!(7 * self.gmt.m2.n_mode, data.len());
         if 7 * self.gmt.m2.n_mode > data.len() {
             let augmented_data: Vec<_> = data
@@ -99,6 +105,7 @@ impl<T: SensorPropagation> Read<M2Modes> for OpticalModel<T> {
 
 impl<T: SensorPropagation> Read<M2State> for OpticalModel<T> {
     fn read(&mut self, data: Data<M2State>) {
+        self.select_device();
         let state = data.into_arc();
         for (sid, SegmentState { rbms, modes, .. }) in state
             .iter()
@@ -118,12 +125,14 @@ impl<T: SensorPropagation> Read<M2State> for OpticalModel<T> {
 
 impl<T: SensorPropagation, const ID: u8> Read<FaceSheetFigure<ID>> for OpticalModel<T> {
     fn read(&mut self, data: Data<FaceSheetFigure<ID>>) {
+        self.select_device();
         self.gmt.m2_segment_modes(ID, &data);
     }
 }
 impl<T: SensorPropagation> Read<M2ASMFaceSheetFigure> for OpticalModel<T> {
     /// Reads the facesheet figures of the `ASSEMBLY` segments
     fn read(&mut self, data: Data<M2ASMFaceSheetFigure>) {
+        self.select_device();
         let Some(n) = data.first().map(|figure| figure.len()) else {
             return;
         };

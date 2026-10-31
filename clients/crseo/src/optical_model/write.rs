@@ -16,6 +16,7 @@ impl<T: SensorPropagation, const E: i32> Size<WfeRms<E>> for OpticalModel<T> {
 
 impl<T: SensorPropagation + SourceWavefront, const E: i32> Write<WfeRms<E>> for OpticalModel<T> {
     fn write(&mut self) -> Option<Data<WfeRms<E>>> {
+        self.select_device();
         Some(
             match E {
                 0 => self.src.wfe_rms(),
@@ -33,6 +34,7 @@ impl<T: SensorPropagation, const E: i32> Size<SegmentWfeRms<E>> for OpticalModel
 }
 impl<T: SensorPropagation, const E: i32> Write<SegmentWfeRms<E>> for OpticalModel<T> {
     fn write(&mut self) -> Option<Data<SegmentWfeRms<E>>> {
+        self.select_device();
         Some(
             match E {
                 0 => self.src.segment_wfe_rms(),
@@ -54,6 +56,7 @@ impl<T: SensorPropagation + SourceWavefront, const E: i32> Write<SegmentPiston<E
     for OpticalModel<T>
 {
     fn write(&mut self) -> Option<Data<SegmentPiston<E>>> {
+        self.select_device();
         Some(
             match E {
                 0 => self.src.segment_piston(),
@@ -76,6 +79,7 @@ impl<T: SensorPropagation> Size<SegmentWfe> for OpticalModel<T> {
 }
 impl<T: SensorPropagation> Write<SegmentWfe> for OpticalModel<T> {
     fn write(&mut self) -> Option<Data<SegmentWfe>> {
+        self.select_device();
         Some(Data::new(self.src.segment_wfe()))
     }
 }
@@ -87,6 +91,7 @@ impl<T: SensorPropagation + SourceWavefront> Size<SegmentTipTilt> for OpticalMod
 }
 impl<T: SensorPropagation + SourceWavefront> Write<SegmentTipTilt> for OpticalModel<T> {
     fn write(&mut self) -> Option<Data<SegmentTipTilt>> {
+        self.select_device();
         Some(Data::new(self.src.segment_gradients()))
     }
 }
@@ -97,6 +102,7 @@ impl<T: SensorPropagation + SourceWavefront> Size<TipTilt> for OpticalModel<T> {
 }
 impl<T: SensorPropagation + SourceWavefront> Write<TipTilt> for OpticalModel<T> {
     fn write(&mut self) -> Option<Data<TipTilt>> {
+        self.select_device();
         Some(Data::new(self.src.gradients()))
     }
 }
@@ -115,6 +121,7 @@ impl<T: SensorPropagation + SourceWavefront> Size<Wavefront> for OpticalModel<T>
 }
 impl<T: SensorPropagation + SourceWavefront> Write<Wavefront> for OpticalModel<T> {
     fn write(&mut self) -> Option<Data<Wavefront>> {
+        self.select_device();
         Some(Data::new(
             self.src.phase().into_iter().map(|x| *x as f64).collect(),
         ))
@@ -126,6 +133,7 @@ where
     DetectorFrame: UniqueIdentifier<DataType = crseo::Frame>,
 {
     fn write(&mut self) -> Option<Data<DetectorFrame>> {
+        self.select_device();
         self.sensor.as_mut().map(|sensor| {
             let frame = SegmentWiseSensor::frame(sensor);
             <T as crseo::WavefrontSensor>::reset(sensor);
@@ -136,6 +144,7 @@ where
 
 impl<T: SegmentWiseSensor, const E: i32> Write<SegmentD7Piston<E>> for OpticalModel<T> {
     fn write(&mut self) -> Option<Data<SegmentD7Piston<E>>> {
+        self.select_device();
         assert!(
             <Self as Assembly>::SIDS.contains(&7),
             "segment #7 is not in the ASSEMBLY"
@@ -155,6 +164,7 @@ impl<T: SegmentWiseSensor, const E: i32> Write<SegmentD7Piston<E>> for OpticalMo
 
 impl<T: SensorPropagation> Write<PSSn> for OpticalModel<T> {
     fn write(&mut self) -> Option<Data<PSSn>> {
+        self.select_device();
         self.pssn.as_mut().map(|pssn| pssn.estimates().into())
     }
 }
