@@ -1,5 +1,6 @@
 use std::{env, fmt::Display, ops::Deref, path::Path};
 
+use faer_ext::nalgebra;
 use serde::Deserialize;
 
 /// M1 segment singular modes (aka bending modes)

@@ -1,0 +1,17 @@
+[package]
+name = "gmt_dos-systems_m1-modes_lib"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+faer-ext.workspace = true
+gmt-fem.workspace = true
+interface.workspace = true
+serde = { workspace = true, features = ["derive"] }
+faer = { workspace = true, optional = true }
+clap = { version = "4.6.7", features = ["derive"], optional = true }
+
+[features]
+faer = ["dep:faer"]
+filing = ["interface/filing"]
+clap = ["dep:clap"]

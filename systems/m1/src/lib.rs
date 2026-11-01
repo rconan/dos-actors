@@ -145,9 +145,6 @@ actorscript!(
 
 #[cfg(fem)]
 mod fem;
-mod singular_modes;
 
 #[cfg(fem)]
 pub use fem::*;
-
-pub use singular_modes::{NullSpace, SegmentSingularModes, SingularModes};

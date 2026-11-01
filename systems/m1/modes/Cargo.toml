@@ -6,18 +6,21 @@ default-run = "m1-modes"
 
 [dependencies]
 anyhow.workspace = true
-clap = { version = "4.6.1", features = ["derive"] }
+clap = { version = "4.6.7", features = ["derive"] }
 faer-ext.workspace = true
 faer.workspace = true
 gmt-fem.workspace = true
 gmt_dos-clients_fem.workspace = true
-gmt_dos-systems_m1 = { workspace = true, features = ["faer", "clap"] }
 serde-pickle = "1.2.0"
-gmt_dos-clients_m1-ctrl.workspace = true
-interface.workspace = true
-gmt_dos-clients_io.workspace = true
-serde = { workspace = true, features = ["derive"] }
+gmt_dos-systems_m1-modes_lib = { workspace = true, features = ["clap", "faer"] }
 
 [[bin]]
 name = "m1-modes"
 path = "src/main.rs"
+
+[dev-dependencies]
+gmt_dos-clients_io.workspace = true
+gmt_dos-clients_m1-ctrl.workspace = true
+gmt_dos-systems_m1.workspace = true
+interface.workspace = true
+serde = { workspace = true, features = ["derive"] }

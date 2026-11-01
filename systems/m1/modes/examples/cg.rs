@@ -7,7 +7,8 @@ use gmt_dos_clients_io::gmt_m1::segment::{
     ActuatorAppliedForces, BarycentricForce, HardpointsMotion,
 };
 use gmt_dos_clients_m1_ctrl::{Actuators, LoadCells};
-use gmt_dos_systems_m1::{Calibration, SegmentSingularModes};
+use gmt_dos_systems_m1::Calibration;
+use gmt_dos_systems_m1_modes_lib::SegmentSingularModes;
 use gmt_fem::{FEM, FemError};
 use interface::{Data, Read, Update, Write};
 use serde::{Deserialize, Serialize};

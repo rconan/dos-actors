@@ -4,7 +4,7 @@ use clap::Parser;
 use faer::Mat;
 use faer_ext::IntoFaer;
 use gmt_dos_clients_fem::{Model, Switch, fem_io};
-use gmt_dos_systems_m1::{NullSpace, SegmentSingularModes, SingularModes};
+use gmt_dos_systems_m1_modes_lib::{NullSpace, SegmentSingularModes, SingularModes};
 use gmt_fem::FEM;
 
 /// M1 singular modes (a.k.a. bending modes) computation

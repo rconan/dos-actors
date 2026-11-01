@@ -17,6 +17,7 @@ members = [
   "clients/dcs/servos-scopes",
   "systems/agws",
   "systems/m1/modes",
+  "systems/m1/modes/lib",
   "clients/scope/hub",
   "clients/optics-state",
   "clients/io/scope"
@@ -43,6 +44,7 @@ gmt_dos-clients_fem = { version = "5.4", path = "clients/fem/" }
 gmt_dos-clients_mount = { version = "4.2", path = "clients/mount/" }
 gmt_dos-clients_m1-ctrl = { version = "6.0.1", path = "clients/m1-ctrl/" }
 gmt_dos-systems_m1 = { version = "1.1", path = "systems/m1/" }
+gmt_dos-systems_m1-modes_lib = { version = "0.1", path = "systems/m1/modes/lib" }
 gmt_dos-clients_m2-ctrl = { version = "4.1", path = "clients/m2-ctrl/" }
 gmt_dos-systems_m2 = { version = "0.1", path = "systems/m2/" }
 gmt_dos-clients_servos = { version = "3.3", default-features = false, path = "clients/servos/" }
@@ -55,7 +57,6 @@ gmt_dos-clients_transceiver = { version = "2.0", path = "clients/transceiver" }
 gmt_dos-clients_scope = { version = "3.1", path = "clients/scope" }
 gmt_dos-clients_scope-client = { version = "0.2.2", path = "clients/scope/client" }
 gmt_dos-clients_optics-state = { version = "0.1", path = "clients/optics-state" }
-gmt_dos-systems_agws = { version = "0.1", path = "systems/agws/" }
 log = "0.4.29"
 thiserror = "2.0"
 tokio-test = "0.4"
