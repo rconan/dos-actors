@@ -40,6 +40,32 @@ struct Args {
 //     }
 // }
 
+/// Orthonormal basis `[n_node,3]` of the surface piston, tip and tilt at the nodes `xyz`
+fn piston_tip_tilt(xyz: &[Vec<f64>]) -> Mat<f64> {
+    let n = xyz.len();
+    let mean = |k: usize| xyz.iter().map(|node| node[k]).sum::<f64>() / n as f64;
+    let (x0, y0) = (mean(0), mean(1));
+    let mut basis = Mat::<f64>::from_fn(n, 3, |i, j| match j {
+        0 => 1f64,
+        1 => xyz[i][0] - x0,
+        _ => xyz[i][1] - y0,
+    });
+    // Gram-Schmidt
+    for j in 0..3 {
+        for k in 0..j {
+            let dot: f64 = (0..n).map(|i| basis[(i, k)] * basis[(i, j)]).sum();
+            for i in 0..n {
+                basis[(i, j)] -= dot * basis[(i, k)];
+            }
+        }
+        let norm = (0..n).map(|i| basis[(i, j)].powi(2)).sum::<f64>().sqrt();
+        for i in 0..n {
+            basis[(i, j)] /= norm;
+        }
+    }
+    basis
+}
+
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     dbg!(&args);
@@ -47,6 +73,7 @@ fn main() -> anyhow::Result<()> {
     let null_space_n_mode = match args.null_space {
         NullSpace::Rbm => 6,
         NullSpace::RbmHp => 12,
+        NullSpace::RbmPtt => 9,
     };
 
     // let gain: na::DMatrix<f64> = serde_pickle::from_reader(
@@ -64,7 +91,7 @@ fn main() -> anyhow::Result<()> {
     // let gain_rbm = gain.subrows(gain.nrows() - NR, NR);
     // println!("RBM gain matrix {:?}", gain_rbm.shape());
 
-    let mut m1_sms = SingularModes::new()?;
+    let mut m1_sms = SingularModes::new()?.with_null_space(args.null_space);
 
     for sid in 1..=7u8 {
         println!("Segment #{sid}");
@@ -151,6 +178,24 @@ fn main() -> anyhow::Result<()> {
                     .as_mut()
                     .subrows_mut(6, 6)
                     .copy_from(gain_hp.as_ref());
+                gain_r
+            }
+            NullSpace::RbmPtt => {
+                // M1 actuator forces to M1 surface piston, tip and tilt gain
+                let gain_ptt = piston_tip_tilt(&xyz).transpose() * gain_d;
+                let mut gain_r = Mat::<f64>::zeros(null_space_n_mode, gain_d.ncols());
+                gain_r
+                    .as_mut()
+                    .subrows_mut(0, 6)
+                    .copy_from(gain_rbm.subrows(i * 6, 6));
+                gain_r.as_mut().subrows_mut(6, 3).copy_from(&gain_ptt);
+                // the rows have different units: unit rows leave the null space unchanged
+                for i in 0..null_space_n_mode {
+                    let norm = gain_r.row(i).iter().map(|x| x * x).sum::<f64>().sqrt();
+                    for j in 0..gain_r.ncols() {
+                        gain_r[(i, j)] /= norm;
+                    }
+                }
                 gain_r
             }
         };

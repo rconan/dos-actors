@@ -127,6 +127,8 @@ pub enum NullSpace {
     Rbm,
     /// M1 rigid body & hardpoints motions
     RbmHp,
+    /// M1 rigid body motions & surface piston, tip and tilt
+    RbmPtt,
 }
 
 impl Display for NullSpace {
@@ -134,6 +136,7 @@ impl Display for NullSpace {
         match self {
             NullSpace::Rbm => write!(f, "RBMs"),
             NullSpace::RbmHp => write!(f, "RBMs & Hardpoints"),
+            NullSpace::RbmPtt => write!(f, "RBMs & surface piston, tip and tilt"),
         }
     }
 }
@@ -202,6 +205,15 @@ impl SingularModes {
             modes: Vec::new(),
             null_space: NullSpace::Rbm,
         })
+    }
+    /// Sets the null space of the modes
+    pub fn with_null_space(mut self, null_space: NullSpace) -> Self {
+        self.null_space = null_space;
+        self
+    }
+    /// Returns the null space of the modes
+    pub fn null_space(&self) -> NullSpace {
+        self.null_space
     }
     pub fn push(&mut self, segment: SegmentSingularModes) {
         self.modes.push(segment);
