@@ -74,6 +74,7 @@ fn main() -> anyhow::Result<()> {
         NullSpace::Rbm => 6,
         NullSpace::RbmHp => 12,
         NullSpace::RbmPtt => 9,
+        NullSpace::RbmTt => 8,
     };
 
     // let gain: na::DMatrix<f64> = serde_pickle::from_reader(
@@ -180,15 +181,17 @@ fn main() -> anyhow::Result<()> {
                     .copy_from(gain_hp.as_ref());
                 gain_r
             }
-            NullSpace::RbmPtt => {
-                // M1 actuator forces to M1 surface piston, tip and tilt gain
-                let gain_ptt = piston_tip_tilt(&xyz).transpose() * gain_d;
+            NullSpace::RbmPtt | NullSpace::RbmTt => {
+                // M1 actuator forces to M1 surface [piston,] tip and tilt gain
+                let n_ptt = null_space_n_mode - 6;
+                let gain_ptt =
+                    piston_tip_tilt(&xyz).subcols(3 - n_ptt, n_ptt).transpose() * gain_d;
                 let mut gain_r = Mat::<f64>::zeros(null_space_n_mode, gain_d.ncols());
                 gain_r
                     .as_mut()
                     .subrows_mut(0, 6)
                     .copy_from(gain_rbm.subrows(i * 6, 6));
-                gain_r.as_mut().subrows_mut(6, 3).copy_from(&gain_ptt);
+                gain_r.as_mut().subrows_mut(6, n_ptt).copy_from(&gain_ptt);
                 // the rows have different units: unit rows leave the null space unchanged
                 for i in 0..null_space_n_mode {
                     let norm = gain_r.row(i).iter().map(|x| x * x).sum::<f64>().sqrt();

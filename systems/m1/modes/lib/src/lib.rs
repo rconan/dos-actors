@@ -129,6 +129,8 @@ pub enum NullSpace {
     RbmHp,
     /// M1 rigid body motions & surface piston, tip and tilt
     RbmPtt,
+    /// M1 rigid body motions & surface tip and tilt
+    RbmTt,
 }
 
 impl Display for NullSpace {
@@ -137,6 +139,7 @@ impl Display for NullSpace {
             NullSpace::Rbm => write!(f, "RBMs"),
             NullSpace::RbmHp => write!(f, "RBMs & Hardpoints"),
             NullSpace::RbmPtt => write!(f, "RBMs & surface piston, tip and tilt"),
+            NullSpace::RbmTt => write!(f, "RBMs & surface tip and tilt"),
         }
     }
 }
