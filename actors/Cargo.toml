@@ -1,6 +1,6 @@
 [package]
 name = "gmt_dos-actors"
-version = "12.3.0"
+version = "12.4.0"
 authors = ["Rod Conan <rconan@gmto.org>"]
 edition = "2021"
 license = "MIT"
@@ -29,9 +29,8 @@ log = { workspace = true, features = ["release_max_level_info"] }
 vec_box = "1.0.0"
 interface.workspace = true
 gmt_dos-actors_dsl = { version = "2.2", path = "dsl" }
-anyhow.workspace = true
 serde = { workspace = true, optional = true }
-gmt_dos-actors_flowchart = { version = "0.2", path = "flowchart", default-features = false }
+gmt_dos-actors_flowchart = { workspace = true }
 open = "5.3.4"
 
 [features]

@@ -1,6 +1,6 @@
 [package]
 name = "gmt_dos-clients_arrow"
-version = "2.3.0"
+version = "2.4.0"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -20,7 +20,7 @@ parquet.workspace = true
 paste = "1.0.15"
 thiserror.workspace = true
 regex = "1.12.3"
-gmt_dos-actors_flowchart = { version = "0.2", path = "../../actors/flowchart", default-features = false, optional = true }
+gmt_dos-actors_flowchart = { workspace = true, optional = true }
 
 [features]
 # streams the logged data into the flowchart page while the model runs (gmt_dos-actors/flowchart-live)
