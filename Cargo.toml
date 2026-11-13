@@ -44,7 +44,7 @@ gmt_dos-clients_io = { version = "4.5", path = "clients/io" }
 gmt_dos-clients_fem = { version = "5.5", path = "clients/fem/" }
 gmt_dos-clients_mount = { version = "4.2", path = "clients/mount/" }
 gmt_dos-clients_m1-ctrl = { version = "6.0.1", path = "clients/m1-ctrl/" }
-gmt_dos-systems_m1 = { version = "1.1", path = "systems/m1/" }
+gmt_dos-systems_m1 = { version = "2.0", path = "systems/m1/" }
 gmt_dos-systems_m1-modes_lib = { version = "0.1", path = "systems/m1/modes/lib" }
 gmt_dos-clients_m2-ctrl = { version = "4.1", path = "clients/m2-ctrl/" }
 gmt_dos-systems_m2 = { version = "0.1", path = "systems/m2/" }
