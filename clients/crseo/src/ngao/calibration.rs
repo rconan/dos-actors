@@ -6,6 +6,7 @@ use std::{
 use crseo::CrseoError;
 use interface::{Data, Read, UniqueIdentifier, Update, Write};
 
+#[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum CalibratingError {
     #[error("crseo error")]

@@ -40,6 +40,7 @@ pub use builder::CalibBuilder;
 ///     .build();
 /// ```
 
+#[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum CalibError {
     #[error("only 1 guide star, cannot differentiate Calib wrt. guide stars")]

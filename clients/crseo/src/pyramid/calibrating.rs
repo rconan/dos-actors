@@ -39,6 +39,7 @@ impl Display for Segment {
 }
 
 /// Pyramid calibration data
+#[non_exhaustive]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PyramidCalibrator {
     pub n_mode: usize,

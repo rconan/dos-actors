@@ -14,6 +14,7 @@ mod m1;
 mod m2;
 mod stats;
 
+#[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum OpticalModelError {
     #[error(transparent)]

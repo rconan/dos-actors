@@ -11,6 +11,7 @@ use gmt_dos_clients_io::optics::{Dev, Frame};
 use interface::{Data, Read, UniqueIdentifier, Update, Write};
 use std::{fmt::Display, marker::PhantomData, sync::Arc};
 
+#[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum CentroidsError {
     #[error("failed to build optical model")]

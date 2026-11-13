@@ -11,6 +11,7 @@ mod pyramid;
 mod read;
 mod write;
 
+#[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum OpticalModelError {
     #[error("failed to build optical model")]

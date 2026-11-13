@@ -1,3 +1,4 @@
+#[non_exhaustive]
 #[derive(thiserror::Error, Debug)]
 pub enum CeoError {
     #[error("CEO building failed")]

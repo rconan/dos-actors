@@ -122,6 +122,7 @@ pub use algebra::{Calib, ClosedLoopCalib, ClosedLoopReconstructor, Reconstructor
 pub use closed_loop::ClosedLoopCalibration;
 pub use mode::{CalibrationMode, MirrorMode, MixedMirrorMode, Modality, SegmentMode};
 
+#[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum CalibrationError {
     #[error("failed to build optical model")]
