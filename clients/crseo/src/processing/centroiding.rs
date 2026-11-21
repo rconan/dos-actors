@@ -170,6 +170,19 @@ impl<K: CentroidKind> CentroidsProcessing<K> {
             .valid_lenslets(Some(imgr.fluxlet_threshold), None);
         imgr.reset();
     }
+    /// Sets the reference centroids: the x then the y centroids of all the lenslets of each guide
+    /// star, in the units of the centroids, e.g. a reference map of the lenslets of the reference
+    /// frame and of other frames
+    pub fn set_reference(&mut self, centroids: &[f32]) {
+        self.select_device();
+        self.reference.set_centroids(centroids);
+    }
+    /// Returns the reference centroids: the x then the y centroids of all the lenslets of each
+    /// guide star
+    pub fn reference(&mut self) -> &[f32] {
+        self.select_device();
+        &self.reference.grab().centroids
+    }
     /// Sets the valid lenslet mask
     pub fn set_valid_lenslets(&mut self, valid_mask: impl Into<Vec<i8>>) {
         self.reference.valid_lenslets(None, Some(valid_mask.into()));
