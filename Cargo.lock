@@ -1944,9 +1944,9 @@ dependencies = [
 
 [[package]]
 name = "crseo"
-version = "2.6.0"
+version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73d00aba71b691633dd5d27158a815a593bc06cce34137ab2011dc7cb99bc091"
+checksum = "b32999093957cf42583f71d6616ded778489baafe85734eee8967f23df0bf675"
 dependencies = [
  "anyhow",
  "crseo-sys",
@@ -1966,9 +1966,9 @@ dependencies = [
 
 [[package]]
 name = "crseo-sys"
-version = "1.4.0"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0e26d0c721e89e40cbd40adcb45b6040d0d7294a2f808ab6da0d6d1ccb52675"
+checksum = "2c214304cbec9abd38b2413e60f02e371c5158978123d33dbaadf0d2589d4887"
 dependencies = [
  "bindgen 0.73.2",
  "cmake",
@@ -3683,7 +3683,7 @@ dependencies = [
 
 [[package]]
 name = "gmt_dos-clients_crseo"
-version = "6.0.0"
+version = "7.0.0"
 dependencies = [
  "anyhow",
  "bincode",
@@ -3691,13 +3691,11 @@ dependencies = [
  "complot",
  "criterion",
  "crseo",
- "crseo-sys",
  "faer",
  "faer-ext",
  "geotrans 1.2.0",
  "gmt_dos-actors-clients_interface 1.5.1",
  "gmt_dos-clients_arrow",
- "gmt_dos-clients_domeseeing 4.0.0",
  "gmt_dos-clients_io 4.5.0",
  "gmt_dos-clients_optics-state",
  "image 0.25.10",
@@ -3755,23 +3753,6 @@ dependencies = [
  "npyz 0.8.4",
  "serde",
  "thiserror 2.0.21",
-]
-
-[[package]]
-name = "gmt_dos-clients_domeseeing"
-version = "4.0.0"
-dependencies = [
- "bincode",
- "futures",
- "glob",
- "gmt_dos-actors-clients_interface 1.5.1",
- "gmt_dos-clients_io 4.5.0",
- "log",
- "npyz 0.9.1",
- "object_store",
- "serde",
- "thiserror 2.0.21",
- "tokio",
 ]
 
 [[package]]
@@ -5480,16 +5461,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "md-5"
-version = "0.10.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d89e7ee0cfbedfc4da3340218492196241d89eefb6dab27de5df917a6d2e78cf"
-dependencies = [
- "cfg-if",
- "digest 0.10.7",
-]
-
-[[package]]
 name = "mechanics"
 version = "0.1.0"
 dependencies = [
@@ -6385,7 +6356,6 @@ dependencies = [
  "humantime",
  "hyper",
  "itertools 0.14.0",
- "md-5",
  "parking_lot",
  "percent-encoding",
  "quick-xml 0.39.4",
@@ -6601,7 +6571,7 @@ dependencies = [
  "geotrans 1.2.0",
  "glob",
  "gmt-lom",
- "gmt_dos-clients_domeseeing 3.2.0",
+ "gmt_dos-clients_domeseeing",
  "indicatif",
  "itertools 0.14.0",
  "linya",
