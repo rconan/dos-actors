@@ -3756,6 +3756,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "gmt_dos-clients_domeseeing"
+version = "4.0.0"
+dependencies = [
+ "bincode",
+ "futures",
+ "glob",
+ "gmt_dos-actors-clients_interface 1.5.1",
+ "gmt_dos-clients_io 4.5.0",
+ "log",
+ "npyz 0.9.1",
+ "object_store",
+ "serde",
+ "thiserror 2.0.21",
+ "tokio",
+]
+
+[[package]]
 name = "gmt_dos-clients_fem"
 version = "5.5.0"
 dependencies = [
@@ -5461,6 +5478,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "md-5"
+version = "0.10.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d89e7ee0cfbedfc4da3340218492196241d89eefb6dab27de5df917a6d2e78cf"
+dependencies = [
+ "cfg-if",
+ "digest 0.10.7",
+]
+
+[[package]]
 name = "mechanics"
 version = "0.1.0"
 dependencies = [
@@ -6356,6 +6383,7 @@ dependencies = [
  "humantime",
  "hyper",
  "itertools 0.14.0",
+ "md-5",
  "parking_lot",
  "percent-encoding",
  "quick-xml 0.39.4",
@@ -6571,7 +6599,7 @@ dependencies = [
  "geotrans 1.2.0",
  "glob",
  "gmt-lom",
- "gmt_dos-clients_domeseeing",
+ "gmt_dos-clients_domeseeing 3.2.0",
  "indicatif",
  "itertools 0.14.0",
  "linya",

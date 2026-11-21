@@ -21,6 +21,7 @@ members = [
   "clients/scope/hub",
   "clients/optics-state",
   "clients/io/scope",
+  "clients/domeseeing",
 ]
 resolver = "2"
 
