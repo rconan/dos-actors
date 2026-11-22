@@ -343,6 +343,19 @@ where
         &mut self.sh48_kernel
     }
 }
+#[cfg(feature = "shk48")]
+impl<const SH48_I: usize, const SH24_I: usize, K48, K24> SystemInput<Sh48Kern<K48>, SH48_I, SH48_I>
+    for Agws<SH48_I, SH24_I, K48, K24>
+where
+    K48: KernelSpecs,
+    K24: KernelSpecs,
+    Sh48Kern<K48>: TryUpdate,
+    Sh24Kern<K24>: TryUpdate,
+{
+    fn input(&mut self) -> &mut Actor<Sh48Kern<K48>, SH48_I, SH48_I> {
+        &mut self.sh48_kernel
+    }
+}
 
 #[cfg(feature = "sh24")]
 impl<const SH48_I: usize, const SH24_I: usize, K48, K24> SystemInput<Sh24<SH24_I>, 1, SH24_I>
@@ -381,6 +394,19 @@ where
     Sh24Kern<K24>: TryUpdate,
 {
     fn output(&mut self) -> &mut Actor<Sh24Kern<K24>, SH24_I, SH24_I> {
+        &mut self.sh24_kernel
+    }
+}
+#[cfg(feature = "shk24")]
+impl<const SH48_I: usize, const SH24_I: usize, K48, K24> SystemInput<Sh24Kern<K24>, SH24_I, SH24_I>
+    for Agws<SH48_I, SH24_I, K48, K24>
+where
+    K48: KernelSpecs,
+    K24: KernelSpecs,
+    Sh48Kern<K48>: TryUpdate,
+    Sh24Kern<K24>: TryUpdate,
+{
+    fn input(&mut self) -> &mut Actor<Sh24Kern<K24>, SH24_I, SH24_I> {
         &mut self.sh24_kernel
     }
 }
