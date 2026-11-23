@@ -216,7 +216,7 @@ are the members of the system `sds`.
 The flows are wired as usual and the members are then moved into the system
 [`Sys`]`<`[`Subsystem`]`>` variable `sds` that replaces them in the model.
 The data loggers and scopes of a system output remain outside of the system.
-A client can only be a member of one system and a system has at most 12 members.
+A client can only be a member of one system and a system has at most 16 members.
 
 [`Sys`]: https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/system/struct.Sys.html
 [`Subsystem`]: https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/system/struct.Subsystem.html

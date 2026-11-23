@@ -221,10 +221,10 @@ impl Model {
                     format!("system {} has no member, add #[sys({})] to a flow", system.name, system.name),
                 ));
             }
-            if members.len() > 12 {
+            if members.len() > 16 {
                 return Err(syn::Error::new(
                     system.name.span(),
-                    format!("system {} has {} members, the maximum is 12", system.name, members.len()),
+                    format!("system {} has {} members, the maximum is 16", system.name, members.len()),
                 ));
             }
             subsystems.push((system, members));
