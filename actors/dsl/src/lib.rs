@@ -198,6 +198,30 @@ and
 *logging_10.lock().await
 ```
 
+## Subsystems
+
+Clients can be grouped into a [system] that is displayed as a single node in the flowchart.
+A system is declared with the attribute `#[system(...)]` at the start of the script,
+and the flows that belong to the system are marked with the attribute `#[sys(...)]`:
+```ignore
+actorscript! {
+    #[system(name = sds, label = "Structural Dynamics")]
+    1: setpoint[A] -> ff
+    #[sys(sds)]
+    1: ff[B] -> plant
+};
+```
+All the clients of the flows marked with `#[sys(sds)]`, including the rate transition samplers,
+are the members of the system `sds`.
+The flows are wired as usual and the members are then moved into the system
+[`Sys`]`<`[`Subsystem`]`>` variable `sds` that replaces them in the model.
+The data loggers and scopes of a system output remain outside of the system.
+A client can only be a member of one system and a system has at most 16 members.
+
+[`Sys`]: https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/system/struct.Sys.html
+[`Subsystem`]: https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/system/struct.Subsystem.html
+[system]: https://docs.rs/gmt_dos-actors/latest/gmt_dos_actors/system
+
 [gmt_dos-actors]: https://docs.rs/gmt_dos-actors
 [Domain Specific Language]: https://en.wikipedia.org/wiki/Domain-specific_language
 [`Write<A2B>`]: https://docs.rs/gmt_dos-clients/latest/gmt_dos_clients/interface/trait.Write.html
@@ -294,6 +318,21 @@ The label associated to the key will be display in the flowchart instead of the 
 The key `<client>` is the name of the client identifier that is the variable declared in the main scope.
 The image associated to the key will be display in the flowchart instead of the `<client>` type.
 If a label is also given for the same key, it will written over the image.
+
+#### `system`
+```ignore
+#[system(name = <ident>, label = "system label")]
+```
+#####  keys
+ * `name`: system variable identifier
+ * `label`: flowchart label of the system (default: the system name)
+
+#### `sys`
+```ignore
+#[sys(<system name>)]
+1: ...
+```
+A flow attribute that makes the clients of the flow members of the system declared with `#[system(name = <system name>)]`.
 
 
 [gmt_dos-actors]: https://docs.rs/gmt_dos-actors

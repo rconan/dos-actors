@@ -21,6 +21,13 @@ use modelstate::ModelState;
 mod scope;
 pub use scope::{Scope, ScopeSignal};
 
+/// Subsystem declared with `#[system(name = <ident>, label = "<label>")]`
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct SubSystem {
+    pub name: Ident,
+    pub label: LitStr,
+}
+
 #[derive(Debug, Clone, Default, Hash, PartialEq, Eq)]
 pub struct ModelAttributes {
     pub labels: Option<KeyParams>,
@@ -49,6 +56,7 @@ pub(super) struct Model {
     pub flows: Vec<Flow>,
     pub scope: Scope,
     pub attributes: Arc<ModelAttributes>,
+    pub systems: Vec<SubSystem>,
 }
 
 impl Display for Model {
@@ -115,15 +123,113 @@ impl Model {
                 Some("images") => {
                     model_attributes.images = Some(attr.parse_args::<KeyParams>()?);
                 }
+                Some("system") => {
+                    let mut name = None;
+                    let mut label = None;
+                    for kp in attr.parse_args::<KeyParams>()? {
+                        let KeyParam { key, param, .. } = kp;
+                        match key.to_string().as_str() {
+                            "name" => name = Some(Ident::try_from(&param)?),
+                            "label" => label = Some(LitStr::try_from(&param)?),
+                            _ => {
+                                return Err(syn::Error::new(
+                                    key.span(),
+                                    format!(r#"expected system attributes "name" or "label", found {key}"#),
+                                ));
+                            }
+                        }
+                    }
+                    let name = name.ok_or_else(|| {
+                        syn::Error::new_spanned(&attr, r#"missing system attribute "name""#)
+                    })?;
+                    if self.systems.iter().any(|system| system.name == name) {
+                        return Err(syn::Error::new(
+                            name.span(),
+                            format!("system {name} is declared twice"),
+                        ));
+                    }
+                    let label = label.unwrap_or_else(|| LitStr::new(&name.to_string(), name.span()));
+                    self.systems.push(SubSystem { name, label });
+                }
+                // the attributes of the first flow are parsed with the model attributes
+                Some("sys") => {
+                    if let Some(flow) = self.flows.first_mut() {
+                        flow.system = Some(attr.parse_args::<Ident>()?);
+                    }
+                }
                 Some("scope") => (),
                 Some(value) => {
-                    panic!("found model attribute: {value}, expected model, labels or images")
+                    panic!(
+                        "found model attribute: {value}, expected model, labels, images or system"
+                    )
                 }
                 None => panic!("expected Some model attribute, found None"),
             }
         }
         self.attributes = Arc::new(model_attributes);
+        for flow in self.flows.iter() {
+            if let Some(name) = &flow.system {
+                if !self.systems.iter().any(|system| system.name == *name) {
+                    return Err(syn::Error::new(
+                        name.span(),
+                        format!("system {name} is not declared with #[system(name = {name}, ...)]"),
+                    ));
+                }
+            }
+        }
         Ok(self)
+    }
+    /// Returns the actors of each subsystem
+    ///
+    /// The members of a subsystem are the clients of the flows with the attribute `#[sys(<name>)]`
+    /// and a client cannot be a member of more than one subsystem
+    fn subsystems(&self) -> syn::Result<Vec<(&SubSystem, Vec<Ident>)>> {
+        let mut owners: Vec<(Ident, Ident)> = vec![];
+        let mut subsystems = vec![];
+        for system in self.systems.iter() {
+            let mut members: Vec<Ident> = vec![];
+            for flow in self
+                .flows
+                .iter()
+                .filter(|flow| flow.system.as_ref() == Some(&system.name))
+            {
+                for client in flow.members() {
+                    let actor = client.actor();
+                    if let Some((_, owner)) = owners
+                        .iter()
+                        .find(|(member, owner)| *member == actor && *owner != system.name)
+                    {
+                        return Err(syn::Error::new(
+                            system.name.span(),
+                            format!(
+                                "client {} is a member of both systems {} and {}",
+                                client.borrow().name,
+                                owner,
+                                system.name
+                            ),
+                        ));
+                    }
+                    if !members.contains(&actor) {
+                        owners.push((actor.clone(), system.name.clone()));
+                        members.push(actor);
+                    }
+                }
+            }
+            if members.is_empty() {
+                return Err(syn::Error::new(
+                    system.name.span(),
+                    format!("system {} has no member, add #[sys({})] to a flow", system.name, system.name),
+                ));
+            }
+            if members.len() > 16 {
+                return Err(syn::Error::new(
+                    system.name.span(),
+                    format!("system {} has {} members, the maximum is 16", system.name, members.len()),
+                ));
+            }
+            subsystems.push((system, members));
+        }
+        Ok(subsystems)
     }
     /// Build the model
     pub fn build(mut self) -> Self {
@@ -152,8 +258,26 @@ impl Model {
 impl Parse for Model {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let mut flows: Vec<Flow> = vec![];
-        while input.peek(LitInt) {
-            flows.push(input.parse::<Flow>()?);
+        loop {
+            let attrs = input.call(Attribute::parse_outer)?;
+            if !input.peek(LitInt) {
+                if let Some(attr) = attrs.first() {
+                    return Err(syn::Error::new_spanned(attr, "expected a flow after attribute"));
+                }
+                break;
+            }
+            let mut flow = input.parse::<Flow>()?;
+            for attr in attrs {
+                if attr.path().is_ident("sys") {
+                    flow.system = Some(attr.parse_args::<Ident>()?);
+                } else {
+                    return Err(syn::Error::new_spanned(
+                        attr,
+                        "expected #[sys(<system name>)] flow attribute",
+                    ));
+                }
+            }
+            flows.push(flow);
         }
 
         Ok(Self {
@@ -204,6 +328,27 @@ impl TryExpand for Model {
                 .collect::<Vec<_>>()
         });
         let flows: Vec<_> = self.flows.iter().map(|flow| flow.expand()).collect();
+        // the members of each subsystem are moved into the subsystem after the flows are wired
+        let subsystems = self.subsystems()?;
+        let systems: Vec<_> = subsystems
+            .iter()
+            .map(|(SubSystem { name, label }, members)| {
+                quote! {
+                    let mut #name = ::gmt_dos_actors::system::Sys::new(
+                        ::gmt_dos_actors::system::Subsystem::new(#label, (#(#members,)*))
+                    ).build()?;
+                }
+            })
+            .collect();
+        let mut actors: Vec<_> = actors
+            .into_iter()
+            .filter(|actor| {
+                !subsystems
+                    .iter()
+                    .any(|(_, members)| members.contains(actor))
+            })
+            .collect();
+        actors.extend(subsystems.iter().map(|(system, _)| system.name.clone()));
         let (model, name) = match (self.name.clone(), self.flowchart.clone()) {
             (None, None) => {
                 let model = Ident::new("model", Span::call_site());
@@ -236,6 +381,8 @@ impl TryExpand for Model {
                     #(#actor_defs)*
                     // FLOWS DEFINITION
                     #(#flows)*
+                    // SYSTEMS DEFINITION
+                    #(#systems)*
                 }
             }
             (Some(labels), None) => {
@@ -246,6 +393,8 @@ impl TryExpand for Model {
                     #(#actor_defs)*
                     // FLOWS DEFINITION
                     #(#flows)*
+                    // SYSTEMS DEFINITION
+                    #(#systems)*
                 }
             }
             (None, Some(images)) => {
@@ -256,6 +405,8 @@ impl TryExpand for Model {
                     #(#actor_defs)*
                     // FLOWS DEFINITION
                     #(#flows)*
+                    // SYSTEMS DEFINITION
+                    #(#systems)*
                 }
             }
             (None, None) => {
@@ -265,6 +416,8 @@ impl TryExpand for Model {
                     #(#actor_defs)*
                     // FLOWS DEFINITION
                     #(#flows)*
+                    // SYSTEMS DEFINITION
+                    #(#systems)*
                 }
             }
         };

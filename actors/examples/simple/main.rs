@@ -88,8 +88,7 @@ async fn main() -> anyhow::Result<()> {
 
         let mut compensator: Actor<_, 1, 1> = Differentiator::default().into();
         let mut integrator: Actor<_, 1, 1> = {
-            use rand::Rng;
-            let gain = rand::thread_rng().gen_range(0f64..1f64);
+            let gain = rand::random_range(0f64..1f64);
             println!("Integrator gain: {:.3}", gain);
             Integrator::new(gain, 1).into()
         };

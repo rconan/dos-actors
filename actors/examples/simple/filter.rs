@@ -20,7 +20,7 @@ impl Update for Filter {
     fn update(&mut self) {
         self.data += 0.05
             * (2. * std::f64::consts::PI * self.step as f64 * (1e3f64 * 2e-2).recip()).sin()
-            + self.noise.sample(&mut rand::thread_rng());
+            + self.noise.sample(&mut rand::rng());
         self.step += 1;
     }
 }

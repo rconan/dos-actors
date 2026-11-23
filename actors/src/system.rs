@@ -28,8 +28,10 @@ use crate::prelude::FlowChart;
 
 mod implementations;
 mod interfaces;
+mod subsystem;
 
 pub use interfaces::{System, SystemInput, SystemOutput};
+pub use subsystem::{boundary, Subsystem};
 
 pub enum New {}
 pub enum Built {}

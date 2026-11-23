@@ -4,9 +4,11 @@ use gmt_dos_clients_crseo::{OpticalModel, OpticalModelBuilder, crseo::FromBuilde
 use interface::{Data, TryRead, TryUpdate, TryWrite, UniqueIdentifier, Write};
 
 pub mod error;
+mod external;
 #[doc(inline)]
 pub use error::KernelError;
 use error::{KernelReadError, KernelUpdateError, KernelWriteError};
+pub use external::ExternalParameter;
 
 /// AGWS wavefront sensor camera frame
 ///
@@ -46,7 +48,7 @@ type Result<T> = std::result::Result<T, KernelError>;
 /// [Kernel] specifications
 ///
 /// Defines the types of the processor, estimator and controller and
-/// of the [Kernel] data, input and output 
+/// of the [Kernel] data, input and output
 pub trait KernelSpecs {
     type Sensor: FromBuilder;
     type Processor;

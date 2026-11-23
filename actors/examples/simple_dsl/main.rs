@@ -26,11 +26,6 @@ async fn main() -> anyhow::Result<()> {
     };
     let logging = Logging::default();
 
-    #[cfg(not(feature = "sampler"))]
-    const R: usize = 1;
-    #[cfg(feature = "sampler")]
-    const R: usize = 50;
-
     let source = signal;
     let filter = Filter::default();
 
@@ -42,34 +37,34 @@ async fn main() -> anyhow::Result<()> {
     }
 
     #[cfg(feature = "sampler")]
+    let sampler = sampler::Sampler::default();
+    #[cfg(feature = "sampler")]
     actorscript! {
         #[model(state = ready, flowchart = "simple")]
         1: source[SignalToFilter] -> filter
-        1: &logging
-        50: filter[FilterToSampler] -> &logging
+        50: filter[FilterToSampler] -> sampler[SamplerToSink] -> logging
     }
 
     #[cfg(feature = "feedback")]
     let (model, logging) = {
         use feedback::{Differentiator, Integrator, IntegratorToDifferentiator};
 
-        let mut compensator = Differentiator::default();
-        let mut integrator = {
-            use rand::Rng;
-            let gain = rand::thread_rng().gen_range(0f64..1f64);
+        let compensator = Differentiator::default();
+        let integrator = {
+            let gain = rand::random_range(0f64..1f64);
             println!("Integrator gain: {:.3}", gain);
             Integrator::new(gain, 1)
         };
 
         actorscript! {
             #[model(state = ready, flowchart = "simple")]
-            1: source[SignalToFilter] -> &logging
+            1: source[SignalToFilter] -> logging
             1: source[SignalToFilter]
                 -> filter[FilterToDifferentiator]
                     -> compensator[DifferentiatorToIntegrator]
                         -> integrator[IntegratorToDifferentiator]!
                             -> compensator[DifferentiatorToIntegrator]
-                                -> &logging
+                                -> logging
         };
         (model, logging)
     };
