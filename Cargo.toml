@@ -34,7 +34,7 @@ categories = ["science", "simulation"]
 keywords = ["telescope", "astronomy"]
 
 [workspace.dependencies]
-gmt_dos-actors = { version = "12.3", path = "actors/" }
+gmt_dos-actors = { version = "12.5", path = "actors/" }
 gmt_dos-clients = { version = "6.0", path = "clients/core" }
 gmt_dos-actors_flowchart = { version = "0.3", path = "actors/flowchart", default-features = false }
 interface = { version = "1.5", path = "interface", package = "gmt_dos-actors-clients_interface" }
@@ -51,7 +51,6 @@ gmt_dos-clients_m2-ctrl = { version = "4.1", path = "clients/m2-ctrl/" }
 gmt_dos-systems_m2 = { version = "0.1", path = "systems/m2/" }
 gmt_dos-clients_servos = { version = "3.3", default-features = false, path = "clients/servos/" }
 gmt_dos-clients_arrow = { version = "2.4", path = "clients/arrow/" }
-gmt_dos-clients_domeseeing = { version = "4.0", path = "clients/domeseeing/" }
 gmt_dos-clients_windloads = { version = "3.0", path = "clients/windloads/" }
 gmt_dos-clients_lom = { version = "1.2", path = "clients/lom/" }
 gmt_dos-clients_crseo = { version = "7.0", path = "clients/crseo/" }
@@ -80,7 +79,7 @@ bytes = "1.11.1"
 indicatif = { version = "0.18.4" }
 tracing = "0.1.44"
 flume = "0.12.0"
-syn = "2.0"
+syn = "3.0"
 quote = "1.0"
 proc-macro2 = "1.0"
 faer-ext = { version = "0.7.1", features = ["nalgebra"] }

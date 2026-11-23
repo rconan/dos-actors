@@ -1,6 +1,6 @@
 use std::{fmt::Display, hash::Hash};
 
-use proc_macro2::{Literal, Span};
+use proc_macro2::Span;
 use quote::quote;
 use syn::{Expr, Ident, LitInt, LitStr, Token, parse::Parse};
 
@@ -56,10 +56,10 @@ pub struct Client {
 }
 impl Client {
     pub fn lit_output_rate(&self) -> LitInt {
-        Literal::usize_unsuffixed(self.output_rate).into()
+        LitInt::new(&self.output_rate.to_string(), Span::call_site())
     }
     pub fn lit_input_rate(&self) -> LitInt {
-        Literal::usize_unsuffixed(self.input_rate).into()
+        LitInt::new(&self.input_rate.to_string(), Span::call_site())
     }
     pub fn into_input(&self) -> Expanded {
         let actor = &self.actor;
