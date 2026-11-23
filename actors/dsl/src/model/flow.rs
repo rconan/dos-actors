@@ -1,7 +1,7 @@
 use std::{collections::HashSet, fmt::Display};
 
 use syn::{
-    LitInt, Token,
+    Ident, LitInt, Token,
     parse::{Parse, ParseStream},
 };
 
@@ -18,14 +18,20 @@ use super::Scope;
 /// a chain of actors i.e
 ///
 /// rate: actor1[output1_of_actor1] -> actor2[output1_of_actor2] -> actor3
+///
+/// The clients of a flow with a `#[sys(name)]` attribute are members of the subsystem `name`
 #[derive(Debug, Clone, Default)]
 pub struct Flow {
     pub rate: usize,
     pub chain: Chain,
+    pub system: Option<Ident>,
 }
 
 impl Display for Flow {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(system) = &self.system {
+            write!(f, "#[sys({system})] ")?;
+        }
         write!(f, "{:3}: {}", self.rate, self.chain)
     }
 }
@@ -50,6 +56,20 @@ impl Flow {
                 .map(|output| output.collect(clients));
         });
     }
+    /// Returns the clients of the flow, including the rate transition samplers
+    pub fn members(&self) -> Vec<SharedClient> {
+        self.chain
+            .iter()
+            .flat_map(|client_output| {
+                std::iter::once(client_output.client.clone()).chain(
+                    client_output
+                        .output
+                        .as_ref()
+                        .and_then(|output| output.rate_transition.clone()),
+                )
+            })
+            .collect()
+    }
     /// Check for loggers & scopes
     pub fn implicits(&self, name: &syn::Ident, scope: &mut Scope) -> Vec<Flow> {
         self.chain
@@ -58,6 +78,7 @@ impl Flow {
             .map(|chain| Flow {
                 rate: self.rate,
                 chain,
+                system: None,
             })
             .collect()
     }
